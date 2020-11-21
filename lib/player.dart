@@ -56,7 +56,7 @@ class PlayerWidget extends StatelessWidget {
           }
           final running = snapshot.data ?? false;
           return Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.end,
             children: [
               if (!running) ...[
                 // UI to show when we're not running, i.e. a menu.
@@ -81,10 +81,20 @@ class PlayerWidget extends StatelessWidget {
                           if (mediaItem != null) cover(mediaItem.artUri),
                           if (mediaItem?.title != null)
                             Container(
-                                child: Text(mediaItem?.title,
-                                    style: TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 21)),
+                                child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(mediaItem?.title,
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 21)),
+                                      Container(
+                                          padding:
+                                              EdgeInsets.fromLTRB(13, 0, 0, 0),
+                                          child: Icon(mediaItem.isLocalFile()
+                                              ? Icons.cloud_off
+                                              : Icons.cloud_outlined, size: 20))
+                                    ]),
                                 padding: EdgeInsets.fromLTRB(0, 13, 0, 0)),
                           if (mediaItem?.artist != null)
                             OutlinedButton(
@@ -131,25 +141,9 @@ class PlayerWidget extends StatelessWidget {
                     );
                   },
                 ),
-                // // Display the processing state.
-                StreamBuilder<MediaItem>(
-                  stream: AudioService.currentMediaItemStream.distinct(),
-                  builder: (context, snapshot) {
-                    final mediaItem = snapshot.data;
-                    if (mediaItem != null) {
-                      if (mediaItem.isLocalFile()) {
-                        return Icon(Icons.cloud_off_sharp);
-                      } else {
-                        return Icon(Icons.cloud_outlined);
-                      }
-                    } else {
-                      return Text('');
-                    }
-                  },
-                ),
                 Container(
                     child: IconButton(
-                        icon: Icon(Icons.list),
+                        icon: Icon(Icons.arrow_drop_up, size: 32),
                         onPressed: () => showQueue(context))),
               ],
             ],
@@ -240,8 +234,9 @@ class PlayerWidget extends StatelessWidget {
                             Navigator.pop(context);
                           },
                         ),
-                        Expanded(child: SingleChildScrollView(
-                            child: Column(children: [
+                        Expanded(
+                            child: SingleChildScrollView(
+                                child: Column(children: [
                           ...mediaItems.map((t) => ListTile(
                               leading: mediaItemCover(t),
                               selected: t == state.mediaItem,
