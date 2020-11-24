@@ -16,8 +16,10 @@
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
 import 'package:flutter/material.dart';
+import 'package:connectivity/connectivity.dart';
 
 import 'music.dart';
+import 'main.dart';
 import 'playlist.dart';
 
 class RadioWidget extends StatelessWidget {
@@ -32,18 +34,27 @@ class RadioWidget extends StatelessWidget {
         body: Column(children: [
           Expanded(
               child: ListView.builder(
-            itemCount: _view.genre.length,
-            itemBuilder: (context, index) {
-              return ListTile(
-                onTap: () => _onPlay(_view.genre[index]),
-                leading: Icon(Icons.radio),
-                title: Text(_view.genre[index].name),
-                trailing: IconButton(
-                    icon: Icon(Icons.download_sharp),
-                    onPressed: () => _onPlay(_view.genre[index])),
-              );
-            },
-          ))
+                  itemCount: _view.genre.length,
+                  itemBuilder: (context, index) {
+                    return StreamBuilder<ConnectivityResult>(
+                        stream: TakeoutState.connectivityStream.distinct(),
+                        builder: (context, snapshot) {
+                          final result = snapshot.data;
+                          return ListTile(
+                            enabled: TakeoutState.allowStreaming(result),
+                            onTap: TakeoutState.allowStreaming(result)
+                                ? () => _onPlay(_view.genre[index])
+                                : null,
+                            leading: Icon(Icons.radio),
+                            title: Text(_view.genre[index].name),
+                            trailing: IconButton(
+                                icon: Icon(Icons.download_sharp),
+                                onPressed: TakeoutState.allowDownload(result)
+                                    ? () => _onPlay(_view.genre[index])
+                                    : null),
+                          );
+                        });
+                  }))
         ]));
   }
 

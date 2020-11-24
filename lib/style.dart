@@ -49,3 +49,20 @@ void snackBarDownload({Release release, bool complete = false}) {
     snackBar(text);
   }
 }
+//
+// void okDialog(BuildContext context, String title, String text) {
+//   showDialog(
+//       context: context,
+//       builder: (buildContext) => new AlertDialog(
+//         title: Text(title),
+//         content: Text(text),
+//         actions: <Widget>[
+//           OutlinedButton(
+//             child: Text('Close'),
+//             onPressed: () {
+//               Navigator.pop(buildContext);
+//             },
+//           )
+//         ],
+//       ));
+// }

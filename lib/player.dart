@@ -29,8 +29,8 @@ import 'package:rxdart/rxdart.dart';
 import 'cover.dart';
 import 'player_task.dart';
 
-// NOTE: Your entrypoint MUST be a top-level function.
-void _audioPlayerTaskEntrypoint() async {
+// NOTE: Your entry point MUST be a top-level function.
+void _audioPlayerTaskEntryPoint() async {
   AudioServiceBackground.run(() => AudioPlayerTask());
 }
 
@@ -169,10 +169,11 @@ class PlayerWidget extends StatelessWidget {
           AudioService.currentMediaItemStream,
           (queue, mediaItem) => QueueState(queue, mediaItem));
 
-  void doStart() async {
+  void doStart(Map<String, dynamic> params) async {
     await AudioService.start(
-      backgroundTaskEntrypoint: _audioPlayerTaskEntrypoint,
-      androidNotificationChannelName: 'Audio Service Demo',
+      params: params,
+      backgroundTaskEntrypoint: _audioPlayerTaskEntryPoint,
+      androidNotificationChannelName: 'Takeout',
       // Enable this if you want the Android service to exit the foreground state on pause.
       //androidStopForegroundOnPause: true,
       androidNotificationColor: 0xFF2196f3,
@@ -184,7 +185,7 @@ class PlayerWidget extends StatelessWidget {
   RaisedButton audioPlayerButton() => startButton(
         'AudioPlayer',
         () {
-          doStart();
+          doStart({});//fixme
         },
       );
 

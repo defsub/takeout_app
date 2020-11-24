@@ -35,7 +35,6 @@ class Spiff {
   Spiff copyWith({
     int index,
     double position,
-    String state,
   }) =>
       Spiff(
         index: index ?? this.index,

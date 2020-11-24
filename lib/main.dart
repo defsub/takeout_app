@@ -18,10 +18,13 @@
 // The navigation stack and routing code is heavily based on example code.
 // Still looking for the original reference.
 
+import 'dart:async';
+
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:connectivity/connectivity.dart';
 
 import 'artists.dart';
 import 'client.dart';
@@ -39,7 +42,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Takeout',
-      home: AudioServiceWidget(child: _MyStatefulWidget()),
+      home: AudioServiceWidget(child: _TakeoutWidget()),
       darkTheme: _darkTheme(),
     );
   }
@@ -47,6 +50,7 @@ class MyApp extends StatelessWidget {
   ThemeData _darkTheme() {
     final ThemeData base = ThemeData.dark();
     return base.copyWith(
+      disabledColor: Colors.white24,
       sliderTheme: SliderThemeData(
         activeTrackColor: Colors.orangeAccent,
         inactiveTrackColor: Colors.grey,
@@ -71,15 +75,25 @@ class SnackBarState {
 
 final snackBarStateSubject = PublishSubject<SnackBarState>();
 
-class _MyStatefulWidget extends StatefulWidget {
-  _MyStatefulWidget({Key key}) : super(key: key);
+class _TakeoutWidget extends StatefulWidget {
+  _TakeoutWidget({Key key}) : super(key: key);
 
   @override
-  _MyAppState createState() => _MyAppState();
+  TakeoutState createState() => TakeoutState();
 }
 
-class _MyAppState extends State<_MyStatefulWidget> {
+class TakeoutState extends State<_TakeoutWidget> {
+
+  static final _connectivityStream = BehaviorSubject<ConnectivityResult>();
+
+  static Stream<ConnectivityResult> get connectivityStream =>
+      _connectivityStream.stream;
+
+  static ConnectivityResult get connectivityState => _connectivityStream.value;
+
   final _scaffoldKey = GlobalKey<ScaffoldState>();
+  final Connectivity _connectivity = Connectivity();
+  StreamSubscription<ConnectivityResult> _connectivitySubscription;
 
   bool _loggedIn;
   PlaybackState _playbackState;
@@ -99,6 +113,11 @@ class _MyAppState extends State<_MyStatefulWidget> {
   @override
   void initState() {
     super.initState();
+
+    _initConnectivity();
+    _connectivitySubscription =
+        _connectivity.onConnectivityChanged.listen(_updateConnectionStatus);
+
     Client().loggedIn().then((v) {
       if (v) {
         _onLoginSuccess();
@@ -111,7 +130,45 @@ class _MyAppState extends State<_MyStatefulWidget> {
   @override
   void dispose() {
     snackBarStateSubject.close();
+    _connectivitySubscription.cancel();
     super.dispose();
+  }
+
+  static bool allowStreaming(ConnectivityResult result) {
+    return result == ConnectivityResult.wifi;
+  }
+
+  static bool allowDownload(ConnectivityResult result) {
+    return result == ConnectivityResult.wifi;
+  }
+
+  Future<void> _initConnectivity() async {
+    ConnectivityResult result;
+    try {
+      result = await _connectivity.checkConnectivity();
+    } catch (e) {
+      print(e.toString());
+    }
+
+    if (!mounted) {
+      return Future.value(null);
+    }
+
+    return _updateConnectionStatus(result);
+  }
+
+  Future<void> _updateConnectionStatus(ConnectivityResult result) async {
+    switch (result) {
+      case ConnectivityResult.wifi:
+      case ConnectivityResult.mobile:
+      case ConnectivityResult.none:
+        _connectivityStream.add(result);
+        print('connectivity state $result');
+        break;
+      default:
+        print('connectivity state failed');
+        break;
+    }
   }
 
   void _onLoginSuccess() {
@@ -210,7 +267,9 @@ class _MyAppState extends State<_MyStatefulWidget> {
         if (_playerWidget == null) {
           print('loading player widget');
           _playerWidget = PlayerWidget();
-          _playerWidget.doStart();
+          final params = Map<String, dynamic>();
+          // TODO need params still?
+          _playerWidget.doStart(params);
         }
         return _playerWidget;
       default:

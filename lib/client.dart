@@ -20,7 +20,6 @@ import 'dart:convert';
 import 'dart:core';
 import 'dart:io';
 
-import 'package:connectivity/connectivity.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -53,6 +52,10 @@ class PatchResult {
 
   bool notModified() {
     return statusCode == HttpStatus.noContent;
+  }
+
+  bool isModified() {
+    return statusCode == HttpStatus.ok;
   }
 
   Spiff toSpiff() {
@@ -93,9 +96,7 @@ class Client {
 
   Future<Map<String, String>> headers() async {
     final cookie = await _getCookie();
-    // Map<dynamic, dynamic> headers = {HttpHeaders.cookieHeader: '$cookieName=$cookie'};
     return {HttpHeaders.cookieHeader: '$cookieName=$cookie'};
-    // return headers;
   }
 
   Future<bool> needLogin() async {
@@ -345,15 +346,6 @@ class Client {
     } else {
       // TODO wifi
       return Uri.parse('$baseUrl${d.location}');
-    }
-  }
-
-  Future<bool> _usingWifi() async {
-    var connectivityResult = await (Connectivity().checkConnectivity());
-    if (connectivityResult == ConnectivityResult.mobile) {
-      // I am connected to a mobile network.
-    } else if (connectivityResult == ConnectivityResult.wifi) {
-      // I am connected to a wifi network.
     }
   }
 }

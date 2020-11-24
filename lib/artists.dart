@@ -15,7 +15,9 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
+import 'package:connectivity/connectivity.dart';
 import 'package:flutter/material.dart';
+import 'package:takeout_app/main.dart';
 
 import 'client.dart';
 import 'cover.dart';
@@ -164,22 +166,35 @@ class _ArtistState extends State<ArtistWidget> {
                     Icon(Icons.image, size: 250),
                     Container(
                         padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            IconButton(
-                                icon: Icon(Icons.playlist_play),
-                                onPressed: () => _onPlay()),
-                            // IconButton(icon: Icon(Icons.playlist_add), onPressed: () => _onAdd()),
-                            IconButton(
-                                icon: Icon(_isCached == null
-                                    ? Icons.hourglass_bottom_sharp
-                                    : _isCached
-                                        ? Icons.download_done_sharp
-                                        : Icons.download_sharp),
-                                onPressed: () => _onDownload(context)),
-                          ],
-                        )),
+                        child: StreamBuilder<ConnectivityResult>(
+                            stream: TakeoutState.connectivityStream.distinct(),
+                            builder: (context, snapshot) {
+                              final result = snapshot.data;
+                              return Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceEvenly,
+                                children: [
+                                  IconButton(
+                                      icon: Icon(Icons.playlist_play),
+                                      onPressed:
+                                          TakeoutState.allowStreaming(result) ||
+                                                  _isCached == true
+                                              ? () => _onPlay()
+                                              : null),
+                                  // IconButton(icon: Icon(Icons.playlist_add), onPressed: () => _onAdd()),
+                                  IconButton(
+                                      icon: Icon(_isCached == null
+                                          ? Icons.hourglass_bottom_sharp
+                                          : _isCached
+                                              ? Icons.download_done_sharp
+                                              : Icons.download_sharp),
+                                      onPressed:
+                                          TakeoutState.allowDownload(result)
+                                              ? () => _onDownload(context)
+                                              : null),
+                                ],
+                              );
+                            })),
                     if (_view != null) ...[
                       Divider(),
                       heading('Releases'),

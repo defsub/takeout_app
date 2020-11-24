@@ -17,6 +17,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:connectivity/connectivity.dart';
 
 import 'artists.dart';
 import 'cache.dart';
@@ -25,6 +26,7 @@ import 'cover.dart';
 import 'music.dart';
 import 'playlist.dart';
 import 'style.dart';
+import 'main.dart';
 
 class ReleaseWidget extends StatefulWidget {
   final Release release;
@@ -134,27 +136,40 @@ class _ReleaseState extends State<ReleaseWidget> {
                               child: releaseCover(release))),
                       Container(
                           padding: EdgeInsets.fromLTRB(0, 11, 0, 0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              IconButton(
-                                  icon: Icon(Icons.playlist_play),
-                                  onPressed: () => _onPlay()),
-                              IconButton(
-                                  icon: Icon(Icons.playlist_add),
-                                  onPressed: () => _onAdd()),
-                              IconButton(
-                                  icon: Icon(Icons.people_alt),
-                                  onPressed: () => _onArtist()),
-                              IconButton(
-                                  icon: Icon(_isCached == null
-                                      ? Icons.hourglass_bottom_sharp
-                                      : _isCached
-                                          ? Icons.download_done_sharp
-                                          : Icons.download_sharp),
-                                  onPressed: () => _onDownload()),
-                            ],
-                          )),
+                          child: StreamBuilder<ConnectivityResult>(
+                              stream: TakeoutState.connectivityStream.distinct(),
+                              builder: (context, snapshot) {
+                                final result = snapshot.data;
+                                return Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceEvenly,
+                                  children: [
+                                    IconButton(
+                                        icon: Icon(Icons.playlist_play),
+                                        onPressed: TakeoutState.allowStreaming(
+                                                    result) ||
+                                                _isCached == true
+                                            ? () => _onPlay()
+                                            : null),
+                                    IconButton(
+                                        icon: Icon(Icons.playlist_add),
+                                        onPressed: () => _onAdd()),
+                                    IconButton(
+                                        icon: Icon(Icons.people_alt),
+                                        onPressed: () => _onArtist()),
+                                    IconButton(
+                                        icon: Icon(_isCached == null
+                                            ? Icons.hourglass_bottom_sharp
+                                            : _isCached
+                                                ? Icons.download_done_sharp
+                                                : Icons.download_sharp),
+                                        onPressed:
+                                            TakeoutState.allowDownload(result)
+                                                ? () => _onDownload()
+                                                : null),
+                                  ],
+                                );
+                              })),
                       Divider(),
                       heading('Tracks'),
                       Container(

@@ -28,9 +28,14 @@ import 'music.dart';
 import 'patch.dart';
 import 'spiff.dart';
 
+
+class PlaylistException implements Exception {
+  const PlaylistException();
+}
+
 class PlaylistFacade {
   static const _playlistName = 'playlist.json';
-
+  
   Future<File> _playlistFile() async {
     final dir = await getApplicationDocumentsDirectory();
     final path = '${dir.path}/$_playlistName';
@@ -49,7 +54,7 @@ class PlaylistFacade {
     return ref;
   }
 
-  MediaItem _trackItem(Track track, Uri uri) {
+  MediaItem _trackItem(Track track, Uri uri, Map headers) {
     final coverUri = trackCoverUrl(track);
     return MediaItem(
       id: uri.toString(),
@@ -57,16 +62,18 @@ class PlaylistFacade {
       title: track.title,
       artist: track.artist,
       artUri: coverUri,
+      extras: {'headers': headers},
     );
   }
 
-  MediaItem _entryItem(Entry entry, Uri uri) {
+  MediaItem _entryItem(Entry entry, Uri uri, Map headers) {
     return MediaItem(
       id: uri.toString(),
       album: entry.album,
       title: entry.title,
       artist: entry.creator,
       artUri: entry.image,
+      extras: {'headers': headers},
     );
   }
 
@@ -80,7 +87,9 @@ class PlaylistFacade {
     final client = Client();
     if (track != null) {
       final uri = await client.locate(track);
-      AudioService.playMediaItem(_trackItem(track, uri));
+      final headers = await client.headers();
+      // TODO
+      AudioService.playMediaItem(_trackItem(track, uri, headers));
       completer.complete();
     } else {
       final ref = _ref(release: release, station: station);
@@ -105,45 +114,45 @@ class PlaylistFacade {
     return completer.future;
   }
 
-  Future<void> pause() async {}
+  // Future<void> pause() async {}
+  //
+  // Future<void> stop() async {}
 
-  Future<void> stop() async {}
+  // Future<Spiff> next() async {
+  //   final completer = Completer<Spiff>();
+  //   // load saved playlist
+  //   load().then((spiff) {
+  //     final next = spiff.index + 1;
+  //     if (next >= spiff.playlist.tracks.length) {
+  //       // end of tracks, save and stop
+  //       _update(spiff, index: -1)
+  //           .then((spiff) => completer.complete(spiff))
+  //           .catchError((e) => completer.completeError(e));
+  //     } else {
+  //       // move to next track, save and play
+  //       _update(spiff, index: next)
+  //           .then((v) => completer.complete(spiff))
+  //           .catchError((e) => completer.completeError(e));
+  //     }
+  //   });
+  //   return completer.future;
+  // }
 
-  Future<Spiff> next() async {
-    final completer = Completer<Spiff>();
-    // load saved playlist
-    load().then((spiff) {
-      final next = spiff.index + 1;
-      if (next >= spiff.playlist.tracks.length) {
-        // end of tracks, save and stop
-        _update(spiff, index: -1)
-            .then((spiff) => completer.complete(spiff))
-            .catchError((e) => completer.completeError(e));
-      } else {
-        // move to next track, save and play
-        _update(spiff, index: next)
-            .then((v) => completer.complete(spiff))
-            .catchError((e) => completer.completeError(e));
-      }
-    });
-    return completer.future;
-  }
-
-  Future<Spiff> previous() async {
-    final completer = Completer<Spiff>();
-    // load saved playlist
-    load().then((spiff) {
-      var previous = spiff.index - 1;
-      if (previous < 0) {
-        previous = 0;
-      }
-      // move to previous track, save and play
-      _update(spiff, index: previous)
-          .then((spiff) => completer.complete(spiff))
-          .catchError((e) => completer.completeError(e));
-    });
-    return completer.future;
-  }
+  // Future<Spiff> previous() async {
+  //   final completer = Completer<Spiff>();
+  //   // load saved playlist
+  //   load().then((spiff) {
+  //     var previous = spiff.index - 1;
+  //     if (previous < 0) {
+  //       previous = 0;
+  //     }
+  //     // move to previous track, save and play
+  //     _update(spiff, index: previous)
+  //         .then((spiff) => completer.complete(spiff))
+  //         .catchError((e) => completer.completeError(e));
+  //   });
+  //   return completer.future;
+  // }
 
   Future<Spiff> update({int index, double position}) async {
     final completer = Completer<Spiff>();
@@ -192,13 +201,21 @@ class PlaylistFacade {
   }
 
   /// Append a release, track or station to current playlist.
-  /// TODO
-  void append({Release release, Track track, Station station}) {
+  /// TODO future spiff, patch
+  Future<Spiff> append({Release release, Track track, Station station}) async {
+    final completer = Completer<Spiff>();
     String ref = _ref(release: release, track: track, station: station);
     if (ref != null) {
       final client = Client();
-      // client.patch(patchAppend(ref)).then((spiff) => _save(spiff));
+      client.patch(patchAppend(ref)).then((result) {
+        _save(result.toSpiff()).then((spiff) {
+          AudioService.customAction('test').whenComplete(() => completer.complete(spiff));
+        }).catchError((e) => completer.completeError(e));
+      }).catchError((e) => completer.completeError(e));
+    } else {
+      completer.completeError(PlaylistException());
     }
+    return completer.future;
   }
 
   /// Clear current playlist.
@@ -249,7 +266,6 @@ class PlaylistFacade {
   Future<Spiff> _save(Spiff spiff) async {
     final completer = Completer<Spiff>();
     final file = await _playlistFile();
-    print('save ');
     file.writeAsString(jsonEncode(spiff), flush: true).then((f) {
       completer.complete(spiff);
     }).catchError((e) {
@@ -259,27 +275,72 @@ class PlaylistFacade {
     return completer.future;
   }
 
-  Future<MediaItemQueue> mediaItemQueue() async {
-    final queue = List<MediaItem>();
-    final client = Client();
-    final spiff = await load();
-    for (var t in spiff.playlist.tracks) {
-      final uri = await client.locate(t);
-      queue.add(_entryItem(t, uri));
-    }
-    for (var q in queue) {
-      print('${q.artist} / ${q.title} / ${q.id}');
-    }
+  Future<List<MediaItem>> _items(Client client, List<Entry> entries) async {
+    final items = List<MediaItem>();
     final headers = await client.headers();
-    return MediaItemQueue(queue, spiff.index, spiff.position, headers);
+    for (var t in entries) {
+      final uri = await client.locate(t);
+      items.add(_entryItem(t, uri, headers));
+    }
+    return items;
+  }
+
+  Future<PlaylistState> get state async {
+    final client = Client();
+    var spiff = await load();
+    final queue =  await _items(client, spiff.playlist.tracks);
+    for (var q in queue) {
+      print('${q.artist} / ${q.title} / ${q.id} / ${q.extras['headers']}');
+    }
+    if (spiff.index < 0) {
+      spiff = spiff.copyWith(index: 0);
+    }
+    return PlaylistState(queue, spiff.index, spiff.position);
   }
 }
 
-class MediaItemQueue {
-  final List<MediaItem> queue;
-  final int index;
-  final double position;
-  final Map headers;
+class PlaylistState {
+  final List<MediaItem> _queue;
+  int _index;
+  double _position;
 
-  MediaItemQueue(this.queue, this.index, this.position, this.headers);
+  PlaylistState(this._queue, this._index, this._position);
+
+  int get index => _index;
+  
+  double get position => _position;
+  
+  List<MediaItem> get queue => _queue;
+
+  MediaItem get current => _queue[_index == -1 ? 0 : _index];
+
+  set current(MediaItem item) => _queue[_index] = item;
+
+  bool get isEmpty => _queue.isEmpty;
+
+  int get length => _queue.length;
+
+  MediaItem item(int index) {
+    return index < length ? _queue[index] : null;
+  }
+  
+  void add(MediaItem item) {
+    _queue.add(item);
+  }
+  
+  int findId(String id) {
+    return _queue.indexWhere((item) => item.id == id);
+  }
+  
+  int findItem(MediaItem target) {
+    return _queue.indexWhere((item) => item == target);
+  }
+
+  Future<Spiff> update(int index, double position) async {
+    print('spiff update ${index} ${position}');
+    _index = index;
+    _position = position;
+    // async save current state
+    return PlaylistFacade().update(index: _index, position: _position);
+  }
 }
