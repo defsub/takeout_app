@@ -34,8 +34,12 @@ import 'music.dart';
 import 'player.dart';
 import 'playlist.dart';
 import 'radio.dart';
+import 'search.dart';
+import 'global.dart';
 
 void main() => runApp(new MyApp());
+
+final _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
 class MyApp extends StatelessWidget {
   @override
@@ -56,6 +60,8 @@ class MyApp extends StatelessWidget {
         inactiveTrackColor: Colors.grey,
         thumbColor: Colors.orangeAccent,
       ),
+      bottomSheetTheme: BottomSheetThemeData(
+          backgroundColor: Colors.black26.withOpacity(.85)),
       accentColor: Colors.orangeAccent,
       bottomNavigationBarTheme:
           BottomNavigationBarThemeData(selectedItemColor: Colors.orangeAccent),
@@ -67,14 +73,6 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class SnackBarState {
-  final Widget content;
-
-  SnackBarState(this.content);
-}
-
-final snackBarStateSubject = PublishSubject<SnackBarState>();
-
 class _TakeoutWidget extends StatefulWidget {
   _TakeoutWidget({Key key}) : super(key: key);
 
@@ -83,7 +81,6 @@ class _TakeoutWidget extends StatefulWidget {
 }
 
 class TakeoutState extends State<_TakeoutWidget> {
-
   static final _connectivityStream = BehaviorSubject<ConnectivityResult>();
 
   static Stream<ConnectivityResult> get connectivityStream =>
@@ -91,7 +88,6 @@ class TakeoutState extends State<_TakeoutWidget> {
 
   static ConnectivityResult get connectivityState => _connectivityStream.value;
 
-  final _scaffoldKey = GlobalKey<ScaffoldState>();
   final Connectivity _connectivity = Connectivity();
   StreamSubscription<ConnectivityResult> _connectivitySubscription;
 
@@ -102,13 +98,6 @@ class TakeoutState extends State<_TakeoutWidget> {
   ArtistsView _artistsView;
   RadioView _radioView;
   PlayerWidget _playerWidget;
-
-  List<GlobalKey<NavigatorState>> _navigatorKeys = [
-    GlobalKey<NavigatorState>(),
-    GlobalKey<NavigatorState>(),
-    GlobalKey<NavigatorState>(),
-    GlobalKey<NavigatorState>()
-  ];
 
   @override
   void initState() {
@@ -198,6 +187,7 @@ class TakeoutState extends State<_TakeoutWidget> {
 
   void _onArtistsUpdated(ArtistsView view) {
     setState(() {
+      loadArtistMap(view.artists);
       _artistsView = view;
     });
   }
@@ -247,10 +237,6 @@ class TakeoutState extends State<_TakeoutWidget> {
       }
       _onPlaybackState(state);
     });
-
-    snackBarStateSubject.listen((e) {
-      _scaffoldKey.currentState.showSnackBar(SnackBar(content: e.content));
-    });
   }
 
   Widget _widget(int index) {
@@ -262,14 +248,16 @@ class TakeoutState extends State<_TakeoutWidget> {
             ? Text('loading')
             : ArtistsWidget(_artistsView);
       case 2:
-        return _radioView == null ? Text('loading') : RadioWidget(_radioView);
+        return SearchWidget();
       case 3:
+        return _radioView == null ? Text('loading') : RadioWidget(_radioView);
+      case 4:
         if (_playerWidget == null) {
           print('loading player widget');
           _playerWidget = PlayerWidget();
           final params = Map<String, dynamic>();
           // TODO need params still?
-          _playerWidget.doStart(params);
+          PlayerWidget.doStart(params);
         }
         return _playerWidget;
       default:
@@ -277,12 +265,46 @@ class TakeoutState extends State<_TakeoutWidget> {
     }
   }
 
+  Widget _drawer(BuildContext context) {
+    return Drawer(
+        child: ListView(
+      padding: EdgeInsets.zero,
+      children: [
+        DrawerHeader(
+          child: Text('Takeout'),
+          decoration: BoxDecoration(
+            color: Colors.blue,
+          ),
+        ),
+        ListTile(
+          title: Text('Item 1'),
+          onTap: () {
+            // Update the state of the app
+            // ...
+            // Then close the drawer
+            showSnackBar('testing');
+            Navigator.pop(context);
+          },
+        ),
+      ],
+    ));
+  }
+
+  StreamSubscription<SnackBarState> snackBarSubscription;
+
   @override
   Widget build(BuildContext context) {
+    if (snackBarSubscription != null) {
+      snackBarSubscription.cancel();
+    }
+    snackBarSubscription = snackBarStateSubject.listen((e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: e.content));
+    });
+
     return WillPopScope(
         onWillPop: () async {
           final isFirstRouteInCurrentTab =
-              !await _navigatorKeys[_selectedIndex].currentState.maybePop();
+              !await navigatorKeys[_selectedIndex].currentState.maybePop();
 
           print('isFirstRouteInCurrentTab: ' +
               isFirstRouteInCurrentTab.toString());
@@ -295,11 +317,11 @@ class TakeoutState extends State<_TakeoutWidget> {
             : _loggedIn == false
                 ? LoginWidget(() => _onLoginSuccess())
                 : Scaffold(
-                    key: _scaffoldKey,
+                    key: _scaffoldMessengerKey,
                     floatingActionButton: (_playbackState != null &&
                             _playbackState.processingState ==
                                 AudioProcessingState.ready &&
-                            _selectedIndex != 3)
+                            _selectedIndex != 4)
                         ? FloatingActionButton(
                             onPressed: () {
                               if (_playbackState.playing) {
@@ -319,9 +341,13 @@ class TakeoutState extends State<_TakeoutWidget> {
                         _buildOffstageNavigator(1),
                         _buildOffstageNavigator(2),
                         _buildOffstageNavigator(3),
+                        _buildOffstageNavigator(4),
                       ],
                     ),
                     bottomNavigationBar: BottomNavigationBar(
+                      key: bottomNavKey,
+                      showUnselectedLabels: false,
+                      showSelectedLabels: false,
                       type: BottomNavigationBarType.fixed,
                       items: const <BottomNavigationBarItem>[
                         BottomNavigationBarItem(
@@ -333,6 +359,10 @@ class TakeoutState extends State<_TakeoutWidget> {
                           label: 'Artists',
                         ),
                         BottomNavigationBarItem(
+                          icon: Icon(Icons.search),
+                          label: 'Search',
+                        ),
+                        BottomNavigationBarItem(
                           icon: Icon(Icons.radio),
                           label: 'Radio',
                         ),
@@ -342,7 +372,6 @@ class TakeoutState extends State<_TakeoutWidget> {
                         ),
                       ],
                       currentIndex: _selectedIndex,
-                      showSelectedLabels: true,
                       onTap: _onItemTapped,
                     )));
   }
@@ -355,6 +384,7 @@ class TakeoutState extends State<_TakeoutWidget> {
           _widget(1),
           _widget(2),
           _widget(3),
+          _widget(4),
         ].elementAt(index);
       },
     };
@@ -370,7 +400,7 @@ class TakeoutState extends State<_TakeoutWidget> {
       offstage: _selectedIndex != index,
       child: Navigator(
         observers: [_heroController],
-        key: _navigatorKeys[index],
+        key: navigatorKeys[index],
         onGenerateRoute: (routeSettings) {
           return MaterialPageRoute(
             builder: (context) => routeBuilders[routeSettings.name](context),

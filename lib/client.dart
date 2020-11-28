@@ -227,7 +227,7 @@ class Client {
     }
   }
 
-  // TODO
+  // TODO url encode q
   // GET /api/search?q=query
   Future<SearchView> search(String q) async =>
       _getJson('/api/search?q=$q').then((j) => SearchView.fromJson(j));
@@ -243,6 +243,14 @@ class Client {
   /// GET /api/artists/1
   Future<ArtistView> artist(int id) async =>
       _getJson('/api/artists/$id').then((j) => ArtistView.fromJson(j));
+
+  /// GET /api/artists/1/singles
+  Future<SinglesView> artistSingles(int id) async =>
+      _getJson('/api/artists/$id/singles').then((j) => SinglesView.fromJson(j));
+
+  /// GET /api/artists/1/popular
+  Future<PopularView> artistPopular(int id) async =>
+      _getJson('/api/artists/$id/popular').then((j) => PopularView.fromJson(j));
 
   /// GET /api/releases/1
   Future<ReleaseView> release(int id) async =>
@@ -270,7 +278,6 @@ class Client {
   Future<Spiff> station(int id) async =>
       _getJson('/api/station/$id').then((j) => Spiff.fromJson(j));
 
-  /// PATCH /api/playlisttypes
   Future<PatchResult> patch(List<Map<String, dynamic>> body) async =>
       _patchJson('/api/playlist', body);
 

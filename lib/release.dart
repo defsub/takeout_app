@@ -18,6 +18,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:connectivity/connectivity.dart';
+import 'package:takeout_app/global.dart';
 
 import 'artists.dart';
 import 'cache.dart';
@@ -29,12 +30,12 @@ import 'style.dart';
 import 'main.dart';
 
 class ReleaseWidget extends StatefulWidget {
-  final Release release;
+  final Release _release;
 
-  ReleaseWidget(this.release);
+  ReleaseWidget(this._release);
 
   @override
-  State<StatefulWidget> createState() => _ReleaseState(release);
+  State<StatefulWidget> createState() => _ReleaseState(_release);
 }
 
 class _ReleaseState extends State<ReleaseWidget> {
@@ -102,108 +103,110 @@ class _ReleaseState extends State<ReleaseWidget> {
     if (_isCached) {
       return;
     }
-    snackBarDownload(release: release, complete: false);
+    showDownloadSnackBar(release: release, isComplete: false);
     Client().downloadTracks(_view.tracks).then((value) {
       if (!_disposed) {
         _checkCache();
         return;
       }
-      snackBarDownload(release: release, complete: true);
+      showDownloadSnackBar(release: release, isComplete: true);
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-        appBar:
-            AppBar(title: header(release.name), actions: [Icon(Icons.cast)]),
-        body: Builder(
-            builder: (context) => SingleChildScrollView(
-                    child: Column(
-                  children: [
-                    if (_view != null) ...[
-                      Container(
-                          child: GestureDetector(
-                              onTap: () => _onArtist(),
-                              child: heading(
-                                '${release.artist} \u2022 ${year(release)}',
-                              )),
-                          padding: EdgeInsets.fromLTRB(0, 11, 0, 0)),
-                      Container(
-                          padding: EdgeInsets.fromLTRB(0, 11, 0, 0),
-                          child: GestureDetector(
-                              onTap: () => _onPlay(),
-                              child: releaseCover(release))),
-                      Container(
-                          padding: EdgeInsets.fromLTRB(0, 11, 0, 0),
-                          child: StreamBuilder<ConnectivityResult>(
-                              stream: TakeoutState.connectivityStream.distinct(),
-                              builder: (context, snapshot) {
-                                final result = snapshot.data;
-                                return Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceEvenly,
-                                  children: [
-                                    IconButton(
-                                        icon: Icon(Icons.playlist_play),
-                                        onPressed: TakeoutState.allowStreaming(
-                                                    result) ||
-                                                _isCached == true
-                                            ? () => _onPlay()
-                                            : null),
-                                    IconButton(
-                                        icon: Icon(Icons.playlist_add),
-                                        onPressed: () => _onAdd()),
-                                    IconButton(
-                                        icon: Icon(Icons.people_alt),
-                                        onPressed: () => _onArtist()),
-                                    IconButton(
-                                        icon: Icon(_isCached == null
-                                            ? Icons.hourglass_bottom_sharp
-                                            : _isCached
-                                                ? Icons.download_done_sharp
-                                                : Icons.download_sharp),
-                                        onPressed:
-                                            TakeoutState.allowDownload(result)
-                                                ? () => _onDownload()
-                                                : null),
-                                  ],
-                                );
-                              })),
-                      Divider(),
-                      heading('Tracks'),
-                      Container(
-                          child: ReleaseTracksWidget(
-                              view: _view,
-                              onTrackTapped: _onTrackPlay,
-                              onAppendTapped: _onTrackAdd)),
-                      if (_view.similar.isNotEmpty)
-                        Container(
-                            child: Column(children: [
+    return FutureBuilder(
+        future: getCoverBackgroundColor(release: release),
+        builder: (context, snapshot) => Scaffold(
+            backgroundColor: snapshot == null ? null : snapshot.data,
+            appBar: AppBar(
+              backgroundColor: snapshot == null ? null : snapshot.data,
+                title: header('${release.name} \u2022 ${year(release)}'),
+                actions: [Icon(Icons.cast)]),
+            body: Builder(
+                builder: (context) => SingleChildScrollView(
+                        child: Column(
+                      children: [
+                        if (_view != null) ...[
+                          Container(
+                              padding: EdgeInsets.fromLTRB(0, 11, 0, 0),
+                              child: GestureDetector(
+                                  onTap: () => _onPlay(),
+                                  child: releaseCover(release))),
+                          Container(
+                              padding: EdgeInsets.fromLTRB(0, 11, 0, 0),
+                              child: StreamBuilder<ConnectivityResult>(
+                                  stream: TakeoutState.connectivityStream
+                                      .distinct(),
+                                  builder: (context, snapshot) {
+                                    final result = snapshot.data;
+                                    return Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceEvenly,
+                                      children: [
+                                        IconButton(
+                                            icon: Icon(Icons.playlist_play),
+                                            onPressed:
+                                                TakeoutState.allowStreaming(
+                                                            result) ||
+                                                        _isCached == true
+                                                    ? () => _onPlay()
+                                                    : null),
+                                        IconButton(
+                                            icon: Icon(Icons.playlist_add),
+                                            onPressed: () => _onAdd()),
+                                        IconButton(
+                                            icon: Icon(_isCached == null
+                                                ? Icons.hourglass_bottom_sharp
+                                                : _isCached
+                                                    ? Icons.download_done_sharp
+                                                    : Icons.download_sharp),
+                                            onPressed:
+                                                TakeoutState.allowDownload(
+                                                        result)
+                                                    ? () => _onDownload()
+                                                    : null),
+                                      ],
+                                    );
+                                  })),
+                          OutlinedButton(
+                              onPressed: () => {_onArtist()},
+                              child: Text(release.artist,
+                                  style: TextStyle(fontSize: 15))),
                           Divider(),
-                          heading('Similar Releases'),
-                          ReleaseListWidget(_view.similar)
-                        ]))
-                    ]
-                  ],
-                ))));
+                          // heading('Tracks'),
+                          Container(
+                              child: _ReleaseTracksWidget(_view,
+                                  onTrackTapped: _onTrackPlay,
+                                  onAppendTapped: _onTrackAdd)),
+                          if (_view.similar.isNotEmpty)
+                            Container(
+                                child: Column(children: [
+                              Divider(),
+                              heading('Similar Releases'),
+                              ReleaseListWidget(_view.similar)
+                            ]))
+                        ]
+                      ],
+                    )))));
   }
 }
 
-class ReleaseTracksWidget extends StatelessWidget {
-  final ReleaseView view;
+class _ReleaseTracksWidget extends StatelessWidget {
+  final ReleaseView _view;
   final ValueChanged<Track> onTrackTapped;
   final ValueChanged<Track> onAppendTapped;
 
-  ReleaseTracksWidget({this.view, this.onTrackTapped, this.onAppendTapped});
+  _ReleaseTracksWidget(this._view, {this.onTrackTapped, this.onAppendTapped});
 
   @override
   Widget build(BuildContext context) {
+    int discs = _view.discs;
     return Column(children: [
-      ...view.tracks.map((e) => ListTile(
+      ..._view.tracks.map((e) => ListTile(
           onTap: () => onTrackTapped(e),
           leading: Container(
-              padding: EdgeInsets.fromLTRB(0, 12, 0, 0),
+              padding: EdgeInsets.fromLTRB(12, 12, 0, 0),
               child: Text('${e.trackNum}',
                   style: TextStyle(fontWeight: FontWeight.w200))),
           trailing: GestureDetector(
@@ -215,14 +218,14 @@ class ReleaseTracksWidget extends StatelessWidget {
 }
 
 class ReleaseListWidget extends StatelessWidget {
-  final List<Release> releases;
+  final List<Release> _releases;
 
-  ReleaseListWidget(this.releases);
+  ReleaseListWidget(this._releases);
 
   @override
   Widget build(BuildContext context) {
     return Column(children: [
-      ...releases.map((e) => Container(
+      ..._releases.map((e) => Container(
           child: ListTile(
               leading: releaseCover(e),
               onTap: () => _onTapped(context, e),
@@ -241,7 +244,6 @@ class ReleaseListWidget extends StatelessWidget {
   }
 
   void _onAppend(Release release) {
-    var playlist = PlaylistFacade();
-    playlist.append(release: release);
+    PlaylistFacade().append(release: release);
   }
 }

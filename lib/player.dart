@@ -27,6 +27,7 @@ import 'package:flutter/material.dart';
 import 'package:rxdart/rxdart.dart';
 
 import 'cover.dart';
+import 'global.dart';
 import 'player_task.dart';
 
 // NOTE: Your entry point MUST be a top-level function.
@@ -41,116 +42,169 @@ class _PlayState {
   _PlayState(this.queueState, this.playing);
 }
 
+final _backgroundColorSubject = BehaviorSubject<Color>();
+StreamSubscription<MediaItem> _mediaItemSubscription;
+
 class PlayerWidget extends StatelessWidget {
+  static void doStart(Map<String, dynamic> params) async {
+    await AudioService.start(
+      params: params,
+      backgroundTaskEntrypoint: _audioPlayerTaskEntryPoint,
+      androidNotificationChannelName: 'Takeout',
+      // Enable this if you want the Android service to exit the foreground state on pause.
+      //androidStopForegroundOnPause: true,
+      androidNotificationColor: 0xFF2196f3,
+      androidNotificationIcon: 'mipmap/ic_launcher',
+      androidEnableQueue: true,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: StreamBuilder<bool>(
-        stream: AudioService.runningStream,
+    if (_mediaItemSubscription == null) {
+      // change background color when mediaItem changes
+      _mediaItemSubscription =
+          AudioService.currentMediaItemStream.distinct().listen((item) {
+        if (item == null) {
+          return;
+        }
+        getCoverBackgroundColor(mediaItem: item).then((color) {
+          _backgroundColorSubject.add(color);
+        });
+      });
+    }
+
+    return StreamBuilder<Color>(
+        stream: _backgroundColorSubject,
         builder: (context, snapshot) {
-          if (snapshot.connectionState != ConnectionState.active) {
-            // Don't show anything until we've ascertained whether or not the
-            // service is running, since we want to show a different UI in
-            // each case.
-            return SizedBox();
-          }
-          final running = snapshot.data ?? false;
-          return Column(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              if (!running) ...[
-                // UI to show when we're not running, i.e. a menu.
-                audioPlayerButton(),
-              ] else ...[
-                // UI to show when we're running, i.e. player state/controls.
-                StreamBuilder<_PlayState>(
-                    stream: Rx.combineLatest2(
-                        _queueStateStream,
-                        AudioService.playbackStateStream
-                            .map((state) => state.playing)
-                            .distinct(),
-                        (a, b) => _PlayState(a, b)),
-                    builder: (context, snapshot) {
-                      final playing = snapshot.data?.playing;
-                      final queueState = snapshot.data?.queueState;
-                      final queue = queueState?.queue ?? [];
-                      final mediaItem = queueState?.mediaItem;
-                      return Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (mediaItem != null) cover(mediaItem.artUri),
-                          if (mediaItem?.title != null)
-                            Container(
-                                child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Text(mediaItem?.title,
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.w700,
-                                              fontSize: 21)),
-                                      Container(
-                                          padding:
-                                              EdgeInsets.fromLTRB(13, 0, 0, 0),
-                                          child: Icon(mediaItem.isLocalFile()
-                                              ? Icons.cloud_off
-                                              : Icons.cloud_outlined, size: 20))
-                                    ]),
-                                padding: EdgeInsets.fromLTRB(0, 13, 0, 0)),
-                          if (mediaItem?.artist != null)
-                            OutlinedButton(
-                                onPressed: () => {},
-                                child: Text(mediaItem?.artist,
-                                    style: TextStyle(fontSize: 15))),
-                          if (queue != null && queue.isNotEmpty)
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                IconButton(
-                                  icon: Icon(Icons.skip_previous),
-                                  // iconSize: 64.0,
-                                  onPressed: mediaItem == queue.first
-                                      ? null
-                                      : AudioService.skipToPrevious,
-                                ),
-                                if (playing) pauseButton() else playButton(),
-                                // stopButton(),
-                                IconButton(
-                                  icon: Icon(Icons.skip_next),
-                                  // iconSize: 64.0,
-                                  onPressed: mediaItem == queue.last
-                                      ? null
-                                      : AudioService.skipToNext,
-                                ),
-                              ],
-                            ),
-                        ],
-                      );
-                    }),
-                // A seek bar.
-                StreamBuilder<MediaState>(
-                  stream: _mediaStateStream,
+          final backgroundColor = snapshot.data ?? null;
+          return Scaffold(
+              backgroundColor: backgroundColor,
+              body: Center(
+                child: StreamBuilder<bool>(
+                  stream: AudioService.runningStream,
                   builder: (context, snapshot) {
-                    final mediaState = snapshot.data;
-                    return SeekBar(
-                      duration:
-                          mediaState?.mediaItem?.duration ?? Duration.zero,
-                      position: mediaState?.position ?? Duration.zero,
-                      onChangeEnd: (newPosition) {
-                        AudioService.seekTo(newPosition);
-                      },
+                    if (snapshot.connectionState != ConnectionState.active) {
+                      // Don't show anything until we've ascertained whether or not the
+                      // service is running, since we want to show a different UI in
+                      // each case.
+                      return SizedBox();
+                    }
+                    final running = snapshot.data ?? false;
+                    return Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        if (!running) ...[
+                          // UI to show when we're not running, i.e. a menu.
+                          audioPlayerButton(),
+                        ] else ...[
+                          // UI to show when we're running, i.e. player state/controls.
+                          StreamBuilder<_PlayState>(
+                              stream: Rx.combineLatest2(
+                                  _queueStateStream,
+                                  AudioService.playbackStateStream
+                                      .map((state) => state.playing)
+                                      .distinct(),
+                                  (a, b) => _PlayState(a, b)),
+                              builder: (context, snapshot) {
+                                final playing = snapshot.data?.playing;
+                                final queueState = snapshot.data?.queueState;
+                                final queue = queueState?.queue ?? [];
+                                final mediaItem = queueState?.mediaItem;
+                                return Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (mediaItem != null)
+                                      cover(mediaItem.artUri),
+                                    if (mediaItem?.title != null)
+                                      Container(
+                                          child: Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: [
+                                                Text(mediaItem?.title,
+                                                    style: TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.w700,
+                                                        fontSize: 21)),
+                                                Container(
+                                                    padding:
+                                                        EdgeInsets.fromLTRB(
+                                                            13, 0, 0, 0),
+                                                    child: Icon(
+                                                        mediaItem.isLocalFile()
+                                                            ? Icons.cloud_off
+                                                            : Icons
+                                                                .cloud_outlined,
+                                                        size: 20))
+                                              ]),
+                                          padding:
+                                              EdgeInsets.fromLTRB(0, 13, 0, 0)),
+                                    if (mediaItem?.artist != null)
+                                      OutlinedButton(
+                                          onPressed: () =>
+                                              {_onArtist(mediaItem.artist)},
+                                          child: Text(mediaItem?.artist,
+                                              style: TextStyle(fontSize: 15))),
+                                    if (queue != null && queue.isNotEmpty)
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          IconButton(
+                                            icon: Icon(Icons.skip_previous),
+                                            // iconSize: 64.0,
+                                            onPressed: mediaItem == queue.first
+                                                ? null
+                                                : AudioService.skipToPrevious,
+                                          ),
+                                          if (playing)
+                                            pauseButton()
+                                          else
+                                            playButton(),
+                                          // stopButton(),
+                                          IconButton(
+                                            icon: Icon(Icons.skip_next),
+                                            // iconSize: 64.0,
+                                            onPressed: mediaItem == queue.last
+                                                ? null
+                                                : AudioService.skipToNext,
+                                          ),
+                                        ],
+                                      ),
+                                  ],
+                                );
+                              }),
+                          // A seek bar.
+                          StreamBuilder<MediaState>(
+                            stream: _mediaStateStream,
+                            builder: (context, snapshot) {
+                              final mediaState = snapshot.data;
+                              return SeekBar(
+                                duration: mediaState?.mediaItem?.duration ??
+                                    Duration.zero,
+                                position: mediaState?.position ?? Duration.zero,
+                                onChangeEnd: (newPosition) {
+                                  AudioService.seekTo(newPosition);
+                                },
+                              );
+                            },
+                          ),
+                          Container(
+                              child: IconButton(
+                                  icon: Icon(Icons.arrow_drop_up, size: 32),
+                                  onPressed: () => showQueue(context))),
+                        ],
+                      ],
                     );
                   },
                 ),
-                Container(
-                    child: IconButton(
-                        icon: Icon(Icons.arrow_drop_up, size: 32),
-                        onPressed: () => showQueue(context))),
-              ],
-            ],
-          );
-        },
-      ),
-    );
+              ));
+        });
+  }
+
+  void _onArtist(String artist) {
+    showArtist(artist);
   }
 
   /// A stream reporting the combined state of the current media item and its
@@ -169,23 +223,10 @@ class PlayerWidget extends StatelessWidget {
           AudioService.currentMediaItemStream,
           (queue, mediaItem) => QueueState(queue, mediaItem));
 
-  void doStart(Map<String, dynamic> params) async {
-    await AudioService.start(
-      params: params,
-      backgroundTaskEntrypoint: _audioPlayerTaskEntryPoint,
-      androidNotificationChannelName: 'Takeout',
-      // Enable this if you want the Android service to exit the foreground state on pause.
-      //androidStopForegroundOnPause: true,
-      androidNotificationColor: 0xFF2196f3,
-      androidNotificationIcon: 'mipmap/ic_launcher',
-      androidEnableQueue: true,
-    );
-  }
-
   RaisedButton audioPlayerButton() => startButton(
         'AudioPlayer',
         () {
-          doStart({});//fixme
+          PlayerWidget.doStart({}); //fixme
         },
       );
 

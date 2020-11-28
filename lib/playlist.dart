@@ -114,46 +114,7 @@ class PlaylistFacade {
     return completer.future;
   }
 
-  // Future<void> pause() async {}
-  //
-  // Future<void> stop() async {}
-
-  // Future<Spiff> next() async {
-  //   final completer = Completer<Spiff>();
-  //   // load saved playlist
-  //   load().then((spiff) {
-  //     final next = spiff.index + 1;
-  //     if (next >= spiff.playlist.tracks.length) {
-  //       // end of tracks, save and stop
-  //       _update(spiff, index: -1)
-  //           .then((spiff) => completer.complete(spiff))
-  //           .catchError((e) => completer.completeError(e));
-  //     } else {
-  //       // move to next track, save and play
-  //       _update(spiff, index: next)
-  //           .then((v) => completer.complete(spiff))
-  //           .catchError((e) => completer.completeError(e));
-  //     }
-  //   });
-  //   return completer.future;
-  // }
-
-  // Future<Spiff> previous() async {
-  //   final completer = Completer<Spiff>();
-  //   // load saved playlist
-  //   load().then((spiff) {
-  //     var previous = spiff.index - 1;
-  //     if (previous < 0) {
-  //       previous = 0;
-  //     }
-  //     // move to previous track, save and play
-  //     _update(spiff, index: previous)
-  //         .then((spiff) => completer.complete(spiff))
-  //         .catchError((e) => completer.completeError(e));
-  //   });
-  //   return completer.future;
-  // }
-
+  /// Update playlist index, position and save
   Future<Spiff> update({int index, double position}) async {
     final completer = Completer<Spiff>();
     load().then((spiff) {
@@ -307,9 +268,9 @@ class PlaylistState {
   PlaylistState(this._queue, this._index, this._position);
 
   int get index => _index;
-  
+
   double get position => _position;
-  
+
   List<MediaItem> get queue => _queue;
 
   MediaItem get current => _queue[_index == -1 ? 0 : _index];

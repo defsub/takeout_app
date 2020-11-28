@@ -29,23 +29,19 @@ class HomeWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(title: const Text('Takeout')),
+        appBar: AppBar(title: header('Home')),
         body: SingleChildScrollView(
             child: Column(
           children: [
-            heading('Recently Added'),
-            Container(child: ReleaseListWidget(_view.added.sublist(0, 5))),
-            OutlinedButton(
-              child: Text('More'),
-              onPressed: () { _onAdded(context); },
-            ),
+            headingButton('Recently Added', () {
+              _onAdded(context);
+            }),
+            Container(child: ReleaseListWidget(_view.added.sublist(0, 3))),
             Divider(),
-            heading('Recently Released'),
-            Container(child: ReleaseListWidget(_view.released.sublist(0, 5))),
-            OutlinedButton(
-              child: Text('More'),
-              onPressed: () { _onReleased(context); },
-            ),
+            headingButton('Recently Released', () {
+              _onReleased(context);
+            }),
+            Container(child: ReleaseListWidget(_view.released.sublist(0, 3))),
           ],
         )));
   }

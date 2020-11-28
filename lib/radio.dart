@@ -21,6 +21,7 @@ import 'package:connectivity/connectivity.dart';
 import 'music.dart';
 import 'main.dart';
 import 'playlist.dart';
+import 'style.dart';
 
 class RadioWidget extends StatelessWidget {
   final RadioView _view;
@@ -30,7 +31,7 @@ class RadioWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(title: const Text('Stations')),
+        appBar: AppBar(title: header('Stations')),
         body: Column(children: [
           Expanded(
               child: ListView.builder(

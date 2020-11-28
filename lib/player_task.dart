@@ -60,6 +60,10 @@ class AudioPlayerTask extends BackgroundAudioTask {
     return Future.value(true);
   }
 
+  Future<void> _loadPlaylist() async {
+    _reload();
+  }
+
   void _reload() async {
     var newState = await PlaylistFacade().state;
     var oldState = _state;
@@ -150,28 +154,6 @@ class AudioPlayerTask extends BackgroundAudioTask {
   void _mediaIndexChanged(int index) {
     _state.update(index, _player.position.inSeconds.toDouble());
     AudioServiceBackground.setMediaItem(_state.current);
-  }
-
-  Future<void> _loadPlaylist() async {
-    _reload();
-
-    // _state = await PlaylistFacade().state;
-    //
-    // await AudioServiceBackground.setQueue(_state.queue);
-    // await AudioServiceBackground.setMediaItem(_state.current);
-    //
-    // try {
-    //   _playlist = ConcatenatingAudioSource(
-    //       children: _state.queue
-    //           .map((item) => AudioSource.uri(Uri.parse(item.id),
-    //               headers: item.isLocalFile() ? null : item.extras['headers']))
-    //           .toList());
-    //   await _player.load(_playlist,
-    //       initialIndex: _state.index,
-    //       initialPosition: Duration(seconds: _state.position.toInt()));
-    // } catch (e) {
-    //   print("Error: $e");
-    // }
   }
 
   @override

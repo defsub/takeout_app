@@ -17,6 +17,7 @@
 
 import 'package:connectivity/connectivity.dart';
 import 'package:flutter/material.dart';
+import 'package:takeout_app/global.dart';
 import 'package:takeout_app/main.dart';
 
 import 'client.dart';
@@ -28,12 +29,14 @@ import 'style.dart';
 import 'cache.dart';
 
 class ArtistsWidget extends StatefulWidget {
-  final ArtistsView view;
+  final ArtistsView _view;
 
-  ArtistsWidget(this.view);
+  ArtistsWidget(this._view);
+
+  ArtistsView get view => _view;
 
   @override
-  State<StatefulWidget> createState() => _ArtistsState(view);
+  State<StatefulWidget> createState() => _ArtistsState(_view);
 }
 
 class _ArtistsState extends State<ArtistsWidget> {
@@ -44,27 +47,27 @@ class _ArtistsState extends State<ArtistsWidget> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(title: const Text('Artists')),
-        body: ArtistListWidget(_view));
+        appBar: AppBar(title: header('Artists')),
+        body: ArtistListWidget(_view.artists));
   }
 }
 
 class ArtistListWidget extends StatelessWidget {
-  final ArtistsView view;
+  final List<Artist> _artists;
 
-  ArtistListWidget(this.view);
+  ArtistListWidget(this._artists);
 
   @override
   Widget build(BuildContext context) {
     return Column(children: [
       Expanded(
           child: ListView.builder(
-              itemCount: view.artists.length,
-              itemBuilder: (context, index) {
+              itemCount: _artists.length,
+              itemBuilder: (buildContext, index) {
                 return ListTile(
-                    onTap: () => _onArtist(context, view.artists[index]),
+                    onTap: () => _onArtist(context, _artists[index]),
                     leading: Icon(Icons.people_alt),
-                    title: Text(view.artists[index].name));
+                    title: Text(_artists[index].name));
               }))
     ]);
   }
@@ -85,19 +88,19 @@ class ArtistWidget extends StatefulWidget {
 }
 
 class _ArtistState extends State<ArtistWidget> {
-  final Artist artist;
+  final Artist _artist;
   ArtistView _view;
   bool _isCached;
   bool _disposed = false;
 
-  _ArtistState(this.artist);
+  _ArtistState(this._artist);
 
   @override
   void initState() {
     super.initState();
     final client = Client();
     client.loggedIn().then((v) {
-      client.artist(artist.id).then((v) => _onArtistUpdated(v));
+      client.artist(_artist.id).then((v) => _onArtistUpdated(v));
     });
   }
 
@@ -145,19 +148,35 @@ class _ArtistState extends State<ArtistWidget> {
   void _onDownload(BuildContext context) async {
     final client = Client();
     for (var r in _view.releases) {
-      snackBarDownload(release: r, complete: false);
+      showDownloadSnackBar(release: r, isComplete: false);
       await client.downloadRelease(r);
-      snackBarDownload(release: r, complete: true);
+      showDownloadSnackBar(release: r, isComplete: true);
     }
     if (!_disposed) {
       _checkCache();
     }
   }
 
+  void _onSingles(BuildContext context) {
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) =>
+                ArtistTrackListWidget(_artist, ArtistTrackType.singles)));
+  }
+
+  void _onPopular(BuildContext context) {
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) =>
+                ArtistTrackListWidget(_artist, ArtistTrackType.popular)));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(title: header(artist.name)),
+        appBar: AppBar(title: header(_artist.name)),
         body: Builder(
             builder: (context) => SingleChildScrollView(
                     child: Column(
@@ -203,17 +222,21 @@ class _ArtistState extends State<ArtistWidget> {
                         Container(
                             child: Column(children: [
                           Divider(),
-                          heading('Singles'),
+                          headingButton('Singles', () {
+                            _onSingles(context);
+                          }),
                           TrackListWidget(_view.singles,
-                              onAdd: _onTrackAdd, onPlay: _onTrackPlay)
+                              onAdd: _onTrackAdd, onPlay: _onTrackPlay),
                         ])),
                       if (_view.popular.isNotEmpty)
                         Container(
                             child: Column(children: [
                           Divider(),
-                          heading('Popular'),
+                          headingButton('Popular', () {
+                            _onPopular(context);
+                          }),
                           TrackListWidget(_view.popular,
-                              onAdd: _onTrackAdd, onPlay: _onTrackPlay)
+                              onAdd: _onTrackAdd, onPlay: _onTrackPlay),
                         ])),
                       if (_view.similar.isNotEmpty)
                         Container(
@@ -264,8 +287,76 @@ class TrackListWidget extends StatelessWidget {
           leading: trackCover(t),
           trailing: GestureDetector(
               child: Icon(Icons.playlist_add), onTap: () => onAdd(t)),
-          subtitle: Text('${t.artist} \u2022 ${t.release}'),
+          subtitle: Text('${t.release} \u2022 ${t.date}'),
           title: Text(t.title)))
     ]);
+  }
+}
+
+enum ArtistTrackType { singles, popular }
+
+class ArtistTrackListWidget extends StatefulWidget {
+  final Artist _artist;
+  final ArtistTrackType _type;
+
+  ArtistTrackListWidget(this._artist, this._type);
+
+  @override
+  State<StatefulWidget> createState() => _ArtistTrackListState(_artist, _type);
+}
+
+class _ArtistTrackListState extends State<ArtistTrackListWidget> {
+  final Artist _artist;
+  final ArtistTrackType _type;
+  List<Track> _tracks;
+
+  _ArtistTrackListState(this._artist, this._type);
+
+  @override
+  void initState() {
+    super.initState();
+    var client = Client();
+    if (_type == ArtistTrackType.popular) {
+      client.artistPopular(_artist.id).then((v) => _onPopularUpdated(v));
+    } else if (_type == ArtistTrackType.singles) {
+      client.artistSingles(_artist.id).then((v) => _onSinglesUpdated(v));
+    }
+  }
+
+  void _onPopularUpdated(PopularView v) {
+    setState(() {
+      _tracks = v.popular;
+    });
+  }
+
+  void _onSinglesUpdated(SinglesView v) {
+    setState(() {
+      _tracks = v.singles;
+    });
+  }
+
+  void _onPlay(Track t) {}
+
+  void _onAdd(Track t) {}
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+        appBar: AppBar(
+            title: header(
+                _type == ArtistTrackType.popular ? 'Popular' : 'Singles')),
+        body: _tracks == null
+            ? Text('loading')
+            : SingleChildScrollView(
+                child: Column(children: [
+                ..._tracks.map((t) => ListTile(
+                    onTap: () => _onPlay(t),
+                    leading: trackCover(t),
+                    trailing: GestureDetector(
+                        child: Icon(Icons.playlist_add),
+                        onTap: () => _onAdd(t)),
+                    subtitle: Text('${t.release} \u2022 ${t.date}'),
+                    title: Text(t.title)))
+              ])));
   }
 }

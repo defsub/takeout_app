@@ -16,53 +16,41 @@
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
 import 'package:flutter/material.dart';
-import 'package:takeout_app/main.dart';
-
-import 'music.dart';
 
 Widget header(String text) {
   return Container(
-      child: Text(text,
-          style: TextStyle(fontWeight: FontWeight.w500, fontSize: 19)),
+      child: Text(text.toUpperCase(),
+          style: TextStyle(fontWeight: FontWeight.w500, fontSize: 15)),
       padding: EdgeInsets.fromLTRB(0, 11, 0, 11));
 }
 
 Widget heading(String text) {
-  return Container(
-      child: Text(text,
-          style: TextStyle(fontWeight: FontWeight.w500, fontSize: 17)),
-      padding: EdgeInsets.fromLTRB(5, 11, 0, 11));
+  return SizedBox(
+      width: double.infinity,
+      child: Container(
+          child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(text.toUpperCase(),
+                  style: TextStyle(fontWeight: FontWeight.w500, fontSize: 15))),
+          padding: EdgeInsets.fromLTRB(17, 11, 0, 11)));
 }
 
-void snackBar(String text) {
-  snackBarStateSubject.add(SnackBarState(Text(text)));
+Widget headingButton(String text, void Function() onPressed) {
+  return SizedBox(
+      width: double.infinity,
+      child: FlatButton(
+        child: Align(
+            alignment: Alignment.centerLeft,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(text.toUpperCase(),
+                    textAlign: TextAlign.justify,
+                    style:
+                        TextStyle(fontWeight: FontWeight.w500, fontSize: 15)),
+                Icon(Icons.chevron_right)
+              ],
+            )),
+        onPressed: onPressed,
+      ));
 }
-
-void snackBarDownload({Release release, bool complete = false}) {
-  String text;
-  if (release != null) {
-    if (complete) {
-      text = 'Finished ${release.name}';
-    } else {
-      text = 'Downloading ${release.name}';
-    }
-    snackBar(text);
-  }
-}
-//
-// void okDialog(BuildContext context, String title, String text) {
-//   showDialog(
-//       context: context,
-//       builder: (buildContext) => new AlertDialog(
-//         title: Text(title),
-//         content: Text(text),
-//         actions: <Widget>[
-//           OutlinedButton(
-//             child: Text('Close'),
-//             onPressed: () {
-//               Navigator.pop(buildContext);
-//             },
-//           )
-//         ],
-//       ));
-// }

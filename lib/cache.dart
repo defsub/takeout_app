@@ -25,7 +25,6 @@ import 'package:path_provider/path_provider.dart';
 import 'client.dart';
 import 'spiff.dart';
 
-
 Future<Directory> _checkDir(Directory dir) {
   final completer = Completer<Directory>();
   dir.exists().then((exists) {

@@ -72,6 +72,16 @@ class ReleaseView {
       _$ReleaseViewFromJson(json);
 
   Map<String, dynamic> toJson() => _$ReleaseViewToJson(this);
+
+  int get discs {
+    int discs = 1;
+    for (var t in tracks) {
+      if (t.discNum > discs) {
+        discs = t.discNum;
+      }
+    }
+    return discs;
+  }
 }
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
@@ -250,4 +260,30 @@ class Station {
       _$StationFromJson(json);
 
   Map<String, dynamic> toJson() => _$StationToJson(this);
+}
+
+@JsonSerializable(fieldRename: FieldRename.pascal)
+class SinglesView {
+  final Artist artist;
+  final List<Track> singles;
+
+  SinglesView({this.artist, this.singles});
+
+  factory SinglesView.fromJson(Map<String, dynamic> json) =>
+      _$SinglesViewFromJson(json);
+
+  Map<String, dynamic> toJson() => _$SinglesViewToJson(this);
+}
+
+@JsonSerializable(fieldRename: FieldRename.pascal)
+class PopularView {
+  final Artist artist;
+  final List<Track> popular;
+
+  PopularView({this.artist, this.popular});
+
+  factory PopularView.fromJson(Map<String, dynamic> json) =>
+      _$PopularViewFromJson(json);
+
+  Map<String, dynamic> toJson() => _$PopularViewToJson(this);
 }

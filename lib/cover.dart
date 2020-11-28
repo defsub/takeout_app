@@ -18,6 +18,7 @@
 import 'package:audio_service/audio_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:palette_generator/palette_generator.dart';
 
 import 'music.dart';
 
@@ -46,13 +47,14 @@ String trackCoverUrl(Track track, {int size = 250}) {
 dynamic _cover(String url) {
   return url == null
       ? Icon(Icons.album_sharp, size: 40)
-      : CachedNetworkImage(
-          imageUrl: url,
-          placeholder: (context, url) =>
-              Icon(Icons.image_outlined, size: 40),
-          errorWidget: (context, url, error) =>
-              Icon(Icons.broken_image_outlined, size: 40),
-        );
+      : ClipRRect(
+          borderRadius: BorderRadius.circular(8.0),
+          child: CachedNetworkImage(
+            imageUrl: url,
+            placeholder: (context, url) => Icon(Icons.image_outlined, size: 40),
+            errorWidget: (context, url, error) =>
+                Icon(Icons.broken_image_outlined, size: 40),
+          ));
 }
 
 dynamic cover(String url) {
@@ -74,4 +76,16 @@ dynamic mediaItemCover(MediaItem mediaItem) {
 String year(Release release) {
   var d = DateTime.parse(release.date);
   return "${d.year}";
+}
+
+Future<Color> getCoverBackgroundColor({Release release, MediaItem mediaItem}) async {
+  if (release == null && mediaItem == null) {
+    return null;
+  }
+  final PaletteGenerator paletteGenerator =
+      await PaletteGenerator.fromImageProvider(CachedNetworkImageProvider(
+          release != null
+              ? releaseCoverUrl(release)
+              : mediaItem.artUri));
+  return paletteGenerator.darkVibrantColor.color ?? paletteGenerator.darkMutedColor.color;
 }

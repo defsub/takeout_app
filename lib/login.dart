@@ -78,9 +78,7 @@ class _LoginState extends State<LoginWidget> {
                 Container(
                     height: 70,
                     padding: EdgeInsets.all(10),
-                    child: RaisedButton(
-                      textColor: Colors.white,
-                      color: Colors.orange,
+                    child: OutlinedButton(
                       child: Text('Login'),
                       onPressed: () {
                         print(_nameText.text);
