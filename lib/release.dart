@@ -202,8 +202,17 @@ class _ReleaseTracksWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     int discs = _view.discs;
-    return Column(children: [
-      ..._view.tracks.map((e) => ListTile(
+    int d = 0;
+    var children = List<Widget>();
+    _view.tracks.forEach((e) {
+      if (discs > 1 && e.discNum != d) {
+        if (e.discNum > 1) {
+          children.add(Divider());
+        }
+        children.add(smallHeading('Disc ${e.discNum} of $discs'));
+        d = e.discNum;
+      }
+      children.add(ListTile(
           onTap: () => onTrackTapped(e),
           leading: Container(
               padding: EdgeInsets.fromLTRB(12, 12, 0, 0),
@@ -212,8 +221,9 @@ class _ReleaseTracksWidget extends StatelessWidget {
           trailing: GestureDetector(
               child: Icon(Icons.playlist_add), onTap: () => onAppendTapped(e)),
           subtitle: Text(e.artist),
-          title: Text(e.title)))
-    ]);
+          title: Text(e.title)));
+    });
+    return Column(children: children);
   }
 }
 

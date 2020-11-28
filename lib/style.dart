@@ -54,3 +54,14 @@ Widget headingButton(String text, void Function() onPressed) {
         onPressed: onPressed,
       ));
 }
+
+Widget smallHeading(String text) {
+  return SizedBox(
+      width: double.infinity,
+      child: Container(
+          child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(text.toUpperCase(),
+                  style: TextStyle(fontWeight: FontWeight.w300, fontSize: 12))),
+          padding: EdgeInsets.fromLTRB(17, 11, 0, 11)));
+}
