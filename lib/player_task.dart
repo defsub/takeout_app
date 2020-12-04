@@ -38,7 +38,7 @@ class AudioPlayerTask extends BackgroundAudioTask {
   AudioProcessingState _skipState;
   StreamSubscription<PlaybackEvent> _eventSubscription;
 
-  PlaylistState _state;
+  MediaState _state;
 
   int get index => _player.currentIndex;
 
@@ -65,8 +65,9 @@ class AudioPlayerTask extends BackgroundAudioTask {
   }
 
   void _reload() async {
-    var newState = await PlaylistFacade().state;
+    var newState = await MediaQueue.instance();
     var oldState = _state;
+
     bool canAppend = false;
     if (oldState != null && oldState.length > 0) {
       print('spiff old ${oldState.length} new ${newState.length}');
@@ -79,6 +80,8 @@ class AudioPlayerTask extends BackgroundAudioTask {
         }
       }
     }
+
+    canAppend = false;
 
     _state = newState;
     await AudioServiceBackground.setQueue(_state.queue);
@@ -94,6 +97,8 @@ class AudioPlayerTask extends BackgroundAudioTask {
       }
     } else {
       // new playlist
+      final wasPlaying = _player.playing;
+      await _player.stop();
       _playlist = ConcatenatingAudioSource(
           children: newState.queue
               .map((item) =>
@@ -103,6 +108,9 @@ class AudioPlayerTask extends BackgroundAudioTask {
       await _player.load(_playlist,
           initialIndex: newState.index,
           initialPosition: Duration(seconds: newState.position.toInt()));
+      if (wasPlaying) {
+        _player.play();
+      }
     }
   }
 

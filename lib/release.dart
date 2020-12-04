@@ -28,6 +28,7 @@ import 'music.dart';
 import 'playlist.dart';
 import 'style.dart';
 import 'main.dart';
+import 'downloads.dart';
 
 class ReleaseWidget extends StatefulWidget {
   final Release _release;
@@ -79,11 +80,11 @@ class _ReleaseState extends State<ReleaseWidget> {
   }
 
   void _onTrackPlay(Track track) {
-    PlaylistFacade().play(track: track, release: release);
+    MediaQueue.play(track: track, release: release);
   }
 
   void _onTrackAdd(Track track) {
-    PlaylistFacade().append(track: track);
+    MediaQueue.append(track: track);
   }
 
   void _onArtist() {
@@ -92,24 +93,18 @@ class _ReleaseState extends State<ReleaseWidget> {
   }
 
   void _onPlay() {
-    PlaylistFacade().play(release: release);
+    MediaQueue.play(release: release);
   }
 
   void _onAdd() {
-    PlaylistFacade().append(release: release);
+    MediaQueue.append(release: release);
   }
 
   void _onDownload() {
-    if (_isCached) {
-      return;
-    }
-    showDownloadSnackBar(release: release, isComplete: false);
-    Client().downloadTracks(_view.tracks).then((value) {
+    Downloads.downloadRelease(release).then((value) {
       if (!_disposed) {
         _checkCache();
-        return;
       }
-      showDownloadSnackBar(release: release, isComplete: true);
     });
   }
 
@@ -254,6 +249,6 @@ class ReleaseListWidget extends StatelessWidget {
   }
 
   void _onAppend(Release release) {
-    PlaylistFacade().append(release: release);
+    MediaQueue.append(release: release);
   }
 }

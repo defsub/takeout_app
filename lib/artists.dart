@@ -25,6 +25,7 @@ import 'cover.dart';
 import 'music.dart';
 import 'playlist.dart';
 import 'release.dart';
+import 'downloads.dart';
 import 'style.dart';
 import 'cache.dart';
 
@@ -136,25 +137,26 @@ class _ArtistState extends State<ArtistWidget> {
   }
 
   void _onTrackPlay(Track track) {
-    PlaylistFacade().play(track: track);
+    MediaQueue.play(track: track);
   }
 
   void _onTrackAdd(Track track) {
-    PlaylistFacade().append(track: track);
+    MediaQueue.append(track: track);
   }
 
   void _onPlay() {}
 
   void _onDownload(BuildContext context) async {
-    final client = Client();
-    for (var r in _view.releases) {
-      showDownloadSnackBar(release: r, isComplete: false);
-      await client.downloadRelease(r);
-      showDownloadSnackBar(release: r, isComplete: true);
-    }
-    if (!_disposed) {
-      _checkCache();
-    }
+    // final client = Client();
+    // for (var r in _view.releases) {
+    //   showDownloadSnackBar(release: r, isComplete: false);
+    //   await client.downloadRelease(r);
+    //   showDownloadSnackBar(release: r, isComplete: true);
+    // }
+    // if (!_disposed) {
+    //   _checkCache();
+    // }
+    Downloads.downloadArtist(_artist);
   }
 
   void _onSingles(BuildContext context) {

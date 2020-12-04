@@ -87,5 +87,5 @@ Future<Color> getCoverBackgroundColor({Release release, MediaItem mediaItem}) as
           release != null
               ? releaseCoverUrl(release)
               : mediaItem.artUri));
-  return paletteGenerator.darkVibrantColor.color ?? paletteGenerator.darkMutedColor.color;
+  return paletteGenerator?.darkVibrantColor?.color ?? paletteGenerator?.darkMutedColor?.color;
 }

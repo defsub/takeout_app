@@ -60,7 +60,6 @@ class RadioWidget extends StatelessWidget {
   }
 
   void _onPlay(Station station) {
-    var playlist = PlaylistFacade();
-    playlist.play(station: station);
+    MediaQueue.play(station: station);
   }
 }

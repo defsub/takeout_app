@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'music.dart';
 import 'artists.dart'; // TOOD remove
+
+const kilobyte = 1024;
+const megabyte = kilobyte*1024;
+const gigabyte = megabyte*1024;
 
 List<GlobalKey<NavigatorState>> navigatorKeys = [
   GlobalKey<NavigatorState>(),
@@ -49,14 +54,11 @@ void showSnackBar(String text) {
   snackBarStateSubject.add(SnackBarState(Text(text)));
 }
 
-void showDownloadSnackBar({Release release, bool isComplete = false}) {
-  String text;
-  if (release != null) {
-    if (isComplete) {
-      text = 'Finished ${release.name}';
-    } else {
-      text = 'Downloading ${release.name}';
-    }
-    showSnackBar(text);
-  }
+Future<SharedPreferences> prefs = SharedPreferences.getInstance();
+
+Future<String> prefsString(String key) async {
+  return await prefs.then((p) async {
+    await p.reload();
+    return p.getString(key);
+  });
 }

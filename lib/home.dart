@@ -20,6 +20,7 @@ import 'package:flutter/material.dart';
 import 'music.dart';
 import 'release.dart';
 import 'style.dart';
+import 'downloads.dart';
 
 class HomeWidget extends StatelessWidget {
   final HomeView _view;
@@ -33,6 +34,11 @@ class HomeWidget extends StatelessWidget {
         body: SingleChildScrollView(
             child: Column(
           children: [
+            headingButton('Downloads', () {
+              _onDownloads(context);
+            }),
+            Container(child: DownloadListWidget()),
+            Divider(),
             headingButton('Recently Added', () {
               _onAdded(context);
             }),
@@ -60,6 +66,11 @@ class HomeWidget extends StatelessWidget {
         MaterialPageRoute(
             builder: (context) =>
                 RecentReleasesWidget('Recently Released', _view.released)));
+  }
+
+  void _onDownloads(BuildContext context) {
+    Navigator.push(
+        context, MaterialPageRoute(builder: (context) => DownloadsWidget()));
   }
 }
 

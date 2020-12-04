@@ -16,33 +16,40 @@
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:audio_service/audio_service.dart';
-import 'package:path_provider/path_provider.dart';
 
 import 'client.dart';
 import 'cover.dart';
 import 'music.dart';
 import 'patch.dart';
 import 'spiff.dart';
-
+import 'global.dart';
+import 'cache.dart';
 
 class PlaylistException implements Exception {
   const PlaylistException();
 }
 
-class PlaylistFacade {
-  static const _playlistName = 'playlist.json';
-  
-  Future<File> _playlistFile() async {
-    final dir = await getApplicationDocumentsDirectory();
-    final path = '${dir.path}/$_playlistName';
-    return File(path);
+class MediaQueue {
+  static const prefsPlaylist = 'current_playlist';
+
+  static Uri defaultPlaylistUri() {
+    return Uri.parse(Client.defaultPlaylistUrl);
   }
 
-  String _ref({Release release, Track track, Station station}) {
+  static Future<Uri> getCurrentPlaylist() async {
+    final value = await prefsString(prefsPlaylist);
+    print('current is $value');
+    return value != null ? Uri.parse(value) : defaultPlaylistUri();
+  }
+
+  static Future<void> setCurrentPlaylist(Uri uri) async {
+    await (await prefs).setString(prefsPlaylist, uri?.toString());
+  }
+
+  static String _ref({Release release, Track track, Station station}) {
     String ref;
     if (release != null) {
       ref = '/music/releases/${release.id}/tracks';
@@ -54,42 +61,31 @@ class PlaylistFacade {
     return ref;
   }
 
-  MediaItem _trackItem(Track track, Uri uri, Map headers) {
-    final coverUri = trackCoverUrl(track);
-    return MediaItem(
-      id: uri.toString(),
-      album: track.release,
-      title: track.title,
-      artist: track.artist,
-      artUri: coverUri,
-      extras: {'headers': headers},
-    );
+  static Future restore() async {
+    final spiff = await SpiffCache.get(await getCurrentPlaylist());
+    return _stage(spiff);
   }
 
-  MediaItem _entryItem(Entry entry, Uri uri, Map headers) {
-    return MediaItem(
-      id: uri.toString(),
-      album: entry.album,
-      title: entry.title,
-      artist: entry.creator,
-      artUri: entry.image,
-      extras: {'headers': headers},
-    );
-  }
-
-  Future stage(Spiff spiff) {
+  static Future playSpiff(Spiff spiff) async {
+    await setCurrentPlaylist(Uri.parse(spiff.playlist.location));
+    print('play ${spiff.playlist.location}');
+    print('${spiff.playlist}');
+    print('${spiff.playlist.location}');
     return _stage(spiff);
   }
 
   /// Play a release, track or station, replacing current playlist.
-  Future play({Release release, Track track, Station station}) async {
+  static Future play({Release release, Track track, Station station}) async {
+    await setCurrentPlaylist(null);
+    final uri = defaultPlaylistUri();
+
     final completer = Completer();
     final client = Client();
     if (track != null) {
       final uri = await client.locate(track);
       final headers = await client.headers();
       // TODO
-      AudioService.playMediaItem(_trackItem(track, uri, headers));
+      // AudioService.playMediaItem(_trackMediaItem(track, uri, headers));
       completer.complete();
     } else {
       final ref = _ref(release: release, station: station);
@@ -97,58 +93,43 @@ class PlaylistFacade {
       // get playlist from server, resolving refs
       client.patch(patchReplace(ref)).then((result) {
         if (result.notModified()) {
-          load().then((spiff) {
-            _update(spiff, index: 0).then((spiff) {
+          SpiffCache.get(uri).then((spiff) {
+            update(spiff, index: 0).then((_) {
               AudioService.customAction('stage+play')
-                  .then((v) => completer.complete());
+                  .then((_) => completer.complete());
             }).catchError((e) => completer.completeError(e));
           }).catchError((e) => completer.completeError(e));
         } else {
-          _update(result.toSpiff(), index: 0).then((spiff) {
+          final uri = defaultPlaylistUri();
+          var spiff = result.toSpiff();
+          spiff = spiff.copyWith(playlist: spiff.playlist.copyWith(location: uri.toString())); // TODO fixme
+
+          update(spiff, index: 0).then((_) {
             AudioService.customAction('stage+play')
-                .then((v) => completer.complete());
+                .then((_) => completer.complete());
           }).catchError((e) => completer.complete(e));
         }
       }).catchError((e) => completer.completeError(e));
     }
     return completer.future;
   }
+  
+  static Future<Spiff> update(Spiff spiff, {int index, double position}) async {
+    spiff = spiff.copyWith(
+        index: index ?? spiff.index,
+        position: position ?? spiff.position);
 
-  /// Update playlist index, position and save
-  Future<Spiff> update({int index, double position}) async {
-    final completer = Completer<Spiff>();
-    load().then((spiff) {
-      index = index ?? spiff.index;
-      position = position ?? spiff.position;
-      if (spiff.index == index &&
-          spiff.position == position) {
-        // no change
-        completer.complete(spiff);
-      } else {
-        _update(spiff, index: index, position: position)
-            .then((spiff) => completer.complete(spiff))
-            .catchError((e) => completer.completeError(e));
-      }
-    });
-    return completer.future;
-  }
+    await SpiffCache.put(spiff);
 
-  /// Update playlist index, position and save
-  Future<Spiff> _update(Spiff spiff, {int index, double position = 0}) async {
-    print("update: index $index at $position");
-    final completer = Completer<Spiff>();
-    _save(spiff.copyWith(
-            index: index ?? spiff.index, position: position ?? spiff.position))
-        .then((spiff) {
-      _updateServer(spiff); // async
-      completer.complete(spiff);
-    }).catchError((e) => completer.completeError(e));
+    if (spiff.isRemote()) {
+      _updateServer(spiff);
+    }
 
-    return completer.future;
+    return spiff;
   }
 
   /// Update playlist index & position at server.
-  Future _updateServer(Spiff spiff) {
+  static Future _updateServer(Spiff spiff) {
     final completer = Completer();
     final client = Client();
     client.patch(patchPosition(spiff.index, spiff.position)).then((result) {
@@ -157,20 +138,23 @@ class PlaylistFacade {
     return completer.future;
   }
 
-  Future _stage(Spiff spiff) async {
+  static Future _stage(Spiff spiff) async {
     AudioService.customAction('stage');
   }
 
   /// Append a release, track or station to current playlist.
   /// TODO future spiff, patch
-  Future<Spiff> append({Release release, Track track, Station station}) async {
+  /// TODO file
+  static Future<Spiff> append({Release release, Track track, Station station}) async {
     final completer = Completer<Spiff>();
     String ref = _ref(release: release, track: track, station: station);
     if (ref != null) {
       final client = Client();
       client.patch(patchAppend(ref)).then((result) {
-        _save(result.toSpiff()).then((spiff) {
-          AudioService.customAction('test').whenComplete(() => completer.complete(spiff));
+        final spiff = result.toSpiff();
+        SpiffCache.put(spiff).then((_) {
+          AudioService.customAction('test')
+              .whenComplete(() => completer.complete(spiff));
         }).catchError((e) => completer.completeError(e));
       }).catchError((e) => completer.completeError(e));
     } else {
@@ -186,33 +170,19 @@ class PlaylistFacade {
     // client.patch(patchClear()).then((spiff) => _save(spiff));
   }
 
-  /// Load saved playlist.
-  Future<Spiff> load() async {
+  /// Fetch and cache the current playlist from the server.
+  static Future<Spiff> sync() async {
+    final uri = defaultPlaylistUri();
     final completer = Completer<Spiff>();
-    final file = await _playlistFile();
-    file.exists().then((exists) {
-      if (exists) {
-        file.readAsString().then((body) {
-          print('load is ${body.length}');
-          completer.complete(Spiff.fromJson(jsonDecode(body)));
-        }).catchError((e) => completer.completeError(e));
-      } else {
-        completer.complete(Spiff.empty());
-      }
-    });
-    return completer.future;
-  }
-
-  /// Sync (fetch and save) playlist from server.
-  Future<void> sync() async {
-    final completer = Completer();
     _fetch().then((spiff) {
-      _save(spiff).then((v) => completer.complete());
+      spiff = spiff.copyWith(playlist: spiff.playlist.copyWith(location: uri.toString())); // TODO fixme
+      SpiffCache.put(spiff).then((_) => completer.complete(spiff));
     });
     return completer.future;
   }
 
-  Future<Spiff> _fetch() async {
+  /// server only
+  static Future<Spiff> _fetch() async {
     final completer = Completer<Spiff>();
     final client = Client();
     client.playlist().then((spiff) {
@@ -224,84 +194,111 @@ class PlaylistFacade {
     return completer.future;
   }
 
-  Future<Spiff> _save(Spiff spiff) async {
-    final completer = Completer<Spiff>();
-    final file = await _playlistFile();
-    file.writeAsString(jsonEncode(spiff), flush: true).then((f) {
-      completer.complete(spiff);
-    }).catchError((e) {
-      print(e);
-      completer.completeError(e);
-    });
-    return completer.future;
+  static Future<MediaState> instance() async {
+    final spiff = await SpiffCache.xxx(await getCurrentPlaylist());
+    return fromSpiff(spiff);
   }
 
-  Future<List<MediaItem>> _items(Client client, List<Entry> entries) async {
-    final items = List<MediaItem>();
-    final headers = await client.headers();
-    for (var t in entries) {
-      final uri = await client.locate(t);
-      items.add(_entryItem(t, uri, headers));
-    }
-    return items;
-  }
-
-  Future<PlaylistState> get state async {
+  static Future<MediaState> fromSpiff(Spiff spiff) async {
     final client = Client();
-    var spiff = await load();
-    final queue =  await _items(client, spiff.playlist.tracks);
+    final queue = await _createQueue(client, spiff.playlist.tracks);
     for (var q in queue) {
       print('${q.artist} / ${q.title} / ${q.id} / ${q.extras['headers']}');
     }
     if (spiff.index < 0) {
       spiff = spiff.copyWith(index: 0);
     }
-    return PlaylistState(queue, spiff.index, spiff.position);
+    return MediaState(spiff, queue, spiff.index, spiff.position);
+  }
+
+  static MediaItem _trackMediaItem(Track track, Uri uri, Map headers) {
+    final coverUri = trackCoverUrl(track);
+    return MediaItem(
+      id: uri.toString(),
+      album: track.release,
+      title: track.title,
+      artist: track.artist,
+      artUri: coverUri,
+      extras: {'headers': headers},
+    );
+  }
+
+  static MediaItem _entryMediaItem(Entry entry, Uri uri, Map headers) {
+    return MediaItem(
+      id: uri.toString(),
+      album: entry.album,
+      title: entry.title,
+      artist: entry.creator,
+      artUri: entry.image,
+      extras: {'headers': headers},
+    );
+  }
+
+  static Future<List<MediaItem>> _createQueue(Client client, List<Entry> entries) async {
+    final items = List<MediaItem>();
+    final headers = await client.headers();
+    for (var t in entries) {
+      final uri = await client.locate(t);
+      items.add(_entryMediaItem(t, uri, headers));
+    }
+    return items;
   }
 }
 
-class PlaylistState {
-  final List<MediaItem> _queue;
+class MediaState {
   int _index;
   double _position;
+  final List<MediaItem> _queue;
+  final Spiff _spiff;
 
-  PlaylistState(this._queue, this._index, this._position);
+  MediaState(this._spiff, this._queue, this._index, this._position);
 
+  /// current index
   int get index => _index;
 
+  /// current position
   double get position => _position;
 
+  /// current queue
   List<MediaItem> get queue => _queue;
 
+  /// current item in the queue
   MediaItem get current => _queue[_index == -1 ? 0 : _index];
 
+  /// set current item
   set current(MediaItem item) => _queue[_index] = item;
 
+  /// is queue empty?
   bool get isEmpty => _queue.isEmpty;
 
+  /// length of queue
   int get length => _queue.length;
 
+  /// item at index or null
   MediaItem item(int index) {
     return index < length ? _queue[index] : null;
   }
-  
+
+  /// add item to queue
   void add(MediaItem item) {
     _queue.add(item);
   }
-  
+
+  /// find item with id
   int findId(String id) {
     return _queue.indexWhere((item) => item.id == id);
   }
-  
+
+  /// find item
   int findItem(MediaItem target) {
     return _queue.indexWhere((item) => item == target);
   }
-
+  
+  /// update current index and position in playlist
   Future<Spiff> update(int index, double position) async {
     print('spiff update ${index} ${position}');
     _index = index;
     _position = position;
-    // async save current state
-    return PlaylistFacade().update(index: _index, position: _position);
+    return MediaQueue.update(_spiff, index: index, position: _position);
   }
 }

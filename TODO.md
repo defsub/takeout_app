@@ -19,7 +19,3 @@
 # Offline
 
 * Downloads as spiffs, browse and playback
-
-# Client
-
-* utf8 doesn't seem to be working

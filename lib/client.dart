@@ -65,6 +65,8 @@ class PatchResult {
 
 class Client {
   static const baseUrl = 'https://defsub.com';
+  static const defaultPlaylistUrl = '$baseUrl/api/playlist';
+
   static const prefsCookie = 'client_cookie';
   static const cookieName = 'Takeout';
 
@@ -130,14 +132,14 @@ class Client {
       if (result is File) {
         final completer = Completer<Map<String, dynamic>>();
         print('cached $uri');
-        result.readAsString().then((String body) {
-          completer.complete(jsonDecode(body));
+        result.readAsBytes().then((body) {
+          completer.complete(jsonDecode(utf8.decode(body)));
         });
         return completer.future;
       }
     }
 
-    print('$baseUrl/$uri');
+    print('$baseUrl$uri');
     final response = await http.get('$baseUrl$uri',
         headers: {HttpHeaders.cookieHeader: '$cookieName=$cookie'});
     print('got ${response.statusCode}');
@@ -146,11 +148,11 @@ class Client {
           statusCode: response.statusCode,
           url: response.request.url.toString());
     }
-    print('got response ${response.body}');
+    // print('got response ${response.body}');
     if (cacheable) {
-      cache.put(uri, response.body);
+      cache.put(uri, response.bodyBytes);
     }
-    return jsonDecode(response.body);
+    return jsonDecode(utf8.decode(response.bodyBytes));
   }
 
   /// no cookie, no caching
@@ -170,8 +172,8 @@ class Client {
             statusCode: response.statusCode,
             url: response.request.url.toString());
       }
-      print('got response ${response.body}');
-      return jsonDecode(response.body);
+      // print('got response ${response.body}');
+      return jsonDecode(utf8.decode(response.bodyBytes));
     });
   }
 
@@ -197,7 +199,8 @@ class Client {
             .then((response) {
           print('response ${response.statusCode}');
           if (response.statusCode == HttpStatus.ok) {
-            completer.complete(PatchResult(HttpStatus.ok, jsonDecode(response.body)));
+            completer.complete(PatchResult(
+                HttpStatus.ok, jsonDecode(utf8.decode(response.bodyBytes))));
           } else if (response.statusCode == HttpStatus.noContent) {
             completer.complete(PatchResult(HttpStatus.noContent, null));
           } else {
@@ -227,38 +230,55 @@ class Client {
     }
   }
 
-  // TODO url encode q
   // GET /api/search?q=query
   Future<SearchView> search(String q) async =>
-      _getJson('/api/search?q=$q').then((j) => SearchView.fromJson(j));
+      _getJson('/api/search?q=${Uri.encodeQueryComponent(q)}')
+          .then((j) => SearchView.fromJson(j))
+          .catchError((e) => Future.error(e));
 
   /// GET /api/home
-  Future<HomeView> home() async =>
-      _getJson('/api/home').then((j) => HomeView.fromJson(j));
+  Future<HomeView> home() async => _getJson('/api/home')
+      .then((j) => HomeView.fromJson(j))
+      .catchError((e) => Future.error(e));
 
   /// GET /api/artists
-  Future<ArtistsView> artists() async =>
-      _getJson('/api/artists').then((j) => ArtistsView.fromJson(j));
+  Future<ArtistsView> artists() async => _getJson('/api/artists')
+      .then((j) => ArtistsView.fromJson(j))
+      .catchError((e) => Future.error(e));
 
   /// GET /api/artists/1
-  Future<ArtistView> artist(int id) async =>
-      _getJson('/api/artists/$id').then((j) => ArtistView.fromJson(j));
+  Future<ArtistView> artist(int id) async => _getJson('/api/artists/$id')
+      .then((j) => ArtistView.fromJson(j))
+      .catchError((e) => Future.error(e));
 
   /// GET /api/artists/1/singles
   Future<SinglesView> artistSingles(int id) async =>
-      _getJson('/api/artists/$id/singles').then((j) => SinglesView.fromJson(j));
+      _getJson('/api/artists/$id/singles')
+          .then((j) => SinglesView.fromJson(j))
+          .catchError((e) => Future.error(e));
 
   /// GET /api/artists/1/popular
   Future<PopularView> artistPopular(int id) async =>
-      _getJson('/api/artists/$id/popular').then((j) => PopularView.fromJson(j));
+      _getJson('/api/artists/$id/popular')
+          .then((j) => PopularView.fromJson(j))
+          .catchError((e) => Future.error(e));
+
+  /// GET /api/artists/1/playlist
+  Future<Spiff> artistPlaylist(int id) async =>
+      _getJson('/api/artists/$id/playlist')
+          .then((j) => Spiff.fromJson(j))
+          .catchError((e) => Future.error(e));
 
   /// GET /api/releases/1
-  Future<ReleaseView> release(int id) async =>
-      _getJson('/api/releases/$id').then((j) => ReleaseView.fromJson(j));
+  Future<ReleaseView> release(int id) async => _getJson('/api/releases/$id')
+      .then((j) => ReleaseView.fromJson(j))
+      .catchError((e) => Future.error(e));
 
   /// GET /api/releases/1/playlist
   Future<Spiff> releasePlaylist(int id) async =>
-      _getJson('/api/releases/$id/playlist').then((j) => Spiff.fromJson(j));
+      _getJson('/api/releases/$id/playlist')
+          .then((j) => Spiff.fromJson(j))
+          .catchError((e) => Future.error(e));
 
   /// GET /api/tracks/1/location
   // Future<Location> location(Locatable d) async {
@@ -267,16 +287,18 @@ class Client {
   // }
 
   /// GET /api/playlist
-  Future<Spiff> playlist() async =>
-      _getJson('/api/playlist', ttl: playlistTTL).then((j) => Spiff.fromJson(j));
+  Future<Spiff> playlist() async => _getJson('/api/playlist', ttl: playlistTTL)
+      .then((j) => Spiff.fromJson(j));
 
   /// GET /api/radio
-  Future<RadioView> radio() async =>
-      _getJson('/api/radio').then((j) => RadioView.fromJson(j));
+  Future<RadioView> radio() async => _getJson('/api/radio')
+      .then((j) => RadioView.fromJson(j))
+      .catchError((e) => Future.error(e));
 
-  /// GET /api/channels/1
-  Future<Spiff> station(int id) async =>
-      _getJson('/api/station/$id').then((j) => Spiff.fromJson(j));
+  /// GET /api/station/1
+  Future<Spiff> station(int id) async => _getJson('/api/station/$id')
+      .then((j) => Spiff.fromJson(j))
+      .catchError((e) => Future.error(e));
 
   Future<PatchResult> patch(List<Map<String, dynamic>> body) async =>
       _patchJson('/api/playlist', body);
@@ -321,13 +343,7 @@ class Client {
   }
 
   /// Download
-  Future<List<bool>> downloadStation(Station s) async {
-    final spiff = await station(s.id);
-    return downloadSpiff(spiff);
-  }
-
-  /// Download
-  Future<List<bool>> downloadSpiff(Spiff spiff) async {
+  Future<List<bool>> downloadSpiffTracks(Spiff spiff) async {
     final result = List<bool>();
     for (var t in spiff.playlist.tracks) {
       await download(t)
@@ -340,7 +356,7 @@ class Client {
   /// Download
   Future<List<bool>> downloadRelease(Release r) async {
     final spiff = await releasePlaylist(r.id);
-    return downloadSpiff(spiff);
+    return downloadSpiffTracks(spiff);
   }
 
   /// Obtain the Uri to playback/stream a resource. This will either be a local

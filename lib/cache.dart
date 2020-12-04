@@ -18,6 +18,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 import 'package:path_provider/path_provider.dart';
@@ -25,11 +26,14 @@ import 'package:path_provider/path_provider.dart';
 import 'client.dart';
 import 'spiff.dart';
 
-Future<Directory> _checkDir(Directory dir) {
+Future<Directory> checkAppDir(String name) async {
+  final docDir = await getApplicationDocumentsDirectory();
+  final dir = Directory('${docDir.path}/$name');
   final completer = Completer<Directory>();
   dir.exists().then((exists) {
     if (!exists) {
-      dir.create()
+      dir
+          .create()
           .then((created) => completer.complete(dir))
           .catchError((e) => completer.completeError(e));
     } else {
@@ -47,18 +51,17 @@ class JsonCache {
   }
 
   Future<File> _jsonFile(String uri) async {
-    var dir = await getApplicationDocumentsDirectory();
-    return await _checkDir(Directory('${dir.path}/$_dir')).then((dir) {
+    return await checkAppDir(_dir).then((dir) {
       final key = _md5(uri);
       final path = '${dir.path}/$key.json';
       return File(path);
     });
   }
 
-  Future<void> put(String uri, String body) async {
+  Future<void> put(String uri, Uint8List body) async {
     final completer = Completer<dynamic>();
     final file = await _jsonFile(uri);
-    file.writeAsString(body).then((f) {
+    file.writeAsBytes(body).then((f) {
       completer.complete();
     }).catchError((e) {
       print(e);
@@ -97,8 +100,7 @@ class TrackCache {
   static const _dir = 'track_cache';
 
   Future<File> _trackFile(Locatable d) async {
-    var dir = await getApplicationDocumentsDirectory();
-    return await _checkDir(Directory('${dir.path}/$_dir')).then((dir) {
+    return await checkAppDir(_dir).then((dir) {
       final path = '${dir.path}/${d.key}';
       return File(path);
     });
@@ -133,9 +135,73 @@ class TrackCache {
     return list.length == count;
   }
 
-  Future<void> _fetchPlaylist(Spiff spiff) async {
-    for (var entry in spiff.playlist.tracks) {
-      await get(entry);
+  Future<int> size(Spiff spiff) async {
+    int size = 0;
+    for (var t in spiff.playlist.tracks) {
+      final result = await get(t);
+      if (result is File) {
+        size += await result.length();
+      }
     }
+    return size;
+  }
+}
+
+class SpiffCache {
+  static const _dir = 'spiff_cache';
+  static const _defaultName = 'playlist';
+  static final Map<Uri, Spiff> _cache = {};
+
+  static Future<File> _cacheFile({String fileName = '$_defaultName.json'}) async {
+    return await checkAppDir(_dir).then((dir) {
+      return File('${dir.path}/$fileName');
+    });
+  }
+  
+  static Future<File> _save(Spiff spiff) async {
+    final completer = Completer<File>();
+    // TODO all remote playlists are saved as 'playlist.json'
+    File file = await _cacheFile();
+    final data = jsonEncode(spiff.toJson());
+    file.writeAsString(data).then((f) {
+      completer.complete(f);
+    }).catchError((e) {
+      print(e);
+      completer.completeError(e);
+    });
+    return completer.future;
+  }
+
+  static Future<void> put(Spiff spiff) async {
+    if (spiff.isRemote()) {
+      await _save(spiff);
+    }
+    final key = Uri.parse(spiff.playlist.location);
+    print('loc ${spiff.playlist.location}');
+    print('put ${key.toString()} -> $spiff, ${key.hashCode}, ${spiff.playlist.tracks.length} tracks');
+    _cache[key] = spiff;
+  }
+
+  static Future<Spiff> get(Uri uri) async {
+    // TODO more?
+    print('get $uri -> ${_cache[uri]}, ${uri.hashCode}');
+    return _cache[uri];
+  }
+
+  static Future<Spiff> xxx(Uri uri) async {
+    File file;
+    if (uri.scheme == 'file') {
+      file = File.fromUri(uri);
+    } else {
+      file = await _cacheFile();
+    }
+    await put(await Spiff.fromFile(file));
+    return get(uri);
+  }
+
+  static Future<List<Spiff>> entries() async {
+    final list = _cache.values.toList();
+    list.sort((a, b) => a.playlist.title.compareTo(b.playlist.title));
+    return list;
   }
 }
