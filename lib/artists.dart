@@ -41,7 +41,7 @@ class ArtistsWidget extends StatefulWidget {
 }
 
 class _ArtistsState extends State<ArtistsWidget> {
-  final ArtistsView _view;
+  ArtistsView _view;
 
   _ArtistsState(this._view);
 
@@ -49,7 +49,21 @@ class _ArtistsState extends State<ArtistsWidget> {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(title: header('Artists')),
-        body: ArtistListWidget(_view.artists));
+        body: RefreshIndicator(
+            onRefresh: () => _onRefresh(),
+            child: ArtistListWidget(_view.artists)));
+  }
+
+  Future<void> _onRefresh() async {
+    try {
+      final client = Client();
+      final result = await client.artists(ttl: Duration.zero);
+      setState(() {
+        _view = result;
+      });
+    } catch (error) {
+      print('refresh err $error');
+    }
   }
 }
 

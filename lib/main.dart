@@ -36,7 +36,6 @@ import 'playlist.dart';
 import 'radio.dart';
 import 'search.dart';
 import 'global.dart';
-import 'downloads.dart';
 
 void main() => runApp(new MyApp());
 
@@ -129,7 +128,7 @@ class TakeoutState extends State<_TakeoutWidget> {
   }
 
   static bool allowDownload(ConnectivityResult result) {
-    print('allow download ${result == ConnectivityResult.wifi}');
+    // print('allow download ${result == ConnectivityResult.wifi}');
     return result == ConnectivityResult.wifi;
   }
 
@@ -210,7 +209,6 @@ class TakeoutState extends State<_TakeoutWidget> {
     if (_loggedIn != true) {
       return;
     }
-    await Downloads.load();
     await MediaQueue.sync();
     MediaQueue.restore();
     final client = Client();

@@ -237,12 +237,12 @@ class Client {
           .catchError((e) => Future.error(e));
 
   /// GET /api/home
-  Future<HomeView> home() async => _getJson('/api/home')
+  Future<HomeView> home({Duration ttl}) async => _getJson('/api/home', ttl: ttl)
       .then((j) => HomeView.fromJson(j))
       .catchError((e) => Future.error(e));
 
   /// GET /api/artists
-  Future<ArtistsView> artists() async => _getJson('/api/artists')
+  Future<ArtistsView> artists({Duration ttl}) async => _getJson('/api/artists', ttl: ttl)
       .then((j) => ArtistsView.fromJson(j))
       .catchError((e) => Future.error(e));
 
@@ -291,7 +291,7 @@ class Client {
       .then((j) => Spiff.fromJson(j));
 
   /// GET /api/radio
-  Future<RadioView> radio() async => _getJson('/api/radio')
+  Future<RadioView> radio({Duration ttl}) async => _getJson('/api/radio', ttl: ttl)
       .then((j) => RadioView.fromJson(j))
       .catchError((e) => Future.error(e));
 

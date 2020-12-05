@@ -2,7 +2,7 @@
 
 * Play individual tracks
 * Save & upload state at pause
-* Stops sometimes, check why
+* Stops & skips sometimes, check why
 
 # Artists
 
@@ -15,7 +15,3 @@
 # Radio
 
 * Create custom stations
-
-# Offline
-
-* Downloads as spiffs, browse and playback

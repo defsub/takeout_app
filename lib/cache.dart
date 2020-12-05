@@ -106,6 +106,11 @@ class TrackCache {
     });
   }
 
+  Future<bool> exists(Locatable d) async {
+    final result = await get(d);
+    return result is File;
+  }
+
   Future<dynamic> get(Locatable d) async {
     final completer = Completer<dynamic>();
     final file = await _trackFile(d);
@@ -188,6 +193,7 @@ class SpiffCache {
     return _cache[uri];
   }
 
+  /// TODO
   static Future<Spiff> xxx(Uri uri) async {
     File file;
     if (uri.scheme == 'file') {

@@ -21,35 +21,60 @@ import 'music.dart';
 import 'release.dart';
 import 'style.dart';
 import 'downloads.dart';
+import 'client.dart';
 
-class HomeWidget extends StatelessWidget {
+class HomeWidget extends StatefulWidget {
   final HomeView _view;
 
   HomeWidget(this._view);
 
   @override
+  HomeState createState() => HomeState(_view);
+}
+
+class HomeState extends State<HomeWidget> {
+  HomeView _view;
+
+  HomeState(this._view);
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(title: header('Home')),
-        body: SingleChildScrollView(
-            child: Column(
-          children: [
-            headingButton('Downloads', () {
-              _onDownloads(context);
-            }),
-            Container(child: DownloadListWidget()),
-            Divider(),
-            headingButton('Recently Added', () {
-              _onAdded(context);
-            }),
-            Container(child: ReleaseListWidget(_view.added.sublist(0, 3))),
-            Divider(),
-            headingButton('Recently Released', () {
-              _onReleased(context);
-            }),
-            Container(child: ReleaseListWidget(_view.released.sublist(0, 3))),
-          ],
-        )));
+        body: RefreshIndicator(
+            onRefresh: () => _onRefresh(),
+            child: SingleChildScrollView(
+                child: Column(
+              children: [
+                headingButton('Downloads', () {
+                  _onDownloads(context);
+                }),
+                Container(child: DownloadListWidget()),
+                Divider(),
+                headingButton('Recently Added', () {
+                  _onAdded(context);
+                }),
+                Container(child: ReleaseListWidget(_view.added.sublist(0, 3))),
+                Divider(),
+                headingButton('Recently Released', () {
+                  _onReleased(context);
+                }),
+                Container(
+                    child: ReleaseListWidget(_view.released.sublist(0, 3))),
+              ],
+            ))));
+  }
+
+  Future<void> _onRefresh() async {
+    try {
+      final client = Client();
+      final result = await client.home(ttl: Duration.zero);
+      setState(() {
+        _view = result;
+      });
+    } catch (error) {
+      print('refresh err $error');
+    }
   }
 
   void _onAdded(BuildContext context) {

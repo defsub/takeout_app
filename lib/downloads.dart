@@ -30,6 +30,8 @@ import 'spiff.dart';
 import 'cache.dart';
 import 'cover.dart';
 import 'global.dart';
+import 'style.dart';
+import 'artists.dart';
 
 class DownloadsWidget extends StatelessWidget {
   @override
@@ -45,9 +47,14 @@ class DownloadsWidget extends StatelessWidget {
   }
 }
 
+// TODO order - recent, name, count
 class DownloadListWidget extends StatefulWidget {
   @override
   DownloadListState createState() => DownloadListState();
+}
+
+String _size(Spiff spiff) {
+  return '${spiff.size ~/ megabyte} MB';
 }
 
 class DownloadListState extends State<DownloadListWidget> {
@@ -56,7 +63,7 @@ class DownloadListState extends State<DownloadListWidget> {
   @override
   void initState() {
     super.initState();
-    SpiffCache.entries(); // prime the cache
+    Downloads.load();
   }
 
   String _pickCover(Spiff spiff) {
@@ -65,10 +72,6 @@ class DownloadListState extends State<DownloadListWidget> {
     }
     int pick = _random.nextInt(spiff.playlist.tracks.length);
     return spiff.playlist.tracks[pick].image;
-  }
-
-  String _size(Spiff spiff) {
-    return '${spiff.size ~/ megabyte} MB';
   }
 
   @override
@@ -81,8 +84,10 @@ class DownloadListState extends State<DownloadListWidget> {
             ...entries.map((entry) => Container(
                 child: ListTile(
                     leading: cover(_pickCover(entry)),
-                    trailing: Icon(Icons.playlist_play),
-                    onTap: () => {_onDownload(entry)},
+                    trailing: IconButton(
+                        icon: Icon(Icons.playlist_play),
+                        onPressed: () => _onPlay(entry)),
+                    onTap: () => {_onTap(entry)},
                     title: Text(entry.playlist.title),
                     subtitle: Text(
                         '${entry.playlist.creator} \u2022 ${_size(entry)}'))))
@@ -90,8 +95,100 @@ class DownloadListState extends State<DownloadListWidget> {
         });
   }
 
-  void _onDownload(Spiff spiff) {
+  void _onTap(Spiff spiff) {
+    Navigator.push(context,
+        MaterialPageRoute(builder: (context) => DownloadWidget(spiff)));
+  }
+
+  void _onPlay(Spiff spiff) {
     MediaQueue.playSpiff(spiff);
+  }
+}
+
+class DownloadWidget extends StatelessWidget {
+  final Spiff _spiff;
+
+  DownloadWidget(this._spiff);
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder(
+        future: getCoverBackgroundColor(),
+        builder: (context, snapshot) => Scaffold(
+            backgroundColor: snapshot == null ? null : snapshot.data,
+            appBar: AppBar(
+                title: header(_spiff.playlist.title),
+                backgroundColor: snapshot == null ? null : snapshot.data),
+            body: Builder(
+                builder: (context) => SingleChildScrollView(
+                      child: Column(children: [
+                        Container(
+                            padding: EdgeInsets.fromLTRB(0, 11, 0, 0),
+                            child: GestureDetector(
+                                onTap: () => _onPlay(),
+                                child: cover(_spiff.playlist.image))),
+                        Container(
+                            padding: EdgeInsets.fromLTRB(0, 11, 0, 0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                IconButton(
+                                    icon: Icon(Icons.playlist_play),
+                                    onPressed: () => _onPlay()),
+                                Text(_size(_spiff)),
+                                IconButton(
+                                    icon: Icon(Icons.delete),
+                                    onPressed: () => {}),
+                              ],
+                            )),
+                        if (_spiff.playlist.creator != null)
+                          OutlinedButton(
+                              onPressed: () => _onArtist(context),
+                              child: Text(_spiff.playlist.creator,
+                                  style: TextStyle(fontSize: 15))),
+                        Divider(),
+                        SpiffTrackListView(_spiff)
+                      ]),
+                    ))));
+  }
+
+  void _onArtist(BuildContext context) {
+    Artist artist = artistMap[_spiff.playlist.creator];
+    if (artist != null) {
+      Navigator.push(context,
+          MaterialPageRoute(builder: (context) => ArtistWidget(artist)));
+    }
+  }
+
+  void _onPlay() {
+    MediaQueue.playSpiff(_spiff);
+  }
+}
+
+class SpiffTrackListView extends StatelessWidget {
+  final Spiff _spiff;
+
+  SpiffTrackListView(this._spiff);
+
+  @override
+  Widget build(BuildContext context) {
+    var children = List<Widget>();
+    final cache = TrackCache();
+    _spiff.playlist.tracks.forEach((e) {
+      children.add(ListTile(
+          onTap: () => {},
+          leading: cover(e.image),
+          trailing: FutureBuilder(
+              future: cache.exists(e),
+              builder: (context, snapshot) {
+                final cached = snapshot.data ?? false;
+                return Icon(
+                    cached ? Icons.download_done_sharp : Icons.download_sharp);
+              }),
+          subtitle: Text('${e.creator} \u2022 ${e.size ~/ megabyte} MB'),
+          title: Text(e.title)));
+    });
+    return Column(children: children);
   }
 }
 
@@ -174,6 +271,9 @@ class Downloads {
   }
 
   static Future<void> load() async {
+    if (_downloads.isNotEmpty) {
+      return;
+    }
     final completer = Completer();
     final dir = await checkAppDir(_dir);
     final list = await dir.list().toList();
