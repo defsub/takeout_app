@@ -18,7 +18,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:connectivity/connectivity.dart';
-import 'package:takeout_app/global.dart';
 
 import 'artists.dart';
 import 'cache.dart';
@@ -113,9 +112,9 @@ class _ReleaseState extends State<ReleaseWidget> {
     return FutureBuilder(
         future: getCoverBackgroundColor(release: release),
         builder: (context, snapshot) => Scaffold(
-            backgroundColor: snapshot == null ? null : snapshot.data,
+            backgroundColor: snapshot?.data,
             appBar: AppBar(
-              backgroundColor: snapshot == null ? null : snapshot.data,
+                backgroundColor: snapshot?.data,
                 title: header('${release.name} \u2022 ${year(release)}'),
                 actions: [Icon(Icons.cast)]),
             body: Builder(
@@ -213,8 +212,9 @@ class _ReleaseTracksWidget extends StatelessWidget {
               padding: EdgeInsets.fromLTRB(12, 12, 0, 0),
               child: Text('${e.trackNum}',
                   style: TextStyle(fontWeight: FontWeight.w200))),
-          trailing: GestureDetector(
-              child: Icon(Icons.playlist_add), onTap: () => onAppendTapped(e)),
+          trailing: IconButton(
+              icon: Icon(Icons.playlist_add),
+              onPressed: () => onAppendTapped(e)),
           subtitle: Text(e.artist),
           title: Text(e.title)));
     });
@@ -234,10 +234,9 @@ class ReleaseListWidget extends StatelessWidget {
           child: ListTile(
               leading: releaseCover(e),
               onTap: () => _onTapped(context, e),
-              trailing: GestureDetector(
-                child: Icon(Icons.playlist_add),
-                onTap: () => _onAppend(e),
-              ),
+              trailing: IconButton(
+                  icon: Icon(Icons.playlist_add),
+                  onPressed: () => _onAppend(e)),
               title: Text(e.name),
               subtitle: Text(year(e)))))
     ]);

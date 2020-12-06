@@ -21,6 +21,7 @@ import 'package:flutter/material.dart';
 import 'package:palette_generator/palette_generator.dart';
 
 import 'music.dart';
+import 'spiff.dart';
 
 String releaseCoverUrl(Release release, {int size = 250}) {
   if (release.artwork && release.frontArtwork) {
@@ -75,17 +76,21 @@ dynamic mediaItemCover(MediaItem mediaItem) {
 
 String year(Release release) {
   var d = DateTime.parse(release.date);
-  return "${d.year}";
+  return '${d.year}';
 }
 
-Future<Color> getCoverBackgroundColor({Release release, MediaItem mediaItem}) async {
-  if (release == null && mediaItem == null) {
+Future<Color> getCoverBackgroundColor(
+    {Release release, MediaItem mediaItem, Spiff spiff}) async {
+  if (release == null && mediaItem == null && spiff == null) {
     return null;
   }
   final PaletteGenerator paletteGenerator =
-      await PaletteGenerator.fromImageProvider(CachedNetworkImageProvider(
-          release != null
+      await PaletteGenerator.fromImageProvider(
+          CachedNetworkImageProvider(release != null
               ? releaseCoverUrl(release)
-              : mediaItem.artUri));
-  return paletteGenerator?.darkVibrantColor?.color ?? paletteGenerator?.darkMutedColor?.color;
+              : spiff != null
+                  ? spiff.playlist.image
+                  : mediaItem.artUri));
+  return paletteGenerator?.darkVibrantColor?.color ??
+      paletteGenerator?.darkMutedColor?.color;
 }

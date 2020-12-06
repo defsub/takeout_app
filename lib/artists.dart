@@ -301,8 +301,8 @@ class TrackListWidget extends StatelessWidget {
       ..._tracks.map((t) => ListTile(
           onTap: () => onPlay(t),
           leading: trackCover(t),
-          trailing: GestureDetector(
-              child: Icon(Icons.playlist_add), onTap: () => onAdd(t)),
+          trailing: IconButton(
+              icon: Icon(Icons.playlist_add), onPressed: () => onAdd(t)),
           subtitle: Text('${t.release} \u2022 ${t.date}'),
           title: Text(t.title)))
     ]);
@@ -368,9 +368,9 @@ class _ArtistTrackListState extends State<ArtistTrackListWidget> {
                 ..._tracks.map((t) => ListTile(
                     onTap: () => _onPlay(t),
                     leading: trackCover(t),
-                    trailing: GestureDetector(
-                        child: Icon(Icons.playlist_add),
-                        onTap: () => _onAdd(t)),
+                    trailing: IconButton(
+                        icon: Icon(Icons.playlist_add),
+                        onPressed: () => _onAdd(t)),
                     subtitle: Text('${t.release} \u2022 ${t.date}'),
                     title: Text(t.title)))
               ])));

@@ -15,6 +15,8 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 
 import 'music.dart';
@@ -46,21 +48,20 @@ class HomeState extends State<HomeWidget> {
             child: SingleChildScrollView(
                 child: Column(
               children: [
-                headingButton('Downloads', () {
-                  _onDownloads(context);
-                }),
-                Container(child: DownloadListWidget()),
-                Divider(),
-                headingButton('Recently Added', () {
-                  _onAdded(context);
-                }),
-                Container(child: ReleaseListWidget(_view.added.sublist(0, 3))),
-                Divider(),
-                headingButton('Recently Released', () {
-                  _onReleased(context);
-                }),
+                headingButton('Recent Downloads', () => _onDownloads(context)),
                 Container(
-                    child: ReleaseListWidget(_view.released.sublist(0, 3))),
+                    child: DownloadListWidget(
+                        limit: 3, sortType: DownloadSortType.newest)),
+                Divider(),
+                headingButton('Recently Added', () => _onAdded(context)),
+                Container(
+                    child: ReleaseListWidget(
+                        _view.added.sublist(0, max(3, _view.added.length)))),
+                Divider(),
+                headingButton('Recently Released', () => _onReleased(context)),
+                Container(
+                    child: ReleaseListWidget(_view.released
+                        .sublist(0, max(3, _view.released.length)))),
               ],
             ))));
   }

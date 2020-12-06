@@ -49,16 +49,45 @@ class DownloadsWidget extends StatelessWidget {
 
 // TODO order - recent, name, count
 class DownloadListWidget extends StatefulWidget {
+  final int limit;
+  final DownloadSortType sortType;
+
+  DownloadListWidget({this.sortType = DownloadSortType.name, this.limit = -1});
+
   @override
-  DownloadListState createState() => DownloadListState();
+  DownloadListState createState() => DownloadListState(sortType, limit);
 }
 
 String _size(Spiff spiff) {
   return '${spiff.size ~/ megabyte} MB';
 }
 
+enum DownloadSortType { newest, oldest, name, size }
+
+void _sort(DownloadSortType sortType, List<DownloadEntry> entries) {
+  switch (sortType) {
+    case DownloadSortType.newest:
+      entries.sort((a, b) => a.modified.compareTo(b.modified));
+      break;
+    case DownloadSortType.oldest:
+      entries.sort((a, b) => b.modified.compareTo(a.modified));
+      break;
+    case DownloadSortType.name:
+      entries.sort(
+          (a, b) => a.spiff.playlist.title.compareTo(b.spiff.playlist.title));
+      break;
+    case DownloadSortType.size:
+      entries.sort((a, b) => a.size.compareTo(b.size));
+      break;
+  }
+}
+
 class DownloadListState extends State<DownloadListWidget> {
   Random _random = Random();
+  int _limit;
+  DownloadSortType _sortType;
+
+  DownloadListState(this._sortType, this._limit);
 
   @override
   void initState() {
@@ -79,18 +108,20 @@ class DownloadListState extends State<DownloadListWidget> {
     return StreamBuilder(
         stream: Downloads.downloadsSubject,
         builder: (context, snapshot) {
-          final entries = snapshot.data ?? [];
+          final List<DownloadEntry> entries = snapshot.data ?? [];
+          _sort(_sortType, entries);
           return Column(children: [
-            ...entries.map((entry) => Container(
-                child: ListTile(
-                    leading: cover(_pickCover(entry)),
-                    trailing: IconButton(
-                        icon: Icon(Icons.playlist_play),
-                        onPressed: () => _onPlay(entry)),
-                    onTap: () => {_onTap(entry)},
-                    title: Text(entry.playlist.title),
-                    subtitle: Text(
-                        '${entry.playlist.creator} \u2022 ${_size(entry)}'))))
+            ...entries.sublist(0, min(_limit, entries.length)).map((entry) =>
+                Container(
+                    child: ListTile(
+                        leading: cover(_pickCover(entry.spiff)),
+                        trailing: IconButton(
+                            icon: Icon(Icons.playlist_play),
+                            onPressed: () => _onPlay(entry.spiff)),
+                        onTap: () => {_onTap(entry.spiff)},
+                        title: Text(entry.spiff.playlist.title),
+                        subtitle: Text(
+                            '${entry.spiff.playlist.creator} \u2022 ${_size(entry.spiff)}'))))
           ]);
         });
   }
@@ -113,15 +144,16 @@ class DownloadWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder(
-        future: getCoverBackgroundColor(),
+        future: getCoverBackgroundColor(spiff: _spiff),
         builder: (context, snapshot) => Scaffold(
-            backgroundColor: snapshot == null ? null : snapshot.data,
+            backgroundColor: snapshot?.data,
             appBar: AppBar(
                 title: header(_spiff.playlist.title),
-                backgroundColor: snapshot == null ? null : snapshot.data),
+                backgroundColor: snapshot?.data),
             body: Builder(
                 builder: (context) => SingleChildScrollView(
                       child: Column(children: [
+                        header('Downloaded'),
                         Container(
                             padding: EdgeInsets.fromLTRB(0, 11, 0, 0),
                             child: GestureDetector(
@@ -228,7 +260,7 @@ class Downloads {
         spiff = spiff.copyWith(
             playlist: spiff.playlist.copyWith(location: file.uri.toString()));
         print('download to $file');
-        _downloads.add(spiff);
+        _downloads.add(DownloadEntry.create(file, spiff));
         SpiffCache.put(spiff);
         _broadcast();
         _saveAs(spiff, file).then((_) {
@@ -263,8 +295,8 @@ class Downloads {
         .whenComplete(() => showSnackBar('Finished ${station.name}'));
   }
 
-  static final List<Spiff> _downloads = [];
-  static final downloadsSubject = BehaviorSubject<List<Spiff>>();
+  static final List<DownloadEntry> _downloads = [];
+  static final downloadsSubject = BehaviorSubject<List<DownloadEntry>>();
 
   static void _broadcast() {
     downloadsSubject.add(_downloads);
@@ -280,7 +312,7 @@ class Downloads {
     await Future.forEach(list, (file) async {
       if (file.path.endsWith('.json')) {
         final spiff = await Spiff.fromFile(file);
-        _downloads.add(spiff);
+        _downloads.add(DownloadEntry.create(file, spiff));
         SpiffCache.put(spiff);
       }
     }).whenComplete(() {
@@ -288,5 +320,19 @@ class Downloads {
       completer.complete();
     });
     return completer.future;
+  }
+}
+
+class DownloadEntry {
+  final File file;
+  final Spiff spiff;
+  final DateTime modified;
+  final int size;
+
+  DownloadEntry(this.file, this.spiff, this.modified, this.size);
+
+  static DownloadEntry create(File file, Spiff spiff) {
+    FileStat stat = file.statSync();
+    return DownloadEntry(file, spiff, stat.modified, stat.size);
   }
 }

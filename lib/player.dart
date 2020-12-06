@@ -77,7 +77,7 @@ class PlayerWidget extends StatelessWidget {
     return StreamBuilder<Color>(
         stream: _backgroundColorSubject,
         builder: (context, snapshot) {
-          final backgroundColor = snapshot.data ?? null;
+          final backgroundColor = snapshot?.data;
           return Scaffold(
               backgroundColor: backgroundColor,
               body: Center(
