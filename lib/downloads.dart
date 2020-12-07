@@ -85,6 +85,7 @@ void _sort(DownloadSortType sortType, List<DownloadEntry> entries) {
 class DownloadListState extends State<DownloadListWidget> {
   Random _random = Random();
   int _limit;
+  int _coverPick;
   DownloadSortType _sortType;
 
   DownloadListState(this._sortType, this._limit);
@@ -99,8 +100,15 @@ class DownloadListState extends State<DownloadListWidget> {
     if (spiff.playlist.image != null && spiff.playlist.image.isNotEmpty) {
       return spiff.playlist.image;
     }
-    int pick = _random.nextInt(spiff.playlist.tracks.length);
-    return spiff.playlist.tracks[pick].image;
+    if (_coverPick == null) {
+      _coverPick = _random.nextInt(spiff.playlist.tracks.length);
+    }
+    return spiff.playlist.tracks[_coverPick].image;
+  }
+
+  Widget _subtitle(DownloadEntry entry) {
+    final creator = entry.spiff.playlist.creator ?? 'Playlist';
+    return Text('$creator \u2022 ${_size(entry.spiff)}');
   }
 
   @override
@@ -120,10 +128,9 @@ class DownloadListState extends State<DownloadListWidget> {
                         trailing: IconButton(
                             icon: Icon(Icons.playlist_play),
                             onPressed: () => _onPlay(entry.spiff)),
-                        onTap: () => {_onTap(entry.spiff)},
+                        onTap: () => _onTap(entry.spiff),
                         title: Text(entry.spiff.playlist.title),
-                        subtitle: Text(
-                            '${entry.spiff.playlist.creator} \u2022 ${_size(entry.spiff)}'))))
+                        subtitle: _subtitle(entry))))
           ]);
         });
   }
@@ -338,10 +345,10 @@ class Downloads {
         spiff = spiff.copyWith(
             playlist: spiff.playlist.copyWith(location: file.uri.toString()));
         print('download to $file');
-        _downloads.add(DownloadEntry.create(file, spiff));
-        SpiffCache.put(spiff);
-        _broadcast();
         _saveAs(spiff, file).then((_) {
+          SpiffCache.put(spiff); // TODO needed?
+          _downloads.add(DownloadEntry.create(file, spiff));
+          _broadcast();
           client.downloadSpiffTracks(spiff).then((result) {
             completer.complete(result.length == spiff.playlist.tracks.length &&
                 !result.any((e) => e == false));
@@ -369,7 +376,7 @@ class Downloads {
   static Future<bool> downloadStation(Station station) async {
     final client = Client();
     showSnackBar('Downloading ${station.name}');
-    return _download(client, () => client.station(station.id))
+    return _download(client, () => client.station(station.id, ttl: Duration.zero))
         .whenComplete(() => showSnackBar('Finished ${station.name}'));
   }
 

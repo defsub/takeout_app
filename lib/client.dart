@@ -295,8 +295,8 @@ class Client {
       .then((j) => RadioView.fromJson(j))
       .catchError((e) => Future.error(e));
 
-  /// GET /api/station/1
-  Future<Spiff> station(int id) async => _getJson('/api/station/$id')
+  /// GET /api/radio/1
+  Future<Spiff> station(int id, {Duration ttl}) async => _getJson('/api/radio/$id', ttl: ttl)
       .then((j) => Spiff.fromJson(j))
       .catchError((e) => Future.error(e));
 

@@ -102,6 +102,7 @@ class MediaQueue {
         } else {
           final uri = defaultPlaylistUri();
           var spiff = result.toSpiff();
+          print('fixing location ${spiff.playlist.location}');
           spiff = spiff.copyWith(playlist: spiff.playlist.copyWith(location: uri.toString())); // TODO fixme
 
           update(spiff, index: 0).then((_) {
@@ -175,6 +176,7 @@ class MediaQueue {
     final uri = defaultPlaylistUri();
     final completer = Completer<Spiff>();
     _fetch().then((spiff) {
+      print('fixing2 location ${spiff.playlist.location}');
       spiff = spiff.copyWith(playlist: spiff.playlist.copyWith(location: uri.toString())); // TODO fixme
       SpiffCache.put(spiff).then((_) => completer.complete(spiff));
     });

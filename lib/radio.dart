@@ -23,6 +23,7 @@ import 'main.dart';
 import 'playlist.dart';
 import 'style.dart';
 import 'client.dart';
+import 'downloads.dart';
 
 class RadioWidget extends StatefulWidget {
   final RadioView _view;
@@ -64,7 +65,7 @@ class RadioState extends State<RadioWidget> {
                                     icon: Icon(Icons.download_sharp),
                                     onPressed:
                                         TakeoutState.allowDownload(result)
-                                            ? () => _onPlay(_view.genre[index])
+                                            ? () => _onDownload(_view.genre[index])
                                             : null),
                               );
                             });
@@ -74,6 +75,10 @@ class RadioState extends State<RadioWidget> {
 
   void _onPlay(Station station) {
     MediaQueue.play(station: station);
+  }
+
+  void _onDownload(Station station) {
+    Downloads.downloadStation(station);
   }
 
   Future<void> _onRefresh() async {
