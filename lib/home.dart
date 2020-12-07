@@ -48,7 +48,7 @@ class HomeState extends State<HomeWidget> {
             child: SingleChildScrollView(
                 child: Column(
               children: [
-                headingButton('Recent Downloads', () => _onDownloads(context)),
+                headingButton('Recently Downloaded', () => _onDownloads(context)),
                 Container(
                     child: DownloadListWidget(
                         limit: 3, sortType: DownloadSortType.newest)),
@@ -56,12 +56,12 @@ class HomeState extends State<HomeWidget> {
                 headingButton('Recently Added', () => _onAdded(context)),
                 Container(
                     child: ReleaseListWidget(
-                        _view.added.sublist(0, max(3, _view.added.length)))),
+                        _view.added.sublist(0, min(3, _view.added.length)))),
                 Divider(),
                 headingButton('Recently Released', () => _onReleased(context)),
                 Container(
                     child: ReleaseListWidget(_view.released
-                        .sublist(0, max(3, _view.released.length)))),
+                        .sublist(0, min(3, _view.released.length)))),
               ],
             ))));
   }

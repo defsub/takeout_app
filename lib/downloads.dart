@@ -66,10 +66,10 @@ enum DownloadSortType { newest, oldest, name, size }
 
 void _sort(DownloadSortType sortType, List<DownloadEntry> entries) {
   switch (sortType) {
-    case DownloadSortType.newest:
+    case DownloadSortType.oldest:
       entries.sort((a, b) => a.modified.compareTo(b.modified));
       break;
-    case DownloadSortType.oldest:
+    case DownloadSortType.newest:
       entries.sort((a, b) => b.modified.compareTo(a.modified));
       break;
     case DownloadSortType.name:
@@ -111,8 +111,10 @@ class DownloadListState extends State<DownloadListWidget> {
           final List<DownloadEntry> entries = snapshot.data ?? [];
           _sort(_sortType, entries);
           return Column(children: [
-            ...entries.sublist(0, min(_limit, entries.length)).map((entry) =>
-                Container(
+            ...entries
+                .sublist(0,
+                    _limit == -1 ? entries.length : min(_limit, entries.length))
+                .map((entry) => Container(
                     child: ListTile(
                         leading: cover(_pickCover(entry.spiff)),
                         trailing: IconButton(
@@ -136,10 +138,26 @@ class DownloadListState extends State<DownloadListWidget> {
   }
 }
 
-class DownloadWidget extends StatelessWidget {
+class DownloadWidget extends StatefulWidget {
   final Spiff _spiff;
 
   DownloadWidget(this._spiff);
+
+  @override
+  DownloadState createState() => DownloadState(_spiff);
+}
+
+class DownloadState extends State<DownloadWidget> {
+  final Spiff _spiff;
+  bool _isCached = false;
+
+  DownloadState(this._spiff);
+
+  @override
+  void initState() {
+    super.initState();
+    _checkCache();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -167,9 +185,13 @@ class DownloadWidget extends StatelessWidget {
                                 IconButton(
                                     icon: Icon(Icons.playlist_play),
                                     onPressed: () => _onPlay()),
-                                Text(_size(_spiff)),
                                 IconButton(
                                     icon: Icon(Icons.delete),
+                                    onPressed: () => _onDelete(context)),
+                                IconButton(
+                                    icon: Icon(_isCached
+                                        ? Icons.download_done_sharp
+                                        : Icons.download_sharp),
                                     onPressed: () => {}),
                               ],
                             )),
@@ -194,6 +216,62 @@ class DownloadWidget extends StatelessWidget {
 
   void _onPlay() {
     MediaQueue.playSpiff(_spiff);
+  }
+
+  void _onDelete(BuildContext context) async {
+    showDialog(
+        context: context,
+        builder: (ctx) {
+          return AlertDialog(
+            title: Text('Really delete ${_spiff.playlist.title}?'),
+            content: Text('This free ${_size(_spiff)} of space.'),
+            actions: [
+              FlatButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                },
+                child: Text('NO'),
+              ),
+              FlatButton(
+                onPressed: () {
+                  _onDeleteConfirmed();
+                  Navigator.pop(ctx);
+                  Navigator.pop(context);
+                },
+                child: Text('YES'),
+              ),
+            ],
+          );
+        });
+  }
+
+  Future<void> _onDeleteConfirmed() async {
+    final cache = TrackCache();
+    _spiff.playlist.tracks.forEach((e) async {
+      final result = await cache.get(e);
+      if (result is File) {
+        print('delete $result');
+        result.delete();
+      }
+    });
+
+    final uri = Uri.parse(_spiff.playlist.location);
+    final file = File.fromUri(uri);
+    print('delete $file');
+    file.delete();
+
+    Downloads.reload();
+  }
+
+  Future<bool> _allTracksCached() async {
+    return TrackCache().contains(_spiff.playlist.tracks);
+  }
+
+  void _checkCache() async {
+    final result = await _allTracksCached();
+    setState(() {
+      _isCached = result;
+    });
   }
 }
 
@@ -300,6 +378,11 @@ class Downloads {
 
   static void _broadcast() {
     downloadsSubject.add(_downloads);
+  }
+
+  static Future<void> reload() async {
+    _downloads.length = 0;
+    return load();
   }
 
   static Future<void> load() async {
