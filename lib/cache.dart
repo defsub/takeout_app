@@ -157,16 +157,34 @@ class SpiffCache {
   static const _defaultName = 'playlist';
   static final Map<Uri, Spiff> _cache = {};
 
-  static Future<File> _cacheFile({String fileName = '$_defaultName.json'}) async {
+  static Future<File> _cacheFile(Uri uri) async {
+    var fileName;
+    final location = uri.toString();
+    if (location.endsWith('/api/playlist')) {
+      fileName = 'playlist.json';
+    } else {
+      final regexp = RegExp(r'.*/api/([a-z]+)/([0-9]+)');
+      final matches = regexp.allMatches(location);
+      if (matches.isNotEmpty) {
+        final match = matches.elementAt(0);
+        fileName = '${match.group(1)}_${match.group(2)}.json';
+      }
+    }
+    if (fileName == null) {
+      fileName = '$_defaultName.json';
+    }
+
+    print('_cacheFile $location -> $fileName');
+
     return await checkAppDir(_dir).then((dir) {
       return File('${dir.path}/$fileName');
     });
   }
   
-  static Future<File> _save(Spiff spiff) async {
+  static Future<File> _save(Uri uri, Spiff spiff) async {
+    print('_saving $spiff');
     final completer = Completer<File>();
-    // TODO all remote playlists are saved as 'playlist.json'
-    File file = await _cacheFile();
+    File file = await _cacheFile(uri);
     final data = jsonEncode(spiff.toJson());
     file.writeAsString(data).then((f) {
       completer.complete(f);
@@ -178,10 +196,10 @@ class SpiffCache {
   }
 
   static Future<void> put(Spiff spiff) async {
-    if (spiff.isRemote()) {
-      await _save(spiff);
-    }
     final key = Uri.parse(spiff.playlist.location);
+    if (spiff.isRemote()) {
+      await _save(key, spiff);
+    }
     print('loc ${spiff.playlist.location}');
     print('put ${key.toString()} -> $spiff, ${key.hashCode}, ${spiff.playlist.tracks.length} tracks');
     _cache[key] = spiff;
@@ -195,14 +213,19 @@ class SpiffCache {
 
   /// TODO
   static Future<Spiff> xxx(Uri uri) async {
+    print('xxx ${uri.toString()}');
     File file;
     if (uri.scheme == 'file') {
       file = File.fromUri(uri);
     } else {
-      file = await _cacheFile();
+      file = await _cacheFile(uri);
     }
-    await put(await Spiff.fromFile(file));
-    return get(uri);
+    print('file is $file');
+    final spiff = await Spiff.fromFile(file);
+    print('spiff ${spiff.playlist.title} ${spiff.playlist.tracks.length}');
+    await put(spiff);
+    // return get(uri);
+    return spiff;
   }
 
   static Future<List<Spiff>> entries() async {

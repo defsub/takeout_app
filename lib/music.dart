@@ -237,9 +237,10 @@ class Location {
 class RadioView {
   List<Station> artist;
   List<Station> genre;
-  List<Station> mix;
+  List<Station> similar;
+  List<Station> period;
 
-  RadioView({this.artist, this.genre, this.mix});
+  RadioView({this.artist, this.genre, this.similar, this.period});
 
   factory RadioView.fromJson(Map<String, dynamic> json) =>
       _$RadioViewFromJson(json);

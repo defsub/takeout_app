@@ -81,13 +81,13 @@ class AudioPlayerTask extends BackgroundAudioTask {
       }
     }
 
-    canAppend = false;
+    // canAppend = true;
 
     _state = newState;
     await AudioServiceBackground.setQueue(_state.queue);
     await AudioServiceBackground.setMediaItem(_state.current);
 
-    if (canAppend) {
+    if (oldState != null && canAppend) {
       // append only
       for (var i = oldState.length; i < newState.length; i++) {
         final item = newState.item(i);

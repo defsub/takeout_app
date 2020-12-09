@@ -158,21 +158,14 @@ class _ArtistState extends State<ArtistWidget> {
     MediaQueue.append(track: track);
   }
 
-  void _onPlay() {}
-
-  void _onDownload(BuildContext context) async {
-    // final client = Client();
-    // for (var r in _view.releases) {
-    //   showDownloadSnackBar(release: r, isComplete: false);
-    //   await client.downloadRelease(r);
-    //   showDownloadSnackBar(release: r, isComplete: true);
-    // }
-    // if (!_disposed) {
-    //   _checkCache();
-    // }
-    Downloads.downloadArtist(_artist);
+  void _onPlay() {
+    // TODO play popular
   }
 
+  void _onRadio() {
+    // TODO play similar radio
+  }
+  
   void _onSingles(BuildContext context) {
     Navigator.push(
         context,
@@ -216,17 +209,19 @@ class _ArtistState extends State<ArtistWidget> {
                                                   _isCached == true
                                               ? () => _onPlay()
                                               : null),
-                                  // IconButton(icon: Icon(Icons.playlist_add), onPressed: () => _onAdd()),
                                   IconButton(
-                                      icon: Icon(_isCached == null
-                                          ? Icons.hourglass_bottom_sharp
-                                          : _isCached
-                                              ? Icons.download_done_sharp
-                                              : Icons.download_sharp),
-                                      onPressed:
-                                          TakeoutState.allowDownload(result)
-                                              ? () => _onDownload(context)
-                                              : null),
+                                      icon: Icon(Icons.radio),
+                                      onPressed: () => _onRadio()),
+                                  // IconButton(
+                                  //     icon: Icon(_isCached == null
+                                  //         ? Icons.hourglass_bottom_sharp
+                                  //         : _isCached
+                                  //             ? Icons.download_done_sharp
+                                  //             : Icons.download_sharp),
+                                  //     onPressed:
+                                  //         TakeoutState.allowDownload(result)
+                                  //             ? () => _onDownload(context)
+                                  //             : null),
                                 ],
                               );
                             })),

@@ -48,11 +48,23 @@ class HomeState extends State<HomeWidget> {
             child: SingleChildScrollView(
                 child: Column(
               children: [
-                headingButton('Recently Downloaded', () => _onDownloads(context)),
-                Container(
-                    child: DownloadListWidget(
-                        limit: 3, sortType: DownloadSortType.newest)),
-                Divider(),
+                StreamBuilder(
+                    stream: Downloads.downloadsSubject,
+                    builder: (context, snapshot) {
+                      final List<DownloadEntry> entries = snapshot.data ?? [];
+                      print('${entries.length}');
+                      if (entries.isEmpty) {
+                        return Divider();
+                      }
+                      return Column(children: [
+                        headingButton(
+                            'Recently Downloaded', () => _onDownloads(context)),
+                        Container(
+                            child: DownloadListWidget(
+                                limit: 3, sortType: DownloadSortType.newest)),
+                        Divider(),
+                      ]);
+                    }),
                 headingButton('Recently Added', () => _onAdded(context)),
                 Container(
                     child: ReleaseListWidget(

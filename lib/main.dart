@@ -36,6 +36,7 @@ import 'playlist.dart';
 import 'radio.dart';
 import 'search.dart';
 import 'global.dart';
+import 'downloads.dart';
 
 void main() => runApp(new MyApp());
 
@@ -69,6 +70,7 @@ class MyApp extends StatelessWidget {
           FloatingActionButtonThemeData(backgroundColor: Colors.orangeAccent),
       outlinedButtonTheme: OutlinedButtonThemeData(
           style: OutlinedButton.styleFrom(primary: Colors.orangeAccent)),
+      indicatorColor: Colors.orangeAccent,
     );
   }
 }
@@ -209,6 +211,7 @@ class TakeoutState extends State<_TakeoutWidget> {
     if (_loggedIn != true) {
       return;
     }
+    Downloads.load();
     await MediaQueue.sync();
     MediaQueue.restore();
     final client = Client();
@@ -222,7 +225,7 @@ class TakeoutState extends State<_TakeoutWidget> {
     }).catchError((e) {
       _onLogout();
     });
-    client.radio().then((view) {
+    client.radio(ttl: Duration.zero).then((view) {
       _onRadioUpdated(view);
     }).catchError((e) {
       _onLogout();

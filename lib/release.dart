@@ -153,8 +153,8 @@ class _ReleaseState extends State<ReleaseWidget> {
                                             icon: Icon(_isCached == null
                                                 ? Icons.hourglass_bottom_sharp
                                                 : _isCached
-                                                    ? Icons.download_done_sharp
-                                                    : Icons.download_sharp),
+                                                    ? Icons.cloud_done_sharp
+                                                    : Icons.cloud_download_sharp),
                                             onPressed:
                                                 TakeoutState.allowDownload(
                                                         result)

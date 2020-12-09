@@ -196,9 +196,10 @@ class DownloadState extends State<DownloadWidget> {
                                     icon: Icon(Icons.delete),
                                     onPressed: () => _onDelete(context)),
                                 IconButton(
+
                                     icon: Icon(_isCached
-                                        ? Icons.download_done_sharp
-                                        : Icons.download_sharp),
+                                        ? Icons.cloud_done_sharp
+                                        : Icons.cloud_download_sharp),
                                     onPressed: () => {}),
                               ],
                             )),
@@ -300,7 +301,7 @@ class SpiffTrackListView extends StatelessWidget {
               builder: (context, snapshot) {
                 final cached = snapshot.data ?? false;
                 return Icon(
-                    cached ? Icons.download_done_sharp : Icons.download_sharp);
+                    cached ? Icons.download_done_sharp : null);
               }),
           subtitle: Text('${e.creator} \u2022 ${e.size ~/ megabyte} MB'),
           title: Text(e.title)));
@@ -380,12 +381,21 @@ class Downloads {
         .whenComplete(() => showSnackBar('Finished ${station.name}'));
   }
 
+  static Future<bool> downloadSpiff(Spiff spiff) async {
+    final client = Client();
+    showSnackBar('Downloading ${spiff.playlist.title}');
+    return _download(client, () => Future.value(spiff))
+        .whenComplete(() => showSnackBar('Finished ${spiff.playlist.title}'));
+  }
+
   static final List<DownloadEntry> _downloads = [];
   static final downloadsSubject = BehaviorSubject<List<DownloadEntry>>();
 
   static void _broadcast() {
     downloadsSubject.add(_downloads);
   }
+
+  static bool get isNotEmpty => _downloads.isNotEmpty;
 
   static Future<void> reload() async {
     _downloads.length = 0;
