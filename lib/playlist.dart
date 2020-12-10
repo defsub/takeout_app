@@ -35,14 +35,10 @@ class PlaylistException implements Exception {
 class MediaQueue {
   static const prefsPlaylist = 'current_playlist';
 
-  static Uri defaultPlaylistUri() {
-    return Uri.parse(Client.defaultPlaylistUrl);
-  }
-
   static Future<Uri> getCurrentPlaylist() async {
     final value = await prefsString(prefsPlaylist);
     print('current is $value');
-    return value != null ? Uri.parse(value) : defaultPlaylistUri();
+    return value != null ? Uri.parse(value) : await Client.defaultPlaylistUri();
   }
 
   static Future<void> setCurrentPlaylist(Uri uri) async {
@@ -62,7 +58,7 @@ class MediaQueue {
   }
 
   static Future restore() async {
-    final spiff = await SpiffCache.get(await getCurrentPlaylist());
+    final spiff = await SpiffCache.load(await getCurrentPlaylist());
     return _stage(spiff);
   }
 
@@ -90,14 +86,14 @@ class MediaQueue {
   /// Play remote reference to release, track, station, etc.
   static Future _playRef(String ref) async {
     await setCurrentPlaylist(null);
-    final uri = defaultPlaylistUri();
+    final uri = await Client.defaultPlaylistUri();
 
     final completer = Completer();
     final client = Client();
 
     print('play $ref');
     // get playlist from server, resolving refs
-    client.patch(patchReplace(ref)).then((result) {
+    client.patch(patchReplace(ref)).then((result) async {
       if (result.notModified()) {
         SpiffCache.get(uri).then((spiff) {
           update(spiff, index: 0).then((_) {
@@ -106,7 +102,7 @@ class MediaQueue {
           }).catchError((e) => completer.completeError(e));
         }).catchError((e) => completer.completeError(e));
       } else {
-        final uri = defaultPlaylistUri();
+        final uri = await Client.defaultPlaylistUri();
         var spiff = result.toSpiff();
         print('fixing location ${spiff.playlist.location}');
         spiff = spiff.copyWith(
@@ -115,20 +111,22 @@ class MediaQueue {
         update(spiff, index: 0).then((_) {
           AudioService.customAction('stage+play')
               .then((_) => completer.complete());
-        }).catchError((e) => completer.complete(e));
+        }).catchError((e) => completer.completeError(e));
       }
     }).catchError((e) => completer.completeError(e));
+    return completer.future;
   }
 
   static Future<Spiff> update(Spiff spiff, {int index, double position}) async {
     spiff = spiff.copyWith(
         index: index ?? spiff.index, position: position ?? spiff.position);
 
-    await SpiffCache.put(spiff);
-
-    if (spiff.isRemote() &&
-        spiff.playlist.location == Client.defaultPlaylistUrl) {
-      _updateServer(spiff);
+    if (spiff.isRemote()) {
+      await SpiffCache.put(spiff);
+      final defaultLocation = await Client.getDefaultPlaylistUrl();
+      if (spiff.playlist.location == defaultLocation) {
+        _updateServer(spiff);
+      }
     }
 
     return spiff;
@@ -178,7 +176,7 @@ class MediaQueue {
 
   /// Fetch and cache the current playlist from the server.
   static Future<Spiff> sync() async {
-    final uri = defaultPlaylistUri();
+    final uri = Client.defaultPlaylistUri();
     final completer = Completer<Spiff>();
     _fetch().then((spiff) {
       print('fixing2 location ${spiff.playlist.location}');
@@ -203,8 +201,8 @@ class MediaQueue {
     return completer.future;
   }
 
-  static Future<MediaState> instance() async {
-    final spiff = await SpiffCache.xxx(await getCurrentPlaylist());
+  static Future<MediaState> load() async {
+    final spiff = await SpiffCache.load(await getCurrentPlaylist());
     return fromSpiff(spiff);
   }
 

@@ -64,17 +64,53 @@ class PatchResult {
 }
 
 class Client {
-  static const baseUrl = 'https://defsub.com';
-  static const defaultPlaylistUrl = '$baseUrl/api/playlist';
-
   static const prefsCookie = 'client_cookie';
+  static const prefsEndpoint = 'endpoint';
   static const cookieName = 'Takeout';
 
   static const locationTTL = Duration(hours: 1);
   static const playlistTTL = Duration(minutes: 1);
   static const downloadTimeout = Duration(minutes: 5);
 
-  String _cookie;
+  static String _endpoint;
+  static String _cookie;
+  static String _defaultPlaylistUrl;
+  static Uri _defaultPlaylistUri;
+
+  static Future<String> getDefaultPlaylistUrl() async {
+    if (_defaultPlaylistUrl == null) {
+      final baseUrl = await Client().getEndpoint();
+      _defaultPlaylistUrl = '$baseUrl/api/playlist';
+    }
+    return _defaultPlaylistUrl;
+  }
+
+  static Future<Uri> defaultPlaylistUri() async {
+    if (_defaultPlaylistUri == null) {
+      _defaultPlaylistUri = Uri.parse(await getDefaultPlaylistUrl());
+    }
+    return _defaultPlaylistUri;
+  }
+
+  Future<void> setEndpoint(String v) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    _endpoint = v;
+    if (v == null) {
+      prefs.remove(prefsEndpoint);
+    } else {
+      prefs.setString(prefsEndpoint, _endpoint);
+    }
+  }
+
+  Future<String> getEndpoint() async {
+    if (_endpoint == null) {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      if (prefs.containsKey(prefsEndpoint)) {
+        _endpoint = prefs.getString(prefsEndpoint);
+      }
+    }
+    return _endpoint;
+  }
 
   Future<void> _setCookie(String v) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -139,6 +175,8 @@ class Client {
       }
     }
 
+    final baseUrl = await getEndpoint();
+
     print('$baseUrl$uri');
     final response = await http.get('$baseUrl$uri',
         headers: {HttpHeaders.cookieHeader: '$cookieName=$cookie'});
@@ -158,6 +196,7 @@ class Client {
   /// no cookie, no caching
   Future<Map<String, dynamic>> _postJson(
       String uri, Map<String, dynamic> json) async {
+    final baseUrl = await getEndpoint();
     print('$baseUrl$uri');
     return http
         .post('$baseUrl$uri',
@@ -180,6 +219,7 @@ class Client {
   /// no caching
   Future<PatchResult> _patchJson(
       String uri, List<Map<String, dynamic>> json) async {
+    final baseUrl = await getEndpoint();
     final completer = Completer<PatchResult>();
     _getCookie().then((cookie) {
       if (cookie == null) {
@@ -270,8 +310,8 @@ class Client {
           .catchError((e) => Future.error(e));
 
   /// GET /api/artists/1/radio
-  Future<Spiff> artistRadio(int id) async =>
-      _getJson('/api/artists/$id/radio')
+  Future<Spiff> artistRadio(int id, {Duration ttl}) async =>
+      _getJson('/api/artists/$id/radio', ttl: ttl)
           .then((j) => Spiff.fromJson(j))
           .catchError((e) => Future.error(e));
 
@@ -318,6 +358,7 @@ class Client {
     }
     final cookie = await _getCookie();
     final completer = Completer();
+    final baseUrl = await getEndpoint();
 
     HttpClient()
         .getUrl(Uri.parse('$baseUrl${d.location}'))
@@ -373,7 +414,7 @@ class Client {
     if (result is File) {
       return result.uri;
     } else {
-      // TODO wifi
+      final baseUrl = await getEndpoint();
       return Uri.parse('$baseUrl${d.location}');
     }
   }

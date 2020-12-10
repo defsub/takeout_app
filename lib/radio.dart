@@ -84,7 +84,7 @@ class RadioState extends State<RadioWidget> {
                   leading: Icon(Icons.radio),
                   title: Text(stations[index].name),
                   trailing: IconButton(
-                      icon: Icon(Icons.download_sharp),
+                      icon: Icon(Icons.cloud_download_outlined),
                       onPressed: TakeoutState.allowDownload(result)
                           ? () => _onDownload(stations[index])
                           : null),
@@ -94,8 +94,11 @@ class RadioState extends State<RadioWidget> {
   }
 
   void _onStation(Station station) {
-    Navigator.push(context,
-        MaterialPageRoute(builder: (context) => StationWidget(station)));
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) => RefreshSpiffWidget(
+                () => Client().station(station.id, ttl: Duration.zero))));
   }
 
   void _onDownload(Station station) {
@@ -115,20 +118,20 @@ class RadioState extends State<RadioWidget> {
   }
 }
 
-class StationWidget extends StatefulWidget {
-  final Station _station;
+class RefreshSpiffWidget extends StatefulWidget {
+  final Future<Spiff> Function() _fetchSpiff;
 
-  StationWidget(this._station);
+  RefreshSpiffWidget(this._fetchSpiff);
 
   @override
-  _StationState createState() => _StationState(_station);
+  _RefreshSpiffState createState() => _RefreshSpiffState(_fetchSpiff);
 }
 
-class _StationState extends State<StationWidget> {
-  final Station _station;
+class _RefreshSpiffState extends State<RefreshSpiffWidget> {
+  final Future<Spiff> Function() _fetchSpiff;
   Spiff _spiff;
 
-  _StationState(this._station);
+  _RefreshSpiffState(this._fetchSpiff);
 
   @override
   void initState() {
@@ -139,7 +142,7 @@ class _StationState extends State<StationWidget> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(title: header('${_station.name}')),
+        appBar: AppBar(title: header(_spiff?.playlist?.title ?? '')),
         body: RefreshIndicator(
             onRefresh: () => _onRefresh(),
             child: StreamBuilder<ConnectivityResult>(
@@ -147,7 +150,7 @@ class _StationState extends State<StationWidget> {
                 builder: (context, snapshot) {
                   final result = snapshot.data;
                   return (_spiff == null)
-                      ? Text('loading')
+                      ? Center(child: CircularProgressIndicator())
                       : SingleChildScrollView(
                           child: Column(children: [
                           Row(
@@ -159,7 +162,7 @@ class _StationState extends State<StationWidget> {
                                       ? () => _onPlay()
                                       : null),
                               IconButton(
-                                  icon: Icon(Icons.cloud_download_sharp),
+                                  icon: Icon(Icons.cloud_download_outlined),
                                   onPressed: TakeoutState.allowDownload(result)
                                       ? () => _onDownload()
                                       : null),
@@ -181,8 +184,7 @@ class _StationState extends State<StationWidget> {
 
   Future<void> _onRefresh() async {
     try {
-      final client = Client();
-      final result = await client.station(_station.id, ttl: Duration.zero);
+      final result = await _fetchSpiff();
       setState(() {
         _spiff = result;
       });

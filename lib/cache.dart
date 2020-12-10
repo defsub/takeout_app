@@ -199,8 +199,9 @@ class SpiffCache {
     final key = Uri.parse(spiff.playlist.location);
     if (spiff.isRemote()) {
       await _save(key, spiff);
+    } else {
+      print('XXX dont put ${spiff.playlist.location}');
     }
-    print('loc ${spiff.playlist.location}');
     print('put ${key.toString()} -> $spiff, ${key.hashCode}, ${spiff.playlist.tracks.length} tracks');
     _cache[key] = spiff;
   }
@@ -211,9 +212,8 @@ class SpiffCache {
     return _cache[uri];
   }
 
-  /// TODO
-  static Future<Spiff> xxx(Uri uri) async {
-    print('xxx ${uri.toString()}');
+  static Future<Spiff> load(Uri uri) async {
+    print('load ${uri.toString()}');
     File file;
     if (uri.scheme == 'file') {
       file = File.fromUri(uri);
@@ -223,8 +223,9 @@ class SpiffCache {
     print('file is $file');
     final spiff = await Spiff.fromFile(file);
     print('spiff ${spiff.playlist.title} ${spiff.playlist.tracks.length}');
-    await put(spiff);
-    // return get(uri);
+    if (spiff.isRemote()) {
+      await put(spiff);
+    }
     return spiff;
   }
 
@@ -234,3 +235,4 @@ class SpiffCache {
     return list;
   }
 }
+

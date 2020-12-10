@@ -17,17 +17,16 @@
 
 import 'package:connectivity/connectivity.dart';
 import 'package:flutter/material.dart';
-import 'package:takeout_app/global.dart';
-import 'package:takeout_app/main.dart';
 
+import 'main.dart';
 import 'client.dart';
 import 'cover.dart';
 import 'music.dart';
 import 'playlist.dart';
 import 'release.dart';
-import 'downloads.dart';
 import 'style.dart';
 import 'cache.dart';
+import 'radio.dart';
 
 class ArtistsWidget extends StatefulWidget {
   final ArtistsView _view;
@@ -166,10 +165,16 @@ class _ArtistState extends State<ArtistWidget> {
   }
 
   void _onRadio() {
-    final client = Client();
-    client.artistRadio(_artist.id).then((spiff) {
-      MediaQueue.playSpiff(spiff);
-    });
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) => RefreshSpiffWidget(
+                () => Client().artistRadio(_artist.id, ttl: Duration.zero))));
+
+    // final client = Client();
+    // client.artistRadio(_artist.id).then((spiff) {
+    //   MediaQueue.playSpiff(spiff);
+    // });
   }
 
   void _onSingles(BuildContext context) {
@@ -302,8 +307,8 @@ class TrackListWidget extends StatelessWidget {
       ..._tracks.map((t) => ListTile(
           onTap: () => onPlay(t),
           leading: trackCover(t),
-          trailing: IconButton(
-              icon: Icon(Icons.playlist_add), onPressed: () => onAdd(t)),
+          // trailing: IconButton(
+          //     icon: Icon(Icons.playlist_add), onPressed: () => onAdd(t)),
           subtitle: Text('${t.release} \u2022 ${t.date}'),
           title: Text(t.title)))
     ]);
@@ -363,15 +368,15 @@ class _ArtistTrackListState extends State<ArtistTrackListWidget> {
             title: header(
                 _type == ArtistTrackType.popular ? 'Popular' : 'Singles')),
         body: _tracks == null
-            ? Text('loading')
+            ? Center(child: CircularProgressIndicator())
             : SingleChildScrollView(
                 child: Column(children: [
                 ..._tracks.map((t) => ListTile(
                     onTap: () => _onPlay(t),
                     leading: trackCover(t),
-                    trailing: IconButton(
-                        icon: Icon(Icons.playlist_add),
-                        onPressed: () => _onAdd(t)),
+                    // trailing: IconButton(
+                    //     icon: Icon(Icons.playlist_add),
+                    //     onPressed: () => _onAdd(t)),
                     subtitle: Text('${t.release} \u2022 ${t.date}'),
                     title: Text(t.title)))
               ])));

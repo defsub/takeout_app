@@ -54,7 +54,7 @@ class HomeState extends State<HomeWidget> {
                       final List<DownloadEntry> entries = snapshot.data ?? [];
                       print('${entries.length}');
                       if (entries.isEmpty) {
-                        return Divider();
+                        return SizedBox.shrink();
                       }
                       return Column(children: [
                         headingButton(

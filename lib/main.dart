@@ -242,15 +242,19 @@ class TakeoutState extends State<_TakeoutWidget> {
   Widget _widget(int index) {
     switch (index) {
       case 0:
-        return _homeView == null ? Text('loading') : HomeWidget(_homeView);
+        return _homeView == null
+            ? Center(child: CircularProgressIndicator())
+            : HomeWidget(_homeView);
       case 1:
         return _artistsView == null
-            ? Text('loading')
+            ? Center(child: CircularProgressIndicator())
             : ArtistsWidget(_artistsView);
       case 2:
         return SearchWidget();
       case 3:
-        return _radioView == null ? Text('loading') : RadioWidget(_radioView);
+        return _radioView == null
+            ? Center(child: CircularProgressIndicator())
+            : RadioWidget(_radioView);
       case 4:
         if (_playerWidget == null) {
           print('loading player widget');
@@ -313,7 +317,7 @@ class TakeoutState extends State<_TakeoutWidget> {
           return isFirstRouteInCurrentTab;
         },
         child: _loggedIn == null
-            ? Container(child: Center(child: Text('loading')))
+            ?  Center(child: CircularProgressIndicator())
             : _loggedIn == false
                 ? LoginWidget(() => _onLoginSuccess())
                 : Scaffold(

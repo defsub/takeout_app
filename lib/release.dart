@@ -115,8 +115,7 @@ class _ReleaseState extends State<ReleaseWidget> {
             backgroundColor: snapshot?.data,
             appBar: AppBar(
                 backgroundColor: snapshot?.data,
-                title: header('${release.name} \u2022 ${year(release)}'),
-                actions: [Icon(Icons.cast)]),
+                title: header('${release.name} \u2022 ${year(release)}')),
             body: Builder(
                 builder: (context) => SingleChildScrollView(
                         child: Column(
@@ -146,15 +145,15 @@ class _ReleaseState extends State<ReleaseWidget> {
                                                         _isCached == true
                                                     ? () => _onPlay()
                                                     : null),
-                                        IconButton(
-                                            icon: Icon(Icons.playlist_add),
-                                            onPressed: () => _onAdd()),
+                                        // IconButton(
+                                        //     icon: Icon(Icons.playlist_add),
+                                        //     onPressed: () => _onAdd()),
                                         IconButton(
                                             icon: Icon(_isCached == null
                                                 ? Icons.hourglass_bottom_sharp
                                                 : _isCached
-                                                    ? Icons.cloud_done_sharp
-                                                    : Icons.cloud_download_sharp),
+                                                    ? Icons.cloud_done_outlined
+                                                    : Icons.cloud_download_outlined),
                                             onPressed:
                                                 TakeoutState.allowDownload(
                                                         result)
@@ -212,9 +211,9 @@ class _ReleaseTracksWidget extends StatelessWidget {
               padding: EdgeInsets.fromLTRB(12, 12, 0, 0),
               child: Text('${e.trackNum}',
                   style: TextStyle(fontWeight: FontWeight.w200))),
-          trailing: IconButton(
-              icon: Icon(Icons.playlist_add),
-              onPressed: () => onAppendTapped(e)),
+          // trailing: IconButton(
+          //     icon: Icon(Icons.playlist_add),
+          //     onPressed: () => onAppendTapped(e)),
           subtitle: Text(e.artist),
           title: Text(e.title)));
     });
@@ -234,9 +233,12 @@ class ReleaseListWidget extends StatelessWidget {
           child: ListTile(
               leading: releaseCover(e),
               onTap: () => _onTapped(context, e),
+              // trailing: IconButton(
+              //     icon: Icon(Icons.playlist_add),
+              //     onPressed: () => _onAppend(e)),
               trailing: IconButton(
-                  icon: Icon(Icons.playlist_add),
-                  onPressed: () => _onAppend(e)),
+                  icon: Icon(Icons.playlist_play),
+                  onPressed: () => _onPlay(e)),
               title: Text(e.name),
               subtitle: Text(year(e)))))
     ]);
@@ -249,5 +251,9 @@ class ReleaseListWidget extends StatelessWidget {
 
   void _onAppend(Release release) {
     MediaQueue.append(release: release);
+  }
+
+  void _onPlay(Release release) {
+    MediaQueue.play(release: release);
   }
 }

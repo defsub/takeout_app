@@ -65,7 +65,7 @@ class AudioPlayerTask extends BackgroundAudioTask {
   }
 
   void _reload() async {
-    var newState = await MediaQueue.instance();
+    var newState = await MediaQueue.load();
     var oldState = _state;
 
     bool canAppend = false;

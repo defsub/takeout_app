@@ -127,15 +127,15 @@ class PlayerWidget extends StatelessWidget {
                                                         fontWeight:
                                                             FontWeight.w700,
                                                         fontSize: 21)),
-                                                Container(
-                                                    padding:
-                                                        EdgeInsets.fromLTRB(
-                                                            13, 0, 0, 0),
-                                                    child: Icon(
-                                                        mediaItem.isLocalFile()
-                                                            ? Icons.cloud_done_sharp
-                                                            : null,
-                                                        size: 20))
+                                                if (mediaItem?.isLocalFile())
+                                                  Container(
+                                                      padding:
+                                                          EdgeInsets.fromLTRB(
+                                                              13, 0, 0, 0),
+                                                      child: Icon(
+                                                          Icons
+                                                              .cloud_done_outlined,
+                                                          size: 20))
                                               ]),
                                           padding:
                                               EdgeInsets.fromLTRB(0, 13, 0, 0)),

@@ -33,6 +33,7 @@ class _LoginState extends State<LoginWidget> {
 
   _LoginState(this._onSuccess);
 
+  TextEditingController _hostText = TextEditingController();
   TextEditingController _nameText = TextEditingController();
   TextEditingController _passwordText = TextEditingController();
 
@@ -46,6 +47,25 @@ class _LoginState extends State<LoginWidget> {
             padding: EdgeInsets.all(10),
             child: ListView(
               children: <Widget>[
+                Container(
+                    alignment: Alignment.center,
+                    padding: EdgeInsets.all(10),
+                    child: Text(
+                      'Host',
+                      style:
+                      TextStyle(fontWeight: FontWeight.w500, fontSize: 30),
+                    )),
+                Container(
+                  padding: EdgeInsets.all(10),
+                  child: TextField(
+                    controller: _hostText,
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(),
+                      labelText: 'Host',
+                      helperText: 'https://example.com'
+                    ),
+                  ),
+                ),
                 Container(
                     alignment: Alignment.center,
                     padding: EdgeInsets.all(10),
@@ -80,10 +100,12 @@ class _LoginState extends State<LoginWidget> {
                     padding: EdgeInsets.all(10),
                     child: OutlinedButton(
                       child: Text('Login'),
-                      onPressed: () {
+                      onPressed: () async {
+                        print(_hostText.text);
                         print(_nameText.text);
                         print(_passwordText.text);
-                        var client = Client();
+                        final client = Client();
+                        await client.setEndpoint(_hostText.text);
                         client.login(_nameText.text, _passwordText.text).then((result) {
                           if (result['Status'] == 200) {
                             _onSuccess();

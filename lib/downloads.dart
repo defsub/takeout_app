@@ -198,9 +198,9 @@ class DownloadState extends State<DownloadWidget> {
                                 IconButton(
 
                                     icon: Icon(_isCached
-                                        ? Icons.cloud_done_sharp
-                                        : Icons.cloud_download_sharp),
-                                    onPressed: () => {}),
+                                        ? Icons.cloud_done_outlined
+                                        : Icons.cloud_download_outlined),
+                                    onPressed: () => _onDownloadCheck()),
                               ],
                             )),
                         if (_spiff.playlist.creator != null)
@@ -212,6 +212,10 @@ class DownloadState extends State<DownloadWidget> {
                         SpiffTrackListView(_spiff)
                       ]),
                     ))));
+  }
+
+  void _onDownloadCheck() {
+    Downloads.downloadSpiffTracks(_spiff);
   }
 
   void _onArtist(BuildContext context) {
@@ -337,6 +341,18 @@ class Downloads {
     return completer.future;
   }
 
+  static Future<bool> downloadSpiffTracks(Spiff spiff) async {
+    final client = Client();
+    return await _downloadTracks(client, spiff);
+  }
+
+  static Future<bool> _downloadTracks(Client client, Spiff spiff) async {
+    return await client.downloadSpiffTracks(spiff).then((result) {
+      return result.length == spiff.playlist.tracks.length &&
+          !result.any((e) => e == false);
+    });
+  }
+
   static Future<bool> _download(
       Client client, Future<Spiff> Function() fetchSpiff) async {
     final completer = Completer<bool>();
@@ -346,14 +362,14 @@ class Downloads {
         spiff = spiff.copyWith(
             playlist: spiff.playlist.copyWith(location: file.uri.toString()));
         print('download to $file');
-        _saveAs(spiff, file).then((_) {
-          SpiffCache.put(spiff); // TODO needed?
-          _downloads.add(DownloadEntry.create(file, spiff));
+        _saveAs(spiff, file).then((_) async {
+          _add(DownloadEntry.create(file, spiff));
           _broadcast();
-          client.downloadSpiffTracks(spiff).then((result) {
-            completer.complete(result.length == spiff.playlist.tracks.length &&
-                !result.any((e) => e == false));
-          }).catchError((error) => completer.completeError(error));
+          try {
+            completer.complete(await _downloadTracks(client, spiff));
+          } catch(e) {
+            completer.completeError(e);
+          }
         }).catchError(((error) => completer.completeError(error)));
       }).catchError((error) => completer.completeError(error));
     });
@@ -395,6 +411,13 @@ class Downloads {
     downloadsSubject.add(_downloads);
   }
 
+  static void _add(DownloadEntry entry) {
+    final entries = _downloads.where((e) => e.file.path == entry.file.path);
+    if (entries.isEmpty) {
+      _downloads.add(entry);
+    }
+  }
+
   static bool get isNotEmpty => _downloads.isNotEmpty;
 
   static Future<void> reload() async {
@@ -412,8 +435,7 @@ class Downloads {
     await Future.forEach(list, (file) async {
       if (file.path.endsWith('.json')) {
         final spiff = await Spiff.fromFile(file);
-        _downloads.add(DownloadEntry.create(file, spiff));
-        SpiffCache.put(spiff);
+        _add(DownloadEntry.create(file, spiff));
       }
     }).whenComplete(() {
       _broadcast();
