@@ -159,13 +159,19 @@ class _ArtistState extends State<ArtistWidget> {
   }
 
   void _onPlay() {
-    // TODO play popular
+    final client = Client();
+    client.artistPlaylist(_artist.id).then((spiff) {
+      MediaQueue.playSpiff(spiff);
+    });
   }
 
   void _onRadio() {
-    // TODO play similar radio
+    final client = Client();
+    client.artistRadio(_artist.id).then((spiff) {
+      MediaQueue.playSpiff(spiff);
+    });
   }
-  
+
   void _onSingles(BuildContext context) {
     Navigator.push(
         context,

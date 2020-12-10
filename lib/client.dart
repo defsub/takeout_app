@@ -269,6 +269,12 @@ class Client {
           .then((j) => Spiff.fromJson(j))
           .catchError((e) => Future.error(e));
 
+  /// GET /api/artists/1/radio
+  Future<Spiff> artistRadio(int id) async =>
+      _getJson('/api/artists/$id/radio')
+          .then((j) => Spiff.fromJson(j))
+          .catchError((e) => Future.error(e));
+
   /// GET /api/releases/1
   Future<ReleaseView> release(int id) async => _getJson('/api/releases/$id')
       .then((j) => ReleaseView.fromJson(j))

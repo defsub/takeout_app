@@ -133,9 +133,8 @@ class PlayerWidget extends StatelessWidget {
                                                             13, 0, 0, 0),
                                                     child: Icon(
                                                         mediaItem.isLocalFile()
-                                                            ? Icons.cloud_off
-                                                            : Icons
-                                                                .cloud_outlined,
+                                                            ? Icons.cloud_done_sharp
+                                                            : null,
                                                         size: 20))
                                               ]),
                                           padding:
