@@ -37,6 +37,7 @@ import 'radio.dart';
 import 'search.dart';
 import 'global.dart';
 import 'downloads.dart';
+import 'cache.dart';
 
 void main() => runApp(new MyApp());
 
@@ -211,6 +212,7 @@ class TakeoutState extends State<_TakeoutWidget> {
     if (_loggedIn != true) {
       return;
     }
+    TrackCache.init();
     Downloads.load();
     await MediaQueue.sync();
     MediaQueue.restore();

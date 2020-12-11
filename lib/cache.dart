@@ -16,12 +16,15 @@
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:rxdart/rxdart.dart';
+import 'package:path/path.dart';
 
 import 'client.dart';
 import 'spiff.dart';
@@ -98,6 +101,27 @@ class JsonCache {
 
 class TrackCache {
   static const _dir = 'track_cache';
+  static final keysSubject = BehaviorSubject<Set<String>>();
+  static final _entries = Map<String, File>();
+
+  static void init() async {
+    final dir = await checkAppDir(_dir);
+    final files = await dir.list().toList();
+    await Future.forEach(files, (FileSystemEntity file) async {
+      _entries[basename(file.path)] = file as File;
+    }).whenComplete(() => _broadcast());
+  }
+
+  static bool checkAll(Set<String> cacheKeys, Iterable<Locatable> entries) {
+    final entryKeys = Set<String>();
+    entries.forEach((e) => entryKeys.add(e.key));
+    return cacheKeys.containsAll(entryKeys);
+  }
+
+  static void _broadcast() {
+    final keys = Set<String>.from(_entries.keys);
+    keysSubject.add(keys);
+  }
 
   Future<File> _trackFile(Locatable d) async {
     return await checkAppDir(_dir).then((dir) {
@@ -126,7 +150,14 @@ class TrackCache {
 
   Future<IOSink> put(Locatable d) async {
     final file = await _trackFile(d);
+    _entries[d.key] = file;
+    _broadcast();
     return file.openWrite();
+  }
+
+  void remove(Locatable d) {
+    _entries.remove(d.key);
+    _broadcast();
   }
 
   Future<bool> contains(List<Locatable> list) async {
@@ -180,7 +211,7 @@ class SpiffCache {
       return File('${dir.path}/$fileName');
     });
   }
-  
+
   static Future<File> _save(Uri uri, Spiff spiff) async {
     print('_saving $spiff');
     final completer = Completer<File>();
@@ -202,7 +233,8 @@ class SpiffCache {
     } else {
       print('XXX dont put ${spiff.playlist.location}');
     }
-    print('put ${key.toString()} -> $spiff, ${key.hashCode}, ${spiff.playlist.tracks.length} tracks');
+    print(
+        'put ${key.toString()} -> $spiff, ${key.hashCode}, ${spiff.playlist.tracks.length} tracks');
     _cache[key] = spiff;
   }
 
@@ -235,4 +267,3 @@ class SpiffCache {
     return list;
   }
 }
-

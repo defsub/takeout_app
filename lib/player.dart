@@ -140,10 +140,11 @@ class PlayerWidget extends StatelessWidget {
                                           padding:
                                               EdgeInsets.fromLTRB(0, 13, 0, 0)),
                                     if (mediaItem?.artist != null)
-                                      OutlinedButton(
+                                      OutlinedButton.icon(
+                                        icon: Icon(Icons.people),
                                           onPressed: () =>
                                               {_onArtist(mediaItem.artist)},
-                                          child: Text(mediaItem?.artist,
+                                          label: Text(mediaItem?.artist,
                                               style: TextStyle(fontSize: 15))),
                                     if (queue != null && queue.isNotEmpty)
                                       Row(
@@ -283,7 +284,6 @@ class PlayerWidget extends StatelessWidget {
                               selected: t == state.mediaItem,
                               onTap: () {
                                 AudioService.playMediaItem(t);
-                                Navigator.pop(context);
                               },
                               subtitle: Text('${t.artist} \u2022 ${t.album}'),
                               title: Text(t.title)))

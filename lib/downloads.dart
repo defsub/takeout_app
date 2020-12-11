@@ -156,14 +156,12 @@ class DownloadWidget extends StatefulWidget {
 
 class DownloadState extends State<DownloadWidget> {
   final Spiff _spiff;
-  bool _isCached = false;
 
   DownloadState(this._spiff);
 
   @override
   void initState() {
     super.initState();
-    _checkCache();
   }
 
   @override
@@ -177,41 +175,49 @@ class DownloadState extends State<DownloadWidget> {
                 backgroundColor: snapshot?.data),
             body: Builder(
                 builder: (context) => SingleChildScrollView(
-                      child: Column(children: [
-                        header('Downloaded'),
-                        Container(
-                            padding: EdgeInsets.fromLTRB(0, 11, 0, 0),
-                            child: GestureDetector(
-                                onTap: () => _onPlay(),
-                                child: cover(_spiff.playlist.image))),
-                        Container(
-                            padding: EdgeInsets.fromLTRB(0, 11, 0, 0),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: [
-                                IconButton(
-                                    icon: Icon(Icons.playlist_play),
-                                    onPressed: () => _onPlay()),
-                                IconButton(
-                                    icon: Icon(Icons.delete),
-                                    onPressed: () => _onDelete(context)),
-                                IconButton(
-
-                                    icon: Icon(_isCached
-                                        ? Icons.cloud_done_outlined
-                                        : Icons.cloud_download_outlined),
-                                    onPressed: () => _onDownloadCheck()),
-                              ],
-                            )),
-                        if (_spiff.playlist.creator != null)
-                          OutlinedButton(
-                              onPressed: () => _onArtist(context),
-                              child: Text(_spiff.playlist.creator,
-                                  style: TextStyle(fontSize: 15))),
-                        Divider(),
-                        SpiffTrackListView(_spiff)
-                      ]),
-                    ))));
+                    child: StreamBuilder(
+                        stream: TrackCache.keysSubject,
+                        builder: (context, snapshot) {
+                          final keys = snapshot.data ?? Set<String>();
+                          final isCached =
+                              TrackCache.checkAll(keys, _spiff.playlist.tracks);
+                          return Column(children: [
+                            Container(
+                                padding: EdgeInsets.fromLTRB(0, 11, 0, 0),
+                                child: GestureDetector(
+                                    onTap: () => _onPlay(),
+                                    child: cover(_spiff.playlist.image))),
+                            Container(
+                                padding: EdgeInsets.fromLTRB(0, 11, 0, 0),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceEvenly,
+                                  children: [
+                                    OutlinedButton.icon(
+                                        label: Text('Play'),
+                                        icon: Icon(Icons.playlist_play),
+                                        onPressed: () => _onPlay()),
+                                    OutlinedButton.icon(
+                                        label: Text('Delete'),
+                                        icon: Icon(Icons.delete),
+                                        onPressed: () => _onDelete(context)),
+                                    if (!isCached)
+                                      OutlinedButton.icon(
+                                          label: Text('Download'),
+                                          icon: Icon(
+                                              Icons.cloud_download_outlined),
+                                          onPressed: () => _onDownloadCheck()),
+                                  ],
+                                )),
+                            // if (_spiff.playlist.creator != null)
+                            //   OutlinedButton(
+                            //       onPressed: () => _onArtist(context),
+                            //       child: Text(_spiff.playlist.creator,
+                            //           style: TextStyle(fontSize: 15))),
+                            Divider(),
+                            SpiffTrackListView(_spiff)
+                          ]);
+                        })))));
   }
 
   void _onDownloadCheck() {
@@ -264,6 +270,7 @@ class DownloadState extends State<DownloadWidget> {
       if (result is File) {
         print('delete $result');
         result.delete();
+        cache.remove(e);
       }
     });
 
@@ -274,17 +281,6 @@ class DownloadState extends State<DownloadWidget> {
 
     Downloads.reload();
   }
-
-  Future<bool> _allTracksCached() async {
-    return TrackCache().contains(_spiff.playlist.tracks);
-  }
-
-  void _checkCache() async {
-    final result = await _allTracksCached();
-    setState(() {
-      _isCached = result;
-    });
-  }
 }
 
 class SpiffTrackListView extends StatelessWidget {
@@ -294,23 +290,23 @@ class SpiffTrackListView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var children = List<Widget>();
-    final cache = TrackCache();
-    _spiff.playlist.tracks.forEach((e) {
-      children.add(ListTile(
-          onTap: () => {},
-          leading: cover(e.image),
-          trailing: FutureBuilder(
-              future: cache.exists(e),
-              builder: (context, snapshot) {
-                final cached = snapshot.data ?? false;
-                return Icon(
-                    cached ? Icons.download_done_sharp : null);
-              }),
-          subtitle: Text('${e.creator} \u2022 ${e.size ~/ megabyte} MB'),
-          title: Text(e.title)));
-    });
-    return Column(children: children);
+    return StreamBuilder(
+        stream: TrackCache.keysSubject,
+        builder: (context, snapshot) {
+          final keys = snapshot.data ?? Set<String>();
+          final children = List<Widget>();
+          final cache = TrackCache();
+          _spiff.playlist.tracks.forEach((e) {
+            children.add(ListTile(
+                onTap: () => {},
+                leading: cover(e.image),
+                trailing: Icon(
+                    keys.contains(e.key) ? Icons.download_done_sharp : null),
+                subtitle: Text('${e.creator} \u2022 ${e.size ~/ megabyte} MB'),
+                title: Text(e.title)));
+          });
+          return Column(children: children);
+        });
   }
 }
 
@@ -367,7 +363,7 @@ class Downloads {
           _broadcast();
           try {
             completer.complete(await _downloadTracks(client, spiff));
-          } catch(e) {
+          } catch (e) {
             completer.completeError(e);
           }
         }).catchError(((error) => completer.completeError(error)));
@@ -393,7 +389,8 @@ class Downloads {
   static Future<bool> downloadStation(Station station) async {
     final client = Client();
     showSnackBar('Downloading ${station.name}');
-    return _download(client, () => client.station(station.id, ttl: Duration.zero))
+    return _download(
+            client, () => client.station(station.id, ttl: Duration.zero))
         .whenComplete(() => showSnackBar('Finished ${station.name}'));
   }
 

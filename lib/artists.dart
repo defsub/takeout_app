@@ -213,14 +213,16 @@ class _ArtistState extends State<ArtistWidget> {
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceEvenly,
                                 children: [
-                                  IconButton(
+                                  OutlinedButton.icon(
+                                      label: Text('Play'),
                                       icon: Icon(Icons.playlist_play),
                                       onPressed:
                                           TakeoutState.allowStreaming(result) ||
                                                   _isCached == true
                                               ? () => _onPlay()
                                               : null),
-                                  IconButton(
+                                  OutlinedButton.icon(
+                                      label: Text('Radio'),
                                       icon: Icon(Icons.radio),
                                       onPressed: () => _onRadio()),
                                   // IconButton(

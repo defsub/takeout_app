@@ -25,6 +25,7 @@ import 'client.dart';
 import 'downloads.dart';
 import 'spiff.dart';
 import 'style.dart';
+import 'cache.dart';
 
 class RadioWidget extends StatefulWidget {
   final RadioView _view;
@@ -43,7 +44,7 @@ class RadioState extends State<RadioWidget> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-        length: 4,
+        length: 2,
         child: RefreshIndicator(
             onRefresh: () => _onRefresh(),
             child: Scaffold(
@@ -52,16 +53,12 @@ class RadioState extends State<RadioWidget> {
                     bottom: TabBar(
                       tabs: [
                         Tab(text: 'Genres'),
-                        Tab(text: 'Similar'),
-                        Tab(text: 'Artists'),
                         Tab(text: 'Decades'),
                       ],
                     )),
                 body: TabBarView(
                   children: [
                     _stations(_view.genre),
-                    _stations(_view.similar),
-                    _stations(_view.artist),
                     _stations(_view.period),
                   ],
                 ))));
@@ -152,25 +149,43 @@ class _RefreshSpiffState extends State<RefreshSpiffWidget> {
                   return (_spiff == null)
                       ? Center(child: CircularProgressIndicator())
                       : SingleChildScrollView(
-                          child: Column(children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              IconButton(
-                                  icon: Icon(Icons.playlist_play),
-                                  onPressed: TakeoutState.allowStreaming(result)
-                                      ? () => _onPlay()
-                                      : null),
-                              IconButton(
-                                  icon: Icon(Icons.cloud_download_outlined),
-                                  onPressed: TakeoutState.allowDownload(result)
-                                      ? () => _onDownload()
-                                      : null),
-                            ],
-                          ),
-                          Divider(),
-                          SpiffTrackListView(_spiff),
-                        ]));
+                          child: StreamBuilder(
+                              stream: TrackCache.keysSubject,
+                              builder: (context, snapshot) {
+                                final keys = snapshot.data ?? Set<String>();
+                                final isCached = _spiff != null
+                                    ? TrackCache.checkAll(
+                                        keys, _spiff.playlist.tracks)
+                                    : false;
+                                return Column(children: [
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceEvenly,
+                                    children: [
+                                      OutlinedButton.icon(
+                                          label: Text('Play'),
+                                          icon: Icon(Icons.playlist_play),
+                                          onPressed:
+                                              TakeoutState.allowStreaming(
+                                                      result)
+                                                  ? () => _onPlay()
+                                                  : null),
+                                      OutlinedButton.icon(
+                                          label: Text(isCached
+                                              ? 'Complete'
+                                              : 'Download'),
+                                          icon: Icon(
+                                              Icons.cloud_download_outlined),
+                                          onPressed:
+                                              TakeoutState.allowDownload(result)
+                                                  ? () => _onDownload()
+                                                  : null),
+                                    ],
+                                  ),
+                                  Divider(),
+                                  SpiffTrackListView(_spiff),
+                                ]);
+                              }));
                 })));
   }
 
