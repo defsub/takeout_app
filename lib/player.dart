@@ -141,9 +141,9 @@ class PlayerWidget extends StatelessWidget {
                                               EdgeInsets.fromLTRB(0, 13, 0, 0)),
                                     if (mediaItem?.artist != null)
                                       OutlinedButton.icon(
-                                        icon: Icon(Icons.people),
+                                          icon: Icon(Icons.people),
                                           onPressed: () =>
-                                              {_onArtist(mediaItem.artist)},
+                                              _onArtist(mediaItem.artist),
                                           label: Text(mediaItem?.artist,
                                               style: TextStyle(fontSize: 15))),
                                     if (queue != null && queue.isNotEmpty)

@@ -139,11 +139,7 @@ class TrackCache {
     final completer = Completer<dynamic>();
     final file = await _trackFile(d);
     file.exists().then((exists) {
-      if (exists) {
-        completer.complete(file);
-      } else {
-        completer.complete(false);
-      }
+      completer.complete(exists ? file : false);
     });
     return completer.future;
   }
@@ -185,28 +181,20 @@ class TrackCache {
 
 class SpiffCache {
   static const _dir = 'spiff_cache';
-  static const _defaultName = 'playlist';
   static final Map<Uri, Spiff> _cache = {};
 
   static Future<File> _cacheFile(Uri uri) async {
     var fileName;
-    final location = uri.toString();
-    if (location.endsWith('/api/playlist')) {
-      fileName = 'playlist.json';
+    if (uri.scheme == 'file') {
+      // local spiffs
+      fileName = 'local.json';
     } else {
-      final regexp = RegExp(r'.*/api/([a-z]+)/([0-9]+)');
-      final matches = regexp.allMatches(location);
-      if (matches.isNotEmpty) {
-        final match = matches.elementAt(0);
-        fileName = '${match.group(1)}_${match.group(2)}.json';
-      }
+      fileName = uri.path
+          .replaceAll('/api/', '')
+          .replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
+      fileName = '$fileName.json';
     }
-    if (fileName == null) {
-      fileName = '$_defaultName.json';
-    }
-
-    print('_cacheFile $location -> $fileName');
-
+    print('$uri -> $fileName');
     return await checkAppDir(_dir).then((dir) {
       return File('${dir.path}/$fileName');
     });
@@ -228,42 +216,23 @@ class SpiffCache {
 
   static Future<void> put(Spiff spiff) async {
     final key = Uri.parse(spiff.playlist.location);
-    if (spiff.isRemote()) {
-      await _save(key, spiff);
-    } else {
-      print('XXX dont put ${spiff.playlist.location}');
-    }
+    await _save(key, spiff);
     print(
-        'put ${key.toString()} -> $spiff, ${key.hashCode}, ${spiff.playlist.tracks.length} tracks');
+        'put ${key.toString()} -> $spiff, ${spiff.playlist.tracks.length} tracks');
     _cache[key] = spiff;
   }
 
   static Future<Spiff> get(Uri uri) async {
-    // TODO more?
-    print('get $uri -> ${_cache[uri]}, ${uri.hashCode}');
+    print('get $uri -> ${_cache[uri]}');
     return _cache[uri];
   }
 
   static Future<Spiff> load(Uri uri) async {
-    print('load ${uri.toString()}');
-    File file;
-    if (uri.scheme == 'file') {
-      file = File.fromUri(uri);
-    } else {
-      file = await _cacheFile(uri);
-    }
-    print('file is $file');
+    print('loading ${uri.toString()}');
+    final file = await _cacheFile(uri);
     final spiff = await Spiff.fromFile(file);
-    print('spiff ${spiff.playlist.title} ${spiff.playlist.tracks.length}');
-    if (spiff.isRemote()) {
-      await put(spiff);
-    }
+    print('loaded ${spiff.playlist.title} with ${spiff.playlist.tracks.length} tracks');
+    await put(spiff);
     return spiff;
-  }
-
-  static Future<List<Spiff>> entries() async {
-    final list = _cache.values.toList();
-    list.sort((a, b) => a.playlist.title.compareTo(b.playlist.title));
-    return list;
   }
 }

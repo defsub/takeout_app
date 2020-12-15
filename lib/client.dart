@@ -297,15 +297,27 @@ class Client {
           .then((j) => SinglesView.fromJson(j))
           .catchError((e) => Future.error(e));
 
+  /// GET /api/artists/1/singles/playlist
+  Future<Spiff> artistSinglesPlaylist(int id) async =>
+      _getJson('/api/artists/$id/singles/playlist')
+          .then((j) => Spiff.fromJson(j))
+          .catchError((e) => Future.error(e));
+
   /// GET /api/artists/1/popular
   Future<PopularView> artistPopular(int id) async =>
       _getJson('/api/artists/$id/popular')
           .then((j) => PopularView.fromJson(j))
           .catchError((e) => Future.error(e));
 
+  /// GET /api/artists/1/popular/playlist
+  Future<Spiff> artistPopularPlaylist(int id) async =>
+      _getJson('/api/artists/$id/popular/playlist')
+          .then((j) => Spiff.fromJson(j))
+          .catchError((e) => Future.error(e));
+
   /// GET /api/artists/1/playlist
-  Future<Spiff> artistPlaylist(int id) async =>
-      _getJson('/api/artists/$id/playlist')
+  Future<Spiff> artistPlaylist(int id, {Duration ttl}) async =>
+      _getJson('/api/artists/$id/playlist', ttl: ttl)
           .then((j) => Spiff.fromJson(j))
           .catchError((e) => Future.error(e));
 

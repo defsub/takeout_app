@@ -215,7 +215,10 @@ class TakeoutState extends State<_TakeoutWidget> {
     TrackCache.init();
     Downloads.load();
     await MediaQueue.sync();
-    MediaQueue.restore();
+    print(AudioService.playbackState);
+    if (!AudioService.playbackState.playing) {
+      MediaQueue.restore();
+    }
     final client = Client();
     client.home().then((view) {
       _onHomeUpdated(view);
@@ -269,31 +272,6 @@ class TakeoutState extends State<_TakeoutWidget> {
       default:
         return Text('widget $index');
     }
-  }
-
-  Widget _drawer(BuildContext context) {
-    return Drawer(
-        child: ListView(
-      padding: EdgeInsets.zero,
-      children: [
-        DrawerHeader(
-          child: Text('Takeout'),
-          decoration: BoxDecoration(
-            color: Colors.blue,
-          ),
-        ),
-        ListTile(
-          title: Text('Item 1'),
-          onTap: () {
-            // Update the state of the app
-            // ...
-            // Then close the drawer
-            showSnackBar('testing');
-            Navigator.pop(context);
-          },
-        ),
-      ],
-    ));
   }
 
   StreamSubscription<SnackBarState> snackBarSubscription;

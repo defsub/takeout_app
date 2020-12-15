@@ -41,27 +41,44 @@ class RadioState extends State<RadioWidget> {
 
   RadioState(this._view);
 
+  List<DownloadEntry> _radioFilter(List<DownloadEntry> entries) {
+    final list = List<DownloadEntry>.from(entries);
+    list.retainWhere((e) => e.spiff.playlist.creator == 'Radio');
+    return list;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-        length: 2,
-        child: RefreshIndicator(
-            onRefresh: () => _onRefresh(),
-            child: Scaffold(
-                appBar: AppBar(
-                    title: Text('Radio'),
-                    bottom: TabBar(
-                      tabs: [
-                        Tab(text: 'Genres'),
-                        Tab(text: 'Decades'),
-                      ],
-                    )),
-                body: TabBarView(
-                  children: [
-                    _stations(_view.genre),
-                    _stations(_view.period),
-                  ],
-                ))));
+    return StreamBuilder(
+        stream: Downloads.downloadsSubject,
+        builder: (context, snapshot) {
+          List<DownloadEntry> entries = snapshot.data ?? [];
+          entries = _radioFilter(entries);
+          bool haveDownloads = entries.isNotEmpty;
+          return DefaultTabController(
+              length: haveDownloads ? 3 : 2,
+              child: RefreshIndicator(
+                  onRefresh: () => _onRefresh(),
+                  child: Scaffold(
+                      appBar: AppBar(
+                          title: Text('Radio'),
+                          bottom: TabBar(
+                            tabs: [
+                              Tab(text: 'Genres'),
+                              Tab(text: 'Decades'),
+                              if (haveDownloads)
+                                Tab(text: 'Downloads')
+                            ],
+                          )),
+                      body: TabBarView(
+                        children: [
+                          _stations(_view.genre),
+                          _stations(_view.period),
+                          if (haveDownloads)
+                            DownloadListWidget(filter: _radioFilter)
+                        ],
+                      ))));
+        });
   }
 
   Widget _stations(List<Station> stations) {

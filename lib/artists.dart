@@ -27,6 +27,8 @@ import 'release.dart';
 import 'style.dart';
 import 'cache.dart';
 import 'radio.dart';
+import 'spiff.dart';
+import 'downloads.dart';
 
 class ArtistsWidget extends StatefulWidget {
   final ArtistsView _view;
@@ -157,24 +159,20 @@ class _ArtistState extends State<ArtistWidget> {
     MediaQueue.append(track: track);
   }
 
-  void _onPlay() {
-    final client = Client();
-    client.artistPlaylist(_artist.id).then((spiff) {
-      MediaQueue.playSpiff(spiff);
-    });
-  }
-
   void _onRadio() {
     Navigator.push(
         context,
         MaterialPageRoute(
             builder: (context) => RefreshSpiffWidget(
                 () => Client().artistRadio(_artist.id, ttl: Duration.zero))));
+  }
 
-    // final client = Client();
-    // client.artistRadio(_artist.id).then((spiff) {
-    //   MediaQueue.playSpiff(spiff);
-    // });
+  void _onShuffle() {
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) => RefreshSpiffWidget(() =>
+                Client().artistPlaylist(_artist.id, ttl: Duration.zero))));
   }
 
   void _onSingles(BuildContext context) {
@@ -214,27 +212,13 @@ class _ArtistState extends State<ArtistWidget> {
                                     MainAxisAlignment.spaceEvenly,
                                 children: [
                                   OutlinedButton.icon(
-                                      label: Text('Play'),
-                                      icon: Icon(Icons.playlist_play),
-                                      onPressed:
-                                          TakeoutState.allowStreaming(result) ||
-                                                  _isCached == true
-                                              ? () => _onPlay()
-                                              : null),
+                                      label: Text('Shuffle'),
+                                      icon: Icon(Icons.shuffle_sharp),
+                                      onPressed: () => _onShuffle()),
                                   OutlinedButton.icon(
                                       label: Text('Radio'),
                                       icon: Icon(Icons.radio),
                                       onPressed: () => _onRadio()),
-                                  // IconButton(
-                                  //     icon: Icon(_isCached == null
-                                  //         ? Icons.hourglass_bottom_sharp
-                                  //         : _isCached
-                                  //             ? Icons.download_done_sharp
-                                  //             : Icons.download_sharp),
-                                  //     onPressed:
-                                  //         TakeoutState.allowDownload(result)
-                                  //             ? () => _onDownload(context)
-                                  //             : null),
                                 ],
                               );
                             })),
@@ -339,7 +323,7 @@ class _ArtistTrackListState extends State<ArtistTrackListWidget> {
   @override
   void initState() {
     super.initState();
-    var client = Client();
+    final client = Client();
     if (_type == ArtistTrackType.popular) {
       client.artistPopular(_artist.id).then((v) => _onPopularUpdated(v));
     } else if (_type == ArtistTrackType.singles) {
@@ -359,9 +343,25 @@ class _ArtistTrackListState extends State<ArtistTrackListWidget> {
     });
   }
 
-  void _onPlay(Track t) {}
+  Future<Spiff> _playlist() {
+    final client = Client();
+    Future<Spiff> result = _type == ArtistTrackType.popular
+        ? client.artistPopularPlaylist(_artist.id)
+        : _type == ArtistTrackType.singles
+            ? client.artistSinglesPlaylist(_artist.id)
+            : null;
+    return result;
+  }
 
-  void _onAdd(Track t) {}
+  void _onPlay() async {
+    Future<Spiff> result = _playlist();
+    result?.then((spiff) => MediaQueue.playSpiff(spiff));
+  }
+
+  void _onDownload() async {
+    Future<Spiff> result = _playlist();
+    result?.then((spiff) => Downloads.downloadSpiff(spiff));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -373,8 +373,21 @@ class _ArtistTrackListState extends State<ArtistTrackListWidget> {
             ? Center(child: CircularProgressIndicator())
             : SingleChildScrollView(
                 child: Column(children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    OutlinedButton.icon(
+                        label: Text('Play'),
+                        icon: Icon(Icons.playlist_play),
+                        onPressed: () => _onPlay()),
+                    OutlinedButton.icon(
+                        label: Text('Download'),
+                        icon: Icon(Icons.radio),
+                        onPressed: () => _onDownload()),
+                  ],
+                ),
                 ..._tracks.map((t) => ListTile(
-                    onTap: () => _onPlay(t),
+                    onTap: () => {},
                     leading: trackCover(t),
                     // trailing: IconButton(
                     //     icon: Icon(Icons.playlist_add),
