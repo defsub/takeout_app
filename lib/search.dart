@@ -57,19 +57,19 @@ class _SearchState extends State<SearchWidget> {
               if (_view.artists.isNotEmpty)
                 Container(
                     child: Column(children: [
-                  Center(child: header('Artists')),
+                  heading('Artists'),
                   _ArtistResultsWidget(_view.artists),
                 ])),
               if (_view.releases.isNotEmpty)
                 Container(
                     child: Column(children: [
-                  Center(child: header('Releases')),
+                  heading('Releases'),
                   ReleaseListWidget(_view.releases),
                 ])),
               if (_view.tracks.isNotEmpty)
                 Container(
                     child: Column(children: [
-                  Center(child: header('Tracks')),
+                  heading('Tracks'),
                   TrackListWidget(_view.tracks),
                 ]))
             ]))

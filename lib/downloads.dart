@@ -52,7 +52,8 @@ class DownloadListWidget extends StatefulWidget {
   final DownloadSortType sortType;
   final List<DownloadEntry> Function(List<DownloadEntry>) filter;
 
-  DownloadListWidget({this.sortType = DownloadSortType.name, this.limit = -1, this.filter});
+  DownloadListWidget(
+      {this.sortType = DownloadSortType.name, this.limit = -1, this.filter});
 
   @override
   DownloadListState createState() => DownloadListState(sortType, limit, filter);
@@ -110,7 +111,7 @@ class DownloadListState extends State<DownloadListWidget> {
   }
 
   String _pickCover(Spiff spiff) {
-    if (spiff.playlist.image != null && spiff.playlist.image.isNotEmpty) {
+    if (isNotNullOrEmpty(spiff.playlist.image)) {
       return spiff.playlist.image;
     }
     if (_coverPick == null) {
@@ -183,7 +184,7 @@ class DownloadState extends State<DownloadWidget> {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder(
-        future: getCoverBackgroundColor(spiff: _spiff),
+        future: getImageBackgroundColor(spiff: _spiff),
         builder: (context, snapshot) => Scaffold(
             backgroundColor: snapshot?.data,
             appBar: AppBar(
@@ -197,15 +198,21 @@ class DownloadState extends State<DownloadWidget> {
                           final keys = snapshot.data ?? Set<String>();
                           final isCached =
                               TrackCache.checkAll(keys, _spiff.playlist.tracks);
+                          bool isRadio = _spiff.playlist.creator == 'Radio';
                           return Column(children: [
-                            if (_spiff.playlist.image != null)
+                            if (isNotNullOrEmpty(_spiff.playlist.image))
                               Container(
                                   padding: EdgeInsets.fromLTRB(0, 11, 0, 0),
                                   child: GestureDetector(
                                       onTap: () => _onPlay(),
                                       child: cover(_spiff.playlist.image))),
+                            if (!isRadio)
+                              FlatButton.icon(
+                                  icon: Icon(Icons.people),
+                                  onPressed: () => _onArtist(context),
+                                  label: Text(_spiff.playlist.creator)),
                             Container(
-                                padding: EdgeInsets.fromLTRB(0, 11, 0, 0),
+                                padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
                                 child: Row(
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceEvenly,
@@ -226,12 +233,6 @@ class DownloadState extends State<DownloadWidget> {
                                           onPressed: () => _onDownloadCheck()),
                                   ],
                                 )),
-                            if (_spiff.playlist.creator != 'Radio')
-                              FlatButton.icon(
-                                  icon: Icon(Icons.people),
-                                  onPressed: () => _onArtist(context),
-                                  label: Text(_spiff.playlist.creator,
-                                      style: TextStyle(fontSize: 15))),
                             Divider(),
                             SpiffTrackListView(_spiff)
                           ]);
@@ -395,7 +396,8 @@ class Downloads {
   static Future<bool> downloadRelease(Release release) async {
     final client = Client();
     showSnackBar('Downloading ${release.name}');
-    return _download(client, () => client.releasePlaylist(release.id))
+    return _download(client,
+            () => client.releasePlaylist(release.id, ttl: Duration.zero))
         .whenComplete(() => showSnackBar('Finished ${release.name}'));
   }
 

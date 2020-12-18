@@ -10,22 +10,24 @@ dependencies:
     sdk: flutter
 
   path_provider: ^1.6.10
-  audio_session: ^0.0.9
 
-  just_audio:
-    git:
-      url: https://github.com/ryanheise/just_audio.git
-      path: just_audio
+  audio_session: 0.0.9
+  audio_service: 0.15.3
+  just_audio: 0.6.0
+#    git:
+#      url: https://github.com/ryanheise/just_audio.git
+#      path: just_audio
 
   flutter_tts: ^0.8.5
   rxdart: ^0.24.1
 
-  audio_service: ^0.15.3
   shared_preferences: '>=0.5.12 <2.0.0'
   json_annotation: ^3.0.0
   cached_network_image: ^2.3.3
   connectivity: ^2.0.1
   palette_generator: ^0.2.3
+  recase: ^3.0.1
+  url_launcher: ^5.7.10
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.

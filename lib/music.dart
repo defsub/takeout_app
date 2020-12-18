@@ -38,13 +38,21 @@ class HomeView {
 @JsonSerializable(fieldRename: FieldRename.pascal)
 class ArtistView {
   Artist artist;
+  String image;
+  String background;
   List<Release> releases;
   List<Track> popular;
   List<Track> singles;
   List<Artist> similar;
 
   ArtistView(
-      {this.artist, this.releases, this.popular, this.singles, this.similar});
+      {this.artist,
+      this.image,
+      this.background,
+      this.releases,
+      this.popular,
+      this.singles,
+      this.similar});
 
   factory ArtistView.fromJson(Map<String, dynamic> json) =>
       _$ArtistViewFromJson(json);
@@ -61,12 +69,13 @@ class ReleaseView {
   List<Track> singles;
   List<Release> similar;
 
-  ReleaseView({this.artist,
-    this.release,
-    this.tracks,
-    this.popular,
-    this.singles,
-    this.similar});
+  ReleaseView(
+      {this.artist,
+      this.release,
+      this.tracks,
+      this.popular,
+      this.singles,
+      this.similar});
 
   factory ReleaseView.fromJson(Map<String, dynamic> json) =>
       _$ReleaseViewFromJson(json);
@@ -120,8 +129,24 @@ class Artist {
   final String sortName;
   @JsonKey(name: "ARID")
   final String arid;
+  final String disambiguation;
+  final String country;
+  final String area;
+  final String date;
+  final String endDate;
+  final String genre;
 
-  Artist({this.id, this.name, this.sortName, this.arid});
+  Artist(
+      {this.id,
+      this.name,
+      this.sortName,
+      this.arid,
+      this.disambiguation,
+      this.country,
+      this.area,
+      this.date,
+      this.endDate,
+      this.genre});
 
   factory Artist.fromJson(Map<String, dynamic> json) => _$ArtistFromJson(json);
 
@@ -148,15 +173,19 @@ class Release {
   final bool backArtwork;
   final String otherArtwork;
 
-  Release({this.id,
-    this.name,
-    this.artist,
-    this.rgid,
-    this.reid,
-    this.disambiguation,
-    this.type,
-    this.date,
-    this.artwork, this.frontArtwork, this.backArtwork, this.otherArtwork});
+  Release(
+      {this.id,
+      this.name,
+      this.artist,
+      this.rgid,
+      this.reid,
+      this.disambiguation,
+      this.type,
+      this.date,
+      this.artwork,
+      this.frontArtwork,
+      this.backArtwork,
+      this.otherArtwork});
 
   factory Release.fromJson(Map<String, dynamic> json) =>
       _$ReleaseFromJson(json);
@@ -187,19 +216,23 @@ class Track extends Locatable {
   final bool backArtwork;
   final String otherArtwork;
 
-  Track({this.id,
-    this.artist,
-    this.release,
-    this.date,
-    this.trackNum,
-    this.discNum,
-    this.title,
-    this.size,
-    this.rgid,
-    this.reid,
-    this.releaseTitle,
-    this.etag,
-    this.artwork, this.frontArtwork, this.backArtwork, this.otherArtwork});
+  Track(
+      {this.id,
+      this.artist,
+      this.release,
+      this.date,
+      this.trackNum,
+      this.discNum,
+      this.title,
+      this.size,
+      this.rgid,
+      this.reid,
+      this.releaseTitle,
+      this.etag,
+      this.artwork,
+      this.frontArtwork,
+      this.backArtwork,
+      this.otherArtwork});
 
   factory Track.fromJson(Map<String, dynamic> json) => _$TrackFromJson(json);
 

@@ -15,44 +15,56 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
-import 'package:connectivity/connectivity.dart';
 import 'package:flutter/material.dart';
+import 'package:recase/recase.dart';
+import 'package:connectivity/connectivity.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-import 'main.dart';
 import 'client.dart';
 import 'cover.dart';
 import 'music.dart';
 import 'playlist.dart';
 import 'release.dart';
 import 'style.dart';
-import 'cache.dart';
 import 'radio.dart';
 import 'spiff.dart';
 import 'downloads.dart';
+import 'main.dart';
 
 class ArtistsWidget extends StatefulWidget {
   final ArtistsView _view;
+  final String genre;
+  final String area;
 
-  ArtistsWidget(this._view);
+  ArtistsWidget(this._view, {this.genre, this.area});
 
   ArtistsView get view => _view;
 
   @override
-  State<StatefulWidget> createState() => _ArtistsState(_view);
+  State<StatefulWidget> createState() =>
+      _ArtistsState(_view, genre: genre, area: area);
 }
 
 class _ArtistsState extends State<ArtistsWidget> {
   ArtistsView _view;
+  String genre;
+  String area;
 
-  _ArtistsState(this._view);
+  _ArtistsState(this._view, {this.genre, this.area});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(title: header('Artists')),
+        appBar: AppBar(
+            title:
+                genre != null ? header('Artists: $genre') : header('Artists')),
         body: RefreshIndicator(
             onRefresh: () => _onRefresh(),
-            child: ArtistListWidget(_view.artists)));
+            child: ArtistListWidget(genre != null
+                ? _view.artists.where((a) => a.genre == genre).toList()
+                : area != null
+                    ? _view.artists.where((a) => a.area == area).toList()
+                    : _view.artists)));
   }
 
   Future<void> _onRefresh() async {
@@ -68,6 +80,18 @@ class _ArtistsState extends State<ArtistsWidget> {
   }
 }
 
+String _subtitle(Artist artist) {
+  if (isNullOrEmpty(artist.date)) {
+    return ReCase(artist.genre).titleCase;
+  }
+
+  if (isNullOrEmpty(artist.genre)) {
+    return year(artist.date);
+  }
+
+  return '${ReCase(artist.genre).titleCase} \u2022 ${year(artist.date)}';
+}
+
 class ArtistListWidget extends StatelessWidget {
   final List<Artist> _artists;
 
@@ -80,10 +104,12 @@ class ArtistListWidget extends StatelessWidget {
           child: ListView.builder(
               itemCount: _artists.length,
               itemBuilder: (buildContext, index) {
+                final artist = _artists[index];
                 return ListTile(
-                    onTap: () => _onArtist(context, _artists[index]),
+                    onTap: () => _onArtist(context, artist),
                     leading: Icon(Icons.people_alt),
-                    title: Text(_artists[index].name));
+                    title: Text(artist.name),
+                    subtitle: Text(_subtitle(artist)));
               }))
     ]);
   }
@@ -106,8 +132,6 @@ class ArtistWidget extends StatefulWidget {
 class _ArtistState extends State<ArtistWidget> {
   final Artist _artist;
   ArtistView _view;
-  bool _isCached;
-  bool _disposed = false;
 
   _ArtistState(this._artist);
 
@@ -115,39 +139,12 @@ class _ArtistState extends State<ArtistWidget> {
   void initState() {
     super.initState();
     final client = Client();
-    client.loggedIn().then((v) {
-      client.artist(_artist.id).then((v) => _onArtistUpdated(v));
-    });
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-    _disposed = true;
-  }
-
-  void _checkCache() async {
-    var result = false;
-    final client = Client();
-    final cache = TrackCache();
-    for (var r in _view.releases) {
-      final view = await client.release(r.id);
-      result = await cache.contains(view.tracks);
-      if (result == false) {
-        break;
-      }
-    }
-    if (!_disposed) {
-      setState(() {
-        _isCached = result;
-      });
-    }
+    client.artist(_artist.id).then((v) => _onArtistUpdated(v));
   }
 
   void _onArtistUpdated(ArtistView view) {
     setState(() {
       _view = view;
-      _checkCache();
     });
   }
 
@@ -191,71 +188,162 @@ class _ArtistState extends State<ArtistWidget> {
                 ArtistTrackListWidget(_artist, ArtistTrackType.popular)));
   }
 
+  Future<void> _onRefresh() async {
+    final client = Client();
+    await client
+        .artist(_artist.id, ttl: Duration.zero)
+        .then((v) => _onArtistUpdated(v));
+  }
+
+  void _onGenre(BuildContext context, String genre) async {
+    try {
+      final client = Client();
+      final result = await client.artists();
+      Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) => ArtistsWidget(result, genre: genre)));
+    } catch (error) {
+      print('refresh err $error');
+    }
+  }
+
+  void _onArea(BuildContext context, String area) async {
+    try {
+      final client = Client();
+      final result = await client.artists();
+      Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) => ArtistsWidget(result, area: area)));
+    } catch (error) {
+      print('refresh err $error');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-        appBar: AppBar(title: header(_artist.name)),
-        body: Builder(
-            builder: (context) => SingleChildScrollView(
-                    child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.image, size: 250),
-                    Container(
-                        padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
-                        child: StreamBuilder<ConnectivityResult>(
-                            stream: TakeoutState.connectivityStream.distinct(),
-                            builder: (context, snapshot) {
-                              final result = snapshot.data;
-                              return Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceEvenly,
-                                children: [
-                                  OutlinedButton.icon(
-                                      label: Text('Shuffle'),
-                                      icon: Icon(Icons.shuffle_sharp),
-                                      onPressed: () => _onShuffle()),
-                                  OutlinedButton.icon(
-                                      label: Text('Radio'),
-                                      icon: Icon(Icons.radio),
-                                      onPressed: () => _onRadio()),
-                                ],
-                              );
-                            })),
-                    if (_view != null) ...[
-                      Divider(),
-                      heading('Releases'),
-                      ReleaseListWidget(_view.releases),
-                      if (_view.singles.isNotEmpty)
-                        Container(
-                            child: Column(children: [
-                          Divider(),
-                          headingButton('Singles', () {
-                            _onSingles(context);
-                          }),
-                          TrackListWidget(_view.singles,
-                              onAdd: _onTrackAdd, onPlay: _onTrackPlay),
-                        ])),
-                      if (_view.popular.isNotEmpty)
-                        Container(
-                            child: Column(children: [
-                          Divider(),
-                          headingButton('Popular', () {
-                            _onPopular(context);
-                          }),
-                          TrackListWidget(_view.popular,
-                              onAdd: _onTrackAdd, onPlay: _onTrackPlay),
-                        ])),
-                      if (_view.similar.isNotEmpty)
-                        Container(
-                            child: Column(children: [
-                          Divider(),
-                          heading('Similar Artists'),
-                          SimilarArtistListWidget(_view)
-                        ])),
-                    ]
-                  ],
-                ))));
+    return FutureBuilder(
+        future: getImageBackgroundColor(artist: _view),
+        builder: (context, snapshot) => Scaffold(
+            appBar: AppBar(
+              title: header(_artist.name),
+              backgroundColor: snapshot?.data,
+            ),
+            backgroundColor: snapshot?.data,
+            body: StreamBuilder<ConnectivityResult>(
+                stream: TakeoutState.connectivityStream.distinct(),
+                builder: (context, snapshot) {
+                  final connectivity = snapshot.data;
+                  final artistUrl = 'https://musicbrainz.org/artist/${_artist.arid}';
+                  return RefreshIndicator(
+                      onRefresh: () => _onRefresh(),
+                      child: _view == null
+                          ? Center(child: CircularProgressIndicator())
+                          : Builder(
+                              builder: (context) => SingleChildScrollView(
+                                      child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      if (isNotNullOrEmpty(_view.image) &&
+                                          // TODO allow if already cached
+                                          TakeoutState.allowArtwork(
+                                              connectivity))
+                                        Container(
+                                            padding: EdgeInsets.fromLTRB(
+                                                0, 11, 0, 0),
+                                            child: GestureDetector(
+                                                onTap: () => {},
+                                                child: artwork(_view.image,
+                                                    width:
+                                                        MediaQuery.of(context)
+                                                                .size
+                                                                .height *
+                                                            0.4))),
+                                      Container(
+                                          child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          if (isNotNullOrEmpty(_artist.genre))
+                                            FlatButton(
+                                              child: Text(
+                                                  '${ReCase(_artist.genre).titleCase}'),
+                                              onPressed: () => {
+                                                _onGenre(context, _artist.genre)
+                                              },
+                                            ),
+                                          if (isNotNullOrEmpty(_artist.area))
+                                            FlatButton(
+                                              child: Text(
+                                                  '${_artist.area}'),
+                                              onPressed: () => {
+                                                _onArea(context, _artist.area)
+                                              },
+                                            ),
+                                        ],
+                                      )),
+                                      Container(
+                                          padding:
+                                              EdgeInsets.fromLTRB(0, 0, 0, 0),
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceEvenly,
+                                            children: [
+                                              OutlinedButton.icon(
+                                                  label: Text('Shuffle'),
+                                                  icon:
+                                                      Icon(Icons.shuffle_sharp),
+                                                  onPressed: () =>
+                                                      _onShuffle()),
+                                              OutlinedButton.icon(
+                                                  label: Text('Radio'),
+                                                  icon: Icon(Icons.radio),
+                                                  onPressed: () => _onRadio()),
+                                            ],
+                                          )),
+                                      Divider(),
+                                      heading('Releases'),
+                                      ReleaseListWidget(_view.releases),
+                                      if (_view.singles.isNotEmpty)
+                                        Container(
+                                            child: Column(children: [
+                                          Divider(),
+                                          headingButton('Singles', () {
+                                            _onSingles(context);
+                                          }),
+                                          TrackListWidget(_view.singles,
+                                              onAdd: _onTrackAdd,
+                                              onPlay: _onTrackPlay),
+                                        ])),
+                                      if (_view.popular.isNotEmpty)
+                                        Container(
+                                            child: Column(children: [
+                                          Divider(),
+                                          headingButton('Popular', () {
+                                            _onPopular(context);
+                                          }),
+                                          TrackListWidget(_view.popular,
+                                              onAdd: _onTrackAdd,
+                                              onPlay: _onTrackPlay),
+                                        ])),
+                                      if (_view.similar.isNotEmpty)
+                                        Container(
+                                            child: Column(children: [
+                                          Divider(),
+                                          heading('Similar Artists'),
+                                          SimilarArtistListWidget(_view)
+                                        ])),
+                                      FlatButton.icon(
+                                        label: Text('MusicBrainz'),
+                                        icon: Icon(Icons.link),
+                                        onPressed: () {
+                                          launch(artistUrl);
+                                        },
+                                      )
+                                    ],
+                                  ))));
+                })));
   }
 }
 
@@ -270,7 +358,8 @@ class SimilarArtistListWidget extends StatelessWidget {
       ..._view.similar.map((a) => ListTile(
           onTap: () => _onArtist(context, a),
           leading: Icon(Icons.people_alt),
-          title: Text(a.name)))
+          title: Text(a.name),
+          subtitle: Text(_subtitle(a))))
     ]);
   }
 
@@ -331,6 +420,19 @@ class _ArtistTrackListState extends State<ArtistTrackListWidget> {
     }
   }
 
+  Future<void> _onRefresh() async {
+    final client = Client();
+    if (_type == ArtistTrackType.popular) {
+      await client
+          .artistPopular(_artist.id, ttl: Duration.zero)
+          .then((v) => _onPopularUpdated(v));
+    } else if (_type == ArtistTrackType.singles) {
+      await client
+          .artistSingles(_artist.id, ttl: Duration.zero)
+          .then((v) => _onSinglesUpdated(v));
+    }
+  }
+
   void _onPopularUpdated(PopularView v) {
     setState(() {
       _tracks = v.popular;
@@ -346,9 +448,9 @@ class _ArtistTrackListState extends State<ArtistTrackListWidget> {
   Future<Spiff> _playlist() {
     final client = Client();
     Future<Spiff> result = _type == ArtistTrackType.popular
-        ? client.artistPopularPlaylist(_artist.id)
+        ? client.artistPopularPlaylist(_artist.id, ttl: Duration.zero)
         : _type == ArtistTrackType.singles
-            ? client.artistSinglesPlaylist(_artist.id)
+            ? client.artistSinglesPlaylist(_artist.id, ttl: Duration.zero)
             : null;
     return result;
   }
@@ -369,31 +471,33 @@ class _ArtistTrackListState extends State<ArtistTrackListWidget> {
         appBar: AppBar(
             title: header(
                 _type == ArtistTrackType.popular ? 'Popular' : 'Singles')),
-        body: _tracks == null
-            ? Center(child: CircularProgressIndicator())
-            : SingleChildScrollView(
-                child: Column(children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    OutlinedButton.icon(
-                        label: Text('Play'),
-                        icon: Icon(Icons.playlist_play),
-                        onPressed: () => _onPlay()),
-                    OutlinedButton.icon(
-                        label: Text('Download'),
-                        icon: Icon(Icons.radio),
-                        onPressed: () => _onDownload()),
-                  ],
-                ),
-                ..._tracks.map((t) => ListTile(
-                    onTap: () => {},
-                    leading: trackCover(t),
-                    // trailing: IconButton(
-                    //     icon: Icon(Icons.playlist_add),
-                    //     onPressed: () => _onAdd(t)),
-                    subtitle: Text('${t.release} \u2022 ${t.date}'),
-                    title: Text(t.title)))
-              ])));
+        body: RefreshIndicator(
+            onRefresh: () => _onRefresh(),
+            child: _tracks == null
+                ? Center(child: CircularProgressIndicator())
+                : SingleChildScrollView(
+                    child: Column(children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        OutlinedButton.icon(
+                            label: Text('Play'),
+                            icon: Icon(Icons.playlist_play),
+                            onPressed: () => _onPlay()),
+                        OutlinedButton.icon(
+                            label: Text('Download'),
+                            icon: Icon(Icons.radio),
+                            onPressed: () => _onDownload()),
+                      ],
+                    ),
+                    ..._tracks.map((t) => ListTile(
+                        onTap: () => {},
+                        leading: trackCover(t),
+                        // trailing: IconButton(
+                        //     icon: Icon(Icons.playlist_add),
+                        //     onPressed: () => _onAdd(t)),
+                        subtitle: Text('${t.release} \u2022 ${t.date}'),
+                        title: Text(t.title)))
+                  ]))));
   }
 }

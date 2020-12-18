@@ -18,6 +18,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:connectivity/connectivity.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'artists.dart';
 import 'cache.dart';
@@ -38,6 +39,13 @@ class ReleaseWidget extends StatefulWidget {
   State<StatefulWidget> createState() => _ReleaseState(_release);
 }
 
+String _name(Release release) {
+  if (isNotNullOrEmpty(release.disambiguation)) {
+    return '${release.name} (${release.disambiguation})';
+  }
+  return release.name;
+}
+
 class _ReleaseState extends State<ReleaseWidget> {
   final Release release;
   ReleaseView _view;
@@ -47,10 +55,8 @@ class _ReleaseState extends State<ReleaseWidget> {
   @override
   void initState() {
     super.initState();
-    var client = Client();
-    client.loggedIn().then((v) {
-      client.release(release.id).then((v) => _onReleaseUpdated(v));
-    });
+    final client = Client();
+    client.release(release.id).then((v) => _onReleaseUpdated(v));
   }
 
   void _onReleaseUpdated(ReleaseView view) {
@@ -84,93 +90,128 @@ class _ReleaseState extends State<ReleaseWidget> {
     Downloads.downloadRelease(release);
   }
 
+  Future<void> _onRefresh() async {
+    final client = Client();
+    await client
+        .release(release.id, ttl: Duration.zero)
+        .then((v) => _onReleaseUpdated(v));
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder(
-        future: getCoverBackgroundColor(release: release),
+        future: getImageBackgroundColor(release: release),
         builder: (context, snapshot) => Scaffold(
             backgroundColor: snapshot?.data,
             appBar: AppBar(
                 backgroundColor: snapshot?.data,
-                title: header('${release.name} \u2022 ${year(release)}')),
-            body: Builder(
-                builder: (context) => SingleChildScrollView(
-                    child: StreamBuilder(
-                        stream: TrackCache.keysSubject,
-                        builder: (context, snapshot) {
-                          final keys = snapshot.data ?? Set<String>();
-                          final isCached = _view != null
-                              ? TrackCache.checkAll(keys, _view.tracks)
-                              : false;
-                          return Column(
-                            children: [
-                              if (_view != null) ...[
-                                Container(
-                                    padding: EdgeInsets.fromLTRB(0, 11, 0, 0),
-                                    child: GestureDetector(
-                                        onTap: () => _onPlay(),
-                                        child: releaseCover(release))),
-                                Container(
-                                    padding: EdgeInsets.fromLTRB(0, 11, 0, 0),
-                                    child: StreamBuilder<ConnectivityResult>(
-                                        stream: TakeoutState.connectivityStream
-                                            .distinct(),
-                                        builder: (context, snapshot) {
-                                          final result = snapshot.data;
-                                          return Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceEvenly,
-                                            children: [
-                                              OutlinedButton.icon(
-                                                  label: Text('Play'),
-                                                  icon:
-                                                      Icon(Icons.playlist_play),
-                                                  onPressed: TakeoutState
-                                                              .allowStreaming(
-                                                                  result) ||
-                                                          isCached == true
-                                                      ? () => _onPlay()
-                                                      : null),
-                                              // IconButton(
-                                              //     icon: Icon(Icons.playlist_add),
-                                              //     onPressed: () => _onAdd()),
-                                              OutlinedButton.icon(
-                                                  label: Text(isCached
-                                                      ? 'Complete'
-                                                      : 'Download'),
-                                                  icon: Icon(isCached
-                                                      ? Icons
-                                                          .cloud_done_outlined
-                                                      : Icons
-                                                          .cloud_download_outlined),
-                                                  onPressed: TakeoutState
-                                                          .allowDownload(result)
-                                                      ? () => _onDownload()
-                                                      : null),
-                                            ],
-                                          );
-                                        })),
-                                FlatButton.icon(
-                                    onPressed: () => {_onArtist()},
-                                    icon: Icon(Icons.people),
-                                    label: Text(release.artist)),
-                                Divider(),
-                                // heading('Tracks'),
-                                Container(
-                                    child: _ReleaseTracksWidget(_view,
-                                        onTrackTapped: _onTrackPlay,
-                                        onAppendTapped: _onTrackAdd)),
-                                if (_view.similar.isNotEmpty)
-                                  Container(
-                                      child: Column(children: [
-                                    Divider(),
-                                    heading('Similar Releases'),
-                                    ReleaseListWidget(_view.similar)
-                                  ]))
-                              ]
-                            ],
-                          );
-                        })))));
+                title: header('${_name(release)}')),
+            body: RefreshIndicator(
+                onRefresh: () => _onRefresh(),
+                child: _view == null
+                    ? Center(child: CircularProgressIndicator())
+                    : Builder(
+                        builder: (context) => SingleChildScrollView(
+                            child: StreamBuilder(
+                                stream: TrackCache.keysSubject,
+                                builder: (context, snapshot) {
+                                  final keys = snapshot.data ?? Set<String>();
+                                  final isCached = _view != null
+                                      ? TrackCache.checkAll(keys, _view.tracks)
+                                      : false;
+                                  final releaseUrl = 'https://musicbrainz.org/release/${release.reid}';
+                                  return Column(
+                                    children: [
+                                      if (_view != null) ...[
+                                        Container(
+                                            padding: EdgeInsets.fromLTRB(
+                                                0, 11, 0, 0),
+                                            child: GestureDetector(
+                                                onTap: () => _onPlay(),
+                                                child: releaseCover(release))),
+                                        Container(
+                                            child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            FlatButton(
+                                                child: Text(release.artist),
+                                                onPressed: () => _onArtist()),
+                                            if (isNotNullOrEmpty(release.date))
+                                              Text(year(release.date))
+                                          ],
+                                        )),
+                                        Container(
+                                            padding:
+                                                EdgeInsets.fromLTRB(0, 0, 0, 0),
+                                            child: StreamBuilder<
+                                                    ConnectivityResult>(
+                                                stream: TakeoutState
+                                                    .connectivityStream
+                                                    .distinct(),
+                                                builder: (context, snapshot) {
+                                                  final result = snapshot.data;
+                                                  return Row(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .spaceEvenly,
+                                                    children: [
+                                                      OutlinedButton.icon(
+                                                          label: Text('Play'),
+                                                          icon: Icon(Icons
+                                                              .playlist_play),
+                                                          onPressed: TakeoutState
+                                                                      .allowStreaming(
+                                                                          result) ||
+                                                                  isCached ==
+                                                                      true
+                                                              ? () => _onPlay()
+                                                              : null),
+                                                      // IconButton(
+                                                      //     icon: Icon(Icons.playlist_add),
+                                                      //     onPressed: () => _onAdd()),
+                                                      OutlinedButton.icon(
+                                                          label: Text(isCached
+                                                              ? 'Complete'
+                                                              : 'Download'),
+                                                          icon: Icon(isCached
+                                                              ? Icons
+                                                                  .cloud_done_outlined
+                                                              : Icons
+                                                                  .cloud_download_outlined),
+                                                          onPressed: TakeoutState
+                                                                  .allowDownload(
+                                                                      result)
+                                                              ? () =>
+                                                                  _onDownload()
+                                                              : null),
+                                                    ],
+                                                  );
+                                                })),
+                                        Divider(),
+                                        // heading('Tracks'),
+                                        Container(
+                                            child: _ReleaseTracksWidget(_view,
+                                                onTrackTapped: _onTrackPlay,
+                                                onAppendTapped: _onTrackAdd)),
+                                        if (_view.similar.isNotEmpty)
+                                          Container(
+                                              child: Column(children: [
+                                            Divider(),
+                                            heading('Similar Releases'),
+                                            ReleaseListWidget(_view.similar)
+                                          ]))
+                                      ],
+                                      FlatButton.icon(
+                                        label: Text('MusicBrainz'),
+                                        icon: Icon(Icons.link),
+                                        onPressed: () {
+                                          launch(releaseUrl);
+                                        },
+                                      )
+                                    ],
+                                  );
+                                }))))));
   }
 }
 
@@ -231,8 +272,8 @@ class ReleaseListWidget extends StatelessWidget {
               //     onPressed: () => _onAppend(e)),
               trailing: IconButton(
                   icon: Icon(Icons.playlist_play), onPressed: () => _onPlay(e)),
-              title: Text(e.name),
-              subtitle: Text(year(e)))))
+              title: Text('${_name(e)}'),
+              subtitle: Text(year(e.date)))))
     ]);
   }
 

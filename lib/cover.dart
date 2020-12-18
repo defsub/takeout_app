@@ -26,9 +26,7 @@ import 'spiff.dart';
 String releaseCoverUrl(Release release, {int size = 250}) {
   if (release.artwork && release.frontArtwork) {
     return 'https://coverartarchive.org/release/${release.reid}/front-$size';
-  } else if (release.artwork &&
-      release.otherArtwork != null &&
-      release.otherArtwork.length > 0) {
+  } else if (release.artwork && isNotNullOrEmpty(release.otherArtwork)) {
     return 'https://coverartarchive.org/release/${release.reid}/${release.otherArtwork}-$size';
   }
   return null;
@@ -37,25 +35,30 @@ String releaseCoverUrl(Release release, {int size = 250}) {
 String trackCoverUrl(Track track, {int size = 250}) {
   if (track.artwork && track.frontArtwork) {
     return 'https://coverartarchive.org/release/${track.reid}/front-$size';
-  } else if (track.artwork &&
-      track.otherArtwork != null &&
-      track.otherArtwork.length > 0) {
+  } else if (track.artwork && isNotNullOrEmpty(track.otherArtwork)) {
     return 'https://coverartarchive.org/release/${track.reid}/${track.otherArtwork}-$size';
   }
   return null;
 }
 
 dynamic _cover(String url) {
-  return url == null
-      ? Icon(Icons.album_sharp, size: 40)
-      : ClipRRect(
-          borderRadius: BorderRadius.circular(8.0),
-          child: CachedNetworkImage(
-            imageUrl: url,
-            placeholder: (context, url) => Icon(Icons.image_outlined, size: 40),
-            errorWidget: (context, url, error) =>
-                Icon(Icons.broken_image_outlined, size: 40),
-          ));
+  return url == null ? Icon(Icons.album_sharp, size: 40) : artwork(url);
+}
+
+dynamic artwork(String url, {double width, double height}) {
+  if (url == null) {
+    return null;
+  }
+  return ClipRRect(
+      borderRadius: BorderRadius.circular(8.0),
+      child: CachedNetworkImage(
+        imageUrl: url,
+        width: width,
+        height: height,
+        placeholder: (context, url) => Icon(Icons.image_outlined, size: 40),
+        errorWidget: (context, url, error) =>
+            Icon(Icons.broken_image_outlined, size: 40),
+      ));
 }
 
 dynamic cover(String url) {
@@ -74,23 +77,47 @@ dynamic mediaItemCover(MediaItem mediaItem) {
   return _cover(mediaItem.artUri);
 }
 
-String year(Release release) {
-  var d = DateTime.parse(release.date);
+final _colorCache = Map<String, Color>();
+
+Future<Color> getImageBackgroundColor(
+    {Release release,
+    MediaItem mediaItem,
+    Spiff spiff,
+    ArtistView artist}) async {
+  if (release == null && mediaItem == null && spiff == null && artist == null) {
+    return null;
+  }
+  final url = release != null
+      ? releaseCoverUrl(release)
+      : spiff != null
+          ? spiff.playlist.image
+          : mediaItem != null
+              ? mediaItem.artUri
+              : artist.image;
+  var color = _colorCache[url];
+  if (color != null) {
+    print('cover color cached size ${_colorCache.length}');
+    return color;
+  }
+  final paletteGenerator =
+      await PaletteGenerator.fromImageProvider(CachedNetworkImageProvider(url));
+  color = paletteGenerator?.darkVibrantColor?.color ??
+      paletteGenerator?.darkMutedColor?.color;
+  _colorCache[url] = color;
+  return color;
+}
+
+// TODO move below to util, global or other
+
+String year(String date) {
+  var d = DateTime.parse(date);
   return '${d.year}';
 }
 
-Future<Color> getCoverBackgroundColor(
-    {Release release, MediaItem mediaItem, Spiff spiff}) async {
-  if (release == null && mediaItem == null && spiff == null) {
-    return null;
-  }
-  final PaletteGenerator paletteGenerator =
-      await PaletteGenerator.fromImageProvider(
-          CachedNetworkImageProvider(release != null
-              ? releaseCoverUrl(release)
-              : spiff != null
-                  ? spiff.playlist.image
-                  : mediaItem.artUri));
-  return paletteGenerator?.darkVibrantColor?.color ??
-      paletteGenerator?.darkMutedColor?.color;
+bool isNullOrEmpty(String s) {
+  return s?.trim()?.isEmpty ?? true;
+}
+
+bool isNotNullOrEmpty(String s) {
+  return s?.trim()?.isNotEmpty ?? false;
 }

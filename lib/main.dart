@@ -131,7 +131,10 @@ class TakeoutState extends State<_TakeoutWidget> {
   }
 
   static bool allowDownload(ConnectivityResult result) {
-    // print('allow download ${result == ConnectivityResult.wifi}');
+    return result == ConnectivityResult.wifi;
+  }
+
+  static bool allowArtwork(ConnectivityResult result) {
     return result == ConnectivityResult.wifi;
   }
 

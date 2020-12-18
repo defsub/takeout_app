@@ -105,7 +105,7 @@ class AudioPlayerTask extends BackgroundAudioTask {
               AudioSource.uri(Uri.parse(item.id),
                   headers: item.isLocalFile() ? null : item.extras['headers']))
               .toList());
-      await _player.load(_playlist,
+      await _player.setAudioSource(_playlist,
           initialIndex: newState.index,
           initialPosition: Duration(seconds: newState.position.toInt()));
       if (wasPlaying) {
@@ -279,7 +279,7 @@ class AudioPlayerTask extends BackgroundAudioTask {
   AudioProcessingState _getProcessingState() {
     if (_skipState != null) return _skipState;
     switch (_player.processingState) {
-      case ProcessingState.none:
+      case ProcessingState.idle:
         return AudioProcessingState.stopped;
       case ProcessingState.loading:
         return AudioProcessingState.connecting;
