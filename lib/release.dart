@@ -119,7 +119,8 @@ class _ReleaseState extends State<ReleaseWidget> {
                                   final isCached = _view != null
                                       ? TrackCache.checkAll(keys, _view.tracks)
                                       : false;
-                                  final releaseUrl = 'https://musicbrainz.org/release/${release.reid}';
+                                  final releaseUrl =
+                                      'https://musicbrainz.org/release/${release.reid}';
                                   return Column(
                                     children: [
                                       if (_view != null) ...[
@@ -205,9 +206,7 @@ class _ReleaseState extends State<ReleaseWidget> {
                                       FlatButton.icon(
                                         label: Text('MusicBrainz'),
                                         icon: Icon(Icons.link),
-                                        onPressed: () {
-                                          launch(releaseUrl);
-                                        },
+                                        onPressed: () => launch(releaseUrl),
                                       )
                                     ],
                                   );

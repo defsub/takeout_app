@@ -33,6 +33,37 @@ import 'global.dart';
 import 'style.dart';
 import 'artists.dart';
 
+Random _random = Random();
+
+String _spiffCover(Spiff spiff) {
+  if (isNotNullOrEmpty(spiff.playlist.image)) {
+    return spiff.playlist.image;
+  }
+  for (var i = 0; i < spiff.playlist.tracks.length; i++) {
+    final pick = _random.nextInt(spiff.playlist.tracks.length);
+    if (isNotNullOrEmpty(spiff.playlist.tracks[pick].image)) {
+      return spiff.playlist.tracks[pick].image;
+    }
+  }
+  return ''; // TODO what to return?
+}
+
+String _size(int size) {
+  int n = size ~/ gigabyte;
+  if (n > 0) {
+    return '$n GB';
+  }
+  n = size ~/ megabyte;
+  if (n > 0) {
+    return '$n MB';
+  }
+  n = size ~/ kilobyte;
+  if (n > 0) {
+    return '$n KB';
+  }
+  return '$size B';
+}
+
 class DownloadsWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -59,22 +90,6 @@ class DownloadListWidget extends StatefulWidget {
   DownloadListState createState() => DownloadListState(sortType, limit, filter);
 }
 
-String _size(int size) {
-  int n = size ~/ gigabyte;
-  if (n > 0) {
-    return '$n GB';
-  }
-  n = size ~/ megabyte;
-  if (n > 0) {
-    return '$n MB';
-  }
-  n = size ~/ kilobyte;
-  if (n > 0) {
-    return '$n KB';
-  }
-  return '$size B';
-}
-
 enum DownloadSortType { newest, oldest, name, size }
 
 void downloadsSort(DownloadSortType sortType, List<DownloadEntry> entries) {
@@ -96,9 +111,7 @@ void downloadsSort(DownloadSortType sortType, List<DownloadEntry> entries) {
 }
 
 class DownloadListState extends State<DownloadListWidget> {
-  Random _random = Random();
   int _limit;
-  int _coverPick;
   DownloadSortType _sortType;
   final List<DownloadEntry> Function(List<DownloadEntry>) _filter;
 
@@ -108,16 +121,6 @@ class DownloadListState extends State<DownloadListWidget> {
   void initState() {
     super.initState();
     Downloads.load();
-  }
-
-  String _pickCover(Spiff spiff) {
-    if (isNotNullOrEmpty(spiff.playlist.image)) {
-      return spiff.playlist.image;
-    }
-    if (_coverPick == null) {
-      _coverPick = _random.nextInt(spiff.playlist.tracks.length);
-    }
-    return spiff.playlist.tracks[_coverPick].image;
   }
 
   Widget _subtitle(DownloadEntry entry) {
@@ -141,7 +144,7 @@ class DownloadListState extends State<DownloadListWidget> {
                     _limit == -1 ? entries.length : min(_limit, entries.length))
                 .map((entry) => Container(
                     child: ListTile(
-                        leading: cover(_pickCover(entry.spiff)),
+                        leading: cover(_spiffCover(entry.spiff)),
                         trailing: IconButton(
                             icon: Icon(Icons.playlist_play),
                             onPressed: () => _onPlay(entry.spiff)),
@@ -173,18 +176,20 @@ class DownloadWidget extends StatefulWidget {
 
 class DownloadState extends State<DownloadWidget> {
   final Spiff _spiff;
+  String _coverUrl;
 
   DownloadState(this._spiff);
 
   @override
   void initState() {
     super.initState();
+    _coverUrl = _spiffCover(_spiff);
   }
 
   @override
   Widget build(BuildContext context) {
     return FutureBuilder(
-        future: getImageBackgroundColor(spiff: _spiff),
+        future: getImageBackgroundColor(url: _coverUrl),
         builder: (context, snapshot) => Scaffold(
             backgroundColor: snapshot?.data,
             appBar: AppBar(
@@ -200,12 +205,11 @@ class DownloadState extends State<DownloadWidget> {
                               TrackCache.checkAll(keys, _spiff.playlist.tracks);
                           bool isRadio = _spiff.playlist.creator == 'Radio';
                           return Column(children: [
-                            if (isNotNullOrEmpty(_spiff.playlist.image))
-                              Container(
-                                  padding: EdgeInsets.fromLTRB(0, 11, 0, 0),
-                                  child: GestureDetector(
-                                      onTap: () => _onPlay(),
-                                      child: cover(_spiff.playlist.image))),
+                            Container(
+                                padding: EdgeInsets.fromLTRB(0, 11, 0, 0),
+                                child: GestureDetector(
+                                    onTap: () => _onPlay(),
+                                    child: cover(_coverUrl))),
                             if (!isRadio)
                               FlatButton.icon(
                                   icon: Icon(Icons.people),
@@ -264,9 +268,7 @@ class DownloadState extends State<DownloadWidget> {
             content: Text('This free ${_size(_spiff.size)} of space.'),
             actions: [
               FlatButton(
-                onPressed: () {
-                  Navigator.pop(ctx);
-                },
+                onPressed: () => Navigator.pop(ctx),
                 child: Text('NO'),
               ),
               FlatButton(
@@ -349,12 +351,10 @@ class Downloads {
   static Future<void> _saveAs(Spiff spiff, File file) {
     final completer = Completer<void>();
     final data = utf8.encode(jsonEncode(spiff.toJson()));
-    file.writeAsBytes(data).then((f) {
-      completer.complete();
-    }).catchError((e) {
-      print(e);
-      completer.completeError(e);
-    });
+    file
+        .writeAsBytes(data)
+        .then((f) => completer.complete())
+        .catchError((e) => completer.completeError(e));
     return completer.future;
   }
 

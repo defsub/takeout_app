@@ -168,9 +168,9 @@ class Client {
       if (result is File) {
         final completer = Completer<Map<String, dynamic>>();
         print('cached $uri');
-        result.readAsBytes().then((body) {
-          completer.complete(jsonDecode(utf8.decode(body)));
-        });
+        result
+            .readAsBytes()
+            .then((body) => completer.complete(jsonDecode(utf8.decode(body))));
         return completer.future;
       }
     }
@@ -378,11 +378,10 @@ class Client {
           return request.close();
         })
         .then((response) {
-          cache.put(d).then((sink) => response.pipe(sink).then((v) {
-                completer.complete();
-              }).catchError((e) {
-                completer.completeError(e);
-              }));
+          cache.put(d).then((sink) => response
+              .pipe(sink)
+              .then((v) => completer.complete())
+              .catchError((e) => completer.completeError(e)));
         })
         .timeout(downloadTimeout)
         .catchError((e) => completer.completeError(e));

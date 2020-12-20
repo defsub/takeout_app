@@ -81,15 +81,26 @@ class _ArtistsState extends State<ArtistsWidget> {
 }
 
 String _subtitle(Artist artist) {
+  final genre = ReCase(artist.genre).titleCase;
+
   if (isNullOrEmpty(artist.date)) {
-    return ReCase(artist.genre).titleCase;
+    // no date, return genre
+    return genre;
   }
 
+  final y = year(artist.date);
+  if (y.isEmpty) {
+    // parsed date empty, return genre
+    return genre;
+  }
+
+  // no genre, return year
   if (isNullOrEmpty(artist.genre)) {
-    return year(artist.date);
+    return y;
   }
 
-  return '${ReCase(artist.genre).titleCase} \u2022 ${year(artist.date)}';
+  // have both
+  return '$genre \u2022 $y';
 }
 
 class ArtistListWidget extends StatelessWidget {
@@ -223,20 +234,25 @@ class _ArtistState extends State<ArtistWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder(
-        future: getImageBackgroundColor(artist: _view),
-        builder: (context, snapshot) => Scaffold(
-            appBar: AppBar(
-              title: header(_artist.name),
-              backgroundColor: snapshot?.data,
-            ),
-            backgroundColor: snapshot?.data,
-            body: StreamBuilder<ConnectivityResult>(
-                stream: TakeoutState.connectivityStream.distinct(),
-                builder: (context, snapshot) {
-                  final connectivity = snapshot.data;
-                  final artistUrl = 'https://musicbrainz.org/artist/${_artist.arid}';
-                  return RefreshIndicator(
+    return StreamBuilder<ConnectivityResult>(
+        stream: TakeoutState.connectivityStream.distinct(),
+        builder: (context, snapshot) {
+          final connectivity = snapshot.data;
+          final artistUrl = 'https://musicbrainz.org/artist/${_artist.arid}';
+          // TODO check if already cached and allow
+          bool allowArtwork = isNotNullOrEmpty(_view.image) &&
+              TakeoutState.allowArtwork(connectivity);
+          return FutureBuilder(
+              future: allowArtwork
+                  ? getImageBackgroundColor(url: _view.image)
+                  : Future.value(),
+              builder: (context, snapshot) => Scaffold(
+                  appBar: AppBar(
+                    title: header(_artist.name),
+                    backgroundColor: snapshot?.data,
+                  ),
+                  backgroundColor: snapshot?.data,
+                  body: RefreshIndicator(
                       onRefresh: () => _onRefresh(),
                       child: _view == null
                           ? Center(child: CircularProgressIndicator())
@@ -245,10 +261,7 @@ class _ArtistState extends State<ArtistWidget> {
                                       child: Column(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      if (isNotNullOrEmpty(_view.image) &&
-                                          // TODO allow if already cached
-                                          TakeoutState.allowArtwork(
-                                              connectivity))
+                                      if (allowArtwork)
                                         Container(
                                             padding: EdgeInsets.fromLTRB(
                                                 0, 11, 0, 0),
@@ -269,17 +282,14 @@ class _ArtistState extends State<ArtistWidget> {
                                             FlatButton(
                                               child: Text(
                                                   '${ReCase(_artist.genre).titleCase}'),
-                                              onPressed: () => {
-                                                _onGenre(context, _artist.genre)
-                                              },
+                                              onPressed: () => _onGenre(
+                                                  context, _artist.genre),
                                             ),
                                           if (isNotNullOrEmpty(_artist.area))
                                             FlatButton(
-                                              child: Text(
-                                                  '${_artist.area}'),
-                                              onPressed: () => {
-                                                _onArea(context, _artist.area)
-                                              },
+                                              child: Text('${_artist.area}'),
+                                              onPressed: () => _onArea(
+                                                  context, _artist.area),
                                             ),
                                         ],
                                       )),
@@ -309,9 +319,8 @@ class _ArtistState extends State<ArtistWidget> {
                                         Container(
                                             child: Column(children: [
                                           Divider(),
-                                          headingButton('Singles', () {
-                                            _onSingles(context);
-                                          }),
+                                          headingButton('Singles',
+                                              () => _onSingles(context)),
                                           TrackListWidget(_view.singles,
                                               onAdd: _onTrackAdd,
                                               onPlay: _onTrackPlay),
@@ -320,9 +329,8 @@ class _ArtistState extends State<ArtistWidget> {
                                         Container(
                                             child: Column(children: [
                                           Divider(),
-                                          headingButton('Popular', () {
-                                            _onPopular(context);
-                                          }),
+                                          headingButton('Popular',
+                                              () => _onPopular(context)),
                                           TrackListWidget(_view.popular,
                                               onAdd: _onTrackAdd,
                                               onPlay: _onTrackPlay),
@@ -337,13 +345,11 @@ class _ArtistState extends State<ArtistWidget> {
                                       FlatButton.icon(
                                         label: Text('MusicBrainz'),
                                         icon: Icon(Icons.link),
-                                        onPressed: () {
-                                          launch(artistUrl);
-                                        },
+                                        onPressed: () => launch(artistUrl),
                                       )
                                     ],
-                                  ))));
-                })));
+                                  ))))));
+        });
   }
 }
 

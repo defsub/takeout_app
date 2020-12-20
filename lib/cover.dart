@@ -79,31 +79,21 @@ dynamic mediaItemCover(MediaItem mediaItem) {
 
 final _colorCache = Map<String, Color>();
 
-Future<Color> getImageBackgroundColor(
-    {Release release,
-    MediaItem mediaItem,
-    Spiff spiff,
-    ArtistView artist}) async {
-  if (release == null && mediaItem == null && spiff == null && artist == null) {
+Future<Color> getImageBackgroundColor({Release release, String url}) async {
+  if (release == null && url == null) {
     return null;
   }
-  final url = release != null
-      ? releaseCoverUrl(release)
-      : spiff != null
-          ? spiff.playlist.image
-          : mediaItem != null
-              ? mediaItem.artUri
-              : artist.image;
-  var color = _colorCache[url];
+  final imageUrl = url ?? releaseCoverUrl(release);
+  var color = _colorCache[imageUrl];
   if (color != null) {
-    print('cover color cached size ${_colorCache.length}');
+    print('color cached size ${_colorCache.length}');
     return color;
   }
   final paletteGenerator =
-      await PaletteGenerator.fromImageProvider(CachedNetworkImageProvider(url));
+      await PaletteGenerator.fromImageProvider(CachedNetworkImageProvider(imageUrl));
   color = paletteGenerator?.darkVibrantColor?.color ??
       paletteGenerator?.darkMutedColor?.color;
-  _colorCache[url] = color;
+  _colorCache[imageUrl] = color;
   return color;
 }
 
@@ -111,7 +101,8 @@ Future<Color> getImageBackgroundColor(
 
 String year(String date) {
   var d = DateTime.parse(date);
-  return '${d.year}';
+  // year 1 is a Go zero value date
+  return d.year == 1 ? '' : '${d.year}';
 }
 
 bool isNullOrEmpty(String s) {

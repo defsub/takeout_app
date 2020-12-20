@@ -68,9 +68,8 @@ class PlayerWidget extends StatelessWidget {
         if (item == null) {
           return;
         }
-        getImageBackgroundColor(mediaItem: item).then((color) {
-          _backgroundColorSubject.add(color);
-        });
+        getImageBackgroundColor(url: item.artUri)
+            .then((color) => _backgroundColorSubject.add(color));
       });
     }
 
@@ -123,7 +122,9 @@ class PlayerWidget extends StatelessWidget {
                                                   MainAxisAlignment.center,
                                               children: [
                                                 Text(mediaItem?.title,
-                                                    style: Theme.of(context).textTheme.headline6),
+                                                    style: Theme.of(context)
+                                                        .textTheme
+                                                        .headline6),
                                                 if (mediaItem?.isLocalFile())
                                                   Container(
                                                       padding:
@@ -134,8 +135,8 @@ class PlayerWidget extends StatelessWidget {
                                                               .cloud_done_outlined,
                                                           size: 20))
                                               ]),
-                                          padding:
-                                              EdgeInsets.fromLTRB(0, 11, 0, 11)),
+                                          padding: EdgeInsets.fromLTRB(
+                                              0, 11, 0, 11)),
                                     if (mediaItem?.artist != null)
                                       OutlinedButton.icon(
                                           icon: Icon(Icons.people),
