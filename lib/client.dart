@@ -33,6 +33,11 @@ class ClientException implements Exception {
 
   const ClientException({this.statusCode, this.url});
 
+  bool get authenticationFailed =>
+      statusCode == HttpStatus.networkAuthenticationRequired ||
+          statusCode == HttpStatus.unauthorized ||
+          statusCode == HttpStatus.forbidden;
+
   String toString() => 'ClientException: $statusCode => $url';
 }
 

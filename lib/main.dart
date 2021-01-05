@@ -84,6 +84,19 @@ class _TakeoutWidget extends StatefulWidget {
 }
 
 class TakeoutState extends State<_TakeoutWidget> {
+
+  static final _loginStream = BehaviorSubject<bool>();
+  static Stream<bool> get loginStream => _loginStream.stream;
+  static bool get isLoggedIn => _loginStream.value;
+  static void logout() async {
+    await Client().logout();
+    _loginStream.add(false);
+  }
+  static void login() => _loginStream.add(true);
+
+  StreamSubscription<bool> _loginSubscription;
+  bool _loggedIn;
+
   static final _connectivityStream = BehaviorSubject<ConnectivityResult>();
 
   static Stream<ConnectivityResult> get connectivityStream =>
@@ -94,7 +107,6 @@ class TakeoutState extends State<_TakeoutWidget> {
   final Connectivity _connectivity = Connectivity();
   StreamSubscription<ConnectivityResult> _connectivitySubscription;
 
-  bool _loggedIn;
   PlaybackState _playbackState;
   int _selectedIndex = 0;
   HomeView _homeView;
@@ -106,24 +118,23 @@ class TakeoutState extends State<_TakeoutWidget> {
   void initState() {
     super.initState();
 
+    _loginSubscription = _loginStream.listen(_onLogin);
+
     _initConnectivity();
     _connectivitySubscription =
         _connectivity.onConnectivityChanged.listen(_updateConnectionStatus);
 
-    Client().loggedIn().then((v) {
-      if (v) {
-        _onLoginSuccess();
-      } else {
-        _onLogout();
-      }
-    });
+    Client()
+        .loggedIn()
+        .then((success) => success ? login() : logout());
   }
 
   @override
   void dispose() {
+    super.dispose();
     snackBarStateSubject.close();
     _connectivitySubscription.cancel();
-    super.dispose();
+    _loginSubscription.cancel();
   }
 
   static bool allowStreaming(ConnectivityResult result) {
@@ -167,18 +178,15 @@ class TakeoutState extends State<_TakeoutWidget> {
     }
   }
 
-  void _onLoginSuccess() {
+  void _onLogin(bool loggedIn) {
     setState(() {
-      _loggedIn = true;
-      _load();
+      _loggedIn = loggedIn;
+      if (_loggedIn) {
+        _load();
+      }
     });
   }
 
-  void _onLogout() {
-    setState(() {
-      _loggedIn = false;
-    });
-  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -212,32 +220,30 @@ class TakeoutState extends State<_TakeoutWidget> {
   }
 
   void _load() async {
-    if (_loggedIn != true) {
-      return;
-    }
     TrackCache.init();
     Downloads.load();
-    await MediaQueue.sync();
-    print(AudioService.playbackState);
-    if (!AudioService.playbackState.playing) {
-      MediaQueue.restore();
+    try {
+      await MediaQueue.sync();
+      if (AudioService.playbackState != null) {
+        if (!AudioService.playbackState.playing) {
+          MediaQueue.restore();
+        }
+      }
+      final client = Client();
+      client.home().then((view) {
+        _onHomeUpdated(view);
+      });
+      client.artists().then((view) {
+        _onArtistsUpdated(view);
+      });
+      client.radio(ttl: Duration.zero).then((view) {
+        _onRadioUpdated(view);
+      });
+    } on ClientException catch(e) {
+      if (e.authenticationFailed) {
+        logout();
+      }
     }
-    final client = Client();
-    client.home().then((view) {
-      _onHomeUpdated(view);
-    }).catchError((e) {
-      _onLogout();
-    });
-    client.artists().then((view) {
-      _onArtistsUpdated(view);
-    }).catchError((e) {
-      _onLogout();
-    });
-    client.radio(ttl: Duration.zero).then((view) {
-      _onRadioUpdated(view);
-    }).catchError((e) {
-      _onLogout();
-    });
 
     AudioService.playbackStateStream.distinct().listen((state) {
       if (state == null) {
@@ -247,7 +253,7 @@ class TakeoutState extends State<_TakeoutWidget> {
     });
   }
 
-  Widget _widget(int index) {
+  Widget _item(int index) {
     switch (index) {
       case 0:
         return _homeView == null
@@ -265,7 +271,6 @@ class TakeoutState extends State<_TakeoutWidget> {
             : RadioWidget(_radioView);
       case 4:
         if (_playerWidget == null) {
-          print('loading player widget');
           _playerWidget = PlayerWidget();
           final params = Map<String, dynamic>();
           // TODO need params still?
@@ -300,9 +305,9 @@ class TakeoutState extends State<_TakeoutWidget> {
           return isFirstRouteInCurrentTab;
         },
         child: _loggedIn == null
-            ?  Center(child: CircularProgressIndicator())
+            ? Center(child: CircularProgressIndicator())
             : _loggedIn == false
-                ? LoginWidget(() => _onLoginSuccess())
+                ? LoginWidget(() => login())
                 : Scaffold(
                     key: _scaffoldMessengerKey,
                     floatingActionButton: (_playbackState != null &&
@@ -365,15 +370,13 @@ class TakeoutState extends State<_TakeoutWidget> {
 
   Map<String, WidgetBuilder> _routeBuilders(BuildContext context, int index) {
     return {
-      '/': (context) {
-        return [
-          _widget(0),
-          _widget(1),
-          _widget(2),
-          _widget(3),
-          _widget(4),
-        ].elementAt(index);
-      },
+      '/': (context) => [
+            _item(0),
+            _item(1),
+            _item(2),
+            _item(3),
+            _item(4),
+          ].elementAt(index)
     };
   }
 
@@ -386,14 +389,12 @@ class TakeoutState extends State<_TakeoutWidget> {
     return Offstage(
       offstage: _selectedIndex != index,
       child: Navigator(
-        observers: [_heroController],
-        key: navigatorKeys[index],
-        onGenerateRoute: (routeSettings) {
-          return MaterialPageRoute(
-            builder: (context) => routeBuilders[routeSettings.name](context),
-          );
-        },
-      ),
+          observers: [_heroController],
+          key: navigatorKeys[index],
+          onGenerateRoute: (routeSettings) => MaterialPageRoute(
+                builder: (context) =>
+                    routeBuilders[routeSettings.name](context),
+              )),
     );
   }
 

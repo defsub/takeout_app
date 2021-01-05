@@ -16,7 +16,6 @@
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
 import 'dart:async';
-import 'dart:io';
 
 import 'package:audio_service/audio_service.dart';
 
@@ -145,7 +144,7 @@ class MediaQueue {
   }
 
   /// Append a release, track or station to current playlist.
-  /// TODO should only append to default playlist
+  /// TODO append to either remote or local playlist
   static Future<Spiff> append(
       {Release release, Track track, Station station}) async {
     final completer = Completer<Spiff>();
@@ -182,7 +181,7 @@ class MediaQueue {
           playlist:
               spiff.playlist.copyWith(location: uri.toString())); // TODO fixme
       SpiffCache.put(spiff).then((_) => completer.complete(spiff));
-    });
+    }).catchError((e) => completer.completeError(e));
     return completer.future;
   }
 

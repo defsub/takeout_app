@@ -18,6 +18,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:connectivity/connectivity.dart';
+import 'package:takeout_app/menu.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'artists.dart';
@@ -99,13 +100,26 @@ class _ReleaseState extends State<ReleaseWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final releaseUrl = 'https://musicbrainz.org/release/${release.reid}';
+    final releaseGroupUrl =
+        'https://musicbrainz.org/release-group/${release.rgid}';
     return FutureBuilder(
         future: getImageBackgroundColor(release: release),
         builder: (context, snapshot) => Scaffold(
             backgroundColor: snapshot?.data,
             appBar: AppBar(
-                backgroundColor: snapshot?.data,
-                title: header('${_name(release)}')),
+              backgroundColor: snapshot?.data,
+              title: header('${_name(release)}'),
+              actions: [
+                popupMenu(context, [
+                  PopupItem.refresh((_) => _onRefresh()),
+                  PopupItem.link(
+                      'MusicBrainz Release', (_) => launch(releaseUrl)),
+                  PopupItem.link('MusicBrainz Release Group',
+                      (_) => launch(releaseGroupUrl)),
+                ])
+              ],
+            ),
             body: RefreshIndicator(
                 onRefresh: () => _onRefresh(),
                 child: _view == null
@@ -119,8 +133,6 @@ class _ReleaseState extends State<ReleaseWidget> {
                                   final isCached = _view != null
                                       ? TrackCache.checkAll(keys, _view.tracks)
                                       : false;
-                                  final releaseUrl =
-                                      'https://musicbrainz.org/release/${release.reid}';
                                   return Column(
                                     children: [
                                       if (_view != null) ...[
@@ -204,7 +216,7 @@ class _ReleaseState extends State<ReleaseWidget> {
                                           ]))
                                       ],
                                       FlatButton.icon(
-                                        label: Text('MusicBrainz'),
+                                        label: Text('MusicBrainz Release'),
                                         icon: Icon(Icons.link),
                                         onPressed: () => launch(releaseUrl),
                                       )

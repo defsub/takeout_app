@@ -26,6 +26,7 @@ import 'downloads.dart';
 import 'spiff.dart';
 import 'style.dart';
 import 'cache.dart';
+import 'menu.dart';
 
 class RadioWidget extends StatefulWidget {
   final RadioView _view;
@@ -62,12 +63,16 @@ class RadioState extends State<RadioWidget> {
                   child: Scaffold(
                       appBar: AppBar(
                           title: Text('Radio'),
+                          actions: [
+                            popupMenu(context, [
+                              PopupItem.refresh((_) => _onRefresh),
+                            ]),
+                          ],
                           bottom: TabBar(
                             tabs: [
                               Tab(text: 'Genres'),
                               Tab(text: 'Decades'),
-                              if (haveDownloads)
-                                Tab(text: 'Downloads')
+                              if (haveDownloads) Tab(text: 'Downloads')
                             ],
                           )),
                       body: TabBarView(
@@ -156,7 +161,14 @@ class _RefreshSpiffState extends State<RefreshSpiffWidget> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(title: header(_spiff?.playlist?.title ?? '')),
+        appBar: AppBar(
+          title: header(_spiff?.playlist?.title ?? ''),
+          actions: [
+            popupMenu(context, [
+              PopupItem.refresh((_) => _onRefresh),
+            ]),
+          ],
+        ),
         body: RefreshIndicator(
             onRefresh: () => _onRefresh(),
             child: StreamBuilder<ConnectivityResult>(

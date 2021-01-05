@@ -30,6 +30,7 @@ import 'radio.dart';
 import 'spiff.dart';
 import 'downloads.dart';
 import 'main.dart';
+import 'menu.dart';
 
 class ArtistsWidget extends StatefulWidget {
   final ArtistsView _view;
@@ -56,8 +57,16 @@ class _ArtistsState extends State<ArtistsWidget> {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
-            title:
-                genre != null ? header('Artists: $genre') : header('Artists')),
+            title: genre != null
+                ? header('Artists \u2013 $genre')
+                : area != null
+                    ? header('Artists \u2013 $area')
+                    : header('Artists'),
+            actions: [
+              popupMenu(context, [
+                PopupItem.refresh((_) => _onRefresh),
+              ])
+            ]),
         body: RefreshIndicator(
             onRefresh: () => _onRefresh(),
             child: ArtistListWidget(genre != null
@@ -240,7 +249,8 @@ class _ArtistState extends State<ArtistWidget> {
           final connectivity = snapshot.data;
           final artistUrl = 'https://musicbrainz.org/artist/${_artist.arid}';
           // TODO check if already cached and allow
-          bool allowArtwork = isNotNullOrEmpty(_view.image) &&
+          bool allowArtwork = _view != null &&
+              isNotNullOrEmpty(_view.image) &&
               TakeoutState.allowArtwork(connectivity);
           return FutureBuilder(
               future: allowArtwork
@@ -250,6 +260,12 @@ class _ArtistState extends State<ArtistWidget> {
                   appBar: AppBar(
                     title: header(_artist.name),
                     backgroundColor: snapshot?.data,
+                    actions: [
+                      popupMenu(context, [
+                        PopupItem.refresh((_) => _onRefresh),
+                        PopupItem.link('MusicBrainz Artist', (_) => launch(artistUrl))
+                      ])
+                    ],
                   ),
                   backgroundColor: snapshot?.data,
                   body: RefreshIndicator(
@@ -315,7 +331,8 @@ class _ArtistState extends State<ArtistWidget> {
                                       Divider(),
                                       heading('Releases'),
                                       ReleaseListWidget(_view.releases),
-                                      if (_view.singles.isNotEmpty)
+                                      if (_view.singles != null &&
+                                          _view.singles.isNotEmpty)
                                         Container(
                                             child: Column(children: [
                                           Divider(),
@@ -325,7 +342,8 @@ class _ArtistState extends State<ArtistWidget> {
                                               onAdd: _onTrackAdd,
                                               onPlay: _onTrackPlay),
                                         ])),
-                                      if (_view.popular.isNotEmpty)
+                                      if (_view.popular != null &&
+                                          _view.popular.isNotEmpty)
                                         Container(
                                             child: Column(children: [
                                           Divider(),
@@ -335,7 +353,8 @@ class _ArtistState extends State<ArtistWidget> {
                                               onAdd: _onTrackAdd,
                                               onPlay: _onTrackPlay),
                                         ])),
-                                      if (_view.similar.isNotEmpty)
+                                      if (_view.similar != null &&
+                                          _view.similar.isNotEmpty)
                                         Container(
                                             child: Column(children: [
                                           Divider(),
@@ -343,7 +362,7 @@ class _ArtistState extends State<ArtistWidget> {
                                           SimilarArtistListWidget(_view)
                                         ])),
                                       FlatButton.icon(
-                                        label: Text('MusicBrainz'),
+                                        label: Text('MusicBrainz Artist'),
                                         icon: Icon(Icons.link),
                                         onPressed: () => launch(artistUrl),
                                       )
@@ -475,8 +494,9 @@ class _ArtistTrackListState extends State<ArtistTrackListWidget> {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
-            title: header(
-                _type == ArtistTrackType.popular ? 'Popular' : 'Singles')),
+            title: header(_type == ArtistTrackType.popular
+                ? '${_artist.name} \u2013 Popular'
+                : '${_artist.name} \u2013 Singles')),
         body: RefreshIndicator(
             onRefresh: () => _onRefresh(),
             child: _tracks == null

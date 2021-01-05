@@ -22,6 +22,7 @@ import 'dart:async';
 
 import 'package:audio_service/audio_service.dart';
 import 'package:audio_session/audio_session.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:just_audio/just_audio.dart';
 
 import 'playlist.dart';
@@ -98,16 +99,18 @@ class AudioPlayerTask extends BackgroundAudioTask {
     } else {
       // new playlist
       final wasPlaying = _player.playing;
-      await _player.stop();
+      await _player.pause();
       _playlist = ConcatenatingAudioSource(
           children: newState.queue
               .map((item) =>
               AudioSource.uri(Uri.parse(item.id),
                   headers: item.isLocalFile() ? null : item.extras['headers']))
               .toList());
-      await _player.setAudioSource(_playlist,
-          initialIndex: newState.index,
-          initialPosition: Duration(seconds: newState.position.toInt()));
+      print('player index ${newState.index} pos ${newState.position.toInt()}');
+      await _player.setAudioSource(_playlist);
+          // initialIndex: newState.index,
+          // initialPosition: Duration(seconds: newState.position.toInt()));
+      await _player.seek(Duration(seconds: newState.position.toInt()), index: newState.index);
       if (wasPlaying) {
         _player.play();
       }
@@ -138,7 +141,10 @@ class AudioPlayerTask extends BackgroundAudioTask {
     });
 
     // Propagate all events from the audio player to AudioService clients.
-    _eventSubscription = _player.playbackEventStream.listen((event) {
+    // _eventSubscription = _player.playbackEventStream.listen((event) {
+    //   _broadcastState();
+    // });
+    _player.playingStream.listen((playing) {
       _broadcastState();
     });
 
@@ -230,7 +236,6 @@ class AudioPlayerTask extends BackgroundAudioTask {
 
   @override
   Future<void> onStop() async {
-    await _player.pause();
     await _player.dispose();
     _eventSubscription.cancel();
     // It is important to wait for this state to be broadcast before we shut

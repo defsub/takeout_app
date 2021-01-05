@@ -86,11 +86,10 @@ Future<Color> getImageBackgroundColor({Release release, String url}) async {
   final imageUrl = url ?? releaseCoverUrl(release);
   var color = _colorCache[imageUrl];
   if (color != null) {
-    print('color cached size ${_colorCache.length}');
     return color;
   }
-  final paletteGenerator =
-      await PaletteGenerator.fromImageProvider(CachedNetworkImageProvider(imageUrl));
+  final paletteGenerator = await PaletteGenerator.fromImageProvider(
+      CachedNetworkImageProvider(imageUrl));
   color = paletteGenerator?.darkVibrantColor?.color ??
       paletteGenerator?.darkMutedColor?.color;
   _colorCache[imageUrl] = color;
@@ -105,10 +104,6 @@ String year(String date) {
   return d.year == 1 ? '' : '${d.year}';
 }
 
-bool isNullOrEmpty(String s) {
-  return s?.trim()?.isEmpty ?? true;
-}
+bool isNullOrEmpty(String s) => s?.trim()?.isEmpty ?? true;
 
-bool isNotNullOrEmpty(String s) {
-  return s?.trim()?.isNotEmpty ?? false;
-}
+bool isNotNullOrEmpty(String s) => s?.trim()?.isNotEmpty ?? false;

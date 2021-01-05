@@ -18,6 +18,7 @@
 import 'package:flutter/material.dart';
 
 import 'client.dart';
+import 'global.dart';
 
 class LoginWidget extends StatefulWidget {
   final Function _onSuccess;
@@ -34,14 +35,32 @@ class _LoginState extends State<LoginWidget> {
   _LoginState(this._onSuccess);
 
   TextEditingController _hostText = TextEditingController();
-  TextEditingController _nameText = TextEditingController();
+  TextEditingController _userText = TextEditingController();
   TextEditingController _passwordText = TextEditingController();
+
+  static const prefsHost = 'login_host';
+  static const prefsUser = 'login_user';
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  void _load() async {
+    final host = await prefsString(prefsHost);
+    final user = await prefsString(prefsUser);
+    setState(() {
+      _hostText.text = host;
+      _userText.text = user;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
-          title: Text('Takeout'),
+          title: Text(appName),
         ),
         body: Padding(
             padding: EdgeInsets.all(10),
@@ -53,17 +72,16 @@ class _LoginState extends State<LoginWidget> {
                     child: Text(
                       'Host',
                       style:
-                      TextStyle(fontWeight: FontWeight.w500, fontSize: 30),
+                          TextStyle(fontWeight: FontWeight.w500, fontSize: 30),
                     )),
                 Container(
                   padding: EdgeInsets.all(10),
-                  child: TextField(
+                  child: TextFormField(
                     controller: _hostText,
                     decoration: InputDecoration(
-                      border: OutlineInputBorder(),
-                      labelText: 'Host',
-                      helperText: 'https://example.com'
-                    ),
+                        border: OutlineInputBorder(),
+                        labelText: 'Host',
+                        helperText: 'https://example.com'),
                   ),
                 ),
                 Container(
@@ -76,8 +94,8 @@ class _LoginState extends State<LoginWidget> {
                     )),
                 Container(
                   padding: EdgeInsets.all(10),
-                  child: TextField(
-                    controller: _nameText,
+                  child: TextFormField(
+                    controller: _userText,
                     decoration: InputDecoration(
                       border: OutlineInputBorder(),
                       labelText: 'User',
@@ -86,7 +104,7 @@ class _LoginState extends State<LoginWidget> {
                 ),
                 Container(
                   padding: EdgeInsets.all(10),
-                  child: TextField(
+                  child: TextFormField(
                     obscureText: true,
                     controller: _passwordText,
                     decoration: InputDecoration(
@@ -102,12 +120,18 @@ class _LoginState extends State<LoginWidget> {
                       child: Text('Login'),
                       onPressed: () async {
                         print(_hostText.text);
-                        print(_nameText.text);
+                        print(_userText.text);
                         print(_passwordText.text);
                         final client = Client();
                         await client.setEndpoint(_hostText.text);
-                        client.login(_nameText.text, _passwordText.text).then((result) {
+                        client
+                            .login(_userText.text, _passwordText.text)
+                            .then((result) {
                           if (result['Status'] == 200) {
+                            prefs.then((p) {
+                              p.setString(prefsHost, _hostText.text);
+                              p.setString(prefsUser, _userText.text);
+                            });
                             _onSuccess();
                           }
                         });

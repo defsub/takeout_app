@@ -11,9 +11,9 @@ dependencies:
 
   path_provider: ^1.6.10
 
-  audio_session: 0.0.9
-  audio_service: 0.15.3
-  just_audio: 0.6.0
+  audio_session: ^0.0.10
+  audio_service: ^0.16.0
+  just_audio: ^0.6.4
 #    git:
 #      url: https://github.com/ryanheise/just_audio.git
 #      path: just_audio

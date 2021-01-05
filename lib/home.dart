@@ -18,7 +18,11 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:takeout_app/global.dart';
+import 'package:takeout_app/menu.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import 'main.dart';
 import 'music.dart';
 import 'release.dart';
 import 'style.dart';
@@ -34,6 +38,8 @@ class HomeWidget extends StatefulWidget {
   HomeState createState() => HomeState(_view);
 }
 
+const recentSize = 3;
+
 class HomeState extends State<HomeWidget> {
   HomeView _view;
 
@@ -42,7 +48,18 @@ class HomeState extends State<HomeWidget> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(title: header('Home')),
+        appBar: AppBar(
+          title: header('Home'),
+          actions: [
+            popupMenu(context, [
+              PopupItem.downloads((context) => _onDownloads(context)),
+              PopupItem.refresh((_) => _onRefresh),
+              PopupItem.logout((_) => TakeoutState.logout()),
+              PopupItem.divider(),
+              PopupItem.about((context) => _onAbout(context)),
+            ]),
+          ],
+        ),
         body: RefreshIndicator(
             onRefresh: () => _onRefresh(),
             child: SingleChildScrollView(
@@ -52,7 +69,6 @@ class HomeState extends State<HomeWidget> {
                     stream: Downloads.downloadsSubject,
                     builder: (context, snapshot) {
                       final List<DownloadEntry> entries = snapshot.data ?? [];
-                      print('${entries.length}');
                       if (entries.isEmpty) {
                         return SizedBox.shrink();
                       }
@@ -61,19 +77,20 @@ class HomeState extends State<HomeWidget> {
                             'Recently Downloaded', () => _onDownloads(context)),
                         Container(
                             child: DownloadListWidget(
-                                limit: 3, sortType: DownloadSortType.newest)),
+                                limit: recentSize,
+                                sortType: DownloadSortType.newest)),
                         Divider(),
                       ]);
                     }),
                 headingButton('Recently Added', () => _onAdded(context)),
                 Container(
-                    child: ReleaseListWidget(
-                        _view.added.sublist(0, min(3, _view.added.length)))),
+                    child: ReleaseListWidget(_view.added
+                        .sublist(0, min(recentSize, _view.added.length)))),
                 Divider(),
                 headingButton('Recently Released', () => _onReleased(context)),
                 Container(
                     child: ReleaseListWidget(_view.released
-                        .sublist(0, min(3, _view.released.length)))),
+                        .sublist(0, min(recentSize, _view.released.length)))),
               ],
             ))));
   }
@@ -109,6 +126,19 @@ class HomeState extends State<HomeWidget> {
   void _onDownloads(BuildContext context) {
     Navigator.push(
         context, MaterialPageRoute(builder: (context) => DownloadsWidget()));
+  }
+
+  void _onAbout(BuildContext context) {
+    showAboutDialog(
+        context: context,
+        applicationName: appName,
+        applicationVersion: appVersion,
+        applicationLegalese: 'Copyleft © 2020-2021 The Takeout Authors',
+        children: <Widget>[
+          FlatButton(
+              child: Text('https://github.com/defsub/takeout_app'),
+              onPressed: () => launch('https://github.com/defsub/takeout_app')),
+        ]);
   }
 }
 
