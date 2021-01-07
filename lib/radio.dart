@@ -57,7 +57,7 @@ class RadioState extends State<RadioWidget> {
           entries = _radioFilter(entries);
           bool haveDownloads = entries.isNotEmpty;
           return DefaultTabController(
-              length: haveDownloads ? 3 : 2,
+              length: haveDownloads ? 4 : 3,
               child: RefreshIndicator(
                   onRefresh: () => _onRefresh(),
                   child: Scaffold(
@@ -72,6 +72,7 @@ class RadioState extends State<RadioWidget> {
                             tabs: [
                               Tab(text: 'Genres'),
                               Tab(text: 'Decades'),
+                              Tab(text: 'Other'),
                               if (haveDownloads) Tab(text: 'Downloads')
                             ],
                           )),
@@ -79,11 +80,18 @@ class RadioState extends State<RadioWidget> {
                         children: [
                           _stations(_view.genre),
                           _stations(_view.period),
+                          _stations(_merge(_view.series, _view.other)),
                           if (haveDownloads)
                             DownloadListWidget(filter: _radioFilter)
                         ],
                       ))));
         });
+  }
+
+  List<Station> _merge(List<Station> a, List<Station> b) {
+    final list = a + b;
+    list.sort((x, y) => x.name.compareTo(y.name));
+    return list;
   }
 
   Widget _stations(List<Station> stations) {

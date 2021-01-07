@@ -6,7 +6,7 @@ import 'music.dart';
 import 'artists.dart'; // TOOD remove
 
 const appName = 'Takeout';
-const appVersion = '0.1.0';
+const appVersion = '0.1.1';
 
 const kilobyte = 1024;
 const megabyte = kilobyte*1024;

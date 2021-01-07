@@ -272,6 +272,8 @@ class RadioView {
   List<Station> genre;
   List<Station> similar;
   List<Station> period;
+  List<Station> series;
+  List<Station> other;
 
   RadioView({this.artist, this.genre, this.similar, this.period});
 

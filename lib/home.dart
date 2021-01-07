@@ -22,12 +22,12 @@ import 'package:takeout_app/global.dart';
 import 'package:takeout_app/menu.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'client.dart';
+import 'downloads.dart';
 import 'main.dart';
 import 'music.dart';
 import 'release.dart';
 import 'style.dart';
-import 'downloads.dart';
-import 'client.dart';
 
 class HomeWidget extends StatefulWidget {
   final HomeView _view;
@@ -133,7 +133,7 @@ class HomeState extends State<HomeWidget> {
         context: context,
         applicationName: appName,
         applicationVersion: appVersion,
-        applicationLegalese: 'Copyleft © 2020-2021 The Takeout Authors',
+        applicationLegalese: 'Copyleft \u00a9 2020-2021 The Takeout Authors',
         children: <Widget>[
           FlatButton(
               child: Text('https://github.com/defsub/takeout_app'),
