@@ -141,12 +141,12 @@ class AudioPlayerTask extends BackgroundAudioTask {
     });
 
     // Propagate all events from the audio player to AudioService clients.
-    // _eventSubscription = _player.playbackEventStream.listen((event) {
-    //   _broadcastState();
-    // });
-    _player.playingStream.listen((playing) {
+    _eventSubscription = _player.playbackEventStream.listen((event) {
       _broadcastState();
     });
+    // _player.playingStream.listen((playing) {
+    //   _broadcastState();
+    // });
 
     // Special processing for state transitions.
     _player.processingStateStream.listen((state) {
