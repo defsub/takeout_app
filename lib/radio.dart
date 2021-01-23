@@ -65,7 +65,7 @@ class RadioState extends State<RadioWidget> {
                           title: Text('Radio'),
                           actions: [
                             popupMenu(context, [
-                              PopupItem.refresh((_) => _onRefresh),
+                              PopupItem.refresh((_) => _onRefresh()),
                             ]),
                           ],
                           bottom: TabBar(
@@ -173,7 +173,7 @@ class _RefreshSpiffState extends State<RefreshSpiffWidget> {
           title: header(_spiff?.playlist?.title ?? ''),
           actions: [
             popupMenu(context, [
-              PopupItem.refresh((_) => _onRefresh),
+              PopupItem.refresh((_) => _onRefresh()),
             ]),
           ],
         ),
@@ -237,6 +237,7 @@ class _RefreshSpiffState extends State<RefreshSpiffWidget> {
   Future<void> _onRefresh() async {
     try {
       final result = await _fetchSpiff();
+      print('got $result');
       setState(() {
         _spiff = result;
       });

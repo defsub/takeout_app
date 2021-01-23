@@ -20,6 +20,7 @@ import 'dart:math';
 import 'dart:io';
 import 'dart:convert';
 
+import 'package:path/path.dart';
 import 'package:flutter/material.dart';
 import 'package:takeout_app/playlist.dart';
 import 'package:rxdart/rxdart.dart';
@@ -32,6 +33,7 @@ import 'cover.dart';
 import 'global.dart';
 import 'style.dart';
 import 'artists.dart';
+import 'menu.dart';
 
 Random _random = Random();
 
@@ -68,13 +70,49 @@ class DownloadsWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(title: Text('Downloads')),
+        appBar: AppBar(title: Text('Downloads'), actions: [
+          popupMenu(context, [
+            PopupItem.delete('Delete all', (ctx) => _onDeleteAll(ctx)),
+          ])
+        ]),
         body: SingleChildScrollView(
             child: Column(
           children: [
             Container(child: DownloadListWidget()),
           ],
         )));
+  }
+
+  void _onDeleteAll(BuildContext context) {
+    showDialog(
+        context: context,
+        builder: (ctx) {
+          return AlertDialog(
+            title: Text('Really delete?'),
+            content: Text('This will delete all downloaded tracks.'),
+            actions: [
+              FlatButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text('NO'),
+              ),
+              FlatButton(
+                onPressed: () {
+                  _onDeleteConfirmed();
+                  Navigator.pop(ctx);
+                  Navigator.pop(context);
+                },
+                child: Text('YES'),
+              ),
+            ],
+          );
+        });
+  }
+
+  void _onDeleteConfirmed() {
+    Downloads.downloadsSubject.value.forEach((entry) {
+      _deleteSpiff(entry.spiff);
+    });
+    Downloads.reload();
   }
 }
 
@@ -148,14 +186,14 @@ class DownloadListState extends State<DownloadListWidget> {
                         trailing: IconButton(
                             icon: Icon(Icons.playlist_play),
                             onPressed: () => _onPlay(entry.spiff)),
-                        onTap: () => _onTap(entry.spiff),
+                        onTap: () => _onTap(context, entry.spiff),
                         title: Text(entry.spiff.playlist.title),
                         subtitle: _subtitle(entry))))
           ]);
         });
   }
 
-  void _onTap(Spiff spiff) {
+  void _onTap(BuildContext context, Spiff spiff) {
     Navigator.push(context,
         MaterialPageRoute(builder: (context) => DownloadWidget(spiff)));
   }
@@ -265,7 +303,7 @@ class DownloadState extends State<DownloadWidget> {
         builder: (ctx) {
           return AlertDialog(
             title: Text('Really delete ${_spiff.playlist.title}?'),
-            content: Text('This free ${_size(_spiff.size)} of space.'),
+            content: Text('This will free ${_size(_spiff.size)} of space.'),
             actions: [
               FlatButton(
                 onPressed: () => Navigator.pop(ctx),
@@ -285,23 +323,26 @@ class DownloadState extends State<DownloadWidget> {
   }
 
   Future<void> _onDeleteConfirmed() async {
-    final cache = TrackCache();
-    _spiff.playlist.tracks.forEach((e) async {
-      final result = await cache.get(e);
-      if (result is File) {
-        print('delete $result');
-        result.delete();
-        cache.remove(e);
-      }
-    });
-
-    final uri = Uri.parse(_spiff.playlist.location);
-    final file = File.fromUri(uri);
-    print('delete $file');
-    file.delete();
-
+    await _deleteSpiff(_spiff);
     Downloads.reload();
   }
+}
+
+Future<void> _deleteSpiff(Spiff spiff) async {
+  final cache = TrackCache();
+  spiff.playlist.tracks.forEach((e) async {
+    final result = await cache.get(e);
+    if (result is File) {
+      print('delete $result');
+      result.delete();
+      cache.remove(e);
+    }
+  });
+
+  final uri = Uri.parse(spiff.playlist.location);
+  final file = File.fromUri(uri);
+  print('delete $file');
+  file.delete();
 }
 
 class SpiffTrackListView extends StatelessWidget {
@@ -344,7 +385,14 @@ class Downloads {
 
   static Future<File> _downloadFile(String fileName) async {
     return await checkAppDir(_dir).then((dir) {
-      return File('${dir.path}/$fileName');
+      File file = File('${dir.path}/$fileName');
+      for (var n = 1; file.existsSync(); n++) {
+        var ext = extension(fileName);
+        var name = '${basenameWithoutExtension(fileName)}_$n$ext';
+        // foo.json -> foo-1.json, foo-2.json, etc.
+        file = File('${dir.path}/$name');
+      }
+      return file;
     });
   }
 

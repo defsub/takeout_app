@@ -180,22 +180,25 @@ class Client {
       }
     }
 
-    final baseUrl = await getEndpoint();
-
-    print('$baseUrl$uri');
-    final response = await http.get('$baseUrl$uri',
-        headers: {HttpHeaders.cookieHeader: '$cookieName=$cookie'});
-    print('got ${response.statusCode}');
-    if (response.statusCode != HttpStatus.ok) {
-      throw ClientException(
-          statusCode: response.statusCode,
-          url: response.request.url.toString());
+    try {
+      final baseUrl = await getEndpoint();
+      print('$baseUrl$uri');
+      final response = await http.get('$baseUrl$uri',
+          headers: {HttpHeaders.cookieHeader: '$cookieName=$cookie'});
+      print('got ${response.statusCode}');
+      if (response.statusCode != HttpStatus.ok) {
+        throw ClientException(
+            statusCode: response.statusCode,
+            url: response.request.url.toString());
+      }
+      // print('got response ${response.body}');
+      if (cacheable) {
+        cache.put(uri, response.bodyBytes);
+      }
+      return jsonDecode(utf8.decode(response.bodyBytes));
+    } on TlsException catch (e) {
+      return Future<Map<String, dynamic>>.error(e);
     }
-    // print('got response ${response.body}');
-    if (cacheable) {
-      cache.put(uri, response.bodyBytes);
-    }
-    return jsonDecode(utf8.decode(response.bodyBytes));
   }
 
   /// no cookie, no caching
@@ -279,88 +282,89 @@ class Client {
   Future<SearchView> search(String q, {Duration ttl = Duration.zero}) async =>
       _getJson('/api/search?q=${Uri.encodeQueryComponent(q)}', ttl: ttl)
           .then((j) => SearchView.fromJson(j))
-          .catchError((e) => Future.error(e));
+          .catchError((e) => Future<SearchView>.error(e));
 
   /// GET /api/home
   Future<HomeView> home({Duration ttl}) async => _getJson('/api/home', ttl: ttl)
       .then((j) => HomeView.fromJson(j))
-      .catchError((e) => Future.error(e));
+      .catchError((e) => Future<HomeView>.error(e));
 
   /// GET /api/artists
   Future<ArtistsView> artists({Duration ttl}) async =>
       _getJson('/api/artists', ttl: ttl)
           .then((j) => ArtistsView.fromJson(j))
-          .catchError((e) => Future.error(e));
+          .catchError((e) => Future<ArtistsView>.error(e));
 
   /// GET /api/artists/1
   Future<ArtistView> artist(int id, {Duration ttl}) async =>
       _getJson('/api/artists/$id', ttl: ttl)
           .then((j) => ArtistView.fromJson(j))
-          .catchError((e) => Future.error(e));
+          .catchError((e) => Future<ArtistView>.error(e));
 
   /// GET /api/artists/1/singles
   Future<SinglesView> artistSingles(int id, {Duration ttl}) async =>
       _getJson('/api/artists/$id/singles', ttl: ttl)
           .then((j) => SinglesView.fromJson(j))
-          .catchError((e) => Future.error(e));
+          .catchError((e) => Future<SinglesView>.error(e));
 
   /// GET /api/artists/1/singles/playlist
   Future<Spiff> artistSinglesPlaylist(int id, {Duration ttl}) async =>
       _getJson('/api/artists/$id/singles/playlist', ttl: ttl)
           .then((j) => Spiff.fromJson(j))
-          .catchError((e) => Future.error(e));
+          .catchError((e) => Future<Spiff>.error(e));
 
   /// GET /api/artists/1/popular
   Future<PopularView> artistPopular(int id, {Duration ttl}) async =>
       _getJson('/api/artists/$id/popular', ttl: ttl)
           .then((j) => PopularView.fromJson(j))
-          .catchError((e) => Future.error(e));
+          .catchError((e) => Future<PopularView>.error(e));
 
   /// GET /api/artists/1/popular/playlist
   Future<Spiff> artistPopularPlaylist(int id, {Duration ttl}) async =>
       _getJson('/api/artists/$id/popular/playlist', ttl: ttl)
           .then((j) => Spiff.fromJson(j))
-          .catchError((e) => Future.error(e));
+          .catchError((e) => Future<Spiff>.error(e));
 
   /// GET /api/artists/1/playlist
   Future<Spiff> artistPlaylist(int id, {Duration ttl}) async =>
       _getJson('/api/artists/$id/playlist', ttl: ttl)
           .then((j) => Spiff.fromJson(j))
-          .catchError((e) => Future.error(e));
+          .catchError((e) => Future<Spiff>.error(e));
 
   /// GET /api/artists/1/radio
   Future<Spiff> artistRadio(int id, {Duration ttl}) async =>
       _getJson('/api/artists/$id/radio', ttl: ttl)
           .then((j) => Spiff.fromJson(j))
-          .catchError((e) => Future.error(e));
+          .catchError((e) => Future<Spiff>.error(e));
 
   /// GET /api/releases/1
   Future<ReleaseView> release(int id, {Duration ttl}) async =>
       _getJson('/api/releases/$id', ttl: ttl)
           .then((j) => ReleaseView.fromJson(j))
-          .catchError((e) => Future.error(e));
+          .catchError((e) => Future<ReleaseView>.error(e));
 
   /// GET /api/releases/1/playlist
   Future<Spiff> releasePlaylist(int id, {Duration ttl}) async =>
       _getJson('/api/releases/$id/playlist', ttl: ttl)
           .then((j) => Spiff.fromJson(j))
-          .catchError((e) => Future.error(e));
+          .catchError((e) => Future<Spiff>.error(e));
 
   /// GET /api/playlist
   Future<Spiff> playlist() async => _getJson('/api/playlist', ttl: playlistTTL)
-      .then((j) => Spiff.fromJson(j));
+      .then((j) => Spiff.fromJson(j))
+      .catchError((e) => Future<Spiff>.error(e));
 
   /// GET /api/radio
   Future<RadioView> radio({Duration ttl}) async =>
       _getJson('/api/radio', ttl: ttl)
           .then((j) => RadioView.fromJson(j))
-          .catchError((e) => Future.error(e));
+          .catchError((e) => Future<RadioView>.error(e));
 
   /// GET /api/radio/1
   Future<Spiff> station(int id, {Duration ttl}) async =>
       _getJson('/api/radio/$id', ttl: ttl)
           .then((j) => Spiff.fromJson(j))
-          .catchError((e) => Future.error(e));
+          .catchError((e) => Future<Spiff>.error(e));
 
   Future<PatchResult> patch(List<Map<String, dynamic>> body) async =>
       _patchJson('/api/playlist', body);

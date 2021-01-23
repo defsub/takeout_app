@@ -53,7 +53,7 @@ class HomeState extends State<HomeWidget> {
           actions: [
             popupMenu(context, [
               PopupItem.downloads((context) => _onDownloads(context)),
-              PopupItem.refresh((_) => _onRefresh),
+              PopupItem.refresh((_) => _onRefresh()),
               PopupItem.logout((_) => TakeoutState.logout()),
               PopupItem.divider(),
               PopupItem.about((context) => _onAbout(context)),
@@ -135,9 +135,22 @@ class HomeState extends State<HomeWidget> {
         applicationVersion: appVersion,
         applicationLegalese: 'Copyleft \u00a9 2020-2021 The Takeout Authors',
         children: <Widget>[
-          FlatButton(
-              child: Text('https://github.com/defsub/takeout_app'),
-              onPressed: () => launch('https://github.com/defsub/takeout_app')),
+          InkWell(
+              child: Text(
+                appSource,
+                style: TextStyle(
+                    decoration: TextDecoration.underline,
+                    color: Colors.blueAccent),
+              ),
+              onTap: () => launch(appSource)),
+          InkWell(
+              child: Text(
+                appHome,
+                style: TextStyle(
+                    decoration: TextDecoration.underline,
+                    color: Colors.blueAccent),
+              ),
+              onTap: () => launch(appHome)),
         ]);
   }
 }

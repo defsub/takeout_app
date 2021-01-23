@@ -47,6 +47,9 @@ class PopupItem {
 
   PopupItem.about(MenuCallback onSelected)
       : this(Icon(Icons.info_outline), 'About', onSelected);
+
+  PopupItem.delete(String text, MenuCallback onSelected)
+      : this(Icon(Icons.delete), text, onSelected);
 }
 
 Widget popupMenu(BuildContext context, List<PopupItem> items) {

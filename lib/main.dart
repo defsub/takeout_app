@@ -19,6 +19,7 @@
 // Still looking for the original reference.
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/foundation.dart';
@@ -223,12 +224,6 @@ class TakeoutState extends State<_TakeoutWidget> {
     TrackCache.init();
     Downloads.load();
     try {
-      await MediaQueue.sync();
-      if (AudioService.playbackState != null) {
-        if (!AudioService.playbackState.playing) {
-          MediaQueue.restore();
-        }
-      }
       final client = Client();
       client.home().then((view) {
         _onHomeUpdated(view);
@@ -236,13 +231,21 @@ class TakeoutState extends State<_TakeoutWidget> {
       client.artists().then((view) {
         _onArtistsUpdated(view);
       });
-      client.radio(ttl: Duration.zero).then((view) {
+      client.radio().then((view) {
         _onRadioUpdated(view);
       });
+      await MediaQueue.sync();
+      if (AudioService.playbackState != null) {
+        if (!AudioService.playbackState.playing) {
+          MediaQueue.restore();
+        }
+      }
     } on ClientException catch(e) {
       if (e.authenticationFailed) {
         logout();
       }
+    } on TlsException catch(e) {
+      showErrorDialog(context, e.message);
     }
 
     AudioService.playbackStateStream.distinct().listen((state) {

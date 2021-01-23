@@ -81,7 +81,7 @@ class _LoginState extends State<LoginWidget> {
                     decoration: InputDecoration(
                         border: OutlineInputBorder(),
                         labelText: 'Host',
-                        helperText: 'https://example.com'),
+                        helperText: appHome),
                   ),
                 ),
                 Container(

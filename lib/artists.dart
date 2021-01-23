@@ -64,7 +64,7 @@ class _ArtistsState extends State<ArtistsWidget> {
                     : header('Artists'),
             actions: [
               popupMenu(context, [
-                PopupItem.refresh((_) => _onRefresh),
+                PopupItem.refresh((_) => _onRefresh()),
               ])
             ]),
         body: RefreshIndicator(
@@ -262,7 +262,7 @@ class _ArtistState extends State<ArtistWidget> {
                     backgroundColor: snapshot?.data,
                     actions: [
                       popupMenu(context, [
-                        PopupItem.refresh((_) => _onRefresh),
+                        PopupItem.refresh((_) => _onRefresh()),
                         PopupItem.link('MusicBrainz Artist', (_) => launch(artistUrl))
                       ])
                     ],

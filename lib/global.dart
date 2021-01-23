@@ -3,10 +3,12 @@ import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'music.dart';
-import 'artists.dart'; // TOOD remove
+import 'artists.dart'; // TODO remove
 
 const appName = 'Takeout';
-const appVersion = '0.1.1';
+const appVersion = '0.1.2';
+const appSource = 'https://github.com/defsub/takeout_app';
+const appHome = 'https://takeout.fm';
 
 const kilobyte = 1024;
 const megabyte = kilobyte*1024;
@@ -65,3 +67,22 @@ Future<String> prefsString(String key) async {
     return p.getString(key);
   });
 }
+
+void showErrorDialog(BuildContext context, String message) {
+  showDialog(
+    context: context,
+    builder: (BuildContext ctx) {
+      return AlertDialog(
+        title: Text("Error"),
+        content: Text(message),
+        actions: [
+          FlatButton(
+            child: Text("OK"),
+              onPressed: () => Navigator.pop(ctx),
+          )
+        ],
+      );
+    },
+  );
+}
+
