@@ -244,6 +244,7 @@ class MediaQueue {
     final headers = await client.headers();
     for (var t in entries) {
       final uri = await client.locate(t);
+      print('locate $uri ${headers['cookie']}');
       items.add(_entryMediaItem(t, uri, headers));
     }
     return items;

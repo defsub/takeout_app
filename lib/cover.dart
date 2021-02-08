@@ -24,19 +24,25 @@ import 'music.dart';
 import 'spiff.dart';
 
 String releaseCoverUrl(Release release, {int size = 250}) {
+  final url = release.groupArtwork
+      ? 'https://coverartarchive.org/release-group/${release.rgid}'
+      : 'https://coverartarchive.org/release/${release.reid}';
   if (release.artwork && release.frontArtwork) {
-    return 'https://coverartarchive.org/release/${release.reid}/front-$size';
+    return '$url/front-$size';
   } else if (release.artwork && isNotNullOrEmpty(release.otherArtwork)) {
-    return 'https://coverartarchive.org/release/${release.reid}/${release.otherArtwork}-$size';
+    return '$url/${release.otherArtwork}-$size';
   }
   return null;
 }
 
 String trackCoverUrl(Track track, {int size = 250}) {
+  final url = track.groupArtwork
+      ? 'https://coverartarchive.org/release-group/${track.rgid}'
+      : 'https://coverartarchive.org/release/${track.reid}';
   if (track.artwork && track.frontArtwork) {
-    return 'https://coverartarchive.org/release/${track.reid}/front-$size';
+    return '$url/front-$size';
   } else if (track.artwork && isNotNullOrEmpty(track.otherArtwork)) {
-    return 'https://coverartarchive.org/release/${track.reid}/${track.otherArtwork}-$size';
+    return '$url/${track.otherArtwork}-$size';
   }
   return null;
 }

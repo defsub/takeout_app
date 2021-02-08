@@ -121,9 +121,9 @@ class Client {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     _cookie = v;
     if (v == null) {
-      prefs.remove(prefsCookie);
+      await prefs.remove(prefsCookie);
     } else {
-      prefs.setString(prefsCookie, _cookie);
+      await prefs.setString(prefsCookie, _cookie);
     }
   }
 

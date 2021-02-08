@@ -168,10 +168,12 @@ class Release {
   final String disambiguation;
   final String type;
   final String date;
+  final String releaseDate;
   final bool artwork;
   final bool frontArtwork;
   final bool backArtwork;
   final String otherArtwork;
+  final bool groupArtwork;
 
   Release(
       {this.id,
@@ -182,10 +184,12 @@ class Release {
       this.disambiguation,
       this.type,
       this.date,
+      this.releaseDate,
       this.artwork,
       this.frontArtwork,
       this.backArtwork,
-      this.otherArtwork});
+      this.otherArtwork,
+      this.groupArtwork});
 
   factory Release.fromJson(Map<String, dynamic> json) =>
       _$ReleaseFromJson(json);
@@ -215,6 +219,7 @@ class Track extends Locatable {
   final bool frontArtwork;
   final bool backArtwork;
   final String otherArtwork;
+  final bool groupArtwork;
 
   Track(
       {this.id,
@@ -232,7 +237,8 @@ class Track extends Locatable {
       this.artwork,
       this.frontArtwork,
       this.backArtwork,
-      this.otherArtwork});
+      this.otherArtwork,
+      this.groupArtwork});
 
   factory Track.fromJson(Map<String, dynamic> json) => _$TrackFromJson(json);
 
