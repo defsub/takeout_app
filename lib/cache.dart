@@ -215,10 +215,16 @@ class SpiffCache {
 
   static Future<void> put(Spiff spiff) async {
     final key = Uri.parse(spiff.playlist.location);
-    await _save(key, spiff);
-    print(
-        'put ${key.toString()} -> $spiff, ${spiff.playlist.tracks.length} tracks');
-    _cache[key] = spiff;
+    final curr = _cache[key];
+    print('put ${key.toString()} -> ${spiff.playlist.tracks.length} tracks');
+    if (curr != null && spiff == curr && spiff.index == curr.index) {
+      // TODO check if Spiff == is good enough
+      // TODO position changes aren't saved right now
+      print('put unchanged');
+    } else {
+      await _save(key, spiff);
+      _cache[key] = spiff;
+    }
   }
 
   static Future<Spiff> get(Uri uri) async {
@@ -230,7 +236,8 @@ class SpiffCache {
     print('loading ${uri.toString()}');
     final file = await _cacheFile(uri);
     final spiff = await Spiff.fromFile(file);
-    print('loaded ${spiff.playlist.title} with ${spiff.playlist.tracks.length} tracks');
+    print(
+        'loaded ${spiff.playlist.title} with ${spiff.playlist.tracks.length} tracks');
     await put(spiff);
     return spiff;
   }

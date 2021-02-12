@@ -22,7 +22,6 @@ import 'dart:async';
 
 import 'package:audio_service/audio_service.dart';
 import 'package:audio_session/audio_session.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:just_audio/just_audio.dart';
 
 import 'playlist.dart';
@@ -93,24 +92,25 @@ class AudioPlayerTask extends BackgroundAudioTask {
       for (var i = oldState.length; i < newState.length; i++) {
         final item = newState.item(i);
         print('spiff adding $i ${item}');
-        await _playlist.insert(i, AudioSource.uri(Uri.parse(item.id),
-            headers: item.isLocalFile() ? null : item.extras['headers']));
+        await _playlist.insert(
+            i,
+            AudioSource.uri(Uri.parse(item.id),
+                headers: item.isLocalFile() ? null : item.extras['headers']));
       }
     } else {
       // new playlist
       final wasPlaying = _player.playing;
-      await _player.pause();
+      //await _player.pause();
       _playlist = ConcatenatingAudioSource(
           children: newState.queue
-              .map((item) =>
-              AudioSource.uri(Uri.parse(item.id),
+              .map((item) => AudioSource.uri(Uri.parse(item.id),
                   headers: item.isLocalFile() ? null : item.extras['headers']))
               .toList());
       print('player index ${newState.index} pos ${newState.position.toInt()}');
-      await _player.setAudioSource(_playlist);
-          // initialIndex: newState.index,
-          // initialPosition: Duration(seconds: newState.position.toInt()));
-      await _player.seek(Duration(seconds: newState.position.toInt()), index: newState.index);
+      await _player.setAudioSource(_playlist,
+          preload: false,
+          initialPosition: Duration(seconds: newState.position.toInt()),
+          initialIndex: newState.index);
       if (wasPlaying) {
         _player.play();
       }
@@ -142,6 +142,7 @@ class AudioPlayerTask extends BackgroundAudioTask {
 
     // Propagate all events from the audio player to AudioService clients.
     _eventSubscription = _player.playbackEventStream.listen((event) {
+      // print('event is ${event.currentIndex} ${event.processingState.toString()}');
       _broadcastState();
     });
     // _player.playingStream.listen((playing) {
@@ -152,6 +153,7 @@ class AudioPlayerTask extends BackgroundAudioTask {
     _player.processingStateStream.listen((state) {
       switch (state) {
         case ProcessingState.completed:
+          print("update completed");
           _state.update(0, 0);
           break;
         case ProcessingState.ready:
@@ -166,8 +168,9 @@ class AudioPlayerTask extends BackgroundAudioTask {
   }
 
   void _mediaIndexChanged(int index) {
+    print('update index changed $index');
     _state.update(index, _player.position.inSeconds.toDouble());
-    AudioServiceBackground.setMediaItem(_state.current);
+    AudioServiceBackground.setMediaItem(_state.item(index));
   }
 
   @override

@@ -24,6 +24,7 @@ import 'dart:io';
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_settings_screens/flutter_settings_screens.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:connectivity/connectivity.dart';
 
@@ -39,8 +40,11 @@ import 'search.dart';
 import 'global.dart';
 import 'downloads.dart';
 import 'cache.dart';
+import 'settings.dart';
 
-void main() => runApp(new MyApp());
+void main() {
+  Settings.init().then((_) => runApp(new MyApp()));
+}
 
 final _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
@@ -48,7 +52,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Takeout',
+      title: appName,
       home: AudioServiceWidget(child: _TakeoutWidget()),
       darkTheme: _darkTheme(),
     );
@@ -57,6 +61,7 @@ class MyApp extends StatelessWidget {
   ThemeData _darkTheme() {
     final ThemeData base = ThemeData.dark();
     return base.copyWith(
+      toggleableActiveColor: Colors.orangeAccent,
       disabledColor: Colors.white24,
       sliderTheme: SliderThemeData(
         activeTrackColor: Colors.orangeAccent,
@@ -85,7 +90,6 @@ class _TakeoutWidget extends StatefulWidget {
 }
 
 class TakeoutState extends State<_TakeoutWidget> {
-
   static final _loginStream = BehaviorSubject<bool>();
   static Stream<bool> get loginStream => _loginStream.stream;
   static bool get isLoggedIn => _loginStream.value;
@@ -138,16 +142,21 @@ class TakeoutState extends State<_TakeoutWidget> {
     _loginSubscription.cancel();
   }
 
+  static bool _allowOrWifi(String key, ConnectivityResult result) {
+    final allow = Settings.getValue(key, false);
+    return allow || result == ConnectivityResult.wifi;
+  }
+
   static bool allowStreaming(ConnectivityResult result) {
-    return result == ConnectivityResult.wifi;
+    return _allowOrWifi(settingAllowStreaming, result);
   }
 
   static bool allowDownload(ConnectivityResult result) {
-    return result == ConnectivityResult.wifi;
+    return _allowOrWifi(settingAllowDownload, result);
   }
 
   static bool allowArtwork(ConnectivityResult result) {
-    return result == ConnectivityResult.wifi;
+    return _allowOrWifi(settingAllowArtistArtwork, result);
   }
 
   Future<void> _initConnectivity() async {
@@ -187,7 +196,6 @@ class TakeoutState extends State<_TakeoutWidget> {
       }
     });
   }
-
 
   void _onItemTapped(int index) {
     setState(() {

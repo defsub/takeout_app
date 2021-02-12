@@ -89,6 +89,8 @@ class RadioState extends State<RadioWidget> {
   }
 
   List<Station> _merge(List<Station> a, List<Station> b) {
+    a ??= [];
+    b ??= [];
     final list = a + b;
     list.sort((x, y) => x.name.compareTo(y.name));
     return list;

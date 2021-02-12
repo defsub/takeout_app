@@ -69,8 +69,8 @@ class PatchResult {
 }
 
 class Client {
-  static const prefsCookie = 'client_cookie';
-  static const prefsEndpoint = 'endpoint';
+  static const settingCookie = 'client_cookie';
+  static const settingEndpoint = 'endpoint';
   static const cookieName = 'Takeout';
 
   static const locationTTL = Duration(hours: 1);
@@ -101,17 +101,17 @@ class Client {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     _endpoint = v;
     if (v == null) {
-      prefs.remove(prefsEndpoint);
+      prefs.remove(settingEndpoint);
     } else {
-      prefs.setString(prefsEndpoint, _endpoint);
+      prefs.setString(settingEndpoint, _endpoint);
     }
   }
 
   Future<String> getEndpoint() async {
     if (_endpoint == null) {
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      if (prefs.containsKey(prefsEndpoint)) {
-        _endpoint = prefs.getString(prefsEndpoint);
+      if (prefs.containsKey(settingEndpoint)) {
+        _endpoint = prefs.getString(settingEndpoint);
       }
     }
     return _endpoint;
@@ -121,17 +121,17 @@ class Client {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     _cookie = v;
     if (v == null) {
-      await prefs.remove(prefsCookie);
+      await prefs.remove(settingCookie);
     } else {
-      await prefs.setString(prefsCookie, _cookie);
+      await prefs.setString(settingCookie, _cookie);
     }
   }
 
   Future<String> _getCookie() async {
     if (_cookie == null) {
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      if (prefs.containsKey(prefsCookie)) {
-        _cookie = prefs.getString(prefsCookie);
+      if (prefs.containsKey(settingCookie)) {
+        _cookie = prefs.getString(settingCookie);
       }
     }
     return _cookie;

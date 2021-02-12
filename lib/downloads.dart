@@ -350,6 +350,10 @@ class SpiffTrackListView extends StatelessWidget {
 
   SpiffTrackListView(this._spiff);
 
+  void _onTrack(int index) {
+    MediaQueue.playSpiff(_spiff, index: index);
+  }
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder(
@@ -357,16 +361,17 @@ class SpiffTrackListView extends StatelessWidget {
         builder: (context, snapshot) {
           final keys = snapshot.data ?? Set<String>();
           final children = List<Widget>();
-          _spiff.playlist.tracks.forEach((e) {
+          for (var i = 0; i < _spiff.playlist.tracks.length; i++) {
+            final e = _spiff.playlist.tracks[i];
             children.add(ListTile(
-                onTap: () => {},
+                onTap: () => _onTrack(i),
                 onLongPress: () => showArtist(e.creator),
                 leading: cover(e.image),
                 trailing: Icon(
                     keys.contains(e.key) ? Icons.download_done_sharp : null),
                 subtitle: Text('${e.creator} \u2022 ${_size(e.size)}'),
                 title: Text(e.title)));
-          });
+          }
           return Column(children: children);
         });
   }

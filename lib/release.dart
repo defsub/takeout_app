@@ -66,14 +66,6 @@ class _ReleaseState extends State<ReleaseWidget> {
     });
   }
 
-  void _onTrackPlay(Track track) {
-    MediaQueue.play(track: track, release: release);
-  }
-
-  void _onTrackAdd(Track track) {
-    MediaQueue.append(track: track);
-  }
-
   void _onArtist() {
     Navigator.push(context,
         MaterialPageRoute(builder: (context) => ArtistWidget(_view.artist)));
@@ -204,9 +196,7 @@ class _ReleaseState extends State<ReleaseWidget> {
                                         Divider(),
                                         // heading('Tracks'),
                                         Container(
-                                            child: _ReleaseTracksWidget(_view,
-                                                onTrackTapped: _onTrackPlay,
-                                                onAppendTapped: _onTrackAdd)),
+                                            child: _ReleaseTracksWidget(_view)),
                                         if (_view.similar.isNotEmpty)
                                           Container(
                                               child: Column(children: [
@@ -228,10 +218,12 @@ class _ReleaseState extends State<ReleaseWidget> {
 
 class _ReleaseTracksWidget extends StatelessWidget {
   final ReleaseView _view;
-  final ValueChanged<Track> onTrackTapped;
-  final ValueChanged<Track> onAppendTapped;
 
-  _ReleaseTracksWidget(this._view, {this.onTrackTapped, this.onAppendTapped});
+  _ReleaseTracksWidget(this._view);
+
+  void _onTap(int index) {
+    MediaQueue.play(index: index, release: _view.release);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -242,7 +234,8 @@ class _ReleaseTracksWidget extends StatelessWidget {
           int discs = _view.discs;
           int d = 0;
           var children = List<Widget>();
-          _view.tracks.forEach((e) {
+          for (var i = 0; i < _view.tracks.length; i++) {
+            final e = _view.tracks[i];
             if (discs > 1 && e.discNum != d) {
               if (e.discNum > 1) {
                 children.add(Divider());
@@ -251,7 +244,7 @@ class _ReleaseTracksWidget extends StatelessWidget {
               d = e.discNum;
             }
             children.add(ListTile(
-                onTap: () => onTrackTapped(e),
+                onTap: () => _onTap(i),
                 leading: Container(
                     padding: EdgeInsets.fromLTRB(12, 12, 0, 0),
                     child: Text('${e.trackNum}',
@@ -260,7 +253,7 @@ class _ReleaseTracksWidget extends StatelessWidget {
                     keys.contains(e.key) ? Icons.download_done_sharp : null),
                 subtitle: Text(e.artist),
                 title: Text(e.title)));
-          });
+          }
           return Column(children: children);
         });
   }

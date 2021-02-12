@@ -48,6 +48,9 @@ class PopupItem {
   PopupItem.about(MenuCallback onSelected)
       : this(Icon(Icons.info_outline), 'About', onSelected);
 
+  PopupItem.settings(MenuCallback onSelected)
+      : this(Icon(Icons.settings), 'Settings', onSelected);
+
   PopupItem.delete(String text, MenuCallback onSelected)
       : this(Icon(Icons.delete), text, onSelected);
 }

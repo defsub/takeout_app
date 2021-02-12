@@ -28,6 +28,7 @@ import 'main.dart';
 import 'music.dart';
 import 'release.dart';
 import 'style.dart';
+import 'settings.dart';
 
 class HomeWidget extends StatefulWidget {
   final HomeView _view;
@@ -52,6 +53,7 @@ class HomeState extends State<HomeWidget> {
           title: header('Home'),
           actions: [
             popupMenu(context, [
+              PopupItem.settings((context) => _onSettings(context)),
               PopupItem.downloads((context) => _onDownloads(context)),
               PopupItem.refresh((_) => _onRefresh()),
               PopupItem.logout((_) => TakeoutState.logout()),
@@ -126,6 +128,11 @@ class HomeState extends State<HomeWidget> {
   void _onDownloads(BuildContext context) {
     Navigator.push(
         context, MaterialPageRoute(builder: (context) => DownloadsWidget()));
+  }
+
+  void _onSettings(BuildContext context) {
+    Navigator.push(
+        context, MaterialPageRoute(builder: (context) => AppSettings()));
   }
 
   void _onAbout(BuildContext context) {

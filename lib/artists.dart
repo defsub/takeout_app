@@ -168,14 +168,6 @@ class _ArtistState extends State<ArtistWidget> {
     });
   }
 
-  void _onTrackPlay(Track track) {
-    MediaQueue.play(track: track);
-  }
-
-  void _onTrackAdd(Track track) {
-    MediaQueue.append(track: track);
-  }
-
   void _onRadio() {
     Navigator.push(
         context,
@@ -263,7 +255,8 @@ class _ArtistState extends State<ArtistWidget> {
                     actions: [
                       popupMenu(context, [
                         PopupItem.refresh((_) => _onRefresh()),
-                        PopupItem.link('MusicBrainz Artist', (_) => launch(artistUrl))
+                        PopupItem.link(
+                            'MusicBrainz Artist', (_) => launch(artistUrl))
                       ])
                     ],
                   ),
@@ -338,9 +331,7 @@ class _ArtistState extends State<ArtistWidget> {
                                           Divider(),
                                           headingButton('Singles',
                                               () => _onSingles(context)),
-                                          TrackListWidget(_view.singles,
-                                              onAdd: _onTrackAdd,
-                                              onPlay: _onTrackPlay),
+                                          TrackListWidget(_view.singles),
                                         ])),
                                       if (_view.popular != null &&
                                           _view.popular.isNotEmpty)
@@ -349,9 +340,7 @@ class _ArtistState extends State<ArtistWidget> {
                                           Divider(),
                                           headingButton('Popular',
                                               () => _onPopular(context)),
-                                          TrackListWidget(_view.popular,
-                                              onAdd: _onTrackAdd,
-                                              onPlay: _onTrackPlay),
+                                          TrackListWidget(_view.popular),
                                         ])),
                                       if (_view.similar != null &&
                                           _view.similar.isNotEmpty)
@@ -396,21 +385,24 @@ class SimilarArtistListWidget extends StatelessWidget {
 
 class TrackListWidget extends StatelessWidget {
   final List<Track> _tracks;
-  final ValueChanged<Track> onPlay;
-  final ValueChanged<Track> onAdd;
 
-  TrackListWidget(this._tracks, {this.onPlay, this.onAdd});
+  TrackListWidget(this._tracks);
+
+  void _onPlay(int index) {
+    MediaQueue.playTracks(_tracks, index: index);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Column(children: [
-      ..._tracks.map((t) => ListTile(
-          onTap: () => onPlay(t),
-          leading: trackCover(t),
+      ..._tracks.asMap().keys.toList().map((index) => ListTile(
+          onTap: () => _onPlay(index),
+          leading: trackCover(_tracks[index]),
           // trailing: IconButton(
           //     icon: Icon(Icons.playlist_add), onPressed: () => onAdd(t)),
-          subtitle: Text('${t.release} \u2022 ${t.date}'),
-          title: Text(t.title)))
+          subtitle:
+              Text('${_tracks[index].release} \u2022 ${_tracks[index].date}'),
+          title: Text(_tracks[index].title)))
     ]);
   }
 }
@@ -490,6 +482,11 @@ class _ArtistTrackListState extends State<ArtistTrackListWidget> {
     result?.then((spiff) => Downloads.downloadSpiff(spiff));
   }
 
+  void _onTrack(int index) {
+    Future<Spiff> result = _playlist();
+    result?.then((spiff) => MediaQueue.playSpiff(spiff, index: index));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -516,14 +513,15 @@ class _ArtistTrackListState extends State<ArtistTrackListWidget> {
                             onPressed: () => _onDownload()),
                       ],
                     ),
-                    ..._tracks.map((t) => ListTile(
-                        onTap: () => {},
-                        leading: trackCover(t),
+                    ..._tracks.asMap().keys.toList().map((index) => ListTile(
+                        onTap: () => _onTrack(index),
+                        leading: trackCover(_tracks[index]),
                         // trailing: IconButton(
                         //     icon: Icon(Icons.playlist_add),
                         //     onPressed: () => _onAdd(t)),
-                        subtitle: Text('${t.release} \u2022 ${t.date}'),
-                        title: Text(t.title)))
+                        subtitle: Text(
+                            '${_tracks[index].release} \u2022 ${_tracks[index].date}'),
+                        title: Text(_tracks[index].title)))
                   ]))));
   }
 }

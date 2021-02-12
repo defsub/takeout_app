@@ -38,8 +38,8 @@ class _LoginState extends State<LoginWidget> {
   TextEditingController _userText = TextEditingController();
   TextEditingController _passwordText = TextEditingController();
 
-  static const prefsHost = 'login_host';
-  static const prefsUser = 'login_user';
+  static const settingHost = 'login_host';
+  static const settingUser = 'login_user';
 
   @override
   void initState() {
@@ -48,8 +48,8 @@ class _LoginState extends State<LoginWidget> {
   }
 
   void _load() async {
-    final host = await prefsString(prefsHost);
-    final user = await prefsString(prefsUser);
+    final host = await prefsString(settingHost);
+    final user = await prefsString(settingUser);
     setState(() {
       _hostText.text = host;
       _userText.text = user;
@@ -129,8 +129,8 @@ class _LoginState extends State<LoginWidget> {
                             .then((result) {
                           if (result['Status'] == 200) {
                             prefs.then((p) {
-                              p.setString(prefsHost, _hostText.text);
-                              p.setString(prefsUser, _userText.text);
+                              p.setString(settingHost, _hostText.text);
+                              p.setString(settingUser, _userText.text);
                             });
                             _onSuccess();
                           }
