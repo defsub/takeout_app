@@ -6,7 +6,7 @@ import 'music.dart';
 import 'artists.dart'; // TODO remove
 
 const appName = 'Takeout';
-const appVersion = '0.1.2';
+const appVersion = '0.2.0';
 const appSource = 'https://github.com/defsub/takeout_app';
 const appHome = 'https://takeout.fm';
 
