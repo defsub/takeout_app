@@ -61,16 +61,23 @@ class MediaQueue {
     return _stage(spiff);
   }
 
-  static Future playTracks(List<Track> tracks, {int index = 0}) {
+  static Spiff fromTracks(List<Track> tracks,
+      {String location = 'file:spiff.json',
+      String creator = '',
+      String title = '',
+      int index = 0}) {
     final playlist = Playlist(
-      location: 'file:dynamic.json',
-      creator: 'dynamic',
-      title: 'dynamic',
-      image: 'dynamic',
+      location: location,
+      creator: creator,
+      title: title,
+      image: '',
       tracks: _trackEntries(tracks),
     );
-    final spiff = Spiff(index: index, position: 0, playlist: playlist);
-    return playSpiff(spiff);
+    return Spiff(index: index, position: 0, playlist: playlist);
+  }
+
+  static Future playTracks(List<Track> tracks, {int index = 0}) {
+    return playSpiff(fromTracks(tracks));
   }
 
   static Future playSpiff(Spiff spiff, {int index = -1}) async {

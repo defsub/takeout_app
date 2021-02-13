@@ -23,6 +23,8 @@ import 'music.dart';
 import 'client.dart';
 import 'artists.dart';
 import 'style.dart';
+import 'playlist.dart';
+import 'downloads.dart';
 
 class SearchWidget extends StatefulWidget {
   @override
@@ -32,6 +34,15 @@ class SearchWidget extends StatefulWidget {
 class _SearchState extends State<SearchWidget> {
   SearchView _view;
   TextEditingController _searchText = TextEditingController();
+
+  void _onPlay() {
+    MediaQueue.playTracks(_view.tracks);
+  }
+
+  void _onDownload() {
+    final spiff = MediaQueue.fromTracks(_view.tracks, creator: 'Search', title: _searchText.text);
+    Downloads.downloadSpiff(spiff);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,8 +56,16 @@ class _SearchState extends State<SearchWidget> {
               controller: _searchText,
               decoration: InputDecoration(
                 border: OutlineInputBorder(),
-                counterText: _view == null ? null : _view.hits > 0 ? '${_view.hits} matches' : '',
-                errorText: _view == null ? null : _view.hits == 0 ? 'no matches' : null,
+                counterText: _view == null
+                    ? null
+                    : _view.hits > 0
+                        ? '${_view.hits} matches'
+                        : '',
+                errorText: _view == null
+                    ? null
+                    : _view.hits == 0
+                        ? 'no matches'
+                        : null,
                 helperText: 'text or artist:name or guitar:person',
               ),
             ),
@@ -70,6 +89,19 @@ class _SearchState extends State<SearchWidget> {
                 Container(
                     child: Column(children: [
                   heading('Tracks'),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      OutlinedButton.icon(
+                          label: Text('Play'),
+                          icon: Icon(Icons.playlist_play),
+                          onPressed: () => _onPlay()),
+                      OutlinedButton.icon(
+                          label: Text('Download'),
+                          icon: Icon(Icons.radio),
+                          onPressed: () => _onDownload()),
+                    ],
+                  ),
                   TrackListWidget(_view.tracks),
                 ]))
             ]))
