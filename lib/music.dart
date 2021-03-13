@@ -20,6 +20,9 @@ import 'dart:core';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:takeout_app/client.dart';
 
+import 'model.dart';
+import 'util.dart';
+
 part 'music.g.dart';
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
@@ -156,7 +159,7 @@ class Artist {
 }
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
-class Release {
+class Release implements MusicAlbum {
   @JsonKey(name: "ID")
   final int id;
   final String name;
@@ -195,10 +198,44 @@ class Release {
       _$ReleaseFromJson(json);
 
   Map<String, dynamic> toJson() => _$ReleaseToJson(this);
+
+  @override
+  String get album => name;
+
+  @override
+  String get creator => artist;
+
+  @override
+  String get image => _releaseCoverUrl();
+
+  int _year = -1;
+  @override
+  int get year {
+    if (_year == -1) {
+      final d = DateTime.parse(date);
+      _year = d.year;
+    }
+    return _year;
+  }
+
+  @override
+  int get size => 0;
+
+  String _releaseCoverUrl({int size = 250}) {
+    final url = groupArtwork
+        ? 'https://coverartarchive.org/release-group/$rgid'
+        : 'https://coverartarchive.org/release/$reid';
+    if (artwork && frontArtwork) {
+      return '$url/front-$size';
+    } else if (artwork && isNotNullOrEmpty(otherArtwork)) {
+      return '$url/$otherArtwork-$size';
+    }
+    return null;
+  }
 }
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
-class Track extends Locatable {
+class Track extends Locatable implements MusicTrack {
   @JsonKey(name: "ID")
   final int id;
   final String artist;
@@ -252,6 +289,43 @@ class Track extends Locatable {
   @override
   String get location {
     return '/api/tracks/$id/location';
+  }
+
+  @override
+  String get album => release;
+
+  @override
+  String get creator => artist;
+
+  @override
+  int get disc => discNum;
+
+  @override
+  String get image => _trackCoverUrl();
+
+  @override
+  int get number => trackNum;
+
+  int _year = -1;
+  @override
+  int get year {
+    if (_year == -1) {
+      final d = DateTime.parse(date);
+      _year = d.year;
+    }
+    return _year;
+  }
+
+  String _trackCoverUrl({int size = 250}) {
+    final url = groupArtwork
+        ? 'https://coverartarchive.org/release-group/$rgid'
+        : 'https://coverartarchive.org/release/$reid';
+    if (artwork && frontArtwork) {
+      return '$url/front-$size';
+    } else if (artwork && isNotNullOrEmpty(otherArtwork)) {
+      return '$url/$otherArtwork}-$size';
+    }
+    return null;
   }
 }
 

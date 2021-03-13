@@ -34,6 +34,8 @@ import 'global.dart';
 import 'style.dart';
 import 'artists.dart';
 import 'menu.dart';
+import 'model.dart';
+import 'util.dart';
 
 Random _random = Random();
 
@@ -48,22 +50,6 @@ String _spiffCover(Spiff spiff) {
     }
   }
   return ''; // TODO what to return?
-}
-
-String _size(int size) {
-  int n = size ~/ gigabyte;
-  if (n > 0) {
-    return '$n GB';
-  }
-  n = size ~/ megabyte;
-  if (n > 0) {
-    return '$n MB';
-  }
-  n = size ~/ kilobyte;
-  if (n > 0) {
-    return '$n KB';
-  }
-  return '$size B';
 }
 
 class DownloadsWidget extends StatelessWidget {
@@ -161,11 +147,6 @@ class DownloadListState extends State<DownloadListWidget> {
     Downloads.load();
   }
 
-  Widget _subtitle(DownloadEntry entry) {
-    final creator = entry.spiff.playlist.creator ?? 'Playlist';
-    return Text('$creator \u2022 ${_size(entry.spiff.size)}');
-  }
-
   @override
   Widget build(BuildContext context) {
     return StreamBuilder(
@@ -182,13 +163,13 @@ class DownloadListState extends State<DownloadListWidget> {
                     _limit == -1 ? entries.length : min(_limit, entries.length))
                 .map((entry) => Container(
                     child: ListTile(
-                        leading: cover(_spiffCover(entry.spiff)),
+                        leading: tileCover(_spiffCover(entry.spiff)),
                         trailing: IconButton(
                             icon: Icon(Icons.playlist_play),
                             onPressed: () => _onPlay(entry.spiff)),
                         onTap: () => _onTap(context, entry.spiff),
                         title: Text(entry.spiff.playlist.title),
-                        subtitle: _subtitle(entry))))
+                        subtitle: Text(entry.footer()))))
           ]);
         });
   }
@@ -227,58 +208,107 @@ class DownloadState extends State<DownloadWidget> {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder(
-        future: getImageBackgroundColor(url: _coverUrl),
+        future: getImageBackgroundColor(_coverUrl),
         builder: (context, snapshot) => Scaffold(
             backgroundColor: snapshot?.data,
-            appBar: AppBar(
-                title: header(_spiff.playlist.title),
-                backgroundColor: snapshot?.data),
-            body: Builder(
-                builder: (context) => SingleChildScrollView(
-                    child: StreamBuilder(
-                        stream: TrackCache.keysSubject,
-                        builder: (context, snapshot) {
-                          final keys = snapshot.data ?? Set<String>();
-                          final isCached =
-                              TrackCache.checkAll(keys, _spiff.playlist.tracks);
-                          bool isRadio = _spiff.playlist.creator == 'Radio';
-                          return Column(children: [
-                            Container(
-                                padding: EdgeInsets.fromLTRB(0, 11, 0, 0),
-                                child: GestureDetector(
-                                    onTap: () => _onPlay(),
-                                    child: cover(_coverUrl))),
-                            if (!isRadio)
-                              FlatButton.icon(
-                                  icon: Icon(Icons.people),
-                                  onPressed: () => _onArtist(context),
-                                  label: Text(_spiff.playlist.creator)),
-                            Container(
-                                padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceEvenly,
-                                  children: [
-                                    OutlinedButton.icon(
-                                        label: Text('Play'),
-                                        icon: Icon(Icons.playlist_play),
-                                        onPressed: () => _onPlay()),
-                                    OutlinedButton.icon(
-                                        label: Text('Delete'),
-                                        icon: Icon(Icons.delete),
-                                        onPressed: () => _onDelete(context)),
-                                    if (!isCached)
-                                      OutlinedButton.icon(
-                                          label: Text('Download'),
-                                          icon: Icon(
-                                              Icons.cloud_download_outlined),
-                                          onPressed: () => _onDownloadCheck()),
+            // appBar: AppBar(
+            //     title: header(_spiff.playlist.title),
+            //     backgroundColor: snapshot?.data),
+            body: StreamBuilder(
+                stream: TrackCache.keysSubject,
+                builder: (context, snapshot) {
+                  final keys = snapshot.data ?? Set<String>();
+                  final isCached =
+                      TrackCache.checkAll(keys, _spiff.playlist.tracks);
+                  bool isRadio = _spiff.playlist.creator == 'Radio';
+                  return CustomScrollView(slivers: [
+                    SliverAppBar(
+                      // floating: true,
+                      // snap: false,
+                      expandedHeight: 300.0,
+                      actions: [
+                        popupMenu(context, [
+                          // PopupItem.link('MusicBrainz Release',
+                          //         (_) => launch(releaseUrl)),
+                          // PopupItem.link('MusicBrainz Release Group',
+                          //         (_) => launch(releaseGroupUrl)),
+                          // PopupItem.refresh((_) => _onRefresh()),
+                        ]),
+                      ],
+                      flexibleSpace: FlexibleSpaceBar(
+                          // centerTitle: true,
+                          // title: Text(release.name, style: TextStyle(fontSize: 15)),
+                          stretchModes: [
+                            StretchMode.zoomBackground,
+                            StretchMode.fadeTitle
+                          ],
+                          background: Stack(fit: StackFit.expand, children: [
+                            spiffCover(_coverUrl),
+                            const DecoratedBox(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment(0.0, 0.75),
+                                  end: Alignment(0.0, 0.0),
+                                  colors: <Color>[
+                                    Color(0x60000000),
+                                    Color(0x00000000),
                                   ],
-                                )),
-                            Divider(),
-                            SpiffTrackListView(_spiff)
-                          ]);
-                        })))));
+                                ),
+                              ),
+                            ),
+                            Align(
+                                alignment: Alignment.bottomLeft,
+                                child: _playButton(isCached)),
+                            if (!isRadio)
+                              Align(
+                                  alignment: Alignment.bottomCenter,
+                                  child: TextButton.icon(
+                                      icon: Icon(Icons.people),
+                                      label: Text(_spiff.playlist.creator),
+                                      onPressed: () => _onArtist(context))),
+                            if (isCached)
+                              Align(
+                                  alignment: Alignment.bottomRight,
+                                  child: _deleteButton(context)),
+                            if (!isCached)
+                              Align(
+                                  alignment: Alignment.bottomRight,
+                                  child: _downloadButton()),
+                          ])),
+                    ),
+                    SliverToBoxAdapter(
+                        child: Column(children: [
+                      _title(),
+                      // _subtitle(),
+                    ])),
+                    SliverToBoxAdapter(child: SpiffTrackListView(_spiff)),
+                  ]);
+                })));
+  }
+
+  Widget _title() {
+    return Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
+      Expanded(child: heading(_spiff.playlist.title)),
+      Padding(child: Text(storage(_spiff.size)), padding: EdgeInsets.all(11))
+    ]);
+  }
+
+  Widget _playButton(bool isCached) {
+    return IconButton(
+        icon: Icon(Icons.play_arrow),
+        onPressed: isCached == true ? () => _onPlay() : null);
+  }
+
+  Widget _downloadButton() {
+    return IconButton(
+        icon: Icon(Icons.cloud_download_outlined),
+        onPressed: () => _onDownloadCheck());
+  }
+
+  Widget _deleteButton(BuildContext context) {
+    return IconButton(
+        icon: Icon(Icons.delete),
+        onPressed: () => _onDelete(context));
   }
 
   void _onDownloadCheck() {
@@ -303,7 +333,7 @@ class DownloadState extends State<DownloadWidget> {
         builder: (ctx) {
           return AlertDialog(
             title: Text('Really delete ${_spiff.playlist.title}?'),
-            content: Text('This will free ${_size(_spiff.size)} of space.'),
+            content: Text('This will free ${storage(_spiff.size)} of space.'),
             actions: [
               FlatButton(
                 onPressed: () => Navigator.pop(ctx),
@@ -360,16 +390,16 @@ class SpiffTrackListView extends StatelessWidget {
         stream: TrackCache.keysSubject,
         builder: (context, snapshot) {
           final keys = snapshot.data ?? Set<String>();
-          final children = List<Widget>();
+          final children = <Widget>[];
           for (var i = 0; i < _spiff.playlist.tracks.length; i++) {
             final e = _spiff.playlist.tracks[i];
             children.add(ListTile(
                 onTap: () => _onTrack(i),
                 onLongPress: () => showArtist(e.creator),
-                leading: cover(e.image),
+                leading: tileCover(e.image),
                 trailing: Icon(
                     keys.contains(e.key) ? Icons.download_done_sharp : null),
-                subtitle: Text('${e.creator} \u2022 ${_size(e.size)}'),
+                subtitle: Text('${e.creator} \u2022 ${storage(e.size)}'),
                 title: Text(e.title)));
           }
           return Column(children: children);
@@ -518,16 +548,43 @@ class Downloads {
   }
 }
 
-class DownloadEntry {
+class DownloadEntry implements MusicAlbum {
   final File file;
   final Spiff spiff;
   final DateTime modified;
-  final int size;
 
-  DownloadEntry(this.file, this.spiff, this.modified, this.size);
+  DownloadEntry(this.file, this.spiff, this.modified);
+
+  // Widget image() {
+  //   return cover(_spiffCover(spiff));
+  // }
+
+  String footer() {
+    final creator = subtitle();
+    return '$creator \u2022 ${storage(size)}';
+  }
+
+  String subtitle() {
+    return spiff.playlist.creator ?? 'Playlist';
+  }
 
   static DownloadEntry create(File file, Spiff spiff) {
     FileStat stat = file.statSync();
-    return DownloadEntry(file, spiff, stat.modified, stat.size);
+    return DownloadEntry(file, spiff, stat.modified);
   }
+
+  @override
+  String get album => spiff.playlist.title;
+
+  @override
+  String get creator => spiff.playlist.creator;
+
+  @override
+  String get image => _spiffCover(spiff);
+
+  @override
+  int get year => 0;
+
+  @override
+  int get size => spiff.size;
 }

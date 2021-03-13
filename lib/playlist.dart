@@ -245,7 +245,7 @@ class MediaQueue {
   }
 
   static Entry _trackEntry(Track track) {
-    final coverUri = trackCoverUrl(track);
+    final coverUri = track.image;
     return Entry(
       creator: track.artist,
       album: track.release,
@@ -258,7 +258,7 @@ class MediaQueue {
   }
 
   static MediaItem _trackMediaItem(Track track, Uri uri, Map headers) {
-    final coverUri = trackCoverUrl(track);
+    final coverUri = track.image;
     return MediaItem(
       id: uri.toString(),
       album: track.release,

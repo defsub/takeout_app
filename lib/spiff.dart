@@ -22,6 +22,8 @@ import 'dart:convert';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:takeout_app/client.dart';
 
+import 'model.dart';
+
 part 'spiff.g.dart';
 
 @JsonSerializable()
@@ -91,7 +93,7 @@ class Spiff {
 }
 
 @JsonSerializable()
-class Entry extends Locatable {
+class Entry extends Locatable implements MusicTrack {
   final String creator;
   final String album;
   final String title;
@@ -130,6 +132,16 @@ class Entry extends Locatable {
   int get size {
     return sizes == null || sizes.isEmpty ? 0 : sizes[0];
   }
+
+  @override
+  int get disc => 1;
+
+  @override
+  int get number => 0;
+
+  @override
+  // TODO: implement year
+  int get year => 0;
 }
 
 @JsonSerializable()

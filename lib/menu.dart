@@ -53,6 +53,12 @@ class PopupItem {
 
   PopupItem.delete(String text, MenuCallback onSelected)
       : this(Icon(Icons.delete), text, onSelected);
+
+  PopupItem.singles(MenuCallback onSelected)
+      : this(Icon(Icons.audiotrack_outlined), 'Singles', onSelected);
+
+  PopupItem.popular(MenuCallback onSelected)
+      : this(Icon(Icons.audiotrack_outlined), 'Popular', onSelected);
 }
 
 Widget popupMenu(BuildContext context, List<PopupItem> items) {

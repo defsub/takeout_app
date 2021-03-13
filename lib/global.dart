@@ -10,9 +10,9 @@ const appVersion = '0.2.0';
 const appSource = 'https://github.com/defsub/takeout_app';
 const appHome = 'https://takeout.fm';
 
-const kilobyte = 1024;
-const megabyte = kilobyte*1024;
-const gigabyte = megabyte*1024;
+// const kilobyte = 1024;
+// const megabyte = kilobyte*1024;
+// const gigabyte = megabyte*1024;
 
 List<GlobalKey<NavigatorState>> navigatorKeys = [
   GlobalKey<NavigatorState>(),

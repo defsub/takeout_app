@@ -68,7 +68,7 @@ class PlayerWidget extends StatelessWidget {
         if (item == null) {
           return;
         }
-        getImageBackgroundColor(url: item.artUri)
+        getImageBackgroundColor( item.artUri)
             .then((color) => _backgroundColorSubject.add(color));
       });
     }
@@ -114,7 +114,7 @@ class PlayerWidget extends StatelessWidget {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     if (mediaItem != null)
-                                      cover(mediaItem.artUri),
+                                      playerCover(mediaItem.artUri),
                                     if (mediaItem?.title != null)
                                       Container(
                                           child: Row(
@@ -277,7 +277,7 @@ class PlayerWidget extends StatelessWidget {
                             child: SingleChildScrollView(
                                 child: Column(children: [
                           ...mediaItems.map((t) => ListTile(
-                              leading: mediaItemCover(t),
+                              leading: tileCover(t.artUri),
                               selected: t == state.mediaItem,
                               onTap: () {
                                 AudioService.playMediaItem(t);

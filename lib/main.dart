@@ -77,6 +77,9 @@ class MyApp extends StatelessWidget {
           FloatingActionButtonThemeData(backgroundColor: Colors.orangeAccent),
       outlinedButtonTheme: OutlinedButtonThemeData(
           style: OutlinedButton.styleFrom(primary: Colors.orangeAccent)),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(primary: base.textTheme.bodyText1.color),
+      ),
       indicatorColor: Colors.orangeAccent,
     );
   }

@@ -21,84 +21,79 @@ import 'package:flutter/material.dart';
 import 'package:palette_generator/palette_generator.dart';
 
 import 'music.dart';
-import 'spiff.dart';
 
-String releaseCoverUrl(Release release, {int size = 250}) {
-  final url = release.groupArtwork
-      ? 'https://coverartarchive.org/release-group/${release.rgid}'
-      : 'https://coverartarchive.org/release/${release.reid}';
-  if (release.artwork && release.frontArtwork) {
-    return '$url/front-$size';
-  } else if (release.artwork && isNotNullOrEmpty(release.otherArtwork)) {
-    return '$url/${release.otherArtwork}-$size';
-  }
-  return null;
-}
-
-String trackCoverUrl(Track track, {int size = 250}) {
-  final url = track.groupArtwork
-      ? 'https://coverartarchive.org/release-group/${track.rgid}'
-      : 'https://coverartarchive.org/release/${track.reid}';
-  if (track.artwork && track.frontArtwork) {
-    return '$url/front-$size';
-  } else if (track.artwork && isNotNullOrEmpty(track.otherArtwork)) {
-    return '$url/${track.otherArtwork}-$size';
-  }
-  return null;
-}
-
-dynamic _cover(String url) {
-  return url == null ? Icon(Icons.album_sharp, size: 40) : artwork(url);
-}
-
-dynamic artwork(String url, {double width, double height}) {
+dynamic radiusCover(String url, {double width, double height, BoxFit fit}) {
   if (url == null) {
     return null;
   }
   return ClipRRect(
-      borderRadius: BorderRadius.circular(8.0),
-      child: CachedNetworkImage(
-        imageUrl: url,
-        width: width,
-        height: height,
-        placeholder: (context, url) => Icon(Icons.image_outlined, size: 40),
-        errorWidget: (context, url, error) =>
-            Icon(Icons.broken_image_outlined, size: 40),
-      ));
+      borderRadius: BorderRadius.circular(4),
+      child: cachedImage(url, width: width, height: height, fit: fit));
 }
 
-dynamic cover(String url) {
-  return _cover(url);
+dynamic cachedImage(String url, {double width, double height, BoxFit fit}) {
+  if (url == null) {
+    return null;
+  }
+  return CachedNetworkImage(
+    imageUrl: url,
+    width: width,
+    height: height,
+    fit: fit,
+    placeholder: (context, url) => Icon(Icons.image_outlined, size: 40),
+    errorWidget: (context, url, error) =>
+        Icon(Icons.broken_image_outlined, size: 40),
+  );
 }
 
-dynamic releaseCover(Release release) {
-  return _cover(releaseCoverUrl(release));
+dynamic tileCover(String url) {
+  return url == null ? Icon(Icons.album_sharp, size: 40) : radiusCover(url);
 }
 
-dynamic trackCover(Track track) {
-  return _cover(trackCoverUrl(track));
+dynamic artistBackground(ArtistView view) {
+  return cachedImage(view.background,
+      width: 1920, height: 1080, fit: BoxFit.fill);
 }
 
-dynamic mediaItemCover(MediaItem mediaItem) {
-  return _cover(mediaItem.artUri);
+dynamic releaseLargeCover(String url) {
+  return _hero(cachedImage(url, width: 500, height: 500, fit: BoxFit.fill), url);
+}
+
+dynamic releaseSmallCover(String url) {
+  return _hero(cachedImage(url, width: 250, height: 250, fit: BoxFit.fill), url);
+}
+
+dynamic spiffCover(String url) {
+  return _hero(cachedImage(url, width: 250, height: 250, fit: BoxFit.fill), url);
+}
+
+dynamic gridCover(String url) {
+  if (url == null) {
+    return Icon(Icons.album_sharp, size: 40);
+  }
+  return _hero(cachedImage(url, width: 250, height: 250, fit: BoxFit.fill), url);
+}
+
+dynamic playerCover(String url) {
+  return _hero(cachedImage(url, width: 250, height: 250, fit: BoxFit.fill), url);
+}
+
+dynamic _hero(dynamic cover, String tag) {
+  return tag != null ? Hero(tag: tag, child: cover) : cover;
 }
 
 final _colorCache = Map<String, Color>();
 
-Future<Color> getImageBackgroundColor({Release release, String url}) async {
-  if (release == null && url == null) {
-    return null;
-  }
-  final imageUrl = url ?? releaseCoverUrl(release);
-  var color = _colorCache[imageUrl];
+Future<Color> getImageBackgroundColor(url) async {
+  var color = _colorCache[url];
   if (color != null) {
     return color;
   }
   final paletteGenerator = await PaletteGenerator.fromImageProvider(
-      CachedNetworkImageProvider(imageUrl));
+      CachedNetworkImageProvider(url));
   color = paletteGenerator?.darkVibrantColor?.color ??
       paletteGenerator?.darkMutedColor?.color;
-  _colorCache[imageUrl] = color;
+  _colorCache[url] = color;
   return color;
 }
 
@@ -109,7 +104,7 @@ String year(String date) {
   // year 1 is a Go zero value date
   return d.year == 1 ? '' : '${d.year}';
 }
-
-bool isNullOrEmpty(String s) => s?.trim()?.isEmpty ?? true;
-
-bool isNotNullOrEmpty(String s) => s?.trim()?.isNotEmpty ?? false;
+//
+// bool isNullOrEmpty(String s) => s?.trim()?.isEmpty ?? true;
+//
+// bool isNotNullOrEmpty(String s) => s?.trim()?.isNotEmpty ?? false;
