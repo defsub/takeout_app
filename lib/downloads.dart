@@ -36,6 +36,7 @@ import 'artists.dart';
 import 'menu.dart';
 import 'model.dart';
 import 'util.dart';
+import 'main.dart';
 
 Random _random = Random();
 
@@ -176,7 +177,7 @@ class DownloadListState extends State<DownloadListWidget> {
 
   void _onTap(BuildContext context, Spiff spiff) {
     Navigator.push(context,
-        MaterialPageRoute(builder: (context) => DownloadWidget(spiff)));
+        MaterialPageRoute(builder: (context) => DownloadWidget(spiff: spiff)));
   }
 
   void _onPlay(Spiff spiff) {
@@ -185,24 +186,32 @@ class DownloadListState extends State<DownloadListWidget> {
 }
 
 class DownloadWidget extends StatefulWidget {
-  final Spiff _spiff;
+  final Spiff spiff;
+  final Future<Spiff> Function() fetch;
 
-  DownloadWidget(this._spiff);
+  DownloadWidget({this.spiff, this.fetch});
 
   @override
-  DownloadState createState() => DownloadState(_spiff);
+  DownloadState createState() => DownloadState(spiff: spiff, fetch: fetch);
 }
 
 class DownloadState extends State<DownloadWidget> {
-  final Spiff _spiff;
+  Spiff spiff;
+  Future<Spiff> Function() fetch;
   String _coverUrl;
 
-  DownloadState(this._spiff);
+  DownloadState({this.spiff, this.fetch});
 
   @override
   void initState() {
     super.initState();
-    _coverUrl = _spiffCover(_spiff);
+    if (spiff != null) {
+      _coverUrl = _spiffCover(spiff);
+    }
+    print('fetch is $fetch');
+    if (fetch != null) {
+      _onRefresh();
+    }
   }
 
   @override
@@ -212,111 +221,144 @@ class DownloadState extends State<DownloadWidget> {
         builder: (context, snapshot) => Scaffold(
             backgroundColor: snapshot?.data,
             // appBar: AppBar(
-            //     title: header(_spiff.playlist.title),
+            //     title: header(spiff.playlist.title),
             //     backgroundColor: snapshot?.data),
-            body: StreamBuilder(
-                stream: TrackCache.keysSubject,
-                builder: (context, snapshot) {
-                  final keys = snapshot.data ?? Set<String>();
-                  final isCached =
-                      TrackCache.checkAll(keys, _spiff.playlist.tracks);
-                  bool isRadio = _spiff.playlist.creator == 'Radio';
-                  return CustomScrollView(slivers: [
-                    SliverAppBar(
-                      // floating: true,
-                      // snap: false,
-                      expandedHeight: 300.0,
-                      actions: [
-                        popupMenu(context, [
-                          // PopupItem.link('MusicBrainz Release',
-                          //         (_) => launch(releaseUrl)),
-                          // PopupItem.link('MusicBrainz Release Group',
-                          //         (_) => launch(releaseGroupUrl)),
-                          // PopupItem.refresh((_) => _onRefresh()),
-                        ]),
-                      ],
-                      flexibleSpace: FlexibleSpaceBar(
-                          // centerTitle: true,
-                          // title: Text(release.name, style: TextStyle(fontSize: 15)),
-                          stretchModes: [
-                            StretchMode.zoomBackground,
-                            StretchMode.fadeTitle
+            body: spiff == null
+                ? Center(child: CircularProgressIndicator())
+                : fetch != null
+                    ? RefreshIndicator(
+                        onRefresh: () => _onRefresh(), child: body())
+                    : body()));
+  }
+
+  Widget body() {
+    return StreamBuilder(
+        stream: TrackCache.keysSubject,
+        builder: (context, snapshot) {
+          // cover images are 250x250 (or 500x500)
+          // distort a bit to only take half the screen
+          final screen = MediaQuery.of(context).size;
+          final expandedHeight = screen.height / 2;
+          final keys = snapshot.data ?? Set<String>();
+          final isCached = TrackCache.checkAll(keys, spiff.playlist.tracks);
+          bool isRadio = spiff.playlist.creator == 'Radio';
+          return CustomScrollView(slivers: [
+            SliverAppBar(
+              expandedHeight: expandedHeight,
+              actions: [
+                popupMenu(context, [
+                  if (isCached)
+                    PopupItem.delete('Delete?', (_) => _onDelete(context)),
+                  if (fetch != null) PopupItem.refresh((_) => _onRefresh()),
+                ]),
+              ],
+              flexibleSpace: FlexibleSpaceBar(
+                  // centerTitle: true,
+                  // title: Text(release.name, style: TextStyle(fontSize: 15)),
+                  stretchModes: [
+                    StretchMode.zoomBackground,
+                    StretchMode.fadeTitle
+                  ],
+                  background: Stack(fit: StackFit.expand, children: [
+                    spiffCover(_coverUrl),
+                    const DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment(0.0, 0.75),
+                          end: Alignment(0.0, 0.0),
+                          colors: <Color>[
+                            Color(0x60000000),
+                            Color(0x00000000),
                           ],
-                          background: Stack(fit: StackFit.expand, children: [
-                            spiffCover(_coverUrl),
-                            const DecoratedBox(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment(0.0, 0.75),
-                                  end: Alignment(0.0, 0.0),
-                                  colors: <Color>[
-                                    Color(0x60000000),
-                                    Color(0x00000000),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            Align(
-                                alignment: Alignment.bottomLeft,
-                                child: _playButton(isCached)),
-                            if (!isRadio)
-                              Align(
-                                  alignment: Alignment.bottomCenter,
-                                  child: TextButton.icon(
-                                      icon: Icon(Icons.people),
-                                      label: Text(_spiff.playlist.creator),
-                                      onPressed: () => _onArtist(context))),
-                            if (isCached)
-                              Align(
-                                  alignment: Alignment.bottomRight,
-                                  child: _deleteButton(context)),
-                            if (!isCached)
-                              Align(
-                                  alignment: Alignment.bottomRight,
-                                  child: _downloadButton()),
-                          ])),
+                        ),
+                      ),
                     ),
-                    SliverToBoxAdapter(
-                        child: Column(children: [
-                      _title(),
-                      // _subtitle(),
-                    ])),
-                    SliverToBoxAdapter(child: SpiffTrackListView(_spiff)),
-                  ]);
-                })));
+                    Align(
+                        alignment: Alignment.bottomLeft,
+                        child: _playButton(isCached)),
+                    if (!isRadio)
+                      Align(
+                          alignment: Alignment.bottomCenter,
+                          child: TextButton.icon(
+                              icon: Icon(Icons.people),
+                              label: Text(spiff.playlist.creator),
+                              onPressed: () => _onArtist(context))),
+                    if (isCached)
+                      Align(
+                          alignment: Alignment.bottomRight,
+                          child: _deleteButton(context)),
+                    if (!isCached)
+                      Align(
+                          alignment: Alignment.bottomRight,
+                          child: _downloadButton(isCached)),
+                  ])),
+            ),
+            SliverToBoxAdapter(
+                child: Column(children: [
+              _title(),
+              // _subtitle(),
+            ])),
+            SliverToBoxAdapter(child: SpiffTrackListView(spiff)),
+          ]);
+        });
+  }
+
+  Future<void> _onRefresh() async {
+    if (fetch != null) {
+      try {
+        final result = await fetch();
+        print('got $result');
+        setState(() {
+          spiff = result;
+          _coverUrl = _spiffCover(spiff);
+        });
+      } catch (error) {
+        print('refresh err $error');
+      }
+    }
   }
 
   Widget _title() {
     return Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-      Expanded(child: heading(_spiff.playlist.title)),
-      Padding(child: Text(storage(_spiff.size)), padding: EdgeInsets.all(11))
+      Expanded(child: heading(spiff.playlist.title)),
+      Padding(child: Text(storage(spiff.size)), padding: EdgeInsets.all(11))
     ]);
   }
 
   Widget _playButton(bool isCached) {
-    return IconButton(
-        icon: Icon(Icons.play_arrow),
-        onPressed: isCached == true ? () => _onPlay() : null);
+    if (isCached) {
+      return IconButton(
+          icon: Icon(Icons.play_arrow), onPressed: () => _onPlay());
+    }
+    return allowStreamingIconButton(Icon(Icons.play_arrow), _onPlay);
   }
 
-  Widget _downloadButton() {
-    return IconButton(
-        icon: Icon(Icons.cloud_download_outlined),
-        onPressed: () => _onDownloadCheck());
+  Widget _downloadButton(bool isCached) {
+    if (isCached) {
+      return IconButton(
+          icon: Icon(Icons.cloud_download_outlined),
+          onPressed: () => _onDownloadCheck());
+    }
+    return allowDownloadIconButton(
+        Icon(Icons.cloud_download_outlined), _onDownloadCheck);
   }
 
   Widget _deleteButton(BuildContext context) {
     return IconButton(
-        icon: Icon(Icons.delete),
-        onPressed: () => _onDelete(context));
+        icon: Icon(Icons.delete), onPressed: () => _onDelete(context));
   }
 
   void _onDownloadCheck() {
-    Downloads.downloadSpiffTracks(_spiff);
+    // TODO this assumes that fetch-able will always download a new spiff
+    if (fetch != null) {
+      Downloads.downloadSpiff(spiff);
+    } else {
+      Downloads.downloadSpiffTracks(spiff);
+    }
   }
 
   void _onArtist(BuildContext context) {
-    Artist artist = artistMap[_spiff.playlist.creator];
+    Artist artist = artistMap[spiff.playlist.creator];
     if (artist != null) {
       Navigator.push(context,
           MaterialPageRoute(builder: (context) => ArtistWidget(artist)));
@@ -324,7 +366,7 @@ class DownloadState extends State<DownloadWidget> {
   }
 
   void _onPlay() {
-    MediaQueue.playSpiff(_spiff);
+    MediaQueue.playSpiff(spiff);
   }
 
   void _onDelete(BuildContext context) async {
@@ -332,8 +374,8 @@ class DownloadState extends State<DownloadWidget> {
         context: context,
         builder: (ctx) {
           return AlertDialog(
-            title: Text('Really delete ${_spiff.playlist.title}?'),
-            content: Text('This will free ${storage(_spiff.size)} of space.'),
+            title: Text('Really delete ${spiff.playlist.title}?'),
+            content: Text('This will free ${storage(spiff.size)} of space.'),
             actions: [
               FlatButton(
                 onPressed: () => Navigator.pop(ctx),
@@ -353,7 +395,7 @@ class DownloadState extends State<DownloadWidget> {
   }
 
   Future<void> _onDeleteConfirmed() async {
-    await _deleteSpiff(_spiff);
+    await _deleteSpiff(spiff);
     Downloads.reload();
   }
 }

@@ -94,12 +94,16 @@ class _TakeoutWidget extends StatefulWidget {
 
 class TakeoutState extends State<_TakeoutWidget> {
   static final _loginStream = BehaviorSubject<bool>();
+
   static Stream<bool> get loginStream => _loginStream.stream;
+
   static bool get isLoggedIn => _loginStream.value;
+
   static void logout() async {
     await Client().logout();
     _loginStream.add(false);
   }
+
   static void login() => _loginStream.add(true);
 
   StreamSubscription<bool> _loginSubscription;
@@ -132,9 +136,7 @@ class TakeoutState extends State<_TakeoutWidget> {
     _connectivitySubscription =
         _connectivity.onConnectivityChanged.listen(_updateConnectionStatus);
 
-    Client()
-        .loggedIn()
-        .then((success) => success ? login() : logout());
+    Client().loggedIn().then((success) => success ? login() : logout());
   }
 
   @override
@@ -251,11 +253,11 @@ class TakeoutState extends State<_TakeoutWidget> {
           MediaQueue.restore();
         }
       }
-    } on ClientException catch(e) {
+    } on ClientException catch (e) {
       if (e.authenticationFailed) {
         logout();
       }
-    } on TlsException catch(e) {
+    } on TlsException catch (e) {
       showErrorDialog(context, e.message);
     }
 
@@ -416,3 +418,28 @@ class TakeoutState extends State<_TakeoutWidget> {
     return MaterialRectArcTween(begin: begin, end: end);
   }
 }
+
+Widget allowStreamingIconButton(Icon icon, void Function() onPressed) {
+  return StreamBuilder<ConnectivityResult>(
+      stream: TakeoutState.connectivityStream.distinct(),
+      builder: (context, snapshot) {
+        final result = snapshot.data;
+        return IconButton(
+            icon: icon,
+            onPressed:
+                TakeoutState.allowStreaming(result) ? () => onPressed() : null);
+      });
+}
+
+Widget allowDownloadIconButton(Icon icon, void Function() onPressed) {
+  return StreamBuilder<ConnectivityResult>(
+      stream: TakeoutState.connectivityStream.distinct(),
+      builder: (context, snapshot) {
+        final result = snapshot.data;
+        return IconButton(
+            icon: icon,
+            onPressed:
+            TakeoutState.allowDownload(result) ? () => onPressed() : null);
+      });
+}
+

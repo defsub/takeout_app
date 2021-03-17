@@ -22,13 +22,12 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'client.dart';
 import 'cover.dart';
+import 'downloads.dart';
 import 'music.dart';
 import 'playlist.dart';
 import 'release.dart';
 import 'style.dart';
-import 'radio.dart';
 import 'spiff.dart';
-import 'downloads.dart';
 import 'main.dart';
 import 'menu.dart';
 import 'util.dart';
@@ -173,16 +172,18 @@ class _ArtistState extends State<ArtistWidget> with ArtistBuilder {
     Navigator.push(
         context,
         MaterialPageRoute(
-            builder: (context) => RefreshSpiffWidget(
-                () => Client().artistRadio(_artist.id, ttl: Duration.zero))));
+            builder: (context) => DownloadWidget(
+                fetch: () =>
+                    Client().artistRadio(_artist.id, ttl: Duration.zero))));
   }
 
   void _onShuffle() {
     Navigator.push(
         context,
         MaterialPageRoute(
-            builder: (context) => RefreshSpiffWidget(() =>
-                Client().artistPlaylist(_artist.id, ttl: Duration.zero))));
+            builder: (context) => DownloadWidget(
+                fetch: () =>
+                    Client().artistPlaylist(_artist.id, ttl: Duration.zero))));
   }
 
   void _onSingles(BuildContext context) {
@@ -238,21 +239,30 @@ class _ArtistState extends State<ArtistWidget> with ArtistBuilder {
 
   Future<void> onRefresh() => _onRefresh();
 
-  List<Widget> actions() => [
-        popupMenu(context, [
-          PopupItem.singles((_) => _onSingles(context)),
-          PopupItem.popular((_) => _onPopular(context)),
-          PopupItem.refresh((_) => _onRefresh()),
-          // PopupItem.link('MusicBrainz Artist', (_) => launch(artistUrl))
-        ])
-      ];
+  List<Widget> actions() {
+    final artistUrl = 'https://musicbrainz.org/artist/${_artist.arid}';
+    final genre = ReCase(_artist.genre).titleCase;
+    return <Widget>[
+      popupMenu(context, [
+        PopupItem.singles((_) => _onSingles(context)),
+        PopupItem.popular((_) => _onPopular(context)),
+        PopupItem.divider(),
+        PopupItem.genre(genre, (_) => _onGenre(context, _artist.genre)),
+        PopupItem.area(_artist.area, (_) => _onArea(context, _artist.area)),
+        PopupItem.divider(),
+        PopupItem.link('MusicBrainz Artist', (_) => launch(artistUrl)),
+        PopupItem.divider(),
+        PopupItem.refresh((_) => _onRefresh()),
+      ])
+    ];
+  }
 
   Widget leftButton() {
-    return _shuffleButton();
+    return IconButton(icon: Icon(Icons.shuffle_sharp), onPressed: _onShuffle);
   }
 
   Widget rightButton() {
-    return _radioButton();
+    return IconButton(icon: Icon(Icons.radio), onPressed: _onRadio);
   }
 
   List<Widget> slivers() {
@@ -263,14 +273,6 @@ class _ArtistState extends State<ArtistWidget> with ArtistBuilder {
         subtitle: false,
       )
     ];
-  }
-
-  Widget _radioButton() {
-    return IconButton(icon: Icon(Icons.radio), onPressed: _onRadio);
-  }
-
-  Widget _shuffleButton() {
-    return IconButton(icon: Icon(Icons.shuffle_sharp), onPressed: _onShuffle);
   }
 }
 
@@ -336,7 +338,7 @@ class _ArtistTrackListState extends State<ArtistTrackListWidget>
     with ArtistBuilder {
   final ArtistView _view;
   final Artist _artist;
-  final ArtistTrackType _type;
+  ArtistTrackType _type;
   List<Track> _tracks;
 
   _ArtistTrackListState(this._view, this._artist, this._type);
@@ -344,12 +346,23 @@ class _ArtistTrackListState extends State<ArtistTrackListWidget>
   @override
   void initState() {
     super.initState();
+    _loadState();
+  }
+
+  void _loadState() {
     final client = Client();
     if (_type == ArtistTrackType.popular) {
       client.artistPopular(_artist.id).then((v) => _onPopularUpdated(v));
     } else if (_type == ArtistTrackType.singles) {
       client.artistSingles(_artist.id).then((v) => _onSinglesUpdated(v));
     }
+  }
+
+  void _onChangeType(ArtistTrackType type) {
+    setState(() {
+      _type = type;
+      _loadState();
+    });
   }
 
   Future<void> _onRefresh() async {
@@ -408,24 +421,28 @@ class _ArtistTrackListState extends State<ArtistTrackListWidget>
 
   List<Widget> actions() => [
         popupMenu(context, [
-          // PopupItem.singles((_) => _onSingles(context)),
-          // PopupItem.popular((_) => _onPopular(context)),
+          if (_type == ArtistTrackType.singles)
+            PopupItem.popular((_) => _onChangeType(ArtistTrackType.popular)),
+          if (_type == ArtistTrackType.popular)
+            PopupItem.singles((_) => _onChangeType(ArtistTrackType.singles)),
           PopupItem.refresh((_) => _onRefresh()),
-          // PopupItem.link('MusicBrainz Artist', (_) => launch(artistUrl))
         ])
       ];
 
   Widget leftButton() {
-    return _playButton();
+    return IconButton(icon: Icon(Icons.playlist_play), onPressed: _onPlay);
   }
 
   Widget rightButton() {
-    return _downloadButton();
+    return IconButton(
+        icon: Icon(Icons.cloud_download_outlined), onPressed: _onDownload);
   }
 
   List<Widget> slivers() {
     return [
-      SliverToBoxAdapter(child: heading(_type == ArtistTrackType.singles ? 'Singles' : 'Popular')),
+      SliverToBoxAdapter(
+          child: heading(
+              _type == ArtistTrackType.singles ? 'Singles' : 'Popular')),
       if (_tracks != null)
         SliverToBoxAdapter(child: Column(children: _trackList())),
     ];
@@ -444,53 +461,6 @@ class _ArtistTrackListState extends State<ArtistTrackListWidget>
     }
     return list;
   }
-
-  Widget _playButton() {
-    return IconButton(icon: Icon(Icons.playlist_play), onPressed: _onPlay);
-  }
-
-  Widget _downloadButton() {
-    return IconButton(
-        icon: Icon(Icons.cloud_download_outlined), onPressed: _onDownload);
-  }
-//
-// @override
-// Widget build(BuildContext context) {
-//   return Scaffold(
-//       appBar: AppBar(
-//           title: header(_type == ArtistTrackType.popular
-//               ? '${_artist.name} \u2013 Popular'
-//               : '${_artist.name} \u2013 Singles')),
-//       body: RefreshIndicator(
-//           onRefresh: () => _onRefresh(),
-//           child: _tracks == null
-//               ? Center(child: CircularProgressIndicator())
-//               : SingleChildScrollView(
-//                   child: Column(children: [
-//                   Row(
-//                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-//                     children: [
-//                       OutlinedButton.icon(
-//                           label: Text('Play'),
-//                           icon: Icon(Icons.playlist_play),
-//                           onPressed: () => _onPlay()),
-//                       OutlinedButton.icon(
-//                           label: Text('Download'),
-//                           icon: Icon(Icons.radio),
-//                           onPressed: () => _onDownload()),
-//                     ],
-//                   ),
-//                   ..._tracks.asMap().keys.toList().map((index) => ListTile(
-//                       onTap: () => _onTrack(index),
-//                       leading: tileCover(_tracks[index].image),
-//                       // trailing: IconButton(
-//                       //     icon: Icon(Icons.playlist_add),
-//                       //     onPressed: () => _onAdd(t)),
-//                       subtitle: Text(
-//                           '${_tracks[index].release} \u2022 ${_tracks[index].date}'),
-//                       title: Text(_tracks[index].title)))
-//                 ]))));
-// }
 }
 
 mixin ArtistBuilder {
@@ -510,6 +480,10 @@ mixin ArtistBuilder {
     return StreamBuilder<ConnectivityResult>(
         stream: TakeoutState.connectivityStream.distinct(),
         builder: (context, snapshot) {
+          // artist images are 1920x1080, expand keeping aspect ratio
+          final screen = MediaQuery.of(context).size;
+          final expandedHeight = 1080.0/1920.0 * screen.width;
+
           final connectivity = snapshot.data;
           bool allowArtwork = view != null &&
               isNotNullOrEmpty(view.image) &&
@@ -526,7 +500,7 @@ mixin ArtistBuilder {
                           ? Center(child: CircularProgressIndicator())
                           : CustomScrollView(slivers: [
                               SliverAppBar(
-                                  expandedHeight: 300.0,
+                                  expandedHeight: expandedHeight,
                                   actions: actions(),
                                   flexibleSpace: FlexibleSpaceBar(
                                       stretchModes: [
@@ -537,7 +511,7 @@ mixin ArtistBuilder {
                                           fit: StackFit.expand,
                                           children: [
                                             if (allowArtwork)
-                                              artistBackground(view),
+                                              artistBackground(context, view),
                                             const DecoratedBox(
                                               decoration: BoxDecoration(
                                                 gradient: LinearGradient(

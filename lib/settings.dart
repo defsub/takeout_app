@@ -17,10 +17,21 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_settings_screens/flutter_settings_screens.dart';
+import 'package:rxdart/rxdart.dart';
 
 const settingAllowStreaming = 'allow_streaming';
 const settingAllowDownload = 'allow_download';
 const settingAllowArtistArtwork = 'allow_artist_artwork';
+const settingHomeGridType = 'home_grid_type';
+
+enum GridType { mix, downloads, released, added }
+
+GridType settingsGridType(String key, GridType def) {
+  final v = Settings.getValue(key, def.index);
+  return GridType.values[v];
+}
+
+final settingsChangeSubject = PublishSubject<String>();
 
 class AppSettings extends StatefulWidget {
   @override
@@ -34,6 +45,24 @@ class _AppSettingsState extends State<AppSettings> {
       child: SettingsScreen(
         title: 'Settings',
         children: [
+          SettingsGroup(title: 'Home Settings', children: <Widget>[
+            DropDownSettingsTile<int>(
+              settingKey: settingHomeGridType,
+              title: 'Home Grid',
+              subtitle: 'What to show on the home page',
+              values: <int, String>{
+                GridType.mix.index: 'Downloads + Added',
+                GridType.downloads.index: 'Downloads Only',
+                GridType.added.index: 'Recently Added',
+                GridType.released.index: 'Recently Released',
+              },
+              selected:
+                  Settings.getValue(settingHomeGridType, GridType.mix.index),
+              onChange: (value) {
+                settingsChangeSubject.add(settingHomeGridType);
+              },
+            ),
+          ]),
           SettingsGroup(
             title: 'Network Settings',
             children: <Widget>[
@@ -77,5 +106,3 @@ class _AppSettingsState extends State<AppSettings> {
     );
   }
 }
-
-

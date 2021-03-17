@@ -28,8 +28,8 @@ import 'downloads.dart';
 import 'main.dart';
 import 'music.dart';
 import 'release.dart';
-import 'style.dart';
 import 'settings.dart';
+import 'style.dart';
 import 'cover.dart';
 import 'cache.dart';
 
@@ -49,11 +49,17 @@ class HomeState extends State<HomeWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-        body: RefreshIndicator(
-      onRefresh: () => _onRefresh(),
-      child: _HomeGrid(_view),
-    ));
+    return StreamBuilder(
+        stream: settingsChangeSubject.stream,
+        builder: (context, snapshot) {
+          // TODO will rebuild on any settings change
+          final type = settingsGridType(settingHomeGridType, GridType.mix);
+          return Scaffold(
+              body: RefreshIndicator(
+            onRefresh: () => _onRefresh(),
+            child: _HomeGrid(type, _view),
+          ));
+        });
   }
 
   Future<void> _onRefresh() async {
@@ -69,25 +75,6 @@ class HomeState extends State<HomeWidget> {
   }
 }
 
-class RecentReleasesWidget extends StatelessWidget {
-  final String _title;
-  final List<Release> _releases;
-
-  RecentReleasesWidget(this._title, this._releases);
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-        appBar: AppBar(title: Text(_title)),
-        body: SingleChildScrollView(
-            child: Column(
-          children: [
-            Container(child: ReleaseListWidget(_releases)),
-          ],
-        )));
-  }
-}
-
 class _HomeItem {
   MusicAlbum album;
   Widget Function() onTap;
@@ -96,19 +83,18 @@ class _HomeItem {
   _HomeItem(this.album, this.onTap);
 
   String get title => album.album;
+
   String get subtitle => album.creator;
 
-  Widget cloudIcon(DownloadEntry download) {
+  Widget downloadIcon(
+      DownloadEntry download, IconData completeIcon, IconData downloadingIcon) {
     return StreamBuilder(
         stream: TrackCache.keysSubject,
         builder: (context, snapshot) {
           final keys = snapshot.data ?? Set<String>();
           final isCached =
               TrackCache.checkAll(keys, download.spiff.playlist.tracks);
-          return Icon(
-              isCached
-                  ? Icons.cloud_done_outlined
-                  : Icons.cloud_download_outlined,
+          return Icon(isCached ? completeIcon : downloadingIcon,
               color: Colors.white70);
         });
   }
@@ -117,8 +103,9 @@ class _HomeItem {
     if (album.year > 1) return Text('${album.year}');
     if (album is DownloadEntry) {
       return album.creator == 'Radio'
-          ? Icon(Icons.radio, color: Colors.white70)
-          : cloudIcon(album);
+          ? downloadIcon(album, Icons.radio, Icons.cloud_download_outlined)
+          : downloadIcon(
+              album, Icons.cloud_done_outlined, Icons.cloud_download_outlined);
     }
     return Text('');
   }
@@ -146,25 +133,40 @@ class _HomeItem {
 }
 
 class _HomeGrid extends StatelessWidget {
+  final GridType _type;
   final HomeView _view;
 
-  _HomeGrid(this._view);
+  _HomeGrid(this._type, this._view);
 
   void _onTap(BuildContext context, _HomeItem item) {
     Navigator.push(
         context, MaterialPageRoute(builder: (context) => item.onTap()));
   }
 
-  Iterable<_HomeItem> _items(
-      List<DownloadEntry> downloads, List<Release> releases) {
+  Iterable<_HomeItem> _items(List<DownloadEntry> downloads) {
     LinkedHashSet<_HomeItem> items = LinkedHashSet();
-    for (var d in downloads) {
-      items.add(_HomeItem(d, () => DownloadWidget(d.spiff)));
-    }
-    for (var r in releases) {
-      final i = _HomeItem(r, () => ReleaseWidget(r));
-      if (!items.contains(i)) {
-        items.add(i);
+
+    if (_type == GridType.mix) {
+      for (var d in downloads) {
+        items.add(_HomeItem(d, () => DownloadWidget(spiff: d.spiff)));
+      }
+      for (var r in _view.added) {
+        final i = _HomeItem(r, () => ReleaseWidget(r));
+        if (!items.contains(i)) {
+          items.add(i);
+        }
+      }
+    } else if (_type == GridType.downloads) {
+      for (var d in downloads) {
+        items.add(_HomeItem(d, () => DownloadWidget(spiff: d.spiff)));
+      }
+    } else if (_type == GridType.added) {
+      for (var r in _view.added) {
+        items.add(_HomeItem(r, () => ReleaseWidget(r)));
+      }
+    } else if (_type == GridType.released) {
+      for (var r in _view.released) {
+        items.add(_HomeItem(r, () => ReleaseWidget(r)));
       }
     }
     return items;
@@ -220,7 +222,7 @@ class _HomeGrid extends StatelessWidget {
           builder: (context, snapshot) {
             final List<DownloadEntry> entries = snapshot.data ?? [];
             downloadsSort(DownloadSortType.newest, entries);
-            return _releaseGrid(context, _items(entries, _view.added));
+            return _releaseGrid(context, _items(entries));
           }),
     ]);
   }

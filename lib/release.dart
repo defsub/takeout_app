@@ -17,7 +17,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:connectivity/connectivity.dart';
 import 'package:takeout_app/menu.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -77,10 +76,6 @@ class _ReleaseState extends State<ReleaseWidget> {
     MediaQueue.play(release: release);
   }
 
-  void _onAdd() {
-    MediaQueue.append(release: release);
-  }
-
   void _onDownload() {
     Downloads.downloadRelease(release);
   }
@@ -106,6 +101,10 @@ class _ReleaseState extends State<ReleaseWidget> {
                 child: StreamBuilder(
                     stream: TrackCache.keysSubject,
                     builder: (context, snapshot) {
+                      // cover images are 250x250 (or 500x500)
+                      // distort a bit to only take half the screen
+                      final screen = MediaQuery.of(context).size;
+                      final expandedHeight = screen.height / 2;
                       final keys = snapshot.data ?? Set<String>();
                       final isCached = _view != null
                           ? TrackCache.checkAll(keys, _view.tracks)
@@ -114,7 +113,7 @@ class _ReleaseState extends State<ReleaseWidget> {
                         SliverAppBar(
                           // floating: true,
                           // snap: false,
-                          expandedHeight: 300.0,
+                          expandedHeight: expandedHeight,
                           actions: [
                             popupMenu(context, [
                               PopupItem.link('MusicBrainz Release',
@@ -204,33 +203,52 @@ class _ReleaseState extends State<ReleaseWidget> {
     );
   }
 
+
   Widget _playButton(bool isCached) {
-    return StreamBuilder<ConnectivityResult>(
-        stream: TakeoutState.connectivityStream.distinct(),
-        builder: (context, snapshot) {
-          final result = snapshot.data;
-          return IconButton(
-              icon: Icon(Icons.play_arrow),
-              onPressed: TakeoutState.allowStreaming(result) || isCached == true
-                  ? () => _onPlay()
-                  : null);
-        });
+    if (isCached) {
+      return IconButton(
+          icon: Icon(Icons.play_arrow), onPressed: () => _onPlay());
+    }
+    return allowStreamingIconButton(Icon(Icons.play_arrow), _onPlay);
   }
 
   Widget _downloadButton(bool isCached) {
-    return StreamBuilder<ConnectivityResult>(
-        stream: TakeoutState.connectivityStream.distinct(),
-        builder: (context, snapshot) {
-          final result = snapshot.data;
-          return IconButton(
-              icon: Icon(isCached
-                  ? Icons.cloud_done_outlined
-                  : Icons.cloud_download_outlined),
-              onPressed: TakeoutState.allowDownload(result)
-                  ? () => _onDownload()
-                  : null);
-        });
+    if (isCached) {
+      return IconButton(
+          icon: Icon(Icons.cloud_download_outlined),
+          onPressed: () => _onDownload());
+    }
+    return allowDownloadIconButton(
+        Icon(Icons.cloud_download_outlined), _onDownload);
   }
+
+  // Widget _playButton(bool isCached) {
+  //   return StreamBuilder<ConnectivityResult>(
+  //       stream: TakeoutState.connectivityStream.distinct(),
+  //       builder: (context, snapshot) {
+  //         final result = snapshot.data;
+  //         return IconButton(
+  //             icon: Icon(Icons.play_arrow),
+  //             onPressed: TakeoutState.allowStreaming(result) || isCached == true
+  //                 ? () => _onPlay()
+  //                 : null);
+  //       });
+  // }
+
+  // Widget _downloadButton(bool isCached) {
+  //   return StreamBuilder<ConnectivityResult>(
+  //       stream: TakeoutState.connectivityStream.distinct(),
+  //       builder: (context, snapshot) {
+  //         final result = snapshot.data;
+  //         return IconButton(
+  //             icon: Icon(isCached
+  //                 ? Icons.cloud_done_outlined
+  //                 : Icons.cloud_download_outlined),
+  //             onPressed: TakeoutState.allowDownload(result)
+  //                 ? () => _onDownload()
+  //                 : null);
+  //       });
+  // }
 }
 
 class _ReleaseTracksWidget extends StatelessWidget {
@@ -316,7 +334,7 @@ class AlbumGridWidget extends StatelessWidget {
             return ReleaseWidget(album);
           }
           else if (album is DownloadEntry) {
-            return DownloadWidget(album.spiff);
+            return DownloadWidget(spiff: album.spiff);
           }
           return Text('');
         }));

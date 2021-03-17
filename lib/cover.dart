@@ -50,9 +50,8 @@ dynamic tileCover(String url) {
   return url == null ? Icon(Icons.album_sharp, size: 40) : radiusCover(url);
 }
 
-dynamic artistBackground(ArtistView view) {
-  return cachedImage(view.background,
-      width: 1920, height: 1080, fit: BoxFit.fill);
+dynamic artistBackground(BuildContext context, ArtistView view) {
+  return cachedImage(view.background, width: 1920, height: 1080, fit: BoxFit.cover);
 }
 
 dynamic releaseLargeCover(String url) {
@@ -104,7 +103,3 @@ String year(String date) {
   // year 1 is a Go zero value date
   return d.year == 1 ? '' : '${d.year}';
 }
-//
-// bool isNullOrEmpty(String s) => s?.trim()?.isEmpty ?? true;
-//
-// bool isNotNullOrEmpty(String s) => s?.trim()?.isNotEmpty ?? false;
