@@ -15,6 +15,8 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:recase/recase.dart';
 import 'package:connectivity/connectivity.dart';
@@ -23,12 +25,12 @@ import 'package:url_launcher/url_launcher.dart';
 import 'client.dart';
 import 'cover.dart';
 import 'downloads.dart';
+import 'main.dart';
 import 'music.dart';
 import 'playlist.dart';
 import 'release.dart';
 import 'style.dart';
 import 'spiff.dart';
-import 'main.dart';
 import 'menu.dart';
 import 'util.dart';
 
@@ -244,6 +246,9 @@ class _ArtistState extends State<ArtistWidget> with ArtistBuilder {
     final genre = ReCase(_artist.genre).titleCase;
     return <Widget>[
       popupMenu(context, [
+        PopupItem.shuffle((_) => _onShuffle()),
+        PopupItem.radio((_) => _onRadio()),
+        PopupItem.divider(),
         PopupItem.singles((_) => _onSingles(context)),
         PopupItem.popular((_) => _onPopular(context)),
         PopupItem.divider(),
@@ -271,7 +276,11 @@ class _ArtistState extends State<ArtistWidget> with ArtistBuilder {
       AlbumGridWidget(
         _view.releases,
         subtitle: false,
-      )
+      ),
+      if (_view.similar.isNotEmpty)
+        SliverToBoxAdapter(child: heading('Similar Artists')),
+      if (_view.similar.isNotEmpty)
+        SliverToBoxAdapter(child: SimilarArtistListWidget(_view))
     ];
   }
 }
@@ -430,7 +439,7 @@ class _ArtistTrackListState extends State<ArtistTrackListWidget>
       ];
 
   Widget leftButton() {
-    return IconButton(icon: Icon(Icons.playlist_play), onPressed: _onPlay);
+    return IconButton(icon: Icon(Icons.play_arrow), onPressed: _onPlay);
   }
 
   Widget rightButton() {
@@ -476,21 +485,60 @@ mixin ArtistBuilder {
 
   List<Widget> slivers();
 
+  static Random _random = Random();
+
+  String _randomCover() {
+    if (view == null) {
+      return null;
+    }
+    for (var i = 0; i < view.releases.length; i++) {
+      final pick = _random.nextInt(view.releases.length);
+      if (isNotNullOrEmpty(view.releases[pick].image)) {
+        return view.releases[pick].image;
+      }
+    }
+    for (var i = 0; i < view.releases.length; i++) {
+      if (isNotNullOrEmpty(view.releases[i].image)) {
+        return view.releases[i].image;
+      }
+    }
+    return null;
+  }
+
+  Widget _albumArtwork() {
+    String url = _randomCover();
+    return url != null ? releaseSmallCover(url) : Icon(Icons.people);
+  }
+
   Widget build(BuildContext context) {
     return StreamBuilder<ConnectivityResult>(
         stream: TakeoutState.connectivityStream.distinct(),
         builder: (context, snapshot) {
-          // artist images are 1920x1080, expand keeping aspect ratio
-          final screen = MediaQuery.of(context).size;
-          final expandedHeight = 1080.0/1920.0 * screen.width;
-
           final connectivity = snapshot.data;
+
+          final useBackground = false;
+          final artistArtworkUrl = useBackground ? view.background : view.image;
+
           bool allowArtwork = view != null &&
-              isNotNullOrEmpty(view.image) &&
-              TakeoutState.allowArtwork(connectivity);
+              isNotNullOrEmpty(artistArtworkUrl) &&
+              TakeoutState.allowArtistArtwork(connectivity);
+
+          final artworkImage = allowArtwork && useBackground
+              ? artistBackground(artistArtworkUrl)
+              : allowArtwork
+                  ? artistImage(artistArtworkUrl)
+                  : _albumArtwork();
+
+          // artist backgrounds are 1920x1080, expand keeping aspect ratio
+          // artist images are 1000x1000
+          // artist banners are 1000x185
+          final screen = MediaQuery.of(context).size;
+          final expandedHeight =
+              useBackground ? 1080.0 / 1920.0 * screen.width : screen.width;
+
           return FutureBuilder(
               future: allowArtwork
-                  ? getImageBackgroundColor(view.background)
+                  ? getImageBackgroundColor(artistArtworkUrl)
                   : Future.value(),
               builder: (context, snapshot) => Scaffold(
                   backgroundColor: snapshot?.data,
@@ -510,8 +558,7 @@ mixin ArtistBuilder {
                                       background: Stack(
                                           fit: StackFit.expand,
                                           children: [
-                                            if (allowArtwork)
-                                              artistBackground(context, view),
+                                            artworkImage,
                                             const DecoratedBox(
                                               decoration: BoxDecoration(
                                                 gradient: LinearGradient(

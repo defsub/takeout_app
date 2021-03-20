@@ -39,6 +39,9 @@ class PopupItem {
   PopupItem.download(MenuCallback onSelected)
       : this(Icon(Icons.cloud_download_outlined), 'Download', onSelected);
 
+  PopupItem.play(MenuCallback onSelected)
+      : this(Icon(Icons.play_arrow), 'Play', onSelected);
+
   PopupItem.refresh(MenuCallback onSelected)
       : this(Icon(Icons.refresh_sharp), 'Refresh', onSelected);
 
@@ -71,6 +74,12 @@ class PopupItem {
 
   PopupItem.artist(String name, MenuCallback onSelected)
       : this(Icon(Icons.people), name, onSelected);
+
+  PopupItem.shuffle(MenuCallback onSelected)
+      : this(Icon(Icons.shuffle_sharp), 'Shuffle', onSelected);
+
+  PopupItem.radio(MenuCallback onSelected)
+      : this(Icon(Icons.radio), 'Radio', onSelected);
 }
 
 Widget popupMenu(BuildContext context, List<PopupItem> items) {

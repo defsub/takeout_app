@@ -15,12 +15,9 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
-import 'package:audio_service/audio_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:palette_generator/palette_generator.dart';
-
-import 'music.dart';
 
 dynamic radiusCover(String url, {double width, double height, BoxFit fit}) {
   if (url == null) {
@@ -50,8 +47,12 @@ dynamic tileCover(String url) {
   return url == null ? Icon(Icons.album_sharp, size: 40) : radiusCover(url);
 }
 
-dynamic artistBackground(BuildContext context, ArtistView view) {
-  return cachedImage(view.background, width: 1920, height: 1080, fit: BoxFit.cover);
+dynamic artistImage(String url) {
+  return cachedImage(url, width: 1000, height: 1000, fit: BoxFit.cover);
+}
+
+dynamic artistBackground(String url) {
+  return cachedImage(url, width: 1920, height: 1080, fit: BoxFit.cover);
 }
 
 dynamic releaseLargeCover(String url) {
@@ -59,6 +60,9 @@ dynamic releaseLargeCover(String url) {
 }
 
 dynamic releaseSmallCover(String url) {
+  if (url == null) {
+    return Icon(Icons.album_sharp, size: 40);
+  }
   return _hero(cachedImage(url, width: 250, height: 250, fit: BoxFit.fill), url);
 }
 

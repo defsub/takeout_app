@@ -94,7 +94,7 @@ class _SearchState extends State<SearchWidget> {
                     children: [
                       OutlinedButton.icon(
                           label: Text('Play'),
-                          icon: Icon(Icons.playlist_play),
+                          icon: Icon(Icons.play_arrow),
                           onPressed: () => _onPlay()),
                       OutlinedButton.icon(
                           label: Text('Download'),

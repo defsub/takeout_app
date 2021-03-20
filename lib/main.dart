@@ -41,6 +41,7 @@ import 'global.dart';
 import 'downloads.dart';
 import 'cache.dart';
 import 'settings.dart';
+import 'cover.dart';
 
 void main() {
   Settings.init().then((_) => runApp(new MyApp()));
@@ -160,7 +161,7 @@ class TakeoutState extends State<_TakeoutWidget> {
     return _allowOrWifi(settingAllowDownload, result);
   }
 
-  static bool allowArtwork(ConnectivityResult result) {
+  static bool allowArtistArtwork(ConnectivityResult result) {
     return _allowOrWifi(settingAllowArtistArtwork, result);
   }
 
@@ -439,7 +440,6 @@ Widget allowDownloadIconButton(Icon icon, void Function() onPressed) {
         return IconButton(
             icon: icon,
             onPressed:
-            TakeoutState.allowDownload(result) ? () => onPressed() : null);
+                TakeoutState.allowDownload(result) ? () => onPressed() : null);
       });
 }
-

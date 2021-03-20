@@ -116,10 +116,14 @@ class _ReleaseState extends State<ReleaseWidget> {
                           expandedHeight: expandedHeight,
                           actions: [
                             popupMenu(context, [
+                              PopupItem.play((_) => _onPlay()),
+                              PopupItem.download((_) => _onDownload()),
+                              PopupItem.divider(),
                               PopupItem.link('MusicBrainz Release',
                                   (_) => launch(releaseUrl)),
                               PopupItem.link('MusicBrainz Release Group',
                                   (_) => launch(releaseGroupUrl)),
+                              PopupItem.divider(),
                               PopupItem.refresh((_) => _onRefresh()),
                             ]),
                           ],
@@ -167,7 +171,7 @@ class _ReleaseState extends State<ReleaseWidget> {
                         if (_view != null)
                           SliverToBoxAdapter(
                               child: _ReleaseTracksWidget(_view)),
-                        if (_view != null)
+                        if (_view != null && _view.similar.isNotEmpty)
                           SliverToBoxAdapter(
                             child: heading('Similar Releases'),
                           ),
@@ -397,7 +401,7 @@ class ReleaseListWidget extends StatelessWidget {
               //     icon: Icon(Icons.playlist_add),
               //     onPressed: () => _onAppend(e)),
               trailing: IconButton(
-                  icon: Icon(Icons.playlist_play), onPressed: () => _onPlay(e)),
+                  icon: Icon(Icons.play_arrow), onPressed: () => _onPlay(e)),
               title: Text('${_name(e)}'),
               subtitle: Text(year(e.date)))))
     ]);

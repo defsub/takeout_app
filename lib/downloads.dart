@@ -166,7 +166,7 @@ class DownloadListState extends State<DownloadListWidget> {
                     child: ListTile(
                         leading: tileCover(_spiffCover(entry.spiff)),
                         trailing: IconButton(
-                            icon: Icon(Icons.playlist_play),
+                            icon: Icon(Icons.play_arrow),
                             onPressed: () => _onPlay(entry.spiff)),
                         onTap: () => _onTap(context, entry.spiff),
                         title: Text(entry.spiff.playlist.title),

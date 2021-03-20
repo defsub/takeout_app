@@ -203,7 +203,7 @@ class _RefreshSpiffState extends State<RefreshSpiffWidget> {
                                     children: [
                                       OutlinedButton.icon(
                                           label: Text('Play'),
-                                          icon: Icon(Icons.playlist_play),
+                                          icon: Icon(Icons.play_arrow),
                                           onPressed:
                                               TakeoutState.allowStreaming(
                                                       result)
