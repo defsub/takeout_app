@@ -33,6 +33,7 @@ import 'style.dart';
 import 'spiff.dart';
 import 'menu.dart';
 import 'util.dart';
+import 'global.dart';
 
 class ArtistsWidget extends StatefulWidget {
   final ArtistsView _view;
@@ -83,6 +84,7 @@ class _ArtistsState extends State<ArtistsWidget> {
       final client = Client();
       final result = await client.artists(ttl: Duration.zero);
       setState(() {
+        loadArtistMap(_view.artists);
         _view = result;
       });
     } catch (error) {

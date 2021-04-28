@@ -56,25 +56,29 @@ dynamic artistBackground(String url) {
 }
 
 dynamic releaseLargeCover(String url) {
-  return _hero(cachedImage(url, width: 500, height: 500, fit: BoxFit.fill), url);
+  return _hero(
+      cachedImage(url, width: 500, height: 500, fit: BoxFit.fill), url);
 }
 
 dynamic releaseSmallCover(String url) {
   if (url == null) {
     return Icon(Icons.album_sharp, size: 40);
   }
-  return _hero(cachedImage(url, width: 250, height: 250, fit: BoxFit.fill), url);
+  return _hero(
+      cachedImage(url, width: 250, height: 250, fit: BoxFit.fill), url);
 }
 
 dynamic spiffCover(String url) {
-  return _hero(cachedImage(url, width: 250, height: 250, fit: BoxFit.fill), url);
+  return _hero(
+      cachedImage(url, width: 250, height: 250, fit: BoxFit.fill), url);
 }
 
 dynamic gridCover(String url) {
   if (url == null) {
     return Icon(Icons.album_sharp, size: 40);
   }
-  return _hero(cachedImage(url, width: 250, height: 250, fit: BoxFit.fill), url);
+  return _hero(
+      cachedImage(url, width: 250, height: 250, fit: BoxFit.fill), url);
 }
 
 dynamic playerCover(String url) {
@@ -92,8 +96,8 @@ Future<Color> getImageBackgroundColor(url) async {
   if (color != null) {
     return color;
   }
-  final paletteGenerator = await PaletteGenerator.fromImageProvider(
-      CachedNetworkImageProvider(url));
+  final paletteGenerator =
+      await PaletteGenerator.fromImageProvider(CachedNetworkImageProvider(url));
   color = paletteGenerator?.darkVibrantColor?.color ??
       paletteGenerator?.darkMutedColor?.color;
   _colorCache[url] = color;

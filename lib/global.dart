@@ -32,6 +32,7 @@ void navigate(int index) {
 Map<String, Artist> artistMap = {};
 
 void loadArtistMap(List<Artist> artists) {
+  artistMap.clear();
   artists.forEach((a) {
     artistMap[a.name] = a;
   });

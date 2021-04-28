@@ -110,6 +110,7 @@ class PlayerWidget extends StatelessWidget {
                           final mediaItem = queueState?.mediaItem;
                           return CustomScrollView(slivers: [
                             SliverAppBar(
+                                backgroundColor: backgroundColor,
                                 automaticallyImplyLeading: false,
                                 expandedHeight: expandedHeight,
                                 actions: [
@@ -120,8 +121,6 @@ class PlayerWidget extends StatelessWidget {
                                   ]),
                                 ],
                                 flexibleSpace: FlexibleSpaceBar(
-                                    centerTitle: true,
-                                    title: Text(mediaItem?.title ?? 'none'),
                                     stretchModes: [
                                       StretchMode.zoomBackground,
                                       StretchMode.fadeTitle
@@ -129,18 +128,6 @@ class PlayerWidget extends StatelessWidget {
                                     background:
                                         Stack(fit: StackFit.expand, children: [
                                       cover(mediaItem),
-                                      const DecoratedBox(
-                                        decoration: BoxDecoration(
-                                          gradient: LinearGradient(
-                                            begin: Alignment(0.0, 0.75),
-                                            end: Alignment(0.0, 0.0),
-                                            colors: <Color>[
-                                              Color(0x60000000),
-                                              Color(0x00000000),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
                                       Align(
                                           alignment: Alignment.bottomLeft,
                                           child: _artistButton(mediaItem)),
@@ -150,8 +137,20 @@ class PlayerWidget extends StatelessWidget {
                                     ]))),
                             if (queue != null && queue.isNotEmpty)
                               SliverToBoxAdapter(
-                                  child: _controls(queue, mediaItem, playing)),
-                            SliverToBoxAdapter(child: _seekBar()),
+                                  child: Container(
+                                      padding: EdgeInsets.fromLTRB(0, 16, 0, 0),
+                                      child: Column(children: [
+                                        Text(mediaItem?.title ?? 'none',
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .headline5),
+                                        Text(mediaItem?.artist ?? 'none',
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .subtitle1.copyWith(color: Colors.white60)),
+                                        _controls(queue, mediaItem, playing),
+                                        _seekBar(),
+                                      ]))),
                             SliverToBoxAdapter(
                                 child: _MediaTrackListWidget(_queueStateStream))
                           ]);
@@ -162,12 +161,11 @@ class PlayerWidget extends StatelessWidget {
 
   Widget cover(MediaItem mediaItem) {
     return mediaItem != null ? playerCover(mediaItem.artUri) : SizedBox();
-    //return playerCover(mediaItem.artUri);
   }
 
   Widget _controls(List<MediaItem> queue, MediaItem mediaItem, bool playing) {
     return Container(
-        padding: EdgeInsets.fromLTRB(0, 32, 0, 0),
+        padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -192,7 +190,7 @@ class PlayerWidget extends StatelessWidget {
   Widget _seekBar() {
     // A seek bar.
     return Container(
-        padding: EdgeInsets.fromLTRB(0, 32, 0, 32),
+        padding: EdgeInsets.fromLTRB(0, 0, 0, 16),
         child: StreamBuilder<MediaState>(
           stream: _mediaStateStream,
           builder: (context, snapshot) {
@@ -220,7 +218,7 @@ class PlayerWidget extends StatelessWidget {
   Widget _cloudIcon(MediaItem mediaItem) {
     if (mediaItem != null && mediaItem.isLocalFile()) {
       return IconButton(
-          icon: Icon(Icons.cloud_download_outlined), onPressed: () => {});
+          icon: Icon(Icons.cloud_done_outlined), onPressed: () => {});
     }
     return SizedBox();
   }

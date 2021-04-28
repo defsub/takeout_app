@@ -358,11 +358,7 @@ class DownloadState extends State<DownloadWidget> {
   }
 
   void _onArtist(BuildContext context) {
-    Artist artist = artistMap[spiff.playlist.creator];
-    if (artist != null) {
-      Navigator.push(context,
-          MaterialPageRoute(builder: (context) => ArtistWidget(artist)));
-    }
+    showArtist(spiff.playlist.creator);
   }
 
   void _onPlay() {
