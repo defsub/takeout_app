@@ -316,6 +316,7 @@ class TrackListWidget extends StatelessWidget {
 
   void _onPlay(int index) {
     MediaQueue.playTracks(_tracks, index: index);
+    showPlayer();
   }
 
   @override

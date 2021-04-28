@@ -363,6 +363,7 @@ class DownloadState extends State<DownloadWidget> {
 
   void _onPlay() {
     MediaQueue.playSpiff(spiff);
+    showPlayer();
   }
 
   void _onDelete(BuildContext context) async {

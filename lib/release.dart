@@ -17,6 +17,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:takeout_app/global.dart';
 import 'package:takeout_app/menu.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -74,6 +75,7 @@ class _ReleaseState extends State<ReleaseWidget> {
 
   void _onPlay() {
     MediaQueue.play(release: release);
+    showPlayer();
   }
 
   void _onDownload() {

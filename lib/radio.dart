@@ -27,6 +27,7 @@ import 'spiff.dart';
 import 'style.dart';
 import 'cache.dart';
 import 'menu.dart';
+import 'global.dart';
 
 class RadioWidget extends StatefulWidget {
   final RadioView _view;
@@ -230,6 +231,7 @@ class _RefreshSpiffState extends State<RefreshSpiffWidget> {
 
   void _onPlay() {
     MediaQueue.playSpiff(_spiff);
+    showPlayer();
   }
 
   void _onDownload() {

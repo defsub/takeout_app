@@ -38,6 +38,10 @@ void loadArtistMap(List<Artist> artists) {
   });
 }
 
+void showPlayer() {
+  navigate(4);
+}
+
 void showArtist(String name) async {
   Artist artist = artistMap[name];
   if (artist != null) {
