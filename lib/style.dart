@@ -38,7 +38,7 @@ Widget heading(String text) {
 Widget headingButton(String text, void Function() onPressed) {
   return SizedBox(
       width: double.infinity,
-      child: FlatButton(
+      child: TextButton(
         child: Align(
             alignment: Alignment.centerLeft,
             child: Row(

@@ -399,7 +399,7 @@ class Client {
 
   /// Download a list of tracks
   Future<List<bool>> downloadTracks(List<Track> tracks) async {
-    final result = List<bool>();
+    final result = [];
     for (var t in tracks) {
       await download(t)
           .then((v) => result.add(true))

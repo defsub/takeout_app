@@ -18,9 +18,9 @@
 import 'dart:async';
 
 import 'package:audio_service/audio_service.dart';
+import 'package:takeout_app/player.dart';
 
 import 'client.dart';
-import 'cover.dart';
 import 'music.dart';
 import 'patch.dart';
 import 'spiff.dart';
@@ -86,7 +86,7 @@ class MediaQueue {
     }
     await setCurrentPlaylist(Uri.parse(spiff.playlist.location));
     await SpiffCache.put(spiff);
-    return _stage(spiff);
+    return AudioService.customAction('doit');
   }
 
   /// Play a release or station, replacing current playlist.
@@ -113,7 +113,7 @@ class MediaQueue {
         SpiffCache.get(uri).then((spiff) {
           spiff = spiff.copyWith(index: index, position: position);
           SpiffCache.put(spiff).then((_) {
-            AudioService.customAction('stage+play')
+            AudioService.customAction('doit')
                 .then((_) => completer.complete());
           });
         }).catchError((e) => completer.completeError(e));
@@ -124,12 +124,18 @@ class MediaQueue {
         //   index: index, playlist: spiff.playlist
         //         .copyWith(location: uri.toString())); // TODO fixme
         SpiffCache.put(spiff).then((_) {
-          AudioService.customAction('stage+play')
+          AudioService.customAction('doit')
               .then((_) => completer.complete());
         });
       }
     }).catchError((e) => completer.completeError(e));
     return completer.future;
+  }
+
+  static void checkPlayer() {
+    if (AudioService.running == false) {
+      PlayerWidget.doStart({}); // FIXME
+    }
   }
 
   // Only call this from player task
@@ -187,10 +193,10 @@ class MediaQueue {
 
   /// Clear current playlist.
   /// TODO
-  void clear() {
-    final client = Client();
-    // client.patch(patchClear()).then((spiff) => _save(spiff));
-  }
+  // void clear() {
+  //   final client = Client();
+  //   // client.patch(patchClear()).then((spiff) => _save(spiff));
+  // }
 
   /// Fetch and cache the current playlist from the server.
   static Future<Spiff> sync() async {
@@ -257,17 +263,17 @@ class MediaQueue {
     );
   }
 
-  static MediaItem _trackMediaItem(Track track, Uri uri, Map headers) {
-    final coverUri = track.image;
-    return MediaItem(
-      id: uri.toString(),
-      album: track.release,
-      title: track.title,
-      artist: track.artist,
-      artUri: coverUri,
-      extras: {'headers': headers},
-    );
-  }
+  // static MediaItem _trackMediaItem(Track track, Uri uri, Map headers) {
+  //   final coverUri = track.image;
+  //   return MediaItem(
+  //     id: uri.toString(),
+  //     album: track.release,
+  //     title: track.title,
+  //     artist: track.artist,
+  //     artUri: coverUri,
+  //     extras: {'headers': headers},
+  //   );
+  // }
 
   static MediaItem _entryMediaItem(Entry entry, Uri uri, Map headers) {
     return MediaItem(

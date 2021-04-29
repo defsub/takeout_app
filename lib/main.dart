@@ -41,7 +41,6 @@ import 'global.dart';
 import 'downloads.dart';
 import 'cache.dart';
 import 'settings.dart';
-import 'cover.dart';
 
 void main() {
   Settings.init().then((_) => runApp(new MyApp()));
@@ -289,9 +288,9 @@ class TakeoutState extends State<_TakeoutWidget> {
       case 4:
         if (_playerWidget == null) {
           _playerWidget = PlayerWidget();
-          final params = Map<String, dynamic>();
-          // TODO need params still?
-          PlayerWidget.doStart(params);
+        }
+        if (AudioService.running == false) {
+          PlayerWidget.doStart({});
         }
         return _playerWidget;
       default:

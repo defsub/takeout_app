@@ -32,7 +32,6 @@ import 'cache.dart';
 import 'cover.dart';
 import 'global.dart';
 import 'style.dart';
-import 'artists.dart';
 import 'menu.dart';
 import 'model.dart';
 import 'util.dart';
@@ -78,11 +77,11 @@ class DownloadsWidget extends StatelessWidget {
             title: Text('Really delete?'),
             content: Text('This will delete all downloaded tracks.'),
             actions: [
-              FlatButton(
+              TextButton(
                 onPressed: () => Navigator.pop(ctx),
                 child: Text('NO'),
               ),
-              FlatButton(
+              TextButton(
                 onPressed: () {
                   _onDeleteConfirmed();
                   Navigator.pop(ctx);
@@ -374,11 +373,11 @@ class DownloadState extends State<DownloadWidget> {
             title: Text('Really delete ${spiff.playlist.title}?'),
             content: Text('This will free ${storage(spiff.size)} of space.'),
             actions: [
-              FlatButton(
+              TextButton(
                 onPressed: () => Navigator.pop(ctx),
                 child: Text('NO'),
               ),
-              FlatButton(
+              TextButton(
                 onPressed: () {
                   _onDeleteConfirmed();
                   Navigator.pop(ctx);

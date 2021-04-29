@@ -128,26 +128,26 @@ class PlayerWidget extends StatelessWidget {
                                     background:
                                         Stack(fit: StackFit.expand, children: [
                                       cover(mediaItem),
-                                      Align(
-                                          alignment: Alignment.bottomLeft,
-                                          child: _artistButton(mediaItem)),
-                                      Align(
-                                          alignment: Alignment.bottomRight,
-                                          child: _cloudIcon(mediaItem)),
                                     ]))),
                             if (queue != null && queue.isNotEmpty)
                               SliverToBoxAdapter(
                                   child: Container(
                                       padding: EdgeInsets.fromLTRB(0, 16, 0, 0),
                                       child: Column(children: [
-                                        Text(mediaItem?.title ?? 'none',
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .headline5),
+                                        GestureDetector(
+                                            onTap: () =>
+                                                _onArtist(mediaItem?.artist),
+                                            child: Text(
+                                                mediaItem?.title ?? 'none',
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .headline5)),
                                         Text(mediaItem?.artist ?? 'none',
                                             style: Theme.of(context)
                                                 .textTheme
-                                                .subtitle1.copyWith(color: Colors.white60)),
+                                                .subtitle1
+                                                .copyWith(
+                                                    color: Colors.white60)),
                                         _controls(queue, mediaItem, playing),
                                         _seekBar(),
                                       ]))),
@@ -206,21 +206,14 @@ class PlayerWidget extends StatelessWidget {
         ));
   }
 
-  Widget _artistButton(MediaItem mediaItem) {
-    return IconButton(
-        icon: Icon(Icons.people), onPressed: () => _onArtist(mediaItem.artist));
-  }
+  //
+  // Widget _artistButton(MediaItem mediaItem) {
+  //   return IconButton(
+  //       icon: Icon(Icons.people), onPressed: () => _onArtist(mediaItem.artist));
+  // }
 
   void _onArtist(String artist) {
     showArtist(artist);
-  }
-
-  Widget _cloudIcon(MediaItem mediaItem) {
-    if (mediaItem != null && mediaItem.isLocalFile()) {
-      return IconButton(
-          icon: Icon(Icons.cloud_done_outlined), onPressed: () => {});
-    }
-    return SizedBox();
   }
 
   /// A stream reporting the combined state of the current media item and its
@@ -239,15 +232,15 @@ class PlayerWidget extends StatelessWidget {
           AudioService.currentMediaItemStream,
           (queue, mediaItem) => QueueState(queue, mediaItem));
 
-  RaisedButton audioPlayerButton() => startButton(
+  ElevatedButton audioPlayerButton() => startButton(
         'AudioPlayer',
         () {
-          PlayerWidget.doStart({}); //fixme
+          PlayerWidget.doStart({}); // FIXME
         },
       );
 
-  RaisedButton startButton(String label, VoidCallback onPressed) =>
-      RaisedButton(
+  ElevatedButton startButton(String label, VoidCallback onPressed) =>
+      ElevatedButton(
         child: Text(label),
         onPressed: onPressed,
       );
@@ -291,6 +284,7 @@ class _MediaTrackListWidget extends StatelessWidget {
                 child: Column(children: [
               ...mediaItems.map((t) => ListTile(
                   leading: tileCover(t.artUri),
+                  trailing: _cloudIcon(t),
                   selected: t == state.mediaItem,
                   onTap: () {
                     AudioService.playMediaItem(t);
@@ -304,6 +298,14 @@ class _MediaTrackListWidget extends StatelessWidget {
           }
           return Text('');
         });
+  }
+
+  Widget _cloudIcon(MediaItem mediaItem) {
+    if (mediaItem != null && mediaItem.isLocalFile()) {
+      return IconButton(
+          icon: Icon(Icons.cloud_done_outlined), onPressed: () => {});
+    }
+    return SizedBox();
   }
 }
 

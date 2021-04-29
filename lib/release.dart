@@ -197,18 +197,17 @@ class _ReleaseState extends State<ReleaseWidget> {
     ]);
   }
 
-  Widget _subtitle() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        TextButton.icon(
-            icon: Icon(Icons.people),
-            label: Text(release.artist),
-            onPressed: _onArtist),
-      ],
-    );
-  }
-
+  // Widget _subtitle() {
+  //   return Row(
+  //     mainAxisAlignment: MainAxisAlignment.center,
+  //     children: [
+  //       TextButton.icon(
+  //           icon: Icon(Icons.people),
+  //           label: Text(release.artist),
+  //           onPressed: _onArtist),
+  //     ],
+  //   );
+  // }
 
   Widget _playButton(bool isCached) {
     if (isCached) {
@@ -414,9 +413,9 @@ class ReleaseListWidget extends StatelessWidget {
         MaterialPageRoute(builder: (context) => ReleaseWidget(release)));
   }
 
-  void _onAppend(Release release) {
-    MediaQueue.append(release: release);
-  }
+  // void _onAppend(Release release) {
+  //   MediaQueue.append(release: release);
+  // }
 
   void _onPlay(Release release) {
     MediaQueue.play(release: release);

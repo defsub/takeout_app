@@ -49,7 +49,8 @@ class AudioPlayerTask extends BackgroundAudioTask {
   Future<dynamic> onCustomAction(String name, dynamic arguments) {
     if (name == 'stage') {
       _loadPlaylist();
-    } else if (name == 'stage+play') {
+    }
+    else if (name == 'doit') {
       _loadPlaylist();
       if (!_player.playing) {
         _player.play();
@@ -91,7 +92,6 @@ class AudioPlayerTask extends BackgroundAudioTask {
       // append only
       for (var i = oldState.length; i < newState.length; i++) {
         final item = newState.item(i);
-        print('spiff adding $i ${item}');
         await _playlist.insert(
             i,
             AudioSource.uri(Uri.parse(item.id),
@@ -175,12 +175,7 @@ class AudioPlayerTask extends BackgroundAudioTask {
 
   @override
   Future<void> onAddQueueItem(MediaItem item) {
-    _loadPlaylist();
-    // print('onAddQueueItem $item');
-    // _state.add(item);
-    // AudioServiceBackground.setQueue(_state.queue);
-    // return _playlist.add(AudioSource.uri(Uri.parse(item.id),
-    //     headers: item.isLocalFile() ? null : item.extras['headers']));
+    return _loadPlaylist();
   }
 
   @override

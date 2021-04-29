@@ -81,7 +81,7 @@ void showErrorDialog(BuildContext context, String message) {
         title: Text("Error"),
         content: Text(message),
         actions: [
-          FlatButton(
+          TextButton(
             child: Text("OK"),
               onPressed: () => Navigator.pop(ctx),
           )
