@@ -275,31 +275,37 @@ class DownloadState extends State<DownloadWidget> {
                     Align(
                         alignment: Alignment.bottomLeft,
                         child: _playButton(isCached)),
-                    if (!isRadio)
-                      Align(
-                          alignment: Alignment.bottomCenter,
-                          child: TextButton.icon(
-                              icon: Icon(Icons.people),
-                              label: Text(spiff.playlist.creator),
-                              onPressed: () => _onArtist(context))),
-                    if (isCached)
-                      Align(
-                          alignment: Alignment.bottomRight,
-                          child: _deleteButton(context)),
-                    if (!isCached)
-                      Align(
-                          alignment: Alignment.bottomRight,
-                          child: _downloadButton(isCached)),
+                    Align(
+                        alignment: Alignment.bottomRight,
+                        child: _bottomRight(context, isCached))
                   ])),
             ),
             SliverToBoxAdapter(
                 child: Column(children: [
-              _title(),
-              // _subtitle(),
+              _title(context),
+              _subtitle(context, isRadio),
             ])),
             SliverToBoxAdapter(child: SpiffTrackListView(spiff)),
           ]);
         });
+  }
+
+  Widget _bottomRight(BuildContext context, bool isCached) {
+    return isCached ? _deleteButton(context) : _downloadButton(isCached);
+  }
+
+  Widget _title(BuildContext context) {
+    return Text(spiff.playlist.title,
+        style: Theme.of(context).textTheme.headline5);
+  }
+
+  Widget _subtitle(BuildContext context, bool isRadio) {
+    final text = '${spiff.playlist.creator} \u2022 ${storage(spiff.size)}';
+    return Text(text,
+        style: Theme.of(context)
+            .textTheme
+            .subtitle1
+            .copyWith(color: Colors.white60));
   }
 
   Future<void> _onRefresh() async {
@@ -315,13 +321,6 @@ class DownloadState extends State<DownloadWidget> {
         print('refresh err $error');
       }
     }
-  }
-
-  Widget _title() {
-    return Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-      Expanded(child: heading(spiff.playlist.title)),
-      Padding(child: Text(storage(spiff.size)), padding: EdgeInsets.all(11))
-    ]);
   }
 
   Widget _playButton(bool isCached) {

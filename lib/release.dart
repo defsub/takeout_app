@@ -155,20 +155,16 @@ class _ReleaseState extends State<ReleaseWidget> {
                                     alignment: Alignment.bottomLeft,
                                     child: _playButton(isCached)),
                                 Align(
-                                    alignment: Alignment.bottomCenter,
-                                    child: TextButton.icon(
-                                        icon: Icon(Icons.people),
-                                        label: Text(release.artist),
-                                        onPressed: _onArtist)),
-                                Align(
                                     alignment: Alignment.bottomRight,
                                     child: _downloadButton(isCached)),
                               ])),
                         ),
                         SliverToBoxAdapter(
                             child: Column(children: [
-                          _title(),
-                          // _subtitle(),
+                          GestureDetector(
+                              onTap: () => _onArtist(), child: _title()),
+                          GestureDetector(
+                              onTap: () => _onArtist(), child: _artist()),
                         ])),
                         if (_view != null)
                           SliverToBoxAdapter(
@@ -184,30 +180,20 @@ class _ReleaseState extends State<ReleaseWidget> {
   }
 
   Widget _title() {
-    return Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-      Expanded(child: heading(release.name)),
-      if (isNotNullOrEmpty(release.date))
-        Padding(child: Text(year(release.date)), padding: EdgeInsets.all(11))
-      // child: Padding(
-      //     padding: EdgeInsets.fromLTRB(5, 8, 5, 0),
-      //     child: Text(release.name,
-      //         overflow: TextOverflow.ellipsis,
-      //         textAlign: TextAlign.center,
-      //         style: Theme.of(context).textTheme.headline6)))
-    ]);
+    return Text(release.name, style: Theme.of(context).textTheme.headline5);
   }
 
-  // Widget _subtitle() {
-  //   return Row(
-  //     mainAxisAlignment: MainAxisAlignment.center,
-  //     children: [
-  //       TextButton.icon(
-  //           icon: Icon(Icons.people),
-  //           label: Text(release.artist),
-  //           onPressed: _onArtist),
-  //     ],
-  //   );
-  // }
+  Widget _artist() {
+    var artist = release.artist;
+    if (isNotNullOrEmpty(release.date)) {
+      artist = '$artist \u2022 ${year(release.date)}';
+    }
+    return Text(artist,
+        style: Theme.of(context)
+            .textTheme
+            .subtitle1
+            .copyWith(color: Colors.white60));
+  }
 
   Widget _playButton(bool isCached) {
     if (isCached) {
@@ -226,34 +212,6 @@ class _ReleaseState extends State<ReleaseWidget> {
     return allowDownloadIconButton(
         Icon(Icons.cloud_download_outlined), _onDownload);
   }
-
-  // Widget _playButton(bool isCached) {
-  //   return StreamBuilder<ConnectivityResult>(
-  //       stream: TakeoutState.connectivityStream.distinct(),
-  //       builder: (context, snapshot) {
-  //         final result = snapshot.data;
-  //         return IconButton(
-  //             icon: Icon(Icons.play_arrow),
-  //             onPressed: TakeoutState.allowStreaming(result) || isCached == true
-  //                 ? () => _onPlay()
-  //                 : null);
-  //       });
-  // }
-
-  // Widget _downloadButton(bool isCached) {
-  //   return StreamBuilder<ConnectivityResult>(
-  //       stream: TakeoutState.connectivityStream.distinct(),
-  //       builder: (context, snapshot) {
-  //         final result = snapshot.data;
-  //         return IconButton(
-  //             icon: Icon(isCached
-  //                 ? Icons.cloud_done_outlined
-  //                 : Icons.cloud_download_outlined),
-  //             onPressed: TakeoutState.allowDownload(result)
-  //                 ? () => _onDownload()
-  //                 : null);
-  //       });
-  // }
 }
 
 class _ReleaseTracksWidget extends StatelessWidget {
@@ -333,16 +291,14 @@ class AlbumGridWidget extends StatelessWidget {
   }
 
   void _onTap(BuildContext context, MusicAlbum album) {
-    Navigator.push(context,
-        MaterialPageRoute(builder: (context) {
-          if (album is Release) {
-            return ReleaseWidget(album);
-          }
-          else if (album is DownloadEntry) {
-            return DownloadWidget(spiff: album.spiff);
-          }
-          return Text('');
-        }));
+    Navigator.push(context, MaterialPageRoute(builder: (context) {
+      if (album is Release) {
+        return ReleaseWidget(album);
+      } else if (album is DownloadEntry) {
+        return DownloadWidget(spiff: album.spiff);
+      }
+      return Text('');
+    }));
   }
 }
 

@@ -131,7 +131,6 @@ class ArtistListWidget extends StatelessWidget {
                 final artist = _artists[index];
                 return ListTile(
                     onTap: () => _onArtist(context, artist),
-                    leading: Icon(Icons.people_alt),
                     title: Text(artist.name),
                     subtitle: Text(_subtitle(artist)));
               }))
@@ -297,7 +296,6 @@ class SimilarArtistListWidget extends StatelessWidget {
     return Column(children: [
       ..._view.similar.map((a) => ListTile(
           onTap: () => _onArtist(context, a),
-          leading: Icon(Icons.people_alt),
           title: Text(a.name),
           subtitle: Text(_subtitle(a))))
     ]);
@@ -520,7 +518,11 @@ mixin ArtistBuilder {
           final connectivity = snapshot.data;
 
           final useBackground = false;
-          final artistArtworkUrl = useBackground ? view.background : view.image;
+          final artistArtworkUrl = view != null
+              ? useBackground
+                  ? view.background
+                  : view.image
+              : null;
 
           bool allowArtwork = view != null &&
               isNotNullOrEmpty(artistArtworkUrl) &&
@@ -582,6 +584,12 @@ mixin ArtistBuilder {
                                                     Alignment.bottomRight,
                                                 child: rightButton()),
                                           ]))),
+                              SliverToBoxAdapter(
+                                  child: Column(children: [
+                                Text(view.artist.name,
+                                    style:
+                                        Theme.of(context).textTheme.headline5)
+                              ])),
                               ...slivers(),
                             ]))));
         });

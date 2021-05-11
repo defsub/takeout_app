@@ -131,7 +131,6 @@ class _ArtistResultsWidget extends StatelessWidget {
     return Column(children: [
       ..._artists.map((a) => Container(
           child: ListTile(
-              leading: Icon(Icons.people_alt),
               onTap: () => _onTapped(context, a),
               title: Text(a.name))))
     ]);
