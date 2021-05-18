@@ -281,10 +281,12 @@ class DownloadState extends State<DownloadWidget> {
                   ])),
             ),
             SliverToBoxAdapter(
-                child: Column(children: [
-              _title(context),
-              _subtitle(context, isRadio),
-            ])),
+                child: Container(
+                    padding: EdgeInsets.fromLTRB(0, 16, 0, 0),
+                    child: Column(children: [
+                      _title(context),
+                      _subtitle(context, isRadio),
+                    ]))),
             SliverToBoxAdapter(child: SpiffTrackListView(spiff)),
           ]);
         });

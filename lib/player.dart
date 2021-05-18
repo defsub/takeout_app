@@ -171,7 +171,6 @@ class PlayerWidget extends StatelessWidget {
           children: [
             IconButton(
               icon: Icon(Icons.skip_previous),
-              // iconSize: 64.0,
               onPressed:
                   mediaItem == queue.first ? null : AudioService.skipToPrevious,
             ),
@@ -179,7 +178,6 @@ class PlayerWidget extends StatelessWidget {
             // stopButton(),
             IconButton(
               icon: Icon(Icons.skip_next),
-              // iconSize: 64.0,
               onPressed:
                   mediaItem == queue.last ? null : AudioService.skipToNext,
             ),

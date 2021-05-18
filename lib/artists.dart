@@ -585,11 +585,14 @@ mixin ArtistBuilder {
                                                 child: rightButton()),
                                           ]))),
                               SliverToBoxAdapter(
-                                  child: Column(children: [
-                                Text(view.artist.name,
-                                    style:
-                                        Theme.of(context).textTheme.headline5)
-                              ])),
+                                  child: Container(
+                                      padding: EdgeInsets.fromLTRB(0, 16, 0, 0),
+                                      child: Column(children: [
+                                        Text(view.artist.name,
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .headline5)
+                                      ]))),
                               ...slivers(),
                             ]))));
         });

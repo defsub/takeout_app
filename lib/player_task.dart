@@ -184,7 +184,7 @@ class AudioPlayerTask extends BackgroundAudioTask {
 
     // Then default implementations of onSkipToNext and onSkipToPrevious will
     // delegate to this method.
-    final newIndex = _state.findId(mediaId);
+    var newIndex = _state.findId(mediaId);
     if (newIndex == -1)
       return
           // During a skip, the player may enter the buffering state. We could just
@@ -196,6 +196,15 @@ class AudioPlayerTask extends BackgroundAudioTask {
           _skipState = newIndex > index
               ? AudioProcessingState.skippingToNext
               : AudioProcessingState.skippingToPrevious;
+
+    if (newIndex == _state.index - 1) {
+      // skipping to previous
+      if (_player.position.inSeconds > 10) {
+        // skip to beginning before going to previous
+        newIndex = _state.index;
+      }
+    }
+
     // This jumps to the beginning of the queue item at newIndex.
     _player.seek(Duration.zero, index: newIndex);
   }

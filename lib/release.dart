@@ -160,12 +160,16 @@ class _ReleaseState extends State<ReleaseWidget> {
                               ])),
                         ),
                         SliverToBoxAdapter(
-                            child: Column(children: [
-                          GestureDetector(
-                              onTap: () => _onArtist(), child: _title()),
-                          GestureDetector(
-                              onTap: () => _onArtist(), child: _artist()),
-                        ])),
+                            child: Container(
+                                padding: EdgeInsets.fromLTRB(0, 16, 0, 4),
+                                child: Column(children: [
+                                  GestureDetector(
+                                      onTap: () => _onArtist(),
+                                      child: _title()),
+                                  GestureDetector(
+                                      onTap: () => _onArtist(),
+                                      child: _artist()),
+                                ]))),
                         if (_view != null)
                           SliverToBoxAdapter(
                               child: _ReleaseTracksWidget(_view)),

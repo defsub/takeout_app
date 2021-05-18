@@ -102,10 +102,7 @@ class _HomeItem {
   Widget get trailing {
     if (album.year > 1) return Text('${album.year}');
     if (album is DownloadEntry) {
-      return album.creator == 'Radio'
-          ? downloadIcon(album, Icons.radio, Icons.cloud_download_outlined)
-          : downloadIcon(
-              album, Icons.cloud_done_outlined, Icons.cloud_download_outlined);
+      return downloadIcon(album, Icons.cloud_done_outlined, Icons.cloud_download_outlined);
     }
     return Text('');
   }
