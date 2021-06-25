@@ -19,7 +19,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:takeout_app/release.dart';
 
-import 'music.dart';
+import 'schema.dart';
 import 'client.dart';
 import 'artists.dart';
 import 'style.dart';

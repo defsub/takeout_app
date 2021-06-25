@@ -32,7 +32,7 @@ import 'artists.dart';
 import 'client.dart';
 import 'home.dart';
 import 'login.dart';
-import 'music.dart';
+import 'schema.dart';
 import 'player.dart';
 import 'playlist.dart';
 import 'radio.dart';

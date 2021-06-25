@@ -26,7 +26,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'client.dart';
 import 'downloads.dart';
 import 'main.dart';
-import 'music.dart';
+import 'schema.dart';
 import 'release.dart';
 import 'settings.dart';
 import 'style.dart';

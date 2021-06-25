@@ -21,7 +21,7 @@ import 'package:audio_service/audio_service.dart';
 import 'package:takeout_app/player.dart';
 
 import 'client.dart';
-import 'music.dart';
+import 'schema.dart';
 import 'patch.dart';
 import 'spiff.dart';
 import 'global.dart';

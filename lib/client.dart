@@ -24,7 +24,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'cache.dart';
-import 'music.dart';
+import 'schema.dart';
 import 'spiff.dart';
 
 class ClientException implements Exception {
@@ -368,6 +368,12 @@ class Client {
 
   Future<PatchResult> patch(List<Map<String, dynamic>> body) async =>
       _patchJson('/api/playlist', body);
+
+  /// GET /api/movies
+  Future<MoviesView> movies({Duration ttl}) async =>
+      _getJson('/api/movies', ttl: ttl)
+          .then((j) => MoviesView.fromJson(j))
+          .catchError((e) => Future<MoviesView>.error(e));
 
   /// Download locatable to a file.
   Future download(Locatable d) async {

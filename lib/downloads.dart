@@ -26,7 +26,7 @@ import 'package:takeout_app/playlist.dart';
 import 'package:rxdart/rxdart.dart';
 
 import 'client.dart';
-import 'music.dart';
+import 'schema.dart';
 import 'spiff.dart';
 import 'cache.dart';
 import 'cover.dart';

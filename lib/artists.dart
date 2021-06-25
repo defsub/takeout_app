@@ -26,7 +26,7 @@ import 'client.dart';
 import 'cover.dart';
 import 'downloads.dart';
 import 'main.dart';
-import 'music.dart';
+import 'schema.dart';
 import 'playlist.dart';
 import 'release.dart';
 import 'style.dart';

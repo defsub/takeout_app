@@ -23,12 +23,16 @@ import 'package:takeout_app/client.dart';
 import 'model.dart';
 import 'util.dart';
 
-part 'music.g.dart';
+part 'schema.g.dart';
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
 class HomeView {
+  @JsonKey(name: "AddedReleases")
   List<Release> added;
+  @JsonKey(name: "NewReleases")
   List<Release> released;
+  List<Movie> addedMovies;
+  List<Movie> newMovies;
 
   HomeView({this.added, this.released});
 
@@ -101,6 +105,7 @@ class SearchView {
   List<Artist> artists;
   List<Release> releases;
   List<Track> tracks;
+  List<Movie> movies;
   String query;
   int hits;
 
@@ -209,6 +214,7 @@ class Release implements MusicAlbum {
   String get image => _releaseCoverUrl();
 
   int _year = -1;
+
   @override
   int get year {
     if (_year == -1) {
@@ -307,6 +313,7 @@ class Track extends Locatable implements MusicTrack {
   int get number => trackNum;
 
   int _year = -1;
+
   @override
   int get year {
     if (_year == -1) {
@@ -402,4 +409,199 @@ class PopularView {
       _$PopularViewFromJson(json);
 
   Map<String, dynamic> toJson() => _$PopularViewToJson(this);
+}
+
+@JsonSerializable(fieldRename: FieldRename.pascal)
+class MoviesView {
+  final List<Movie> movies;
+
+  MoviesView({this.movies});
+
+  factory MoviesView.fromJson(Map<String, dynamic> json) =>
+      _$MoviesViewFromJson(json);
+
+  Map<String, dynamic> toJson() => _$MoviesViewToJson(this);
+}
+
+@JsonSerializable(fieldRename: FieldRename.pascal)
+class MovieView {
+  final Movie movie;
+  final Collection collection;
+  final List<Movie> other;
+  final List<Cast> cast;
+  final List<Crew> crew;
+  final List<Person> starring;
+  final List<Person> directing;
+  final List<Person> writing;
+  final List<String> genres;
+  final int vote;
+  final int voteCount;
+
+  MovieView(
+      {this.movie,
+      this.collection,
+      this.other,
+      this.cast,
+      this.crew,
+      this.starring,
+      this.directing,
+      this.writing,
+      this.genres,
+      this.vote,
+      this.voteCount});
+
+  factory MovieView.fromJson(Map<String, dynamic> json) =>
+      _$MovieViewFromJson(json);
+
+  Map<String, dynamic> toJson() => _$MovieViewToJson(this);
+}
+
+@JsonSerializable(fieldRename: FieldRename.pascal)
+class Person {
+  @JsonKey(name: "ID")
+  final int id;
+  @JsonKey(name: "PEID")
+  final int peid;
+  final String name;
+  final String profilePath;
+  final String bio;
+  final String birthplace;
+  final String birthday;
+  final String deathday;
+
+  Person(
+      {this.id,
+      this.peid,
+      this.name,
+      this.profilePath,
+      this.bio,
+      this.birthplace,
+      this.birthday,
+      this.deathday});
+
+  factory Person.fromJson(Map<String, dynamic> json) => _$PersonFromJson(json);
+
+  Map<String, dynamic> toJson() => _$PersonToJson(this);
+}
+
+@JsonSerializable(fieldRename: FieldRename.pascal)
+class Cast {
+  @JsonKey(name: "ID")
+  final int id;
+  @JsonKey(name: "TMID")
+  final int tmid;
+  @JsonKey(name: "PEID")
+  final int peid;
+  final String character;
+  final Person person;
+
+  Cast({this.id, this.tmid, this.peid, this.character, this.person});
+
+  factory Cast.fromJson(Map<String, dynamic> json) => _$CastFromJson(json);
+
+  Map<String, dynamic> toJson() => _$CastToJson(this);
+}
+
+@JsonSerializable(fieldRename: FieldRename.pascal)
+class Crew {
+  @JsonKey(name: "ID")
+  final int id;
+  @JsonKey(name: "TMID")
+  final int tmid;
+  @JsonKey(name: "PEID")
+  final int peid;
+  final String department;
+  final String job;
+  final Person person;
+
+  Crew({this.id, this.tmid, this.peid, this.department, this.job, this.person});
+
+  factory Crew.fromJson(Map<String, dynamic> json) => _$CrewFromJson(json);
+
+  Map<String, dynamic> toJson() => _$CrewToJson(this);
+}
+
+@JsonSerializable(fieldRename: FieldRename.pascal)
+class Collection {
+  @JsonKey(name: "ID")
+  final int id;
+  final String name;
+  final String sortName;
+  @JsonKey(name: "TMID")
+  final String tmid;
+
+  Collection({this.id, this.name, this.sortName, this.tmid});
+
+  factory Collection.fromJson(Map<String, dynamic> json) =>
+      _$CollectionFromJson(json);
+
+  Map<String, dynamic> toJson() => _$CollectionToJson(this);
+}
+
+@JsonSerializable(fieldRename: FieldRename.pascal)
+class Movie extends Locatable {
+  @JsonKey(name: "ID")
+  final int id;
+  @JsonKey(name: "TMID")
+  final int tmid;
+  @JsonKey(name: "IMID")
+  final String imid;
+  final String title;
+  final String sortTitle;
+  final String date;
+  final String rating;
+  final String tagline;
+  final String overview;
+  final int budget;
+  final int revenue;
+  final int runtime;
+  final double voteAverage;
+  final int voteCount;
+  final String backdropPath;
+  final String posterPath;
+  @JsonKey(name: "ETag")
+  final String etag;
+
+  Movie(
+      {this.id,
+      this.tmid,
+      this.imid,
+      this.title,
+      this.sortTitle,
+      this.date,
+      this.rating,
+      this.tagline,
+      this.overview,
+      this.budget,
+      this.revenue,
+      this.runtime,
+      this.voteAverage,
+      this.voteCount,
+      this.backdropPath,
+      this.posterPath,
+      this.etag});
+
+  factory Movie.fromJson(Map<String, dynamic> json) => _$MovieFromJson(json);
+
+  Map<String, dynamic> toJson() => _$MovieToJson(this);
+
+  @override
+  String get key {
+    return etag.replaceAll(new RegExp(r'"'), '');
+  }
+
+  @override
+  String get location {
+    return '/api/movies/$id/location';
+  }
+
+  int _year = -1;
+
+  int get year {
+    if (_year == -1) {
+      final d = DateTime.parse(date);
+      _year = d.year;
+    }
+    return _year;
+  }
 }

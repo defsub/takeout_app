@@ -18,7 +18,7 @@
 import 'package:flutter/material.dart';
 import 'package:connectivity/connectivity.dart';
 
-import 'music.dart';
+import 'schema.dart';
 import 'main.dart';
 import 'playlist.dart';
 import 'client.dart';

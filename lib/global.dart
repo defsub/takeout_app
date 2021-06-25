@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'music.dart';
+import 'schema.dart';
 import 'artists.dart'; // TODO remove
 
 const appName = 'Takeout';
