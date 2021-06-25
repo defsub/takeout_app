@@ -160,7 +160,7 @@ class PlayerWidget extends StatelessWidget {
   }
 
   Widget cover(MediaItem mediaItem) {
-    return mediaItem != null ? playerCover(mediaItem.artUri) : SizedBox();
+    return mediaItem != null ? playerCover(mediaItem.artUri.toString()) : SizedBox();
   }
 
   Widget _controls(List<MediaItem> queue, MediaItem mediaItem, bool playing) {
@@ -281,7 +281,7 @@ class _MediaTrackListWidget extends StatelessWidget {
             return Container(
                 child: Column(children: [
               ...mediaItems.map((t) => ListTile(
-                  leading: tileCover(t.artUri),
+                  leading: tileCover(t.artUri.toString()),
                   trailing: _cloudIcon(t),
                   selected: t == state.mediaItem,
                   onTap: () {

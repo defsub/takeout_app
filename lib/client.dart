@@ -183,7 +183,7 @@ class Client {
     try {
       final baseUrl = await getEndpoint();
       print('$baseUrl$uri');
-      final response = await http.get('$baseUrl$uri',
+      final response = await http.get(Uri.parse('$baseUrl$uri'),
           headers: {HttpHeaders.cookieHeader: '$cookieName=$cookie'});
       print('got ${response.statusCode}');
       if (response.statusCode != HttpStatus.ok) {
@@ -207,7 +207,7 @@ class Client {
     final baseUrl = await getEndpoint();
     print('$baseUrl$uri');
     return http
-        .post('$baseUrl$uri',
+        .post(Uri.parse('$baseUrl$uri'),
             headers: {
               HttpHeaders.contentTypeHeader: ContentType.json.toString()
             },
@@ -238,7 +238,7 @@ class Client {
         print('$baseUrl$uri');
         print(jsonEncode(json));
         http
-            .patch('$baseUrl$uri',
+            .patch(Uri.parse('$baseUrl$uri'),
                 headers: {
                   HttpHeaders.contentTypeHeader: 'application/json-patch+json',
                   HttpHeaders.cookieHeader: '$cookieName=$cookie',

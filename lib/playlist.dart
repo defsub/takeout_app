@@ -281,7 +281,7 @@ class MediaQueue {
       album: entry.album,
       title: entry.title,
       artist: entry.creator,
-      artUri: entry.image,
+      artUri: Uri.parse(entry.image),
       extras: {'headers': headers},
     );
   }
