@@ -51,7 +51,7 @@ class RadioState extends State<RadioWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder(
+    return StreamBuilder<List<DownloadEntry>>(
         stream: Downloads.downloadsSubject,
         builder: (context, snapshot) {
           List<DownloadEntry> entries = snapshot.data ?? [];
@@ -90,8 +90,6 @@ class RadioState extends State<RadioWidget> {
   }
 
   List<Station> _merge(List<Station> a, List<Station> b) {
-    a ??= [];
-    b ??= [];
     final list = a + b;
     list.sort((x, y) => x.name.compareTo(y.name));
     return list;
@@ -99,7 +97,7 @@ class RadioState extends State<RadioWidget> {
 
   Widget _stations(List<Station> stations) {
     return ListView.builder(
-        itemCount: stations?.length ?? 0,
+        itemCount: stations.length,
         itemBuilder: (context, index) {
           return StreamBuilder<ConnectivityResult>(
               stream: TakeoutState.connectivityStream.distinct(),
@@ -158,8 +156,8 @@ class RefreshSpiffWidget extends StatefulWidget {
 }
 
 class _RefreshSpiffState extends State<RefreshSpiffWidget> {
-  final Future<Spiff> Function() _fetchSpiff;
-  Spiff _spiff;
+  final Future<Spiff> Function()? _fetchSpiff;
+  Spiff? _spiff;
 
   _RefreshSpiffState(this._fetchSpiff);
 
@@ -173,7 +171,7 @@ class _RefreshSpiffState extends State<RefreshSpiffWidget> {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
-          title: header(_spiff?.playlist?.title ?? ''),
+          title: header(_spiff?.playlist.title ?? ''),
           actions: [
             popupMenu(context, [
               PopupItem.refresh((_) => _onRefresh()),
@@ -189,13 +187,13 @@ class _RefreshSpiffState extends State<RefreshSpiffWidget> {
                   return (_spiff == null)
                       ? Center(child: CircularProgressIndicator())
                       : SingleChildScrollView(
-                          child: StreamBuilder(
+                          child: StreamBuilder<Set<String>>(
                               stream: TrackCache.keysSubject,
                               builder: (context, snapshot) {
                                 final keys = snapshot.data ?? Set<String>();
                                 final isCached = _spiff != null
                                     ? TrackCache.checkAll(
-                                        keys, _spiff.playlist.tracks)
+                                        keys, _spiff!.playlist.tracks)
                                     : false;
                                 return Column(children: [
                                   Row(
@@ -223,24 +221,24 @@ class _RefreshSpiffState extends State<RefreshSpiffWidget> {
                                     ],
                                   ),
                                   Divider(),
-                                  SpiffTrackListView(_spiff),
+                                  SpiffTrackListView(_spiff!),
                                 ]);
                               }));
                 })));
   }
 
   void _onPlay() {
-    MediaQueue.playSpiff(_spiff);
+    MediaQueue.playSpiff(_spiff!);
     showPlayer();
   }
 
   void _onDownload() {
-    Downloads.downloadSpiff(_spiff);
+    Downloads.downloadSpiff(_spiff!);
   }
 
   Future<void> _onRefresh() async {
     try {
-      final result = await _fetchSpiff();
+      final result = await _fetchSpiff!();
       print('got $result');
       setState(() {
         _spiff = result;

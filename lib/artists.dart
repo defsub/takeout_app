@@ -37,8 +37,8 @@ import 'global.dart';
 
 class ArtistsWidget extends StatefulWidget {
   final ArtistsView _view;
-  final String genre;
-  final String area;
+  final String? genre;
+  final String? area;
 
   ArtistsWidget(this._view, {this.genre, this.area});
 
@@ -51,8 +51,8 @@ class ArtistsWidget extends StatefulWidget {
 
 class _ArtistsState extends State<ArtistsWidget> {
   ArtistsView _view;
-  String genre;
-  String area;
+  String? genre;
+  String? area;
 
   _ArtistsState(this._view, {this.genre, this.area});
 
@@ -63,7 +63,7 @@ class _ArtistsState extends State<ArtistsWidget> {
             title: genre != null
                 ? header('Artists \u2013 $genre')
                 : area != null
-                    ? header('Artists \u2013 $area')
+                    ? header('Artists! \u2013 $area')
                     : header('Artists'),
             actions: [
               popupMenu(context, [
@@ -94,14 +94,14 @@ class _ArtistsState extends State<ArtistsWidget> {
 }
 
 String _subtitle(Artist artist) {
-  final genre = ReCase(artist.genre).titleCase;
+  final genre = ReCase(artist.genre ?? '').titleCase;
 
   if (isNullOrEmpty(artist.date)) {
     // no date, return genre
     return genre;
   }
 
-  final y = year(artist.date);
+  final y = year(artist.date ?? '');
   if (y.isEmpty) {
     // parsed date empty, return genre
     return genre;
@@ -154,7 +154,7 @@ class ArtistWidget extends StatefulWidget {
 
 class _ArtistState extends State<ArtistWidget> with ArtistBuilder {
   final Artist _artist;
-  ArtistView _view;
+  late ArtistView _view;
 
   _ArtistState(this._artist);
 
@@ -244,7 +244,7 @@ class _ArtistState extends State<ArtistWidget> with ArtistBuilder {
 
   List<Widget> actions() {
     final artistUrl = 'https://musicbrainz.org/artist/${_artist.arid}';
-    final genre = ReCase(_artist.genre).titleCase;
+    final genre = ReCase(_artist.genre ?? '').titleCase;
     return <Widget>[
       popupMenu(context, [
         PopupItem.shuffle((_) => _onShuffle()),
@@ -253,8 +253,8 @@ class _ArtistState extends State<ArtistWidget> with ArtistBuilder {
         PopupItem.singles((_) => _onSingles(context)),
         PopupItem.popular((_) => _onPopular(context)),
         PopupItem.divider(),
-        PopupItem.genre(genre, (_) => _onGenre(context, _artist.genre)),
-        PopupItem.area(_artist.area, (_) => _onArea(context, _artist.area)),
+        if (_artist.genre != null) PopupItem.genre(genre, (_) => _onGenre(context, _artist.genre!)),
+        if (_artist.area != null) PopupItem.area(_artist.area!, (_) => _onArea(context, _artist.area!)),
         PopupItem.divider(),
         PopupItem.link('MusicBrainz Artist', (_) => launch(artistUrl)),
         PopupItem.divider(),
@@ -349,7 +349,7 @@ class _ArtistTrackListState extends State<ArtistTrackListWidget>
   final ArtistView _view;
   final Artist _artist;
   ArtistTrackType _type;
-  List<Track> _tracks;
+  List<Track> _tracks = const [];
 
   _ArtistTrackListState(this._view, this._artist, this._type);
 
@@ -406,23 +406,23 @@ class _ArtistTrackListState extends State<ArtistTrackListWidget>
         ? client.artistPopularPlaylist(_artist.id, ttl: Duration.zero)
         : _type == ArtistTrackType.singles
             ? client.artistSinglesPlaylist(_artist.id, ttl: Duration.zero)
-            : null;
+            : client.artistSinglesPlaylist(_artist.id, ttl: Duration.zero);
     return result;
   }
 
   void _onPlay() async {
     Future<Spiff> result = _playlist();
-    result?.then((spiff) => MediaQueue.playSpiff(spiff));
+    result.then((spiff) => MediaQueue.playSpiff(spiff));
   }
 
   void _onDownload() async {
     Future<Spiff> result = _playlist();
-    result?.then((spiff) => Downloads.downloadSpiff(spiff));
+    result.then((spiff) => Downloads.downloadSpiff(spiff));
   }
 
   void _onTrack(int index) {
     Future<Spiff> result = _playlist();
-    result?.then((spiff) => MediaQueue.playSpiff(spiff, index: index));
+    result.then((spiff) => MediaQueue.playSpiff(spiff, index: index));
   }
 
   ArtistView get view => _view;
@@ -453,8 +453,7 @@ class _ArtistTrackListState extends State<ArtistTrackListWidget>
       SliverToBoxAdapter(
           child: heading(
               _type == ArtistTrackType.singles ? 'Singles' : 'Popular')),
-      if (_tracks != null)
-        SliverToBoxAdapter(child: Column(children: _trackList())),
+      SliverToBoxAdapter(child: Column(children: _trackList())),
     ];
   }
 
@@ -474,7 +473,7 @@ class _ArtistTrackListState extends State<ArtistTrackListWidget>
 }
 
 mixin ArtistBuilder {
-  ArtistView get view;
+  ArtistView? get view;
 
   Future<void> onRefresh();
 
@@ -490,25 +489,25 @@ mixin ArtistBuilder {
 
   String _randomCover() {
     if (view == null) {
-      return null;
+      return '';
     }
-    for (var i = 0; i < view.releases.length; i++) {
-      final pick = _random.nextInt(view.releases.length);
-      if (isNotNullOrEmpty(view.releases[pick].image)) {
-        return view.releases[pick].image;
+    for (var i = 0; i < view!.releases.length; i++) {
+      final pick = _random.nextInt(view!.releases.length);
+      if (isNotNullOrEmpty(view!.releases[pick].image)) {
+        return view!.releases[pick].image;
       }
     }
-    for (var i = 0; i < view.releases.length; i++) {
-      if (isNotNullOrEmpty(view.releases[i].image)) {
-        return view.releases[i].image;
+    for (var i = 0; i < view!.releases.length; i++) {
+      if (isNotNullOrEmpty(view!.releases[i].image)) {
+        return view!.releases[i].image;
       }
     }
-    return null;
+    return '';
   }
 
   Widget _albumArtwork() {
     String url = _randomCover();
-    return url != null ? releaseSmallCover(url) : Icon(Icons.people);
+    return isNotNullOrEmpty(url) ? releaseSmallCover(url) : Icon(Icons.people);
   }
 
   Widget build(BuildContext context) {
@@ -520,8 +519,8 @@ mixin ArtistBuilder {
           final useBackground = false;
           final artistArtworkUrl = view != null
               ? useBackground
-                  ? view.background
-                  : view.image
+                  ? view!.background
+                  : view!.image
               : null;
 
           bool allowArtwork = view != null &&
@@ -529,9 +528,9 @@ mixin ArtistBuilder {
               TakeoutState.allowArtistArtwork(connectivity);
 
           final artworkImage = allowArtwork && useBackground
-              ? artistBackground(artistArtworkUrl)
+              ? artistBackground(artistArtworkUrl!)
               : allowArtwork
-                  ? artistImage(artistArtworkUrl)
+                  ? artistImage(artistArtworkUrl!)
                   : _albumArtwork();
 
           // artist backgrounds are 1920x1080, expand keeping aspect ratio
@@ -541,12 +540,12 @@ mixin ArtistBuilder {
           final expandedHeight =
               useBackground ? 1080.0 / 1920.0 * screen.width : screen.width;
 
-          return FutureBuilder(
+          return FutureBuilder<Color>(
               future: allowArtwork
                   ? getImageBackgroundColor(artistArtworkUrl)
                   : Future.value(),
               builder: (context, snapshot) => Scaffold(
-                  backgroundColor: snapshot?.data,
+                  backgroundColor: snapshot.data ?? null,
                   body: RefreshIndicator(
                       onRefresh: () => onRefresh(),
                       child: view == null
@@ -588,7 +587,7 @@ mixin ArtistBuilder {
                                   child: Container(
                                       padding: EdgeInsets.fromLTRB(0, 16, 0, 0),
                                       child: Column(children: [
-                                        Text(view.artist.name,
+                                        Text(view!.artist.name,
                                             style: Theme.of(context)
                                                 .textTheme
                                                 .headline5)

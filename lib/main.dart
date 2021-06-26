@@ -78,7 +78,7 @@ class MyApp extends StatelessWidget {
       outlinedButtonTheme: OutlinedButtonThemeData(
           style: OutlinedButton.styleFrom(primary: Colors.orangeAccent)),
       textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(primary: base.textTheme.bodyText1.color),
+        style: TextButton.styleFrom(primary: base.textTheme.bodyText1!.color),
       ),
       indicatorColor: Colors.orangeAccent,
     );
@@ -86,7 +86,7 @@ class MyApp extends StatelessWidget {
 }
 
 class _TakeoutWidget extends StatefulWidget {
-  _TakeoutWidget({Key key}) : super(key: key);
+  _TakeoutWidget({Key? key}) : super(key: key);
 
   @override
   TakeoutState createState() => TakeoutState();
@@ -97,7 +97,7 @@ class TakeoutState extends State<_TakeoutWidget> {
 
   static Stream<bool> get loginStream => _loginStream.stream;
 
-  static bool get isLoggedIn => _loginStream.value;
+  static bool get isLoggedIn => _loginStream.value ?? false;
 
   static void logout() async {
     await Client().logout();
@@ -106,25 +106,25 @@ class TakeoutState extends State<_TakeoutWidget> {
 
   static void login() => _loginStream.add(true);
 
-  StreamSubscription<bool> _loginSubscription;
-  bool _loggedIn;
+  StreamSubscription<bool>? _loginSubscription;
+  bool? _loggedIn;
 
   static final _connectivityStream = BehaviorSubject<ConnectivityResult>();
 
   static Stream<ConnectivityResult> get connectivityStream =>
       _connectivityStream.stream;
 
-  static ConnectivityResult get connectivityState => _connectivityStream.value;
+  // static ConnectivityResult get connectivityState => _connectivityStream.value;
 
   final Connectivity _connectivity = Connectivity();
-  StreamSubscription<ConnectivityResult> _connectivitySubscription;
+  StreamSubscription<ConnectivityResult>? _connectivitySubscription;
 
-  PlaybackState _playbackState;
+  PlaybackState? _playbackState;
   int _selectedIndex = 0;
-  HomeView _homeView;
-  ArtistsView _artistsView;
-  RadioView _radioView;
-  PlayerWidget _playerWidget;
+  HomeView? _homeView;
+  ArtistsView? _artistsView;
+  RadioView? _radioView;
+  PlayerWidget? _playerWidget;
 
   @override
   void initState() {
@@ -143,24 +143,24 @@ class TakeoutState extends State<_TakeoutWidget> {
   void dispose() {
     super.dispose();
     snackBarStateSubject.close();
-    _connectivitySubscription.cancel();
-    _loginSubscription.cancel();
+    _connectivitySubscription?.cancel();
+    _loginSubscription?.cancel();
   }
 
-  static bool _allowOrWifi(String key, ConnectivityResult result) {
+  static bool _allowOrWifi(String key, ConnectivityResult? result) {
     final allow = Settings.getValue(key, false);
     return allow || result == ConnectivityResult.wifi;
   }
 
-  static bool allowStreaming(ConnectivityResult result) {
+  static bool allowStreaming(ConnectivityResult? result) {
     return _allowOrWifi(settingAllowStreaming, result);
   }
 
-  static bool allowDownload(ConnectivityResult result) {
+  static bool allowDownload(ConnectivityResult? result) {
     return _allowOrWifi(settingAllowDownload, result);
   }
 
-  static bool allowArtistArtwork(ConnectivityResult result) {
+  static bool allowArtistArtwork(ConnectivityResult? result) {
     return _allowOrWifi(settingAllowArtistArtwork, result);
   }
 
@@ -170,6 +170,7 @@ class TakeoutState extends State<_TakeoutWidget> {
       result = await _connectivity.checkConnectivity();
     } catch (e) {
       print(e.toString());
+      return Future.value(null);
     }
 
     if (!mounted) {
@@ -196,7 +197,7 @@ class TakeoutState extends State<_TakeoutWidget> {
   void _onLogin(bool loggedIn) {
     setState(() {
       _loggedIn = loggedIn;
-      if (_loggedIn) {
+      if (_loggedIn!) {
         _load();
       }
     });
@@ -248,10 +249,8 @@ class TakeoutState extends State<_TakeoutWidget> {
         _onRadioUpdated(view);
       });
       await MediaQueue.sync();
-      if (AudioService.playbackState != null) {
-        if (!AudioService.playbackState.playing) {
+      if (!AudioService.playbackState.playing) {
           MediaQueue.restore();
-        }
       }
     } on ClientException catch (e) {
       if (e.authenticationFailed) {
@@ -262,9 +261,6 @@ class TakeoutState extends State<_TakeoutWidget> {
     }
 
     AudioService.playbackStateStream.distinct().listen((state) {
-      if (state == null) {
-        return;
-      }
       _onPlaybackState(state);
     });
   }
@@ -274,17 +270,17 @@ class TakeoutState extends State<_TakeoutWidget> {
       case 0:
         return _homeView == null
             ? Center(child: CircularProgressIndicator())
-            : HomeWidget(_homeView);
+            : HomeWidget(_homeView!);
       case 1:
         return _artistsView == null
             ? Center(child: CircularProgressIndicator())
-            : ArtistsWidget(_artistsView);
+            : ArtistsWidget(_artistsView!);
       case 2:
         return SearchWidget();
       case 3:
         return _radioView == null
             ? Center(child: CircularProgressIndicator())
-            : RadioWidget(_radioView);
+            : RadioWidget(_radioView!);
       case 4:
         if (_playerWidget == null) {
           _playerWidget = PlayerWidget();
@@ -292,19 +288,17 @@ class TakeoutState extends State<_TakeoutWidget> {
         if (AudioService.running == false) {
           PlayerWidget.doStart({});
         }
-        return _playerWidget;
+        return _playerWidget!;
       default:
         return Text('widget $index');
     }
   }
 
-  StreamSubscription<SnackBarState> snackBarSubscription;
+  StreamSubscription<SnackBarState>? snackBarSubscription;
 
   @override
   Widget build(BuildContext context) {
-    if (snackBarSubscription != null) {
-      snackBarSubscription.cancel();
-    }
+    snackBarSubscription?.cancel();
     snackBarSubscription = snackBarStateSubject.listen((e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: e.content));
     });
@@ -312,7 +306,7 @@ class TakeoutState extends State<_TakeoutWidget> {
     return WillPopScope(
         onWillPop: () async {
           final isFirstRouteInCurrentTab =
-              !await navigatorKeys[_selectedIndex].currentState.maybePop();
+              !await navigatorKeys[_selectedIndex].currentState!.maybePop();
 
           print('isFirstRouteInCurrentTab: ' +
               isFirstRouteInCurrentTab.toString());
@@ -327,18 +321,18 @@ class TakeoutState extends State<_TakeoutWidget> {
                 : Scaffold(
                     key: _scaffoldMessengerKey,
                     floatingActionButton: (_playbackState != null &&
-                            _playbackState.processingState ==
+                            _playbackState!.processingState ==
                                 AudioProcessingState.ready &&
                             _selectedIndex != 4)
                         ? FloatingActionButton(
                             onPressed: () {
-                              if (_playbackState.playing) {
+                              if (_playbackState!.playing) {
                                 AudioService.pause();
                               } else {
                                 AudioService.play();
                               }
                             },
-                            child: (_playbackState.playing)
+                            child: (_playbackState!.playing)
                                 ? Icon(Icons.pause)
                                 : Icon(Icons.play_arrow),
                           )
@@ -409,12 +403,12 @@ class TakeoutState extends State<_TakeoutWidget> {
           key: navigatorKeys[index],
           onGenerateRoute: (routeSettings) => MaterialPageRoute(
                 builder: (context) =>
-                    routeBuilders[routeSettings.name](context),
+                    routeBuilders[routeSettings.name]!(context),
               )),
     );
   }
 
-  RectTween _createRectTween(Rect begin, Rect end) {
+  RectTween _createRectTween(Rect? begin, Rect? end) {
     return MaterialRectArcTween(begin: begin, end: end);
   }
 }
@@ -427,7 +421,7 @@ Widget allowStreamingIconButton(Icon icon, void Function() onPressed) {
         return IconButton(
             icon: icon,
             onPressed:
-                TakeoutState.allowStreaming(result) ? () => onPressed() : null);
+                TakeoutState.allowStreaming(result!) ? () => onPressed() : null);
       });
 }
 
@@ -439,6 +433,6 @@ Widget allowDownloadIconButton(Icon icon, void Function() onPressed) {
         return IconButton(
             icon: icon,
             onPressed:
-                TakeoutState.allowDownload(result) ? () => onPressed() : null);
+                TakeoutState.allowDownload(result!) ? () => onPressed() : null);
       });
 }

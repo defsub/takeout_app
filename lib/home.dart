@@ -78,7 +78,7 @@ class HomeState extends State<HomeWidget> {
 class _HomeItem {
   MusicAlbum album;
   Widget Function() onTap;
-  String _key;
+  String? _key;
 
   _HomeItem(this.album, this.onTap);
 
@@ -88,7 +88,7 @@ class _HomeItem {
 
   Widget downloadIcon(
       DownloadEntry download, IconData completeIcon, IconData downloadingIcon) {
-    return StreamBuilder(
+    return StreamBuilder<Set<String>>(
         stream: TrackCache.keysSubject,
         builder: (context, snapshot) {
           final keys = snapshot.data ?? Set<String>();
@@ -102,7 +102,7 @@ class _HomeItem {
   Widget get trailing {
     if (album.year > 1) return Text('${album.year}');
     if (album is DownloadEntry) {
-      return downloadIcon(album, Icons.cloud_done_outlined, Icons.cloud_download_outlined);
+      return downloadIcon(album as DownloadEntry, Icons.cloud_done_outlined, Icons.cloud_download_outlined);
     }
     return Text('');
   }
@@ -111,7 +111,7 @@ class _HomeItem {
     if (_key == null) {
       _key = "$title/$subtitle";
     }
-    return _key;
+    return _key!;
   }
 
   Widget image() {
@@ -214,7 +214,7 @@ class _HomeGrid extends StatelessWidget {
           ]),
         ],
       ),
-      StreamBuilder(
+      StreamBuilder<List<DownloadEntry>>(
           stream: Downloads.downloadsSubject,
           builder: (context, snapshot) {
             final List<DownloadEntry> entries = snapshot.data ?? [];

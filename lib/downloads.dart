@@ -31,7 +31,6 @@ import 'spiff.dart';
 import 'cache.dart';
 import 'cover.dart';
 import 'global.dart';
-import 'style.dart';
 import 'menu.dart';
 import 'model.dart';
 import 'util.dart';
@@ -41,7 +40,7 @@ Random _random = Random();
 
 String _spiffCover(Spiff spiff) {
   if (isNotNullOrEmpty(spiff.playlist.image)) {
-    return spiff.playlist.image;
+    return spiff.playlist.image!;
   }
   for (var i = 0; i < spiff.playlist.tracks.length; i++) {
     final pick = _random.nextInt(spiff.playlist.tracks.length);
@@ -95,7 +94,7 @@ class DownloadsWidget extends StatelessWidget {
   }
 
   void _onDeleteConfirmed() {
-    Downloads.downloadsSubject.value.forEach((entry) {
+    Downloads.downloadsSubject.value?.forEach((entry) {
       _deleteSpiff(entry.spiff);
     });
     Downloads.reload();
@@ -105,7 +104,7 @@ class DownloadsWidget extends StatelessWidget {
 class DownloadListWidget extends StatefulWidget {
   final int limit;
   final DownloadSortType sortType;
-  final List<DownloadEntry> Function(List<DownloadEntry>) filter;
+  final List<DownloadEntry> Function(List<DownloadEntry>)? filter;
 
   DownloadListWidget(
       {this.sortType = DownloadSortType.name, this.limit = -1, this.filter});
@@ -137,7 +136,7 @@ void downloadsSort(DownloadSortType sortType, List<DownloadEntry> entries) {
 class DownloadListState extends State<DownloadListWidget> {
   int _limit;
   DownloadSortType _sortType;
-  final List<DownloadEntry> Function(List<DownloadEntry>) _filter;
+  final List<DownloadEntry> Function(List<DownloadEntry>)? _filter;
 
   DownloadListState(this._sortType, this._limit, this._filter);
 
@@ -149,12 +148,12 @@ class DownloadListState extends State<DownloadListWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder(
+    return StreamBuilder<List<DownloadEntry>>(
         stream: Downloads.downloadsSubject,
         builder: (context, snapshot) {
           List<DownloadEntry> entries = snapshot.data ?? [];
           if (_filter != null) {
-            entries = _filter(entries);
+            entries = _filter!(entries);
           }
           downloadsSort(_sortType, entries);
           return Column(children: [
@@ -185,8 +184,8 @@ class DownloadListState extends State<DownloadListWidget> {
 }
 
 class DownloadWidget extends StatefulWidget {
-  final Spiff spiff;
-  final Future<Spiff> Function() fetch;
+  final Spiff? spiff;
+  final Future<Spiff> Function()? fetch;
 
   DownloadWidget({this.spiff, this.fetch});
 
@@ -195,9 +194,9 @@ class DownloadWidget extends StatefulWidget {
 }
 
 class DownloadState extends State<DownloadWidget> {
-  Spiff spiff;
-  Future<Spiff> Function() fetch;
-  String _coverUrl;
+  Spiff? spiff;
+  Future<Spiff> Function()? fetch;
+  String? _coverUrl;
 
   DownloadState({this.spiff, this.fetch});
 
@@ -205,9 +204,8 @@ class DownloadState extends State<DownloadWidget> {
   void initState() {
     super.initState();
     if (spiff != null) {
-      _coverUrl = _spiffCover(spiff);
+      _coverUrl = _spiffCover(spiff!);
     }
-    print('fetch is $fetch');
     if (fetch != null) {
       _onRefresh();
     }
@@ -215,10 +213,10 @@ class DownloadState extends State<DownloadWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder(
+    return FutureBuilder<Color>(
         future: getImageBackgroundColor(_coverUrl),
         builder: (context, snapshot) => Scaffold(
-            backgroundColor: snapshot?.data,
+            backgroundColor: snapshot.data ?? null,
             // appBar: AppBar(
             //     title: header(spiff.playlist.title),
             //     backgroundColor: snapshot?.data),
@@ -231,7 +229,7 @@ class DownloadState extends State<DownloadWidget> {
   }
 
   Widget body() {
-    return StreamBuilder(
+    return StreamBuilder<Set<String>>(
         stream: TrackCache.keysSubject,
         builder: (context, snapshot) {
           // cover images are 250x250 (or 500x500)
@@ -239,8 +237,8 @@ class DownloadState extends State<DownloadWidget> {
           final screen = MediaQuery.of(context).size;
           final expandedHeight = screen.height / 2;
           final keys = snapshot.data ?? Set<String>();
-          final isCached = TrackCache.checkAll(keys, spiff.playlist.tracks);
-          bool isRadio = spiff.playlist.creator == 'Radio';
+          final isCached = TrackCache.checkAll(keys, spiff!.playlist.tracks);
+          bool isRadio = spiff!.playlist.creator == 'Radio';
           return CustomScrollView(slivers: [
             SliverAppBar(
               expandedHeight: expandedHeight,
@@ -259,7 +257,7 @@ class DownloadState extends State<DownloadWidget> {
                     StretchMode.fadeTitle
                   ],
                   background: Stack(fit: StackFit.expand, children: [
-                    spiffCover(_coverUrl),
+                    spiffCover(_coverUrl!),
                     const DecoratedBox(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
@@ -287,7 +285,7 @@ class DownloadState extends State<DownloadWidget> {
                       _title(context),
                       _subtitle(context, isRadio),
                     ]))),
-            SliverToBoxAdapter(child: SpiffTrackListView(spiff)),
+            SliverToBoxAdapter(child: SpiffTrackListView(spiff!)),
           ]);
         });
   }
@@ -297,27 +295,28 @@ class DownloadState extends State<DownloadWidget> {
   }
 
   Widget _title(BuildContext context) {
-    return Text(spiff.playlist.title,
+    return Text(spiff!.playlist.title,
         style: Theme.of(context).textTheme.headline5);
   }
 
   Widget _subtitle(BuildContext context, bool isRadio) {
-    final text = '${spiff.playlist.creator} \u2022 ${storage(spiff.size)}';
+    final text = '${spiff!.playlist.creator} \u2022 ${storage(spiff!.size)}';
     return Text(text,
         style: Theme.of(context)
             .textTheme
-            .subtitle1
+            .subtitle1!
             .copyWith(color: Colors.white60));
   }
 
   Future<void> _onRefresh() async {
-    if (fetch != null) {
+    Future<Spiff> Function()? fetcher = fetch;
+    if (fetcher != null) {
       try {
-        final result = await fetch();
+        final result = await fetcher();
         print('got $result');
         setState(() {
           spiff = result;
-          _coverUrl = _spiffCover(spiff);
+          _coverUrl = _spiffCover(spiff!);
         });
       } catch (error) {
         print('refresh err $error');
@@ -351,18 +350,18 @@ class DownloadState extends State<DownloadWidget> {
   void _onDownloadCheck() {
     // TODO this assumes that fetch-able will always download a new spiff
     if (fetch != null) {
-      Downloads.downloadSpiff(spiff);
+      Downloads.downloadSpiff(spiff!);
     } else {
-      Downloads.downloadSpiffTracks(spiff);
+      Downloads.downloadSpiffTracks(spiff!);
     }
   }
 
-  void _onArtist(BuildContext context) {
-    showArtist(spiff.playlist.creator);
-  }
+  // void _onArtist(BuildContext context) {
+  //   showArtist(spiff!.playlist.creator!);
+  // }
 
   void _onPlay() {
-    MediaQueue.playSpiff(spiff);
+    MediaQueue.playSpiff(spiff!);
     showPlayer();
   }
 
@@ -371,8 +370,8 @@ class DownloadState extends State<DownloadWidget> {
         context: context,
         builder: (ctx) {
           return AlertDialog(
-            title: Text('Really delete ${spiff.playlist.title}?'),
-            content: Text('This will free ${storage(spiff.size)} of space.'),
+            title: Text('Really delete ${spiff!.playlist.title}?'),
+            content: Text('This will free ${storage(spiff!.size)} of space.'),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
@@ -392,7 +391,7 @@ class DownloadState extends State<DownloadWidget> {
   }
 
   Future<void> _onDeleteConfirmed() async {
-    await _deleteSpiff(spiff);
+    await _deleteSpiff(spiff!);
     Downloads.reload();
   }
 }
@@ -408,7 +407,7 @@ Future<void> _deleteSpiff(Spiff spiff) async {
     }
   });
 
-  final uri = Uri.parse(spiff.playlist.location);
+  final uri = Uri.parse(spiff.playlist.location!);
   final file = File.fromUri(uri);
   print('delete $file');
   file.delete();
@@ -425,7 +424,7 @@ class SpiffTrackListView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder(
+    return StreamBuilder<Set<String>>(
         stream: TrackCache.keysSubject,
         builder: (context, snapshot) {
           final keys = snapshot.data ?? Set<String>();
@@ -450,7 +449,7 @@ class Downloads {
   static const _dir = 'downloads';
 
   static String _downloadFileName(Spiff spiff) {
-    var title = spiff.playlist.title ?? 'download';
+    var title = spiff.playlist.title;
     title = title.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
     var creator = spiff.playlist.creator ?? 'playlist';
     creator = creator.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
@@ -509,8 +508,12 @@ class Downloads {
           } catch (e) {
             completer.completeError(e);
           }
-        }).catchError(((error) => completer.completeError(error)));
-      }).catchError((error) => completer.completeError(error));
+        }).catchError(((error) {
+          completer.completeError(error);
+        }));
+      }).catchError((error) {
+        completer.completeError(error);
+      });
     });
     return completer.future;
   }
@@ -574,9 +577,9 @@ class Downloads {
     final completer = Completer();
     final dir = await checkAppDir(_dir);
     final list = await dir.list().toList();
-    await Future.forEach(list, (file) async {
+    await Future.forEach<FileSystemEntity>(list, (file) async {
       if (file.path.endsWith('.json')) {
-        final spiff = await Spiff.fromFile(file);
+        final spiff = await Spiff.fromFile(file as File);
         _add(DownloadEntry.create(file, spiff));
       }
     }).whenComplete(() {
@@ -616,7 +619,7 @@ class DownloadEntry implements MusicAlbum {
   String get album => spiff.playlist.title;
 
   @override
-  String get creator => spiff.playlist.creator;
+  String get creator => spiff.playlist.creator!;
 
   @override
   String get image => _spiffCover(spiff);

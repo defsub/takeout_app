@@ -35,15 +35,15 @@ extension TakeoutMediaItem on MediaItem {
 /// This task defines logic for playing a list of podcast episodes.
 class AudioPlayerTask extends BackgroundAudioTask {
   AudioPlayer _player = new AudioPlayer();
-  AudioProcessingState _skipState;
-  StreamSubscription<PlaybackEvent> _eventSubscription;
+  AudioProcessingState? _skipState;
+  StreamSubscription<PlaybackEvent>? _eventSubscription;
 
-  MediaState _state;
+  MediaState? _state;
 
   int get index => _player.currentIndex;
 
   MediaItem get mediaItem => index == null ? null : _state.current;
-  ConcatenatingAudioSource _playlist;
+  ConcatenatingAudioSource? _playlist;
 
   @override
   Future<dynamic> onCustomAction(String name, dynamic arguments) {

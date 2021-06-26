@@ -18,8 +18,9 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:palette_generator/palette_generator.dart';
+import 'package:takeout_app/util.dart';
 
-dynamic radiusCover(String url, {double width, double height, BoxFit fit}) {
+dynamic radiusCover(String? url, {double? width, double? height, BoxFit? fit}) {
   if (url == null) {
     return null;
   }
@@ -28,10 +29,7 @@ dynamic radiusCover(String url, {double width, double height, BoxFit fit}) {
       child: cachedImage(url, width: width, height: height, fit: fit));
 }
 
-dynamic cachedImage(String url, {double width, double height, BoxFit fit}) {
-  if (url == null) {
-    return null;
-  }
+dynamic cachedImage(String url, {double? width, double? height, BoxFit? fit}) {
   return CachedNetworkImage(
     imageUrl: url,
     width: width,
@@ -44,7 +42,7 @@ dynamic cachedImage(String url, {double width, double height, BoxFit fit}) {
 }
 
 dynamic tileCover(String url) {
-  return url == null ? Icon(Icons.album_sharp, size: 40) : radiusCover(url);
+  return isNullOrEmpty(url) ? Icon(Icons.album_sharp, size: 40) : radiusCover(url);
 }
 
 dynamic artistImage(String url) {
@@ -61,7 +59,7 @@ dynamic releaseLargeCover(String url) {
 }
 
 dynamic releaseSmallCover(String url) {
-  if (url == null) {
+  if (isNullOrEmpty(url)) {
     return Icon(Icons.album_sharp, size: 40);
   }
   return _hero(
@@ -74,7 +72,7 @@ dynamic spiffCover(String url) {
 }
 
 dynamic gridCover(String url) {
-  if (url == null) {
+  if (isNullOrEmpty(url)) {
     return Icon(Icons.album_sharp, size: 40);
   }
   return _hero(
@@ -86,7 +84,7 @@ dynamic playerCover(String url) {
 }
 
 dynamic _hero(dynamic cover, String tag) {
-  return tag != null ? Hero(tag: tag, child: cover) : cover;
+  return isNotNullOrEmpty(tag) ? Hero(tag: tag, child: cover) : cover;
 }
 
 final _colorCache = Map<String, Color>();
@@ -98,9 +96,9 @@ Future<Color> getImageBackgroundColor(url) async {
   }
   final paletteGenerator =
       await PaletteGenerator.fromImageProvider(CachedNetworkImageProvider(url));
-  color = paletteGenerator?.darkVibrantColor?.color ??
-      paletteGenerator?.darkMutedColor?.color;
-  _colorCache[url] = color;
+  color = paletteGenerator.darkVibrantColor?.color ??
+      paletteGenerator.darkMutedColor?.color;
+  _colorCache[url] = color!;
   return color;
 }
 
