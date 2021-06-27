@@ -216,7 +216,7 @@ class DownloadState extends State<DownloadWidget> {
     return FutureBuilder<Color>(
         future: getImageBackgroundColor(_coverUrl),
         builder: (context, snapshot) => Scaffold(
-            backgroundColor: snapshot.data ?? null,
+            backgroundColor: snapshot.data,
             // appBar: AppBar(
             //     title: header(spiff.playlist.title),
             //     backgroundColor: snapshot?.data),

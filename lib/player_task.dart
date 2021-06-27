@@ -40,17 +40,18 @@ class AudioPlayerTask extends BackgroundAudioTask {
 
   MediaState? _state;
 
-  int get index => _player.currentIndex;
+  int? get index => _player.currentIndex;
 
-  MediaItem get mediaItem => index == null ? null : _state.current;
+  MediaItem? get mediaItem => index == null ? null : _state?.current;
   ConcatenatingAudioSource? _playlist;
+
+  MediaState? get currentState => _state;
 
   @override
   Future<dynamic> onCustomAction(String name, dynamic arguments) {
     if (name == 'stage') {
       _loadPlaylist();
-    }
-    else if (name == 'doit') {
+    } else if (name == 'doit') {
       _loadPlaylist();
       if (!_player.playing) {
         _player.play();
@@ -84,30 +85,34 @@ class AudioPlayerTask extends BackgroundAudioTask {
 
     // canAppend = true;
 
+    await AudioServiceBackground.setQueue(newState.queue);
+    await AudioServiceBackground.setMediaItem(newState.current);
     _state = newState;
-    await AudioServiceBackground.setQueue(_state.queue);
-    await AudioServiceBackground.setMediaItem(_state.current);
 
     if (oldState != null && canAppend) {
       // append only
       for (var i = oldState.length; i < newState.length; i++) {
         final item = newState.item(i);
-        await _playlist.insert(
-            i,
-            AudioSource.uri(Uri.parse(item.id),
-                headers: item.isLocalFile() ? null : item.extras['headers']));
+        if (item != null) {
+          await _playlist?.insert(
+              i,
+              AudioSource.uri(Uri.parse(item.id),
+                  headers:
+                      item.isLocalFile() ? null : item.extras?['headers']));
+        }
       }
     } else {
       // new playlist
       final wasPlaying = _player.playing;
       //await _player.pause();
-      _playlist = ConcatenatingAudioSource(
+      final source = ConcatenatingAudioSource(
           children: newState.queue
               .map((item) => AudioSource.uri(Uri.parse(item.id),
-                  headers: item.isLocalFile() ? null : item.extras['headers']))
+                  headers: item.isLocalFile() ? null : item.extras?['headers']))
               .toList());
+      _playlist = source;
       print('player index ${newState.index} pos ${newState.position.toInt()}');
-      await _player.setAudioSource(_playlist,
+      await _player.setAudioSource(source,
           preload: false,
           initialPosition: Duration(seconds: newState.position.toInt()),
           initialIndex: newState.index);
@@ -118,7 +123,7 @@ class AudioPlayerTask extends BackgroundAudioTask {
   }
 
   @override
-  Future<void> onStart(Map<String, dynamic> params) async {
+  Future<void> onStart(Map<String, dynamic>? params) async {
     // We configure the audio session for speech since we're playing a podcast.
     // You can also put this in your app's initialisation if your app doesn't
     // switch between two types of audio as this example does.
@@ -136,8 +141,11 @@ class AudioPlayerTask extends BackgroundAudioTask {
         return;
       }
       // duration is known now
-      _state.current = _state.current.copyWith(duration: duration);
-      AudioServiceBackground.setMediaItem(_state.current);
+      final state = currentState;
+      if (state != null) {
+        state.current = state.current.copyWith(duration: duration);
+        AudioServiceBackground.setMediaItem(state.current);
+      }
     });
 
     // Propagate all events from the audio player to AudioService clients.
@@ -154,7 +162,7 @@ class AudioPlayerTask extends BackgroundAudioTask {
       switch (state) {
         case ProcessingState.completed:
           print("update completed");
-          _state.update(0, 0);
+          currentState?.update(0, 0);
           break;
         case ProcessingState.ready:
           // If we just came from skipping between tracks, clear the skip
@@ -169,8 +177,14 @@ class AudioPlayerTask extends BackgroundAudioTask {
 
   void _mediaIndexChanged(int index) {
     print('update index changed $index');
-    _state.update(index, _player.position.inSeconds.toDouble());
-    AudioServiceBackground.setMediaItem(_state.item(index));
+    final state = currentState;
+    if (state != null) {
+      final item = state.item(index);
+      if (item != null) {
+        state.update(index, _player.position.inSeconds.toDouble());
+        AudioServiceBackground.setMediaItem(item);
+      }
+    }
   }
 
   @override
@@ -184,24 +198,33 @@ class AudioPlayerTask extends BackgroundAudioTask {
 
     // Then default implementations of onSkipToNext and onSkipToPrevious will
     // delegate to this method.
-    var newIndex = _state.findId(mediaId);
-    if (newIndex == -1)
-      return
-          // During a skip, the player may enter the buffering state. We could just
-          // propagate that state directly to AudioService clients but AudioService
-          // has some more specific states we could use for skipping to next and
-          // previous. This variable holds the preferred state to send instead of
-          // buffering during a skip, and it is cleared as soon as the player exits
-          // buffering (see the listener in onStart).
-          _skipState = newIndex > index
-              ? AudioProcessingState.skippingToNext
-              : AudioProcessingState.skippingToPrevious;
+    final state = currentState;
+    if (state == null) {
+      return;
+    }
+    var newIndex = state.findId(mediaId);
+    if (newIndex == -1) {
+      final currentIndex = index;
+      if (currentIndex == null) {
+        return;
+      }
+      // During a skip, the player may enter the buffering state. We could just
+      // propagate that state directly to AudioService clients but AudioService
+      // has some more specific states we could use for skipping to next and
+      // previous. This variable holds the preferred state to send instead of
+      // buffering during a skip, and it is cleared as soon as the player exits
+      // buffering (see the listener in onStart).
+      _skipState = newIndex > currentIndex
+          ? AudioProcessingState.skippingToNext
+          : AudioProcessingState.skippingToPrevious;
+      return;
+    }
 
-    if (newIndex == _state.index - 1) {
+    if (newIndex == state.index - 1) {
       // skipping to previous
       if (_player.position.inSeconds > 10) {
         // skip to beginning before going to previous
-        newIndex = _state.index;
+        newIndex = state.index;
       }
     }
 
@@ -211,17 +234,17 @@ class AudioPlayerTask extends BackgroundAudioTask {
 
   @override
   Future<void> onPlayMediaItem(MediaItem item) async {
-    int index = _state.findItem(item);
-    if (index != -1) {
+    int? index = currentState?.findItem(item);
+    if (index != null && index != -1) {
       _player.seek(Duration.zero, index: index);
     }
   }
 
   @override
   Future<void> onRemoveQueueItem(MediaItem item) {
-    int index = _state.findItem(item);
-    if (index != -1) {
-      return _playlist.removeAt(index);
+    int? index = currentState?.findItem(item);
+    if (index != null && index != -1) {
+      return _playlist!.removeAt(index);
     }
     return Future.value();
   }
@@ -244,7 +267,7 @@ class AudioPlayerTask extends BackgroundAudioTask {
   @override
   Future<void> onStop() async {
     await _player.dispose();
-    _eventSubscription.cancel();
+    _eventSubscription?.cancel();
     // It is important to wait for this state to be broadcast before we shut
     // down the task. If we don't, the background task will be destroyed before
     // the message gets sent to the UI.
@@ -258,7 +281,10 @@ class AudioPlayerTask extends BackgroundAudioTask {
     var newPosition = _player.position + offset;
     // Make sure we don't jump out of bounds.
     if (newPosition < Duration.zero) newPosition = Duration.zero;
-    if (newPosition > mediaItem.duration) newPosition = mediaItem.duration;
+    final duration = mediaItem?.duration;
+    if (duration != null) {
+      if (newPosition > duration) newPosition = duration;
+    }
     // Perform the jump via a seek.
     await _player.seek(newPosition);
   }
@@ -289,7 +315,8 @@ class AudioPlayerTask extends BackgroundAudioTask {
   /// Maps just_audio's processing state into into audio_service's playing
   /// state. If we are in the middle of a skip, we use [_skipState] instead.
   AudioProcessingState _getProcessingState() {
-    if (_skipState != null) return _skipState;
+    final skipState = _skipState;
+    if (skipState != null) return skipState;
     switch (_player.processingState) {
       case ProcessingState.idle:
         return AudioProcessingState.stopped;

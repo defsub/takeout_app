@@ -545,7 +545,7 @@ mixin ArtistBuilder {
                   ? getImageBackgroundColor(artistArtworkUrl)
                   : Future.value(),
               builder: (context, snapshot) => Scaffold(
-                  backgroundColor: snapshot.data ?? null,
+                  backgroundColor: snapshot.data,
                   body: RefreshIndicator(
                       onRefresh: () => onRefresh(),
                       child: view == null

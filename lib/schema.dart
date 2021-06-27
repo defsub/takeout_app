@@ -95,7 +95,7 @@ class ReleaseView {
 
   int get discs {
     int discs = 1;
-    for (var t in tracks ?? []) {
+    for (var t in tracks) {
       if (t.discNum > discs) {
         discs = t.discNum;
       }
@@ -334,7 +334,7 @@ class Track extends Locatable implements MusicTrack {
   }
 
   String _trackCoverUrl({int size = 250}) {
-    final url = groupArtwork!
+    final url = groupArtwork
         ? 'https://coverartarchive.org/release-group/$rgid'
         : 'https://coverartarchive.org/release/$reid';
     if (artwork && frontArtwork) {

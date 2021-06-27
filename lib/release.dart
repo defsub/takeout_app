@@ -97,7 +97,7 @@ class _ReleaseState extends State<ReleaseWidget> {
     return FutureBuilder<Color>(
         future: getImageBackgroundColor(release.image),
         builder: (context, snapshot) => Scaffold(
-            backgroundColor: snapshot.data ?? null,
+            backgroundColor: snapshot.data,
             body: RefreshIndicator(
                 onRefresh: () => _onRefresh(),
                 child: StreamBuilder<Set<String>>(
