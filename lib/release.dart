@@ -245,6 +245,20 @@ class _ReleaseTracksWidget extends StatelessWidget {
               children.add(smallHeading('Disc ${e.discNum} of $discs'));
               d = e.discNum;
             }
+            var subtitle;
+            final subartist = _view.artist.name != _view.tracks[i].artist ?
+                _view.tracks[i].artist : null;
+            final subrelease = _view.release.name != _view.tracks[i].releaseTitle ?
+                _view.tracks[i].releaseTitle : null;
+            if (subartist != null && subrelease != null) {
+              subtitle = '$subartist \u2022 $subrelease';
+            } else if (subartist != null) {
+              subtitle = subartist;
+            } else if (subrelease != null) {
+              subtitle = subrelease;
+            } else {
+              subtitle = _view.tracks[i].releaseTitle;
+            }
             children.add(ListTile(
                 onTap: () => _onTap(i),
                 leading: Container(
@@ -253,7 +267,7 @@ class _ReleaseTracksWidget extends StatelessWidget {
                         style: TextStyle(fontWeight: FontWeight.w200))),
                 trailing: Icon(
                     keys.contains(e.key) ? Icons.download_done_sharp : null),
-                subtitle: Text(e.artist),
+                subtitle: subtitle != null ? Text(subtitle) : null,
                 title: Text(e.title)));
           }
           return Column(children: children);
