@@ -32,7 +32,7 @@ Widget heading(String text) {
               alignment: Alignment.centerLeft,
               child: Text(text.toUpperCase(),
                   style: TextStyle(fontWeight: FontWeight.w500, fontSize: 15))),
-          padding: EdgeInsets.fromLTRB(11, 11, 0, 11)));
+          padding: EdgeInsets.fromLTRB(11, 22, 0, 11)));
 }
 
 Widget headingButton(String text, void Function() onPressed) {

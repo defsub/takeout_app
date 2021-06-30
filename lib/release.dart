@@ -202,9 +202,9 @@ class _ReleaseState extends State<ReleaseWidget> {
   Widget _playButton(bool isCached) {
     if (isCached) {
       return IconButton(
-          icon: Icon(Icons.play_arrow), onPressed: () => _onPlay());
+          icon: Icon(Icons.play_arrow, size: 32), onPressed: () => _onPlay());
     }
-    return allowStreamingIconButton(Icon(Icons.play_arrow), _onPlay);
+    return allowStreamingIconButton(Icon(Icons.play_arrow, size: 32), _onPlay);
   }
 
   Widget _downloadButton(bool isCached) {

@@ -451,7 +451,7 @@ class _ArtistTrackListState extends State<ArtistTrackListWidget>
       ];
 
   Widget leftButton() {
-    return IconButton(icon: Icon(Icons.play_arrow), onPressed: _onPlay);
+    return IconButton(icon: Icon(Icons.play_arrow, size: 32), onPressed: _onPlay);
   }
 
   Widget rightButton() {
