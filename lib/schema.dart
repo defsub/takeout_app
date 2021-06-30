@@ -369,11 +369,11 @@ class Location {
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
 class RadioView {
-  final List<Station> genre;
-  final List<Station> similar;
-  final List<Station> period;
-  final List<Station> series;
-  final List<Station> other;
+  final List<Station>? genre;
+  final List<Station>? similar;
+  final List<Station>? period;
+  final List<Station>? series;
+  final List<Station>? other;
 
   RadioView(
       {this.genre = const [],

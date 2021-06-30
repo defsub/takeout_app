@@ -79,9 +79,11 @@ class RadioState extends State<RadioWidget> {
                           )),
                       body: TabBarView(
                         children: [
-                          _stations(_view.genre),
-                          _stations(_view.period),
-                          _stations(_merge(_view.series, _view.other)),
+                          if (_view.genre != null) _stations(_view.genre!),
+                          if (_view.period != null) _stations(_view.period!),
+                          _stations(_merge(
+                              _view.series != null ? _view.series! : [],
+                              _view.other != null ? _view.other! : [])),
                           if (haveDownloads)
                             DownloadListWidget(filter: _radioFilter)
                         ],
