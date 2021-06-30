@@ -32,15 +32,15 @@ class SearchWidget extends StatefulWidget {
 }
 
 class _SearchState extends State<SearchWidget> {
-  SearchView _view;
+  SearchView? _view;
   TextEditingController _searchText = TextEditingController();
 
   void _onPlay() {
-    MediaQueue.playTracks(_view.tracks);
+    MediaQueue.playTracks(_view!.tracks);
   }
 
   void _onDownload() {
-    final spiff = MediaQueue.fromTracks(_view.tracks, creator: 'Search', title: _searchText.text);
+    final spiff = MediaQueue.fromTracks(_view!.tracks, creator: 'Search', title: _searchText.text);
     Downloads.downloadSpiff(spiff);
   }
 
@@ -58,12 +58,12 @@ class _SearchState extends State<SearchWidget> {
                 border: OutlineInputBorder(),
                 counterText: _view == null
                     ? null
-                    : _view.hits > 0
-                        ? '${_view.hits} matches'
+                    : _view!.hits > 0
+                        ? '${_view!.hits} matches'
                         : '',
                 errorText: _view == null
                     ? null
-                    : _view.hits == 0
+                    : _view!.hits == 0
                         ? 'no matches'
                         : null,
                 helperText: 'text or artist:name or guitar:person',
@@ -73,19 +73,19 @@ class _SearchState extends State<SearchWidget> {
           if (_view != null)
             Flexible(
                 child: ListView(children: [
-              if (_view.artists.isNotEmpty)
+              if (_view!.artists.isNotEmpty)
                 Container(
                     child: Column(children: [
                   heading('Artists'),
-                  _ArtistResultsWidget(_view.artists),
+                  _ArtistResultsWidget(_view!.artists),
                 ])),
-              if (_view.releases.isNotEmpty)
+              if (_view!.releases.isNotEmpty)
                 Container(
                     child: Column(children: [
                   heading('Releases'),
-                  ReleaseListWidget(_view.releases),
+                  ReleaseListWidget(_view!.releases),
                 ])),
-              if (_view.tracks.isNotEmpty)
+              if (_view!.tracks.isNotEmpty)
                 Container(
                     child: Column(children: [
                   heading('Tracks'),
@@ -102,7 +102,7 @@ class _SearchState extends State<SearchWidget> {
                           onPressed: () => _onDownload()),
                     ],
                   ),
-                  TrackListWidget(_view.tracks),
+                  TrackListWidget(_view!.tracks),
                 ]))
             ]))
         ]));
@@ -112,9 +112,6 @@ class _SearchState extends State<SearchWidget> {
     final client = Client();
     client.search(q).then((result) {
       setState(() {
-        if (result.tracks == null) {
-          result.tracks = [];
-        }
         _view = result;
       });
     });

@@ -32,7 +32,7 @@ class Spiff {
   final double position;
   final Playlist playlist;
 
-  Spiff({this.index, this.position, this.playlist});
+  Spiff({required this.index, required this.position, required this.playlist});
 
   int get size {
     return playlist.tracks.fold(0, (sum, t) => sum + t.size);
@@ -40,10 +40,13 @@ class Spiff {
 
   @override
   bool operator ==(other) {
-    return playlist.title == other.playlist.title &&
-        playlist.creator == other.playlist.creator &&
-        playlist.location == other.playlist.location &&
-        playlist.tracks.length == other.playlist.tracks.length;
+    if (other is Spiff) {
+      return playlist.title == other.playlist.title &&
+          playlist.creator == other.playlist.creator &&
+          playlist.location == other.playlist.location &&
+          playlist.tracks.length == other.playlist.tracks.length;
+    }
+    return false;
   }
 
   @override
@@ -52,11 +55,11 @@ class Spiff {
   }
 
   bool isLocal() {
-    return playlist?.location?.startsWith(RegExp(r'^file')) ?? false;
+    return playlist.location?.startsWith(RegExp(r'^file')) ?? false;
   }
 
   bool isRemote() {
-    return playlist?.location?.startsWith(RegExp(r'^http')) ?? false;
+    return playlist.location?.startsWith(RegExp(r'^http')) ?? false;
   }
 
   factory Spiff.fromJson(Map<String, dynamic> json) => _$SpiffFromJson(json);
@@ -64,9 +67,9 @@ class Spiff {
   Map<String, dynamic> toJson() => _$SpiffToJson(this);
 
   Spiff copyWith({
-    int index,
-    double position,
-    Playlist playlist,
+    int? index,
+    double? position,
+    Playlist? playlist,
   }) =>
       Spiff(
         index: index ?? this.index,
@@ -83,7 +86,9 @@ class Spiff {
       if (exists) {
         file.readAsBytes().then((body) {
           completer.complete(Spiff.fromJson(jsonDecode(utf8.decode(body))));
-        }).catchError((e) => completer.completeError(e));
+        }).catchError((e) {
+          completer.completeError(e);
+        });
       } else {
         completer.complete(Spiff.empty());
       }
@@ -103,15 +108,15 @@ class Entry extends Locatable implements MusicTrack {
   @JsonKey(name: 'identifier')
   final List<String> identifiers;
   @JsonKey(name: 'size')
-  final List<int> sizes;
+  final List<int>? sizes;
 
   Entry(
-      {this.creator,
-      this.album,
-      this.title,
-      this.image,
-      this.locations,
-      this.identifiers,
+      {required this.creator,
+      required this.album,
+      required this.title,
+      required this.image,
+      required this.locations,
+      required this.identifiers,
       this.sizes});
 
   factory Entry.fromJson(Map<String, dynamic> json) => _$EntryFromJson(json);
@@ -130,7 +135,7 @@ class Entry extends Locatable implements MusicTrack {
   }
 
   int get size {
-    return sizes == null || sizes.isEmpty ? 0 : sizes[0];
+    return sizes == null || sizes!.isEmpty ? 0 : sizes![0];
   }
 
   @override
@@ -146,20 +151,20 @@ class Entry extends Locatable implements MusicTrack {
 
 @JsonSerializable()
 class Playlist {
-  final String location;
-  final String creator;
+  final String? location;
+  final String? creator;
   final String title;
-  final String image;
+  final String? image;
   @JsonKey(name: 'track')
   final List<Entry> tracks;
 
-  Playlist({this.location, this.creator, this.title, this.image, this.tracks});
+  Playlist({this.location, this.creator, required this.title, this.image, required this.tracks});
 
   Playlist copyWith({
-    String location,
+    required String location,
   }) =>
       Playlist(
-        location: location ?? this.location,
+        location: location,
         creator: this.creator,
         title: this.title,
         image: this.image,

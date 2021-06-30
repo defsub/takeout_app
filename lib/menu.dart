@@ -20,9 +20,9 @@ import 'package:flutter/material.dart';
 typedef MenuCallback = void Function(BuildContext);
 
 class PopupItem {
-  Icon icon;
-  String title;
-  MenuCallback onSelected;
+  Icon? icon;
+  String? title;
+  MenuCallback? onSelected;
   bool _divider = false;
 
   bool get isDivider => _divider;
@@ -83,23 +83,25 @@ class PopupItem {
 }
 
 Widget popupMenu(BuildContext context, List<PopupItem> items) {
-  return PopupMenuButton<int>(
+  return PopupMenuButton<dynamic>(
       icon: Icon(Icons.more_vert),
       itemBuilder: (_) {
-        List<PopupMenuEntry<int>> entries = [];
+        List<PopupMenuEntry<dynamic>> entries = [];
         for (var index = 0; index < items.length; index++) {
-          entries.add(items[index].isDivider
-              ? PopupMenuDivider()
-              : PopupMenuItem<int>(
-                  value: index,
-                  child: ListTile(
-                      leading: items[index].icon,
-                      title: Text(items[index].title),
-                      minLeadingWidth: 10)));
+          if (items[index].isDivider) {
+            entries.add(PopupMenuDivider());
+          } else {
+            entries.add(PopupMenuItem<int>(
+                value: index,
+                child: ListTile(
+                    leading: items[index].icon,
+                    title: Text(items[index].title!),
+                    minLeadingWidth: 10)));
+          }
         }
         return entries;
       },
       onSelected: (index) {
-        items[index].onSelected(context);
+        items[index].onSelected!(context);
       });
 }

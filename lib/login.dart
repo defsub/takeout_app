@@ -51,8 +51,8 @@ class _LoginState extends State<LoginWidget> {
     final host = await prefsString(settingHost);
     final user = await prefsString(settingUser);
     setState(() {
-      _hostText.text = host;
-      _userText.text = user;
+      _hostText.text = host ?? "";
+      _userText.text = user ?? "";
     });
   }
 

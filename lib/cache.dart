@@ -72,7 +72,7 @@ class JsonCache {
     return completer.future;
   }
 
-  Future<dynamic> get(String uri, {Duration ttl}) async {
+  Future<dynamic> get(String uri, {Duration? ttl}) async {
     final completer = Completer<dynamic>();
     final file = await _jsonFile(uri);
     file.exists().then((exists) {
@@ -214,7 +214,12 @@ class SpiffCache {
   }
 
   static Future<void> put(Spiff spiff) async {
-    final key = Uri.parse(spiff.playlist.location);
+    String? location = spiff.playlist.location;
+    if (location == null || location.isEmpty) {
+      print('put spiff with null location!');
+      return;
+    }
+    final key = Uri.parse(location);
     final curr = _cache[key];
     print('put ${key.toString()} -> ${spiff.playlist.tracks.length} tracks');
     if (curr != null && spiff == curr && spiff.index == curr.index) {
@@ -227,7 +232,7 @@ class SpiffCache {
     }
   }
 
-  static Future<Spiff> get(Uri uri) async {
+  static Future<Spiff?> get(Uri uri) async {
     print('get $uri -> ${_cache[uri]}');
     return _cache[uri];
   }

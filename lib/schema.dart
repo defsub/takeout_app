@@ -28,13 +28,17 @@ part 'schema.g.dart';
 @JsonSerializable(fieldRename: FieldRename.pascal)
 class HomeView {
   @JsonKey(name: "AddedReleases")
-  List<Release> added;
+  final List<Release> added;
   @JsonKey(name: "NewReleases")
-  List<Release> released;
-  List<Movie> addedMovies;
-  List<Movie> newMovies;
+  final List<Release> released;
+  final List<Movie> addedMovies;
+  final List<Movie> newMovies;
 
-  HomeView({this.added, this.released});
+  HomeView(
+      {this.added = const [],
+      this.released = const [],
+      this.addedMovies = const [],
+      this.newMovies = const []});
 
   factory HomeView.fromJson(Map<String, dynamic> json) =>
       _$HomeViewFromJson(json);
@@ -44,22 +48,22 @@ class HomeView {
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
 class ArtistView {
-  Artist artist;
-  String image;
-  String background;
-  List<Release> releases;
-  List<Track> popular;
-  List<Track> singles;
-  List<Artist> similar;
+  late final Artist artist;
+  final String? image;
+  final String? background;
+  final List<Release> releases;
+  final List<Track> popular;
+  final List<Track> singles;
+  final List<Artist> similar;
 
   ArtistView(
-      {this.artist,
+      {required this.artist,
       this.image,
       this.background,
-      this.releases,
-      this.popular,
-      this.singles,
-      this.similar});
+      this.releases = const [],
+      this.popular = const [],
+      this.singles = const [],
+      this.similar = const []});
 
   factory ArtistView.fromJson(Map<String, dynamic> json) =>
       _$ArtistViewFromJson(json);
@@ -69,20 +73,20 @@ class ArtistView {
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
 class ReleaseView {
-  Artist artist;
-  Release release;
-  List<Track> tracks;
-  List<Track> popular;
-  List<Track> singles;
-  List<Release> similar;
+  final Artist artist;
+  final Release release;
+  final List<Track> tracks;
+  final List<Track> popular;
+  final List<Track> singles;
+  final List<Release> similar;
 
   ReleaseView(
-      {this.artist,
-      this.release,
-      this.tracks,
-      this.popular,
-      this.singles,
-      this.similar});
+      {required this.artist,
+      required this.release,
+      this.tracks = const [],
+      this.popular = const [],
+      this.singles = const [],
+      this.similar = const []});
 
   factory ReleaseView.fromJson(Map<String, dynamic> json) =>
       _$ReleaseViewFromJson(json);
@@ -102,14 +106,20 @@ class ReleaseView {
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
 class SearchView {
-  List<Artist> artists;
-  List<Release> releases;
-  List<Track> tracks;
-  List<Movie> movies;
-  String query;
-  int hits;
+  final List<Artist> artists;
+  final List<Release> releases;
+  final List<Track> tracks;
+  final List<Movie> movies;
+  final String query;
+  final int hits;
 
-  SearchView({this.artists, this.releases, this.tracks, this.query, this.hits});
+  SearchView(
+      {this.artists = const [],
+      this.releases = const [],
+      this.tracks = const [],
+      this.movies = const [],
+      required this.query,
+      required this.hits});
 
   factory SearchView.fromJson(Map<String, dynamic> json) =>
       _$SearchViewFromJson(json);
@@ -119,9 +129,9 @@ class SearchView {
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
 class ArtistsView {
-  List<Artist> artists;
+  final List<Artist> artists;
 
-  ArtistsView({this.artists});
+  ArtistsView({this.artists = const []});
 
   factory ArtistsView.fromJson(Map<String, dynamic> json) =>
       _$ArtistsViewFromJson(json);
@@ -136,18 +146,18 @@ class Artist {
   final String name;
   final String sortName;
   @JsonKey(name: "ARID")
-  final String arid;
-  final String disambiguation;
-  final String country;
-  final String area;
-  final String date;
-  final String endDate;
-  final String genre;
+  final String? arid;
+  final String? disambiguation;
+  final String? country;
+  final String? area;
+  final String? date;
+  final String? endDate;
+  final String? genre;
 
   Artist(
-      {this.id,
-      this.name,
-      this.sortName,
+      {required this.id,
+      required this.name,
+      required this.sortName,
       this.arid,
       this.disambiguation,
       this.country,
@@ -170,34 +180,34 @@ class Release implements MusicAlbum {
   final String name;
   final String artist;
   @JsonKey(name: "RGID")
-  final String rgid;
+  final String? rgid;
   @JsonKey(name: "REID")
-  final String reid;
-  final String disambiguation;
-  final String type;
-  final String date;
-  final String releaseDate;
+  final String? reid;
+  final String? disambiguation;
+  final String? type;
+  final String? date;
+  final String? releaseDate;
   final bool artwork;
   final bool frontArtwork;
   final bool backArtwork;
-  final String otherArtwork;
+  final String? otherArtwork;
   final bool groupArtwork;
 
   Release(
-      {this.id,
-      this.name,
-      this.artist,
+      {required this.id,
+      required this.name,
+      required this.artist,
       this.rgid,
       this.reid,
       this.disambiguation,
       this.type,
       this.date,
       this.releaseDate,
-      this.artwork,
-      this.frontArtwork,
-      this.backArtwork,
+      this.artwork = false,
+      this.frontArtwork = false,
+      this.backArtwork = false,
       this.otherArtwork,
-      this.groupArtwork});
+      this.groupArtwork = false});
 
   factory Release.fromJson(Map<String, dynamic> json) =>
       _$ReleaseFromJson(json);
@@ -217,8 +227,8 @@ class Release implements MusicAlbum {
 
   @override
   int get year {
-    if (_year == -1) {
-      final d = DateTime.parse(date);
+    if (_year == -1 && date != null) {
+      final d = DateTime.parse(date!);
       _year = d.year;
     }
     return _year;
@@ -236,7 +246,7 @@ class Release implements MusicAlbum {
     } else if (artwork && isNotNullOrEmpty(otherArtwork)) {
       return '$url/$otherArtwork-$size';
     }
-    return null;
+    return '';
   }
 }
 
@@ -246,42 +256,42 @@ class Track extends Locatable implements MusicTrack {
   final int id;
   final String artist;
   final String release;
-  final String date;
+  final String? date;
   final int trackNum;
   final int discNum;
   final String title;
   final int size;
   @JsonKey(name: "RGID")
-  final String rgid;
+  final String? rgid;
   @JsonKey(name: "REID")
-  final String reid;
+  final String? reid;
   final String releaseTitle;
   @JsonKey(name: "ETag")
   final String etag;
   final bool artwork;
   final bool frontArtwork;
   final bool backArtwork;
-  final String otherArtwork;
+  final String? otherArtwork;
   final bool groupArtwork;
 
   Track(
-      {this.id,
-      this.artist,
-      this.release,
+      {required this.id,
+      required this.artist,
+      required this.release,
       this.date,
-      this.trackNum,
-      this.discNum,
-      this.title,
-      this.size,
+      required this.trackNum,
+      required this.discNum,
+      required this.title,
+      required this.size,
       this.rgid,
       this.reid,
-      this.releaseTitle,
-      this.etag,
-      this.artwork,
-      this.frontArtwork,
-      this.backArtwork,
+      required this.releaseTitle,
+      required this.etag,
+      this.artwork = false,
+      this.frontArtwork = false,
+      this.backArtwork = false,
       this.otherArtwork,
-      this.groupArtwork});
+      this.groupArtwork = false});
 
   factory Track.fromJson(Map<String, dynamic> json) => _$TrackFromJson(json);
 
@@ -316,8 +326,8 @@ class Track extends Locatable implements MusicTrack {
 
   @override
   int get year {
-    if (_year == -1) {
-      final d = DateTime.parse(date);
+    if (_year == -1 && date != null) {
+      final d = DateTime.parse(date!);
       _year = d.year;
     }
     return _year;
@@ -332,7 +342,7 @@ class Track extends Locatable implements MusicTrack {
     } else if (artwork && isNotNullOrEmpty(otherArtwork)) {
       return '$url/$otherArtwork}-$size';
     }
-    return null;
+    return '';
   }
 }
 
@@ -345,7 +355,11 @@ class Location {
   @JsonKey(name: "ETag")
   final String etag;
 
-  Location({this.id, this.url, this.size, this.etag});
+  Location(
+      {required this.id,
+      required this.url,
+      required this.size,
+      required this.etag});
 
   factory Location.fromJson(Map<String, dynamic> json) =>
       _$LocationFromJson(json);
@@ -355,14 +369,18 @@ class Location {
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
 class RadioView {
-  List<Station> artist;
-  List<Station> genre;
-  List<Station> similar;
-  List<Station> period;
-  List<Station> series;
-  List<Station> other;
+  final List<Station>? genre;
+  final List<Station>? similar;
+  final List<Station>? period;
+  final List<Station>? series;
+  final List<Station>? other;
 
-  RadioView({this.artist, this.genre, this.similar, this.period});
+  RadioView(
+      {this.genre = const [],
+      this.similar = const [],
+      this.period = const [],
+      this.series = const [],
+      this.other = const []});
 
   factory RadioView.fromJson(Map<String, dynamic> json) =>
       _$RadioViewFromJson(json);
@@ -377,7 +395,7 @@ class Station {
   final String name;
   final String ref;
 
-  Station({this.id, this.name, this.ref});
+  Station({required this.id, required this.name, required this.ref});
 
   factory Station.fromJson(Map<String, dynamic> json) =>
       _$StationFromJson(json);
@@ -390,7 +408,7 @@ class SinglesView {
   final Artist artist;
   final List<Track> singles;
 
-  SinglesView({this.artist, this.singles});
+  SinglesView({required this.artist, this.singles = const []});
 
   factory SinglesView.fromJson(Map<String, dynamic> json) =>
       _$SinglesViewFromJson(json);
@@ -403,7 +421,7 @@ class PopularView {
   final Artist artist;
   final List<Track> popular;
 
-  PopularView({this.artist, this.popular});
+  PopularView({required this.artist, this.popular = const []});
 
   factory PopularView.fromJson(Map<String, dynamic> json) =>
       _$PopularViewFromJson(json);
@@ -415,7 +433,7 @@ class PopularView {
 class MoviesView {
   final List<Movie> movies;
 
-  MoviesView({this.movies});
+  MoviesView({this.movies = const []});
 
   factory MoviesView.fromJson(Map<String, dynamic> json) =>
       _$MoviesViewFromJson(json);
@@ -426,27 +444,27 @@ class MoviesView {
 @JsonSerializable(fieldRename: FieldRename.pascal)
 class MovieView {
   final Movie movie;
-  final Collection collection;
-  final List<Movie> other;
-  final List<Cast> cast;
-  final List<Crew> crew;
-  final List<Person> starring;
-  final List<Person> directing;
-  final List<Person> writing;
-  final List<String> genres;
-  final int vote;
-  final int voteCount;
+  final Collection? collection;
+  final List<Movie>? other;
+  final List<Cast>? cast;
+  final List<Crew>? crew;
+  final List<Person>? starring;
+  final List<Person>? directing;
+  final List<Person>? writing;
+  final List<String>? genres;
+  final int? vote;
+  final int? voteCount;
 
   MovieView(
-      {this.movie,
+      {required this.movie,
       this.collection,
-      this.other,
-      this.cast,
-      this.crew,
-      this.starring,
-      this.directing,
-      this.writing,
-      this.genres,
+      this.other = const [],
+      this.cast = const [],
+      this.crew = const [],
+      this.starring = const [],
+      this.directing = const [],
+      this.writing = const [],
+      this.genres = const [],
       this.vote,
       this.voteCount});
 
@@ -463,16 +481,16 @@ class Person {
   @JsonKey(name: "PEID")
   final int peid;
   final String name;
-  final String profilePath;
-  final String bio;
-  final String birthplace;
-  final String birthday;
-  final String deathday;
+  final String? profilePath;
+  final String? bio;
+  final String? birthplace;
+  final String? birthday;
+  final String? deathday;
 
   Person(
-      {this.id,
-      this.peid,
-      this.name,
+      {required this.id,
+      required this.peid,
+      required this.name,
       this.profilePath,
       this.bio,
       this.birthplace,
@@ -495,7 +513,12 @@ class Cast {
   final String character;
   final Person person;
 
-  Cast({this.id, this.tmid, this.peid, this.character, this.person});
+  Cast(
+      {required this.id,
+      required this.tmid,
+      required this.peid,
+      required this.character,
+      required this.person});
 
   factory Cast.fromJson(Map<String, dynamic> json) => _$CastFromJson(json);
 
@@ -514,7 +537,13 @@ class Crew {
   final String job;
   final Person person;
 
-  Crew({this.id, this.tmid, this.peid, this.department, this.job, this.person});
+  Crew(
+      {required this.id,
+      required this.tmid,
+      required this.peid,
+      required this.department,
+      required this.job,
+      required this.person});
 
   factory Crew.fromJson(Map<String, dynamic> json) => _$CrewFromJson(json);
 
@@ -530,7 +559,11 @@ class Collection {
   @JsonKey(name: "TMID")
   final String tmid;
 
-  Collection({this.id, this.name, this.sortName, this.tmid});
+  Collection(
+      {required this.id,
+      required this.name,
+      required this.sortName,
+      required this.tmid});
 
   factory Collection.fromJson(Map<String, dynamic> json) =>
       _$CollectionFromJson(json);
@@ -555,31 +588,31 @@ class Movie extends Locatable {
   final int budget;
   final int revenue;
   final int runtime;
-  final double voteAverage;
-  final int voteCount;
+  final double? voteAverage;
+  final int? voteCount;
   final String backdropPath;
   final String posterPath;
   @JsonKey(name: "ETag")
   final String etag;
 
   Movie(
-      {this.id,
-      this.tmid,
-      this.imid,
-      this.title,
-      this.sortTitle,
-      this.date,
-      this.rating,
-      this.tagline,
-      this.overview,
-      this.budget,
-      this.revenue,
-      this.runtime,
+      {required this.id,
+      required this.tmid,
+      required this.imid,
+      required this.title,
+      required this.sortTitle,
+      required this.date,
+      required this.rating,
+      required this.tagline,
+      required this.overview,
+      required this.budget,
+      required this.revenue,
+      required this.runtime,
       this.voteAverage,
       this.voteCount,
-      this.backdropPath,
-      this.posterPath,
-      this.etag});
+      required this.backdropPath,
+      required this.posterPath,
+      required this.etag});
 
   factory Movie.fromJson(Map<String, dynamic> json) => _$MovieFromJson(json);
 

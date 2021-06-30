@@ -44,7 +44,7 @@ class _PlayState {
 }
 
 final _backgroundColorSubject = BehaviorSubject<Color>();
-StreamSubscription<MediaItem> _mediaItemSubscription;
+StreamSubscription<MediaItem?>? _mediaItemSubscription;
 
 class PlayerWidget extends StatelessWidget {
   static void doStart(Map<String, dynamic> params) async {
@@ -69,14 +69,16 @@ class PlayerWidget extends StatelessWidget {
         if (item == null) {
           return;
         }
-        getImageBackgroundColor(item.artUri)
-            .then((color) => _backgroundColorSubject.add(color));
+        if (item.artUri != null) {
+          getImageBackgroundColor(item.artUri.toString())
+              .then((color) => _backgroundColorSubject.add(color));
+        }
       });
     }
     return StreamBuilder<Color>(
         stream: _backgroundColorSubject,
         builder: (context, snapshot) {
-          final backgroundColor = snapshot?.data;
+          final backgroundColor = snapshot.data ?? null;
           return Scaffold(
               backgroundColor: backgroundColor,
               body: StreamBuilder<bool>(
@@ -97,55 +99,57 @@ class PlayerWidget extends StatelessWidget {
                     final expandedHeight = screen.height / 2;
 
                     return StreamBuilder<_PlayState>(
-                        stream: Rx.combineLatest2(
+                        stream: Rx.combineLatest2<QueueState, bool, _PlayState>(
                             _queueStateStream,
                             AudioService.playbackStateStream
                                 .map((state) => state.playing)
                                 .distinct(),
                             (a, b) => _PlayState(a, b)),
                         builder: (context, snapshot) {
-                          final playing = snapshot.data?.playing;
+                          final playing = snapshot.data?.playing ?? false;
                           final queueState = snapshot.data?.queueState;
                           final queue = queueState?.queue ?? [];
                           final mediaItem = queueState?.mediaItem;
                           return CustomScrollView(slivers: [
-                            SliverAppBar(
-                                backgroundColor: backgroundColor,
-                                automaticallyImplyLeading: false,
-                                expandedHeight: expandedHeight,
-                                actions: [
-                                  popupMenu(context, [
-                                    if (mediaItem != null)
-                                      PopupItem.artist(mediaItem.artist,
-                                          (_) => _onArtist(mediaItem.artist))
-                                  ]),
-                                ],
-                                flexibleSpace: FlexibleSpaceBar(
-                                    stretchModes: [
-                                      StretchMode.zoomBackground,
-                                      StretchMode.fadeTitle
-                                    ],
-                                    background:
-                                        Stack(fit: StackFit.expand, children: [
-                                      cover(mediaItem),
-                                    ]))),
-                            if (queue != null && queue.isNotEmpty)
+                            if (mediaItem != null)
+                              SliverAppBar(
+                                  backgroundColor: backgroundColor,
+                                  automaticallyImplyLeading: false,
+                                  expandedHeight: expandedHeight,
+                                  actions: [
+                                    popupMenu(context, [
+                                      PopupItem.artist(
+                                          mediaItem.artist ?? '',
+                                          (_) =>
+                                              _onArtist(mediaItem.artist ?? ''))
+                                    ]),
+                                  ],
+                                  flexibleSpace: FlexibleSpaceBar(
+                                      stretchModes: [
+                                        StretchMode.zoomBackground,
+                                        StretchMode.fadeTitle
+                                      ],
+                                      background: Stack(
+                                          fit: StackFit.expand,
+                                          children: [
+                                            cover(mediaItem),
+                                          ]))),
+                            if (queue.isNotEmpty && mediaItem != null)
                               SliverToBoxAdapter(
                                   child: Container(
                                       padding: EdgeInsets.fromLTRB(0, 16, 0, 0),
                                       child: Column(children: [
                                         GestureDetector(
-                                            onTap: () =>
-                                                _onArtist(mediaItem?.artist),
-                                            child: Text(
-                                                mediaItem?.title ?? 'none',
+                                            onTap: () => _onArtist(
+                                                mediaItem.artist ?? ''),
+                                            child: Text(mediaItem.title,
                                                 style: Theme.of(context)
                                                     .textTheme
                                                     .headline5)),
-                                        Text(mediaItem?.artist ?? 'none',
+                                        Text(mediaItem.artist ?? '',
                                             style: Theme.of(context)
                                                 .textTheme
-                                                .subtitle1
+                                                .subtitle1!
                                                 .copyWith(
                                                     color: Colors.white60)),
                                         _controls(queue, mediaItem, playing),
@@ -160,7 +164,7 @@ class PlayerWidget extends StatelessWidget {
   }
 
   Widget cover(MediaItem mediaItem) {
-    return mediaItem != null ? playerCover(mediaItem.artUri.toString()) : SizedBox();
+    return playerCover(mediaItem.artUri.toString());
   }
 
   Widget _controls(List<MediaItem> queue, MediaItem mediaItem, bool playing) {
@@ -189,7 +193,7 @@ class PlayerWidget extends StatelessWidget {
     // A seek bar.
     return Container(
         padding: EdgeInsets.fromLTRB(0, 0, 0, 16),
-        child: StreamBuilder<MediaState>(
+        child: StreamBuilder<MediaState?>(
           stream: _mediaStateStream,
           builder: (context, snapshot) {
             final mediaState = snapshot.data;
@@ -216,8 +220,8 @@ class PlayerWidget extends StatelessWidget {
 
   /// A stream reporting the combined state of the current media item and its
   /// current position.
-  Stream<MediaState> get _mediaStateStream =>
-      Rx.combineLatest2<MediaItem, Duration, MediaState>(
+  Stream<MediaState?> get _mediaStateStream =>
+      Rx.combineLatest2<MediaItem?, Duration, MediaState>(
           AudioService.currentMediaItemStream,
           AudioService.positionStream,
           (mediaItem, position) => MediaState(mediaItem, position));
@@ -225,7 +229,7 @@ class PlayerWidget extends StatelessWidget {
   /// A stream reporting the combined state of the current queue and the current
   /// media item within that queue.
   Stream<QueueState> get _queueStateStream =>
-      Rx.combineLatest2<List<MediaItem>, MediaItem, QueueState>(
+      Rx.combineLatest2<List<MediaItem>?, MediaItem?, QueueState>(
           AudioService.queueStream,
           AudioService.currentMediaItemStream,
           (queue, mediaItem) => QueueState(queue, mediaItem));
@@ -277,29 +281,26 @@ class _MediaTrackListWidget extends StatelessWidget {
             return Text('');
           }
           final List<MediaItem> mediaItems = state.queue ?? [];
-          if (mediaItems != null) {
-            return Container(
-                child: Column(children: [
-              ...mediaItems.map((t) => ListTile(
-                  leading: tileCover(t.artUri.toString()),
-                  trailing: _cloudIcon(t),
-                  selected: t == state.mediaItem,
-                  onTap: () {
-                    AudioService.playMediaItem(t);
-                  },
-                  onLongPress: () {
-                    showArtist(t.artist);
-                  },
-                  subtitle: Text('${t.artist} \u2022 ${t.album}'),
-                  title: Text(t.title)))
-            ]));
-          }
-          return Text('');
+          return Container(
+              child: Column(children: [
+            ...mediaItems.map((t) => ListTile(
+                leading: tileCover(t.artUri.toString()),
+                trailing: _cloudIcon(t),
+                selected: t == state.mediaItem,
+                onTap: () {
+                  AudioService.playMediaItem(t);
+                },
+                onLongPress: () {
+                  showArtist(t.artist ?? '');
+                },
+                subtitle: Text('${t.artist} \u2022 ${t.album}'),
+                title: Text(t.title)))
+          ]));
         });
   }
 
   Widget _cloudIcon(MediaItem mediaItem) {
-    if (mediaItem != null && mediaItem.isLocalFile()) {
+    if (mediaItem.isLocalFile()) {
       return IconButton(
           icon: Icon(Icons.cloud_done_outlined), onPressed: () => {});
     }
@@ -308,15 +309,15 @@ class _MediaTrackListWidget extends StatelessWidget {
 }
 
 class QueueState {
-  final List<MediaItem> queue;
-  final MediaItem mediaItem;
+  final List<MediaItem>? queue;
+  final MediaItem? mediaItem;
 
   QueueState(this.queue, this.mediaItem);
 }
 
 class MediaState {
-  final MediaItem mediaItem;
-  final Duration position;
+  final MediaItem? mediaItem;
+  final Duration? position;
 
   MediaState(this.mediaItem, this.position);
 }
@@ -324,12 +325,12 @@ class MediaState {
 class SeekBar extends StatefulWidget {
   final Duration duration;
   final Duration position;
-  final ValueChanged<Duration> onChanged;
-  final ValueChanged<Duration> onChangeEnd;
+  final ValueChanged<Duration>? onChanged;
+  final ValueChanged<Duration>? onChangeEnd;
 
   SeekBar({
-    @required this.duration,
-    @required this.position,
+    required this.duration,
+    required this.position,
     this.onChanged,
     this.onChangeEnd,
   });
@@ -339,12 +340,13 @@ class SeekBar extends StatefulWidget {
 }
 
 class _SeekBarState extends State<SeekBar> {
-  double _dragValue;
+  double? _dragValue;
   bool _dragging = false;
 
   @override
   Widget build(BuildContext context) {
-    final value = min(_dragValue ?? widget.position?.inMilliseconds?.toDouble(),
+    final value = min<double>(
+        _dragValue ?? widget.position.inMilliseconds.toDouble(),
         widget.duration.inMilliseconds.toDouble());
     if (_dragValue != null && !_dragging) {
       _dragValue = null;
@@ -363,12 +365,12 @@ class _SeekBarState extends State<SeekBar> {
               _dragValue = value;
             });
             if (widget.onChanged != null) {
-              widget.onChanged(Duration(milliseconds: value.round()));
+              widget.onChanged!(Duration(milliseconds: value.round()));
             }
           },
           onChangeEnd: (value) {
             if (widget.onChangeEnd != null) {
-              widget.onChangeEnd(Duration(milliseconds: value.round()));
+              widget.onChangeEnd!(Duration(milliseconds: value.round()));
             }
             _dragging = false;
           },

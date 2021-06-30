@@ -29,14 +29,14 @@ import 'spiff.dart';
 
 class ClientException implements Exception {
   final int statusCode;
-  final String url;
+  final String? url;
 
-  const ClientException({this.statusCode, this.url});
+  const ClientException({required this.statusCode, this.url});
 
   bool get authenticationFailed =>
       statusCode == HttpStatus.networkAuthenticationRequired ||
-          statusCode == HttpStatus.unauthorized ||
-          statusCode == HttpStatus.forbidden;
+      statusCode == HttpStatus.unauthorized ||
+      statusCode == HttpStatus.forbidden;
 
   String toString() => 'ClientException: $statusCode => $url';
 }
@@ -77,33 +77,32 @@ class Client {
   static const playlistTTL = Duration(minutes: 1);
   static const downloadTimeout = Duration(minutes: 5);
 
-  static String _endpoint;
-  static String _cookie;
-  static String _defaultPlaylistUrl;
-  static Uri _defaultPlaylistUri;
+  static String? _endpoint;
+  static String? _cookie;
+  static late String _defaultPlaylistUrl;
+  static late Uri _defaultPlaylistUri;
 
-  static Future<String> getDefaultPlaylistUrl() async {
-    if (_defaultPlaylistUrl == null) {
-      final baseUrl = await Client().getEndpoint();
-      _defaultPlaylistUrl = '$baseUrl/api/playlist';
-    }
+  static String getDefaultPlaylistUrl() {
     return _defaultPlaylistUrl;
   }
 
-  static Future<Uri> defaultPlaylistUri() async {
-    if (_defaultPlaylistUri == null) {
-      _defaultPlaylistUri = Uri.parse(await getDefaultPlaylistUrl());
-    }
+  static Uri defaultPlaylistUri() {
     return _defaultPlaylistUri;
   }
 
-  Future<void> setEndpoint(String v) async {
+  void _applyEndpoint() {
+    _defaultPlaylistUrl = '$_endpoint/api/playlist';
+    _defaultPlaylistUri = Uri.parse(_defaultPlaylistUrl);
+  }
+
+  Future<void> setEndpoint(String? v) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     _endpoint = v;
     if (v == null) {
       prefs.remove(settingEndpoint);
     } else {
-      prefs.setString(settingEndpoint, _endpoint);
+      prefs.setString(settingEndpoint, v);
+      _applyEndpoint();
     }
   }
 
@@ -112,22 +111,23 @@ class Client {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       if (prefs.containsKey(settingEndpoint)) {
         _endpoint = prefs.getString(settingEndpoint);
+        _applyEndpoint();
       }
     }
-    return _endpoint;
+    return _endpoint!;
   }
 
-  Future<void> _setCookie(String v) async {
+  Future<void> _setCookie(String? v) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     _cookie = v;
     if (v == null) {
       await prefs.remove(settingCookie);
     } else {
-      await prefs.setString(settingCookie, _cookie);
+      await prefs.setString(settingCookie, v);
     }
   }
 
-  Future<String> _getCookie() async {
+  Future<String?> _getCookie() async {
     if (_cookie == null) {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       if (prefs.containsKey(settingCookie)) {
@@ -149,6 +149,7 @@ class Client {
   }
 
   Future<bool> loggedIn() async {
+    await getEndpoint(); // TODO - needed to ensure endpoint is set
     final cookie = await _getCookie();
     // TODO check cookie age
     return cookie != null;
@@ -159,7 +160,7 @@ class Client {
   }
 
   Future<Map<String, dynamic>> _getJson(String uri,
-      {bool cacheable = true, Duration ttl}) async {
+      {bool cacheable = true, Duration? ttl}) async {
     final cache = JsonCache();
     final cookie = await _getCookie();
     if (cookie == null) {
@@ -189,7 +190,7 @@ class Client {
       if (response.statusCode != HttpStatus.ok) {
         throw ClientException(
             statusCode: response.statusCode,
-            url: response.request.url.toString());
+            url: response.request?.url.toString());
       }
       // print('got response ${response.body}');
       if (cacheable) {
@@ -217,7 +218,7 @@ class Client {
       if (response.statusCode != HttpStatus.ok) {
         throw ClientException(
             statusCode: response.statusCode,
-            url: response.request.url.toString());
+            url: response.request?.url.toString());
       }
       // print('got response ${response.body}');
       return jsonDecode(utf8.decode(response.bodyBytes));
@@ -250,11 +251,11 @@ class Client {
             completer.complete(PatchResult(
                 HttpStatus.ok, jsonDecode(utf8.decode(response.bodyBytes))));
           } else if (response.statusCode == HttpStatus.noContent) {
-            completer.complete(PatchResult(HttpStatus.noContent, null));
+            completer.complete(PatchResult(HttpStatus.noContent, {}));
           } else {
             completer.completeError(ClientException(
                 statusCode: response.statusCode,
-                url: response.request.url.toString()));
+                url: response.request?.url.toString()));
           }
         });
       }
@@ -285,66 +286,67 @@ class Client {
           .catchError((e) => Future<SearchView>.error(e));
 
   /// GET /api/home
-  Future<HomeView> home({Duration ttl}) async => _getJson('/api/home', ttl: ttl)
-      .then((j) => HomeView.fromJson(j))
-      .catchError((e) => Future<HomeView>.error(e));
+  Future<HomeView> home({Duration? ttl}) async =>
+      _getJson('/api/home', ttl: ttl)
+          .then((j) => HomeView.fromJson(j))
+          .catchError((e) => Future<HomeView>.error(e));
 
   /// GET /api/artists
-  Future<ArtistsView> artists({Duration ttl}) async =>
+  Future<ArtistsView> artists({Duration? ttl}) async =>
       _getJson('/api/artists', ttl: ttl)
           .then((j) => ArtistsView.fromJson(j))
           .catchError((e) => Future<ArtistsView>.error(e));
 
   /// GET /api/artists/1
-  Future<ArtistView> artist(int id, {Duration ttl}) async =>
+  Future<ArtistView> artist(int id, {Duration? ttl}) async =>
       _getJson('/api/artists/$id', ttl: ttl)
           .then((j) => ArtistView.fromJson(j))
           .catchError((e) => Future<ArtistView>.error(e));
 
   /// GET /api/artists/1/singles
-  Future<SinglesView> artistSingles(int id, {Duration ttl}) async =>
+  Future<SinglesView> artistSingles(int id, {Duration? ttl}) async =>
       _getJson('/api/artists/$id/singles', ttl: ttl)
           .then((j) => SinglesView.fromJson(j))
           .catchError((e) => Future<SinglesView>.error(e));
 
   /// GET /api/artists/1/singles/playlist
-  Future<Spiff> artistSinglesPlaylist(int id, {Duration ttl}) async =>
+  Future<Spiff> artistSinglesPlaylist(int id, {Duration? ttl}) async =>
       _getJson('/api/artists/$id/singles/playlist', ttl: ttl)
           .then((j) => Spiff.fromJson(j))
           .catchError((e) => Future<Spiff>.error(e));
 
   /// GET /api/artists/1/popular
-  Future<PopularView> artistPopular(int id, {Duration ttl}) async =>
+  Future<PopularView> artistPopular(int id, {Duration? ttl}) async =>
       _getJson('/api/artists/$id/popular', ttl: ttl)
           .then((j) => PopularView.fromJson(j))
           .catchError((e) => Future<PopularView>.error(e));
 
   /// GET /api/artists/1/popular/playlist
-  Future<Spiff> artistPopularPlaylist(int id, {Duration ttl}) async =>
+  Future<Spiff> artistPopularPlaylist(int id, {Duration? ttl}) async =>
       _getJson('/api/artists/$id/popular/playlist', ttl: ttl)
           .then((j) => Spiff.fromJson(j))
           .catchError((e) => Future<Spiff>.error(e));
 
   /// GET /api/artists/1/playlist
-  Future<Spiff> artistPlaylist(int id, {Duration ttl}) async =>
+  Future<Spiff> artistPlaylist(int id, {Duration? ttl}) async =>
       _getJson('/api/artists/$id/playlist', ttl: ttl)
           .then((j) => Spiff.fromJson(j))
           .catchError((e) => Future<Spiff>.error(e));
 
   /// GET /api/artists/1/radio
-  Future<Spiff> artistRadio(int id, {Duration ttl}) async =>
+  Future<Spiff> artistRadio(int id, {Duration? ttl}) async =>
       _getJson('/api/artists/$id/radio', ttl: ttl)
           .then((j) => Spiff.fromJson(j))
           .catchError((e) => Future<Spiff>.error(e));
 
   /// GET /api/releases/1
-  Future<ReleaseView> release(int id, {Duration ttl}) async =>
+  Future<ReleaseView> release(int id, {Duration? ttl}) async =>
       _getJson('/api/releases/$id', ttl: ttl)
           .then((j) => ReleaseView.fromJson(j))
           .catchError((e) => Future<ReleaseView>.error(e));
 
   /// GET /api/releases/1/playlist
-  Future<Spiff> releasePlaylist(int id, {Duration ttl}) async =>
+  Future<Spiff> releasePlaylist(int id, {Duration? ttl}) async =>
       _getJson('/api/releases/$id/playlist', ttl: ttl)
           .then((j) => Spiff.fromJson(j))
           .catchError((e) => Future<Spiff>.error(e));
@@ -355,13 +357,13 @@ class Client {
       .catchError((e) => Future<Spiff>.error(e));
 
   /// GET /api/radio
-  Future<RadioView> radio({Duration ttl}) async =>
+  Future<RadioView> radio({Duration? ttl}) async =>
       _getJson('/api/radio', ttl: ttl)
           .then((j) => RadioView.fromJson(j))
           .catchError((e) => Future<RadioView>.error(e));
 
   /// GET /api/radio/1
-  Future<Spiff> station(int id, {Duration ttl}) async =>
+  Future<Spiff> station(int id, {Duration? ttl}) async =>
       _getJson('/api/radio/$id', ttl: ttl)
           .then((j) => Spiff.fromJson(j))
           .catchError((e) => Future<Spiff>.error(e));
@@ -370,7 +372,7 @@ class Client {
       _patchJson('/api/playlist', body);
 
   /// GET /api/movies
-  Future<MoviesView> movies({Duration ttl}) async =>
+  Future<MoviesView> movies({Duration? ttl}) async =>
       _getJson('/api/movies', ttl: ttl)
           .then((j) => MoviesView.fromJson(j))
           .catchError((e) => Future<MoviesView>.error(e));
@@ -399,13 +401,15 @@ class Client {
               .catchError((e) => completer.completeError(e)));
         })
         .timeout(downloadTimeout)
-        .catchError((e) => completer.completeError(e));
+        .catchError((e) {
+          completer.completeError(e);
+        });
     return completer.future;
   }
 
   /// Download a list of tracks
   Future<List<bool>> downloadTracks(List<Track> tracks) async {
-    final result = [];
+    final result = List<bool>.empty();
     for (var t in tracks) {
       await download(t)
           .then((v) => result.add(true))
@@ -416,7 +420,7 @@ class Client {
 
   /// Download
   Future<List<bool>> downloadSpiffTracks(Spiff spiff) async {
-    final result = List<bool>();
+    final result = List<bool>.empty();
     for (var t in spiff.playlist.tracks) {
       await download(t)
           .then((v) => result.add(true))

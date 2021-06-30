@@ -51,7 +51,7 @@ String _name(Release release) {
 
 class _ReleaseState extends State<ReleaseWidget> {
   final Release release;
-  ReleaseView _view;
+  ReleaseView? _view;
 
   _ReleaseState(this.release);
 
@@ -70,7 +70,7 @@ class _ReleaseState extends State<ReleaseWidget> {
 
   void _onArtist() {
     Navigator.push(context,
-        MaterialPageRoute(builder: (context) => ArtistWidget(_view.artist)));
+        MaterialPageRoute(builder: (context) => ArtistWidget(_view!.artist)));
   }
 
   void _onPlay() {
@@ -94,13 +94,13 @@ class _ReleaseState extends State<ReleaseWidget> {
     final releaseUrl = 'https://musicbrainz.org/release/${release.reid}';
     final releaseGroupUrl =
         'https://musicbrainz.org/release-group/${release.rgid}';
-    return FutureBuilder(
+    return FutureBuilder<Color?>(
         future: getImageBackgroundColor(release.image),
         builder: (context, snapshot) => Scaffold(
-            backgroundColor: snapshot?.data,
+            backgroundColor: snapshot.data,
             body: RefreshIndicator(
                 onRefresh: () => _onRefresh(),
-                child: StreamBuilder(
+                child: StreamBuilder<Set<String>>(
                     stream: TrackCache.keysSubject,
                     builder: (context, snapshot) {
                       // cover images are 250x250 (or 500x500)
@@ -109,7 +109,7 @@ class _ReleaseState extends State<ReleaseWidget> {
                       final expandedHeight = screen.height / 2;
                       final keys = snapshot.data ?? Set<String>();
                       final isCached = _view != null
-                          ? TrackCache.checkAll(keys, _view.tracks)
+                          ? TrackCache.checkAll(keys, _view!.tracks)
                           : false;
                       return CustomScrollView(slivers: [
                         SliverAppBar(
@@ -172,13 +172,13 @@ class _ReleaseState extends State<ReleaseWidget> {
                                 ]))),
                         if (_view != null)
                           SliverToBoxAdapter(
-                              child: _ReleaseTracksWidget(_view)),
-                        if (_view != null && _view.similar.isNotEmpty)
+                              child: _ReleaseTracksWidget(_view!)),
+                        if (_view != null && _view!.similar.isNotEmpty)
                           SliverToBoxAdapter(
                             child: heading('Similar Releases'),
                           ),
-                        if (_view != null && _view.similar.isNotEmpty)
-                          AlbumGridWidget(_view.similar),
+                        if (_view != null && _view!.similar.isNotEmpty)
+                          AlbumGridWidget(_view!.similar),
                       ]);
                     }))));
   }
@@ -190,12 +190,12 @@ class _ReleaseState extends State<ReleaseWidget> {
   Widget _artist() {
     var artist = release.artist;
     if (isNotNullOrEmpty(release.date)) {
-      artist = '$artist \u2022 ${year(release.date)}';
+      artist = '$artist \u2022 ${year(release.date ?? '')}';
     }
     return Text(artist,
         style: Theme.of(context)
             .textTheme
-            .subtitle1
+            .subtitle1!
             .copyWith(color: Colors.white60));
   }
 
@@ -229,7 +229,7 @@ class _ReleaseTracksWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder(
+    return StreamBuilder<Set<String>>(
         stream: TrackCache.keysSubject,
         builder: (context, snapshot) {
           final keys = snapshot.data ?? Set<String>();
@@ -364,7 +364,7 @@ class ReleaseListWidget extends StatelessWidget {
               trailing: IconButton(
                   icon: Icon(Icons.play_arrow), onPressed: () => _onPlay(e)),
               title: Text('${_name(e)}'),
-              subtitle: Text(year(e.date)))))
+              subtitle: Text(year(e.date ?? '')))))
     ]);
   }
 

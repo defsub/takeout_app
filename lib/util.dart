@@ -15,9 +15,9 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
-bool isNullOrEmpty(String s) => s?.trim()?.isEmpty ?? true;
+bool isNullOrEmpty(String? s) => s?.trim().isEmpty ?? true;
 
-bool isNotNullOrEmpty(String s) => s?.trim()?.isNotEmpty ?? false;
+bool isNotNullOrEmpty(String? s) => s?.trim().isNotEmpty ?? false;
 
 const kilobyte = 1024;
 const megabyte = kilobyte*1024;
