@@ -214,7 +214,12 @@ class SpiffCache {
   }
 
   static Future<void> put(Spiff spiff) async {
-    final key = Uri.parse(spiff.playlist.location!);
+    String? location = spiff.playlist.location;
+    if (location == null || location.isEmpty) {
+      print('put spiff with null location!');
+      return;
+    }
+    final key = Uri.parse(location);
     final curr = _cache[key];
     print('put ${key.toString()} -> ${spiff.playlist.tracks.length} tracks');
     if (curr != null && spiff == curr && spiff.index == curr.index) {

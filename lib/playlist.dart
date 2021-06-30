@@ -38,6 +38,9 @@ class MediaQueue {
   static Future<Uri> getCurrentPlaylist() async {
     final value = await prefsString(settingPlaylist);
     print('current is $value');
+    if (value == 'null') {
+      print('current is really "null"');
+    }
     return value != null ? Uri.parse(value) : Client.defaultPlaylistUri();
   }
 
@@ -58,7 +61,8 @@ class MediaQueue {
   }
 
   static Future restore() async {
-    final spiff = await SpiffCache.load(await getCurrentPlaylist());
+    final uri = await getCurrentPlaylist();
+    final spiff = await SpiffCache.load(uri);
     return _stage(spiff);
   }
 
@@ -85,9 +89,10 @@ class MediaQueue {
     if (index != -1 && index >= 0 && index < spiff.playlist.tracks.length) {
       spiff = spiff.copyWith(index: index);
     }
-    await setCurrentPlaylist(Uri.parse(spiff.playlist.location ?? ''));
+    final uri = Uri.parse(spiff.playlist.location ?? 'location-missing');
+    await setCurrentPlaylist(uri);
     await SpiffCache.put(spiff);
-    return AudioService.customAction('doit');
+    return AudioService.customAction('doit', uri.toString());
   }
 
   /// Play a release or station, replacing current playlist.
@@ -114,7 +119,7 @@ class MediaQueue {
         SpiffCache.get(uri).then((spiff) {
           spiff = spiff!.copyWith(index: index, position: position);
           SpiffCache.put(spiff).then((_) {
-            AudioService.customAction('doit')
+            AudioService.customAction('doit', uri.toString())
                 .then((_) => completer.complete());
           });
         }).catchError((e) {
@@ -127,7 +132,7 @@ class MediaQueue {
         //   index: index, playlist: spiff.playlist
         //         .copyWith(location: uri.toString())); // TODO fixme
         SpiffCache.put(spiff).then((_) {
-          AudioService.customAction('doit')
+          AudioService.customAction('doit', uri.toString())
               .then((_) => completer.complete());
         });
       }
@@ -174,7 +179,8 @@ class MediaQueue {
   }
 
   static Future _stage(Spiff spiff) async {
-    AudioService.customAction('stage');
+    Uri uri = Uri.parse(spiff.playlist.location ?? 'location-missing');
+    AudioService.customAction('stage', uri.toString());
   }
 
   /// Append a release, track or station to current playlist.
@@ -188,7 +194,7 @@ class MediaQueue {
       client.patch(patchAppend(ref)).then((result) {
         final spiff = result.toSpiff();
         SpiffCache.put(spiff).then((_) {
-          AudioService.customAction('test')
+          AudioService.customAction('test', 'fixme')
               .whenComplete(() => completer.complete(spiff));
         }).catchError((e) {
           completer.completeError(e);
@@ -238,8 +244,8 @@ class MediaQueue {
     return completer.future;
   }
 
-  static Future<MediaState> load() async {
-    final spiff = await SpiffCache.load(await getCurrentPlaylist());
+  static Future<MediaState> load(Uri uri) async {
+    final spiff = await SpiffCache.load(uri);
     return fromSpiff(spiff);
   }
 
@@ -301,7 +307,7 @@ class MediaQueue {
 
   static Future<List<MediaItem>> _createQueue(
       Client client, List<Entry> entries) async {
-    final items = List<MediaItem>.empty();
+    final List<MediaItem> items = [];
     final headers = await client.headers();
     for (var t in entries) {
       final uri = await client.locate(t);

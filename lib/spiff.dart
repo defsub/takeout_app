@@ -161,10 +161,10 @@ class Playlist {
   Playlist({this.location, this.creator, required this.title, this.image, required this.tracks});
 
   Playlist copyWith({
-    String? location,
+    required String location,
   }) =>
       Playlist(
-        location: location ?? this.location,
+        location: location,
         creator: this.creator,
         title: this.title,
         image: this.image,

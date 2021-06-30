@@ -101,7 +101,7 @@ class Client {
     if (v == null) {
       prefs.remove(settingEndpoint);
     } else {
-      prefs.setString(settingEndpoint, _endpoint!);
+      prefs.setString(settingEndpoint, v);
       _applyEndpoint();
     }
   }
@@ -123,7 +123,7 @@ class Client {
     if (v == null) {
       await prefs.remove(settingCookie);
     } else {
-      await prefs.setString(settingCookie, _cookie!);
+      await prefs.setString(settingCookie, v);
     }
   }
 
@@ -149,6 +149,7 @@ class Client {
   }
 
   Future<bool> loggedIn() async {
+    await getEndpoint(); // TODO - needed to ensure endpoint is set
     final cookie = await _getCookie();
     // TODO check cookie age
     return cookie != null;

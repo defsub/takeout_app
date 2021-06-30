@@ -134,7 +134,7 @@ class TakeoutState extends State<_TakeoutWidget> {
 
     _initConnectivity();
     _connectivitySubscription =
-        _connectivity.onConnectivityChanged.listen(_updateConnectionStatus);
+        _connectivity.onConnectivityChanged.distinct().listen(_updateConnectionStatus);
 
     Client().loggedIn().then((success) => success ? login() : logout());
   }
@@ -197,7 +197,7 @@ class TakeoutState extends State<_TakeoutWidget> {
   void _onLogin(bool loggedIn) {
     setState(() {
       _loggedIn = loggedIn;
-      if (_loggedIn!) {
+      if (loggedIn) {
         _load();
       }
     });
@@ -421,7 +421,7 @@ Widget allowStreamingIconButton(Icon icon, void Function() onPressed) {
         return IconButton(
             icon: icon,
             onPressed:
-                TakeoutState.allowStreaming(result!) ? () => onPressed() : null);
+                TakeoutState.allowStreaming(result) ? () => onPressed() : null);
       });
 }
 
@@ -433,6 +433,6 @@ Widget allowDownloadIconButton(Icon icon, void Function() onPressed) {
         return IconButton(
             icon: icon,
             onPressed:
-                TakeoutState.allowDownload(result!) ? () => onPressed() : null);
+                TakeoutState.allowDownload(result) ? () => onPressed() : null);
       });
 }

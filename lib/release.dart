@@ -94,7 +94,7 @@ class _ReleaseState extends State<ReleaseWidget> {
     final releaseUrl = 'https://musicbrainz.org/release/${release.reid}';
     final releaseGroupUrl =
         'https://musicbrainz.org/release-group/${release.rgid}';
-    return FutureBuilder<Color>(
+    return FutureBuilder<Color?>(
         future: getImageBackgroundColor(release.image),
         builder: (context, snapshot) => Scaffold(
             backgroundColor: snapshot.data,

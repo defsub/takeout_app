@@ -69,8 +69,10 @@ class PlayerWidget extends StatelessWidget {
         if (item == null) {
           return;
         }
-        getImageBackgroundColor(item.artUri)
-            .then((color) => _backgroundColorSubject.add(color));
+        if (item.artUri != null) {
+          getImageBackgroundColor(item.artUri.toString())
+              .then((color) => _backgroundColorSubject.add(color));
+        }
       });
     }
     return StreamBuilder<Color>(

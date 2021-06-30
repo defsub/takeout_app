@@ -63,7 +63,7 @@ class _ArtistsState extends State<ArtistsWidget> {
             title: genre != null
                 ? header('Artists \u2013 $genre')
                 : area != null
-                    ? header('Artists! \u2013 $area')
+                    ? header('Artists \u2013 $area')
                     : header('Artists'),
             actions: [
               popupMenu(context, [
@@ -154,7 +154,7 @@ class ArtistWidget extends StatefulWidget {
 
 class _ArtistState extends State<ArtistWidget> with ArtistBuilder {
   final Artist _artist;
-  late ArtistView _view;
+  ArtistView? _view;
 
   _ArtistState(this._artist);
 
@@ -190,19 +190,25 @@ class _ArtistState extends State<ArtistWidget> with ArtistBuilder {
   }
 
   void _onSingles(BuildContext context) {
+    if (_view == null) {
+      return;
+    }
     Navigator.push(
         context,
         MaterialPageRoute(
             builder: (context) => ArtistTrackListWidget(
-                _view, _artist, ArtistTrackType.singles)));
+                _view!, _artist, ArtistTrackType.singles)));
   }
 
   void _onPopular(BuildContext context) {
+    if (_view == null) {
+      return;
+    }
     Navigator.push(
         context,
         MaterialPageRoute(
             builder: (context) => ArtistTrackListWidget(
-                _view, _artist, ArtistTrackType.popular)));
+                _view!, _artist, ArtistTrackType.popular)));
   }
 
   Future<void> _onRefresh() async {
@@ -238,7 +244,7 @@ class _ArtistState extends State<ArtistWidget> with ArtistBuilder {
     }
   }
 
-  ArtistView get view => _view;
+  ArtistView? get view => _view;
 
   Future<void> onRefresh() => _onRefresh();
 
@@ -253,8 +259,10 @@ class _ArtistState extends State<ArtistWidget> with ArtistBuilder {
         PopupItem.singles((_) => _onSingles(context)),
         PopupItem.popular((_) => _onPopular(context)),
         PopupItem.divider(),
-        if (_artist.genre != null) PopupItem.genre(genre, (_) => _onGenre(context, _artist.genre!)),
-        if (_artist.area != null) PopupItem.area(_artist.area!, (_) => _onArea(context, _artist.area!)),
+        if (_artist.genre != null)
+          PopupItem.genre(genre, (_) => _onGenre(context, _artist.genre!)),
+        if (_artist.area != null)
+          PopupItem.area(_artist.area!, (_) => _onArea(context, _artist.area!)),
         PopupItem.divider(),
         PopupItem.link('MusicBrainz Artist', (_) => launch(artistUrl)),
         PopupItem.divider(),
@@ -272,16 +280,19 @@ class _ArtistState extends State<ArtistWidget> with ArtistBuilder {
   }
 
   List<Widget> slivers() {
+    if (_view == null) {
+      return [];
+    }
     return [
       SliverToBoxAdapter(child: heading('Releases')),
       AlbumGridWidget(
-        _view.releases,
+        _view!.releases,
         subtitle: false,
       ),
-      if (_view.similar.isNotEmpty)
+      if (_view!.similar.isNotEmpty)
         SliverToBoxAdapter(child: heading('Similar Artists')),
-      if (_view.similar.isNotEmpty)
-        SliverToBoxAdapter(child: SimilarArtistListWidget(_view))
+      if (_view!.similar.isNotEmpty)
+        SliverToBoxAdapter(child: SimilarArtistListWidget(_view!))
     ];
   }
 }
@@ -488,18 +499,19 @@ mixin ArtistBuilder {
   static Random _random = Random();
 
   String _randomCover() {
-    if (view == null) {
+    final artistView = view;
+    if (artistView == null) {
       return '';
     }
-    for (var i = 0; i < view!.releases.length; i++) {
-      final pick = _random.nextInt(view!.releases.length);
-      if (isNotNullOrEmpty(view!.releases[pick].image)) {
-        return view!.releases[pick].image;
+    for (var i = 0; i < artistView.releases.length; i++) {
+      final pick = _random.nextInt(artistView.releases.length);
+      if (isNotNullOrEmpty(artistView.releases[pick].image)) {
+        return artistView.releases[pick].image;
       }
     }
-    for (var i = 0; i < view!.releases.length; i++) {
-      if (isNotNullOrEmpty(view!.releases[i].image)) {
-        return view!.releases[i].image;
+    for (var i = 0; i < artistView.releases.length; i++) {
+      if (isNotNullOrEmpty(artistView.releases[i].image)) {
+        return artistView.releases[i].image;
       }
     }
     return '';
@@ -517,21 +529,23 @@ mixin ArtistBuilder {
           final connectivity = snapshot.data;
 
           final useBackground = false;
-          final artistArtworkUrl = view != null
+          final artistView = view;
+          final artistArtworkUrl = artistView != null
               ? useBackground
-                  ? view!.background
-                  : view!.image
+                  ? artistView.background
+                  : artistView.image
               : null;
 
-          bool allowArtwork = view != null &&
+          bool allowArtwork = artistView != null &&
               isNotNullOrEmpty(artistArtworkUrl) &&
               TakeoutState.allowArtistArtwork(connectivity);
 
-          final artworkImage = allowArtwork && useBackground
-              ? artistBackground(artistArtworkUrl!)
-              : allowArtwork
-                  ? artistImage(artistArtworkUrl!)
-                  : _albumArtwork();
+          final artworkImage =
+              allowArtwork && useBackground && artistArtworkUrl != null
+                  ? artistBackground(artistArtworkUrl)
+                  : allowArtwork && artistArtworkUrl != null
+                      ? artistImage(artistArtworkUrl)
+                      : _albumArtwork();
 
           // artist backgrounds are 1920x1080, expand keeping aspect ratio
           // artist images are 1000x1000
@@ -540,8 +554,8 @@ mixin ArtistBuilder {
           final expandedHeight =
               useBackground ? 1080.0 / 1920.0 * screen.width : screen.width;
 
-          return FutureBuilder<Color>(
-              future: allowArtwork
+          return FutureBuilder<Color?>(
+              future: allowArtwork && artistArtworkUrl != null
                   ? getImageBackgroundColor(artistArtworkUrl)
                   : Future.value(),
               builder: (context, snapshot) => Scaffold(
@@ -587,10 +601,11 @@ mixin ArtistBuilder {
                                   child: Container(
                                       padding: EdgeInsets.fromLTRB(0, 16, 0, 0),
                                       child: Column(children: [
-                                        Text(view!.artist.name,
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .headline5)
+                                        if (artistView != null)
+                                          Text(artistView.artist.name,
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .headline5)
                                       ]))),
                               ...slivers(),
                             ]))));

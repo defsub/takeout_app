@@ -65,7 +65,11 @@ Future<SharedPreferences> prefs = SharedPreferences.getInstance();
 Future<String?> prefsString(String key) async {
   return await prefs.then((p) async {
     await p.reload();
-    return p.getString(key);
+    var val = p.getString(key);
+    if (val == 'null') { // TODO why did this happen?
+      val = null;
+    }
+    return val;
   });
 }
 

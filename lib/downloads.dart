@@ -213,8 +213,8 @@ class DownloadState extends State<DownloadWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<Color>(
-        future: getImageBackgroundColor(_coverUrl),
+    return FutureBuilder<Color?>(
+        future: getImageBackgroundColor(_coverUrl ?? ''),
         builder: (context, snapshot) => Scaffold(
             backgroundColor: snapshot.data,
             // appBar: AppBar(

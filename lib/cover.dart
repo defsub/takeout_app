@@ -89,7 +89,7 @@ dynamic _hero(dynamic cover, String tag) {
 
 final _colorCache = Map<String, Color>();
 
-Future<Color> getImageBackgroundColor(url) async {
+Future<Color> getImageBackgroundColor(String url) async {
   var color = _colorCache[url];
   if (color != null) {
     return color;

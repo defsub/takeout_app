@@ -369,16 +369,14 @@ class Location {
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
 class RadioView {
-  List<Station> artist;
-  List<Station> genre;
-  List<Station> similar;
-  List<Station> period;
-  List<Station> series;
-  List<Station> other;
+  final List<Station> genre;
+  final List<Station> similar;
+  final List<Station> period;
+  final List<Station> series;
+  final List<Station> other;
 
   RadioView(
-      {this.artist = const [],
-      this.genre = const [],
+      {this.genre = const [],
       this.similar = const [],
       this.period = const [],
       this.series = const [],
@@ -447,13 +445,13 @@ class MoviesView {
 class MovieView {
   final Movie movie;
   final Collection? collection;
-  final List<Movie> other;
-  final List<Cast> cast;
-  final List<Crew> crew;
-  final List<Person> starring;
-  final List<Person> directing;
-  final List<Person> writing;
-  final List<String> genres;
+  final List<Movie>? other;
+  final List<Cast>? cast;
+  final List<Crew>? crew;
+  final List<Person>? starring;
+  final List<Person>? directing;
+  final List<Person>? writing;
+  final List<String>? genres;
   final int? vote;
   final int? voteCount;
 

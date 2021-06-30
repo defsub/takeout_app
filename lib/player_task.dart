@@ -25,6 +25,7 @@ import 'package:audio_session/audio_session.dart';
 import 'package:just_audio/just_audio.dart';
 
 import 'playlist.dart';
+import 'client.dart';
 
 extension TakeoutMediaItem on MediaItem {
   bool isLocalFile() {
@@ -49,25 +50,27 @@ class AudioPlayerTask extends BackgroundAudioTask {
 
   @override
   Future<dynamic> onCustomAction(String name, dynamic arguments) {
+    print('onCustomAction $name / $arguments');
     if (name == 'stage') {
-      _loadPlaylist();
+      _loadPlaylist(arguments as String);
     } else if (name == 'doit') {
-      _loadPlaylist();
+      _loadPlaylist(arguments as String);
       if (!_player.playing) {
         _player.play();
       }
     } else if (name == 'test') {
-      _reload();
+      Uri uri = Uri.parse(arguments as String);
+      _reload(uri);
     }
     return Future.value(true);
   }
 
-  Future<void> _loadPlaylist() async {
-    _reload();
+  Future<void> _loadPlaylist(String location) async {
+    _reload(Uri.parse(location));
   }
 
-  void _reload() async {
-    var newState = await MediaQueue.load();
+  void _reload(Uri uri) async {
+    var newState = await MediaQueue.load(uri);
     var oldState = _state;
 
     bool canAppend = false;
@@ -189,7 +192,7 @@ class AudioPlayerTask extends BackgroundAudioTask {
 
   @override
   Future<void> onAddQueueItem(MediaItem item) {
-    return _loadPlaylist();
+    return _loadPlaylist(Client.getDefaultPlaylistUrl());
   }
 
   @override
