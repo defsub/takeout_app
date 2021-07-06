@@ -106,10 +106,10 @@ class ReleaseView {
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
 class SearchView {
-  final List<Artist> artists;
-  final List<Release> releases;
-  final List<Track> tracks;
-  final List<Movie> movies;
+  final List<Artist>? artists;
+  final List<Release>? releases;
+  final List<Track>? tracks;
+  final List<Movie>? movies;
   final String query;
   final int hits;
 

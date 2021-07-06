@@ -61,26 +61,13 @@ class MyApp extends StatelessWidget {
   ThemeData _darkTheme() {
     final ThemeData base = ThemeData.dark();
     return base.copyWith(
-      toggleableActiveColor: Colors.orangeAccent,
-      disabledColor: Colors.white24,
-      sliderTheme: SliderThemeData(
-        activeTrackColor: Colors.orangeAccent,
-        inactiveTrackColor: Colors.grey,
-        thumbColor: Colors.orangeAccent,
-      ),
-      bottomSheetTheme: BottomSheetThemeData(
-          backgroundColor: Colors.black26.withOpacity(.85)),
-      accentColor: Colors.orangeAccent,
-      bottomNavigationBarTheme:
-          BottomNavigationBarThemeData(selectedItemColor: Colors.orangeAccent),
-      floatingActionButtonTheme:
-          FloatingActionButtonThemeData(backgroundColor: Colors.orangeAccent),
-      outlinedButtonTheme: OutlinedButtonThemeData(
-          style: OutlinedButton.styleFrom(primary: Colors.orangeAccent)),
-      textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(primary: base.textTheme.bodyText1!.color),
-      ),
+      colorScheme: ColorScheme.dark().copyWith(
+          primary: Colors.orangeAccent,
+          primaryVariant: Colors.orangeAccent,
+          secondary: Colors.orangeAccent,
+          secondaryVariant: Colors.orangeAccent),
       indicatorColor: Colors.orangeAccent,
+      accentColor: Colors.orangeAccent,
     );
   }
 }
@@ -133,8 +120,9 @@ class TakeoutState extends State<_TakeoutWidget> {
     _loginSubscription = _loginStream.listen(_onLogin);
 
     _initConnectivity();
-    _connectivitySubscription =
-        _connectivity.onConnectivityChanged.distinct().listen(_updateConnectionStatus);
+    _connectivitySubscription = _connectivity.onConnectivityChanged
+        .distinct()
+        .listen(_updateConnectionStatus);
 
     Client().loggedIn().then((success) => success ? login() : logout());
   }
@@ -250,7 +238,7 @@ class TakeoutState extends State<_TakeoutWidget> {
       });
       await MediaQueue.sync();
       if (!AudioService.playbackState.playing) {
-          MediaQueue.restore();
+        MediaQueue.restore();
       }
     } on ClientException catch (e) {
       if (e.authenticationFailed) {

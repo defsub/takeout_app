@@ -36,16 +36,24 @@ class _SearchState extends State<SearchWidget> {
   TextEditingController _searchText = TextEditingController();
 
   void _onPlay() {
-    MediaQueue.playTracks(_view!.tracks);
+    final List<Track>? tracks = _view!.tracks;
+    if (tracks != null && tracks.length > 0) {
+      MediaQueue.playTracks(tracks);
+    }
   }
 
   void _onDownload() {
-    final spiff = MediaQueue.fromTracks(_view!.tracks, creator: 'Search', title: _searchText.text);
-    Downloads.downloadSpiff(spiff);
+    final List<Track>? tracks = _view!.tracks;
+    if (tracks != null && tracks.length > 0) {
+      final spiff = MediaQueue.fromTracks(tracks,
+          creator: 'Search', title: _searchText.text);
+      Downloads.downloadSpiff(spiff);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final view = _view;
     return Scaffold(
         appBar: AppBar(title: header('Search')),
         body: Column(children: [
@@ -56,36 +64,36 @@ class _SearchState extends State<SearchWidget> {
               controller: _searchText,
               decoration: InputDecoration(
                 border: OutlineInputBorder(),
-                counterText: _view == null
+                counterText: view == null
                     ? null
-                    : _view!.hits > 0
-                        ? '${_view!.hits} matches'
+                    : view.hits > 0
+                        ? '${view.hits} matches'
                         : '',
-                errorText: _view == null
+                errorText: view == null
                     ? null
-                    : _view!.hits == 0
+                    : view.hits == 0
                         ? 'no matches'
                         : null,
                 helperText: 'text or artist:name or guitar:person',
               ),
             ),
           ),
-          if (_view != null)
+          if (view != null)
             Flexible(
                 child: ListView(children: [
-              if (_view!.artists.isNotEmpty)
+              if (view.artists != null && view.artists!.isNotEmpty)
                 Container(
                     child: Column(children: [
                   heading('Artists'),
-                  _ArtistResultsWidget(_view!.artists),
+                  _ArtistResultsWidget(view.artists!),
                 ])),
-              if (_view!.releases.isNotEmpty)
+              if (view.releases != null && view.releases!.isNotEmpty)
                 Container(
                     child: Column(children: [
                   heading('Releases'),
-                  ReleaseListWidget(_view!.releases),
+                  ReleaseListWidget(view.releases!),
                 ])),
-              if (_view!.tracks.isNotEmpty)
+              if (view.tracks != null && view.tracks!.isNotEmpty)
                 Container(
                     child: Column(children: [
                   heading('Tracks'),
@@ -102,7 +110,7 @@ class _SearchState extends State<SearchWidget> {
                           onPressed: () => _onDownload()),
                     ],
                   ),
-                  TrackListWidget(_view!.tracks),
+                  TrackListWidget(view.tracks!),
                 ]))
             ]))
         ]));
@@ -128,8 +136,7 @@ class _ArtistResultsWidget extends StatelessWidget {
     return Column(children: [
       ..._artists.map((a) => Container(
           child: ListTile(
-              onTap: () => _onTapped(context, a),
-              title: Text(a.name))))
+              onTap: () => _onTapped(context, a), title: Text(a.name))))
     ]);
   }
 
