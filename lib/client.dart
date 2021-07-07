@@ -149,9 +149,12 @@ class Client {
   }
 
   Future<bool> loggedIn() async {
-    await getEndpoint(); // TODO - needed to ensure endpoint is set
     final cookie = await _getCookie();
     // TODO check cookie age
+    if (cookie != null) {
+      // needed to ensure endpoint is set
+      await getEndpoint();
+    }
     return cookie != null;
   }
 
