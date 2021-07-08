@@ -412,7 +412,7 @@ class Client {
 
   /// Download a list of tracks
   Future<List<bool>> downloadTracks(List<Track> tracks) async {
-    final result = List<bool>.empty();
+    final result = <bool>[];
     for (var t in tracks) {
       await download(t)
           .then((v) => result.add(true))
@@ -423,7 +423,7 @@ class Client {
 
   /// Download
   Future<List<bool>> downloadSpiffTracks(Spiff spiff) async {
-    final result = List<bool>.empty();
+    final result = <bool>[];
     for (var t in spiff.playlist.tracks) {
       await download(t)
           .then((v) => result.add(true))

@@ -82,7 +82,7 @@ class MediaQueue {
   }
 
   static Future playTracks(List<Track> tracks, {int index = 0}) {
-    return playSpiff(fromTracks(tracks));
+    return playSpiff(fromTracks(tracks), index: index);
   }
 
   static Future playSpiff(Spiff spiff, {int index = -1}) async {
@@ -262,7 +262,7 @@ class MediaQueue {
   }
 
   static List<Entry> _trackEntries(List<Track> tracks) {
-    final entries = List<Entry>.empty();
+    final entries = <Entry>[];
     for (var t in tracks) {
       entries.add(_trackEntry(t));
     }
