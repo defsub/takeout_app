@@ -19,6 +19,7 @@ import 'dart:io';
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:takeout_app/client.dart';
 
@@ -44,7 +45,9 @@ class Spiff {
       return playlist.title == other.playlist.title &&
           playlist.creator == other.playlist.creator &&
           playlist.location == other.playlist.location &&
-          playlist.tracks.length == other.playlist.tracks.length;
+          playlist.image == other.playlist.image &&
+          playlist.tracks.length == other.playlist.tracks.length &&
+          listEquals(playlist.tracks, other.playlist.tracks);
     }
     return false;
   }
