@@ -63,9 +63,11 @@ class _ReleaseState extends State<ReleaseWidget> {
   }
 
   void _onReleaseUpdated(ReleaseView view) {
-    setState(() {
-      _view = view;
-    });
+    if (mounted) {
+      setState(() {
+        _view = view;
+      });
+    }
   }
 
   void _onArtist() {

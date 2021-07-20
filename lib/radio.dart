@@ -139,9 +139,11 @@ class RadioState extends State<RadioWidget> {
     try {
       final client = Client();
       final result = await client.radio(ttl: Duration.zero);
-      setState(() {
-        _view = result;
-      });
+      if (mounted) {
+        setState(() {
+          _view = result;
+        });
+      }
     } catch (error) {
       print('refresh err $error');
     }
@@ -242,9 +244,11 @@ class _RefreshSpiffState extends State<RefreshSpiffWidget> {
     try {
       final result = await _fetchSpiff!();
       print('got $result');
-      setState(() {
-        _spiff = result;
-      });
+      if (mounted) {
+        setState(() {
+          _spiff = result;
+        });
+      }
     } catch (error) {
       print('refresh err $error');
     }

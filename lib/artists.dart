@@ -83,10 +83,12 @@ class _ArtistsState extends State<ArtistsWidget> {
     try {
       final client = Client();
       final result = await client.artists(ttl: Duration.zero);
-      setState(() {
-        loadArtistMap(_view.artists);
-        _view = result;
-      });
+      if (mounted) {
+        setState(() {
+          loadArtistMap(_view.artists);
+          _view = result;
+        });
+      }
     } catch (error) {
       print('refresh err $error');
     }
@@ -166,9 +168,11 @@ class _ArtistState extends State<ArtistWidget> with ArtistBuilder {
   }
 
   void _onArtistUpdated(ArtistView view) {
-    setState(() {
-      _view = view;
-    });
+    if (mounted) {
+      setState(() {
+        _view = view;
+      });
+    }
   }
 
   void _onRadio() {
@@ -335,7 +339,7 @@ class TrackListWidget extends StatelessWidget {
           onTap: () => _onPlay(index),
           leading: tileCover(_tracks[index].image),
           subtitle:
-              Text('${_tracks[index].release} \u2022 ${_tracks[index].date}'),
+              Text('${_tracks[index].artist} \u2022 ${_tracks[index].release} \u2022 ${_tracks[index].date}'),
           title: Text(_tracks[index].title)))
     ]);
   }
@@ -400,15 +404,19 @@ class _ArtistTrackListState extends State<ArtistTrackListWidget>
   }
 
   void _onPopularUpdated(PopularView v) {
-    setState(() {
-      _tracks = v.popular;
-    });
+    if (mounted) {
+      setState(() {
+        _tracks = v.popular;
+      });
+    }
   }
 
   void _onSinglesUpdated(SinglesView v) {
-    setState(() {
-      _tracks = v.singles;
-    });
+    if (mounted) {
+      setState(() {
+        _tracks = v.singles;
+      });
+    }
   }
 
   Future<Spiff> _playlist() {

@@ -119,9 +119,11 @@ class _SearchState extends State<SearchWidget> {
   void _onSubmit(String q) {
     final client = Client();
     client.search(q).then((result) {
-      setState(() {
-        _view = result;
-      });
+      if (mounted) {
+        setState(() {
+          _view = result;
+        });
+      }
     });
   }
 }

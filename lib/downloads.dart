@@ -314,10 +314,12 @@ class DownloadState extends State<DownloadWidget> {
       try {
         final result = await fetcher();
         print('got $result');
-        setState(() {
-          spiff = result;
-          _coverUrl = _spiffCover(spiff!);
-        });
+        if (mounted) {
+          setState(() {
+            spiff = result;
+            _coverUrl = _spiffCover(spiff!);
+          });
+        }
       } catch (error) {
         print('refresh err $error');
       }

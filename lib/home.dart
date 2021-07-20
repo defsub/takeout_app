@@ -66,9 +66,11 @@ class HomeState extends State<HomeWidget> {
     try {
       final client = Client();
       final result = await client.home(ttl: Duration.zero);
-      setState(() {
-        _view = result;
-      });
+      if (mounted) {
+        setState(() {
+          _view = result;
+        });
+      }
     } catch (error) {
       print('refresh err $error');
     }

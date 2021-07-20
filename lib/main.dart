@@ -22,6 +22,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:audio_service/audio_service.dart';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_settings_screens/flutter_settings_screens.dart';
@@ -34,6 +35,7 @@ import 'home.dart';
 import 'login.dart';
 import 'schema.dart';
 import 'player.dart';
+import 'player_handler.dart';
 import 'playlist.dart';
 import 'radio.dart';
 import 'search.dart';
@@ -43,7 +45,17 @@ import 'cache.dart';
 import 'settings.dart';
 
 void main() {
-  Settings.init().then((_) => runApp(new MyApp()));
+  Settings.init().then((_) async {
+    audioHandler = await AudioService.init(
+      builder: () => AudioPlayerHandler(),
+      config: const AudioServiceConfig(
+        androidNotificationChannelId: 'com.ryanheise.myapp.channel.audio',
+        androidNotificationChannelName: 'Audio playback',
+        androidNotificationOngoing: true,
+      ),
+    );
+    runApp(MyApp());
+  });
 }
 
 final _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
@@ -53,7 +65,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: appName,
-      home: AudioServiceWidget(child: _TakeoutWidget()),
+      home: _TakeoutWidget(),
       darkTheme: _darkTheme(),
     );
   }
@@ -198,28 +210,36 @@ class TakeoutState extends State<_TakeoutWidget> {
   }
 
   void _onHomeUpdated(HomeView view) {
-    setState(() {
-      _homeView = view;
-    });
+    if (mounted) {
+      setState(() {
+        _homeView = view;
+      });
+    }
   }
 
   void _onArtistsUpdated(ArtistsView view) {
-    setState(() {
-      loadArtistMap(view.artists);
-      _artistsView = view;
-    });
+    if (mounted) {
+      setState(() {
+        loadArtistMap(view.artists);
+        _artistsView = view;
+      });
+    }
   }
 
   void _onRadioUpdated(RadioView view) {
-    setState(() {
-      _radioView = view;
-    });
+    if (mounted) {
+      setState(() {
+        _radioView = view;
+      });
+    }
   }
 
   void _onPlaybackState(PlaybackState playbackState) {
-    setState(() {
-      _playbackState = playbackState;
-    });
+    if (mounted) {
+      setState(() {
+        _playbackState = playbackState;
+      });
+    }
   }
 
   void _load() async {
@@ -237,7 +257,9 @@ class TakeoutState extends State<_TakeoutWidget> {
         _onRadioUpdated(view);
       });
       await MediaQueue.sync();
-      if (!AudioService.playbackState.playing) {
+      if (audioHandler.playbackState.hasValue == false ||
+          (audioHandler.playbackState.hasValue &&
+              audioHandler.playbackState.value!.playing == false)) {
         MediaQueue.restore();
       }
     } on ClientException catch (e) {
@@ -248,7 +270,7 @@ class TakeoutState extends State<_TakeoutWidget> {
       showErrorDialog(context, e.message);
     }
 
-    AudioService.playbackStateStream.distinct().listen((state) {
+    audioHandler.playbackState.distinct().listen((state) {
       _onPlaybackState(state);
     });
   }
@@ -272,9 +294,6 @@ class TakeoutState extends State<_TakeoutWidget> {
       case 4:
         if (_playerWidget == null) {
           _playerWidget = PlayerWidget();
-        }
-        if (AudioService.running == false) {
-          PlayerWidget.doStart({});
         }
         return _playerWidget!;
       default:
@@ -315,9 +334,9 @@ class TakeoutState extends State<_TakeoutWidget> {
                         ? FloatingActionButton(
                             onPressed: () {
                               if (_playbackState!.playing) {
-                                AudioService.pause();
+                                audioHandler.pause();
                               } else {
-                                AudioService.play();
+                                audioHandler.play();
                               }
                             },
                             child: (_playbackState!.playing)

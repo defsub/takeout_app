@@ -95,7 +95,7 @@ Widget popupMenu(BuildContext context, List<PopupItem> items) {
                 value: index,
                 child: ListTile(
                     leading: items[index].icon,
-                    title: Text(items[index].title!),
+                    title: Text(items[index].title ?? 'no title'),
                     minLeadingWidth: 10)));
           }
         }

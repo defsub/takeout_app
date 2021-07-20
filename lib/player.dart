@@ -29,12 +29,7 @@ import 'package:rxdart/rxdart.dart';
 import 'cover.dart';
 import 'global.dart';
 import 'menu.dart';
-import 'player_task.dart';
-
-// NOTE: Your entry point MUST be a top-level function.
-void _audioPlayerTaskEntryPoint() async {
-  AudioServiceBackground.run(() => AudioPlayerTask());
-}
+import 'player_handler.dart';
 
 class _PlayState {
   final QueueState queueState;
@@ -47,25 +42,11 @@ final _backgroundColorSubject = BehaviorSubject<Color>();
 StreamSubscription<MediaItem?>? _mediaItemSubscription;
 
 class PlayerWidget extends StatelessWidget {
-  static void doStart(Map<String, dynamic> params) async {
-    await AudioService.start(
-      params: params,
-      backgroundTaskEntrypoint: _audioPlayerTaskEntryPoint,
-      androidNotificationChannelName: 'Takeout',
-      // Enable this if you want the Android service to exit the foreground state on pause.
-      //androidStopForegroundOnPause: true,
-      androidNotificationColor: 0xFF2196f3,
-      androidNotificationIcon: 'mipmap/ic_launcher',
-      androidEnableQueue: true,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     if (_mediaItemSubscription == null) {
       // change background color when mediaItem changes
-      _mediaItemSubscription =
-          AudioService.currentMediaItemStream.distinct().listen((item) {
+      _mediaItemSubscription = audioHandler.mediaItem.listen((item) {
         if (item == null) {
           return;
         }
@@ -81,84 +62,65 @@ class PlayerWidget extends StatelessWidget {
           final backgroundColor = snapshot.data ?? null;
           return Scaffold(
               backgroundColor: backgroundColor,
-              body: StreamBuilder<bool>(
-                  stream: AudioService.runningStream,
+              body: StreamBuilder<_PlayState>(
+                  stream: Rx.combineLatest2<QueueState, bool, _PlayState>(
+                      _queueStateStream,
+                      audioHandler.playbackState
+                          .map((state) => state.playing)
+                          .distinct(),
+                      (a, b) => _PlayState(a, b)),
                   builder: (context, snapshot) {
-                    if (snapshot.connectionState != ConnectionState.active) {
-                      // Don't show anything until we've ascertained whether or not the
-                      // service is running, since we want to show a different UI in
-                      // each case.
-                      return SizedBox();
-                    }
-                    final running = snapshot.data ?? false;
-                    if (!running) {
-                      return audioPlayerButton();
-                    }
-
+                    final playing = snapshot.data?.playing ?? false;
+                    final queueState = snapshot.data?.queueState;
+                    final queue = queueState?.queue ?? [];
+                    final mediaItem = queueState?.mediaItem;
                     final screen = MediaQuery.of(context).size;
                     final expandedHeight = screen.height / 2;
-
-                    return StreamBuilder<_PlayState>(
-                        stream: Rx.combineLatest2<QueueState, bool, _PlayState>(
-                            _queueStateStream,
-                            AudioService.playbackStateStream
-                                .map((state) => state.playing)
-                                .distinct(),
-                            (a, b) => _PlayState(a, b)),
-                        builder: (context, snapshot) {
-                          final playing = snapshot.data?.playing ?? false;
-                          final queueState = snapshot.data?.queueState;
-                          final queue = queueState?.queue ?? [];
-                          final mediaItem = queueState?.mediaItem;
-                          return CustomScrollView(slivers: [
-                            if (mediaItem != null)
-                              SliverAppBar(
-                                  backgroundColor: backgroundColor,
-                                  automaticallyImplyLeading: false,
-                                  expandedHeight: expandedHeight,
-                                  actions: [
-                                    popupMenu(context, [
-                                      PopupItem.artist(
-                                          mediaItem.artist ?? '',
-                                          (_) =>
-                                              _onArtist(mediaItem.artist ?? ''))
-                                    ]),
-                                  ],
-                                  flexibleSpace: FlexibleSpaceBar(
-                                      stretchModes: [
-                                        StretchMode.zoomBackground,
-                                        StretchMode.fadeTitle
-                                      ],
-                                      background: Stack(
-                                          fit: StackFit.expand,
-                                          children: [
-                                            cover(mediaItem),
-                                          ]))),
-                            if (queue.isNotEmpty && mediaItem != null)
-                              SliverToBoxAdapter(
-                                  child: Container(
-                                      padding: EdgeInsets.fromLTRB(0, 16, 0, 0),
-                                      child: Column(children: [
-                                        GestureDetector(
-                                            onTap: () => _onArtist(
-                                                mediaItem.artist ?? ''),
-                                            child: Text(mediaItem.title,
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .headline5)),
-                                        Text(mediaItem.artist ?? '',
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .subtitle1!
-                                                .copyWith(
-                                                    color: Colors.white60)),
-                                        _controls(queue, mediaItem, playing),
-                                        _seekBar(),
-                                      ]))),
-                            SliverToBoxAdapter(
-                                child: _MediaTrackListWidget(_queueStateStream))
-                          ]);
-                        });
+                    return CustomScrollView(slivers: [
+                      if (mediaItem != null)
+                        SliverAppBar(
+                            backgroundColor: backgroundColor,
+                            automaticallyImplyLeading: false,
+                            expandedHeight: expandedHeight,
+                            actions: [
+                              popupMenu(context, [
+                                PopupItem.artist(mediaItem.artist ?? '',
+                                    (_) => _onArtist(mediaItem.artist ?? ''))
+                              ]),
+                            ],
+                            flexibleSpace: FlexibleSpaceBar(
+                                stretchModes: [
+                                  StretchMode.zoomBackground,
+                                  StretchMode.fadeTitle
+                                ],
+                                background:
+                                    Stack(fit: StackFit.expand, children: [
+                                  cover(mediaItem),
+                                ]))),
+                      if (queue.isNotEmpty && mediaItem != null)
+                        SliverToBoxAdapter(
+                            child: Container(
+                                padding: EdgeInsets.fromLTRB(0, 16, 0, 0),
+                                child: Column(children: [
+                                  GestureDetector(
+                                      onTap: () =>
+                                          _onArtist(mediaItem.artist ?? ''),
+                                      child: Text(mediaItem.title,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .headline5)),
+                                  Text(mediaItem.artist ?? '',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .subtitle1!
+                                          .copyWith(color: Colors.white60)),
+                                  _controls(queue, mediaItem, playing),
+                                  _seekBar(),
+                                ]))),
+                      if (queue.isNotEmpty)
+                        SliverToBoxAdapter(
+                          child: _MediaTrackListWidget(_queueStateStream))
+                    ]);
                   }));
         });
   }
@@ -176,14 +138,14 @@ class PlayerWidget extends StatelessWidget {
             IconButton(
               icon: Icon(Icons.skip_previous),
               onPressed:
-                  mediaItem == queue.first ? null : AudioService.skipToPrevious,
+                  mediaItem == queue.first ? null : audioHandler.skipToPrevious,
             ),
             if (playing) pauseButton() else playButton(),
             // stopButton(),
             IconButton(
               icon: Icon(Icons.skip_next),
               onPressed:
-                  mediaItem == queue.last ? null : AudioService.skipToNext,
+                  mediaItem == queue.last ? null : audioHandler.skipToNext,
             ),
           ],
         ));
@@ -201,7 +163,7 @@ class PlayerWidget extends StatelessWidget {
               duration: mediaState?.mediaItem?.duration ?? Duration.zero,
               position: mediaState?.position ?? Duration.zero,
               onChangeEnd: (newPosition) {
-                AudioService.seekTo(newPosition);
+                audioHandler.seek(newPosition);
               },
             );
           },
@@ -222,47 +184,34 @@ class PlayerWidget extends StatelessWidget {
   /// current position.
   Stream<MediaState?> get _mediaStateStream =>
       Rx.combineLatest2<MediaItem?, Duration, MediaState>(
-          AudioService.currentMediaItemStream,
-          AudioService.positionStream,
+          audioHandler.mediaItem,
+          AudioService.position,
           (mediaItem, position) => MediaState(mediaItem, position));
 
   /// A stream reporting the combined state of the current queue and the current
   /// media item within that queue.
   Stream<QueueState> get _queueStateStream =>
       Rx.combineLatest2<List<MediaItem>?, MediaItem?, QueueState>(
-          AudioService.queueStream,
-          AudioService.currentMediaItemStream,
+          audioHandler.queue,
+          audioHandler.mediaItem,
           (queue, mediaItem) => QueueState(queue, mediaItem));
-
-  ElevatedButton audioPlayerButton() => startButton(
-        'AudioPlayer',
-        () {
-          PlayerWidget.doStart({}); // FIXME
-        },
-      );
-
-  ElevatedButton startButton(String label, VoidCallback onPressed) =>
-      ElevatedButton(
-        child: Text(label),
-        onPressed: onPressed,
-      );
 
   IconButton playButton() => IconButton(
         icon: Icon(Icons.play_arrow),
         iconSize: 64.0,
-        onPressed: AudioService.play,
+        onPressed: audioHandler.play,
       );
 
   IconButton pauseButton() => IconButton(
         icon: Icon(Icons.pause),
         iconSize: 64.0,
-        onPressed: AudioService.pause,
+        onPressed: audioHandler.pause,
       );
 
   IconButton stopButton() => IconButton(
         icon: Icon(Icons.stop),
         iconSize: 64.0,
-        onPressed: AudioService.stop,
+        onPressed: audioHandler.stop,
       );
 }
 
@@ -288,12 +237,12 @@ class _MediaTrackListWidget extends StatelessWidget {
                 trailing: _cloudIcon(t),
                 selected: t == state.mediaItem,
                 onTap: () {
-                  AudioService.playMediaItem(t);
+                  audioHandler.playMediaItem(t);
                 },
                 onLongPress: () {
                   showArtist(t.artist ?? '');
                 },
-                subtitle: Text('${t.artist} \u2022 ${t.album}'),
+                subtitle: Text('${t.artist ?? 'no artist'} \u2022 ${t.album ?? 'no album'}'),
                 title: Text(t.title)))
           ]));
         });
@@ -345,9 +294,10 @@ class _SeekBarState extends State<SeekBar> {
 
   @override
   Widget build(BuildContext context) {
-    final value = min<double>(
-        _dragValue ?? widget.position.inMilliseconds.toDouble(),
-        widget.duration.inMilliseconds.toDouble());
+    final value = min(
+      _dragValue ?? widget.position.inMilliseconds.toDouble(),
+      widget.duration.inMilliseconds.toDouble(),
+    );
     if (_dragValue != null && !_dragging) {
       _dragValue = null;
     }
@@ -380,8 +330,8 @@ class _SeekBarState extends State<SeekBar> {
           bottom: 0.0,
           child: Text(
               RegExp(r'((^0*[1-9]\d*:)?\d{2}:\d{2})\.\d+$')
-                      .firstMatch("$_remaining")
-                      ?.group(1) ??
+                  .firstMatch("$_remaining")
+                  ?.group(1) ??
                   '$_remaining',
               style: Theme.of(context).textTheme.caption),
         ),

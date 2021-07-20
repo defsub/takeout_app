@@ -18,7 +18,6 @@
 import 'dart:async';
 
 import 'package:audio_service/audio_service.dart';
-import 'package:takeout_app/player.dart';
 import 'package:takeout_app/util.dart';
 
 import 'client.dart';
@@ -61,6 +60,7 @@ class MediaQueue {
   }
 
   static Future restore() async {
+    print('restore');
     final uri = await getCurrentPlaylist();
     final spiff = await SpiffCache.load(uri);
     return _stage(spiff);
@@ -92,7 +92,7 @@ class MediaQueue {
     final uri = Uri.parse(spiff.playlist.location ?? 'location-missing');
     await setCurrentPlaylist(uri);
     await SpiffCache.put(spiff);
-    return AudioService.customAction('doit', uri.toString());
+    return audioHandler.customAction('doit', <String,dynamic>{'spiff': uri.toString()});
   }
 
   /// Play a release or station, replacing current playlist.
@@ -119,7 +119,7 @@ class MediaQueue {
         SpiffCache.get(uri).then((spiff) {
           spiff = spiff!.copyWith(index: index, position: position);
           SpiffCache.put(spiff).then((_) {
-            AudioService.customAction('doit', uri.toString())
+            audioHandler.customAction('doit', <String,dynamic>{'spiff': uri.toString()})
                 .then((_) => completer.complete());
           });
         }).catchError((e) {
@@ -132,7 +132,7 @@ class MediaQueue {
         //   index: index, playlist: spiff.playlist
         //         .copyWith(location: uri.toString())); // TODO fixme
         SpiffCache.put(spiff).then((_) {
-          AudioService.customAction('doit', uri.toString())
+          audioHandler.customAction('doit', <String,dynamic>{'spiff': uri.toString()})
               .then((_) => completer.complete());
         });
       }
@@ -140,12 +140,6 @@ class MediaQueue {
       completer.completeError(e);
     });
     return completer.future;
-  }
-
-  static void checkPlayer() {
-    if (AudioService.running == false) {
-      PlayerWidget.doStart({}); // FIXME
-    }
   }
 
   // Only call this from player task
@@ -180,7 +174,7 @@ class MediaQueue {
 
   static Future _stage(Spiff spiff) async {
     Uri uri = Uri.parse(spiff.playlist.location ?? 'location-missing');
-    AudioService.customAction('stage', uri.toString());
+    audioHandler.customAction('stage', <String,dynamic>{'spiff': uri.toString()});
   }
 
   /// Append a release, track or station to current playlist.
@@ -194,7 +188,7 @@ class MediaQueue {
       client.patch(patchAppend(ref)).then((result) {
         final spiff = result.toSpiff();
         SpiffCache.put(spiff).then((_) {
-          AudioService.customAction('test', 'fixme')
+          audioHandler.customAction('test', <String,dynamic>{'fixme': 'test'})
               .whenComplete(() => completer.complete(spiff));
         }).catchError((e) {
           completer.completeError(e);
@@ -358,8 +352,8 @@ class MediaState {
   }
 
   /// find item with id
-  int findId(String id) {
-    return _queue.indexWhere((item) => item.id == id);
+  MediaItem findId(String id) {
+    return _queue.where((item) => item.id == id).first;
   }
 
   /// find item
