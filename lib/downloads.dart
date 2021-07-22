@@ -22,6 +22,7 @@ import 'dart:convert';
 
 import 'package:path/path.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:takeout_app/playlist.dart';
 import 'package:rxdart/rxdart.dart';
 
@@ -55,11 +56,16 @@ class DownloadsWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(title: Text('Downloads'), actions: [
-          popupMenu(context, [
-            PopupItem.delete('Delete all', (ctx) => _onDeleteAll(ctx)),
-          ])
-        ]),
+        appBar: AppBar(
+            title: Text(AppLocalizations.of(context)!.downloadsLabel),
+            actions: [
+              popupMenu(context, [
+                PopupItem.delete(
+                    context,
+                    AppLocalizations.of(context)!.deleteAll,
+                    (ctx) => _onDeleteAll(ctx)),
+              ])
+            ]),
         body: SingleChildScrollView(
             child: Column(
           children: [
@@ -73,12 +79,13 @@ class DownloadsWidget extends StatelessWidget {
         context: context,
         builder: (ctx) {
           return AlertDialog(
-            title: Text('Really delete?'),
-            content: Text('This will delete all downloaded tracks.'),
+            title: Text(AppLocalizations.of(context)!.confirmDelete),
+            content: Text(AppLocalizations.of(context)!.deleteDownloadedTracks),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: Text('NO'),
+                child:
+                    Text(MaterialLocalizations.of(context).cancelButtonLabel),
               ),
               TextButton(
                 onPressed: () {
@@ -86,7 +93,7 @@ class DownloadsWidget extends StatelessWidget {
                   Navigator.pop(ctx);
                   Navigator.pop(context);
                 },
-                child: Text('YES'),
+                child: Text(MaterialLocalizations.of(context).okButtonLabel),
               ),
             ],
           );
@@ -245,8 +252,12 @@ class DownloadState extends State<DownloadWidget> {
               actions: [
                 popupMenu(context, [
                   if (isCached)
-                    PopupItem.delete('Delete?', (_) => _onDelete(context)),
-                  if (fetch != null) PopupItem.refresh((_) => _onRefresh()),
+                    PopupItem.delete(
+                        context,
+                        AppLocalizations.of(context)!.deleteItem,
+                        (_) => _onDelete(context)),
+                  if (fetch != null)
+                    PopupItem.refresh(context, (_) => _onRefresh()),
                 ]),
               ],
               flexibleSpace: FlexibleSpaceBar(
@@ -372,12 +383,15 @@ class DownloadState extends State<DownloadWidget> {
         context: context,
         builder: (ctx) {
           return AlertDialog(
-            title: Text('Really delete ${spiff!.playlist.title}?'),
-            content: Text('This will free ${storage(spiff!.size)} of space.'),
+            title: Text(AppLocalizations.of(context)!
+                .deleteTitle(spiff!.playlist.title)),
+            content:
+                Text(AppLocalizations.of(context)!.deleteFree(spiff!.size)),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: Text('NO'),
+                child:
+                    Text(MaterialLocalizations.of(context).cancelButtonLabel),
               ),
               TextButton(
                 onPressed: () {
@@ -385,7 +399,7 @@ class DownloadState extends State<DownloadWidget> {
                   Navigator.pop(ctx);
                   Navigator.pop(context);
                 },
-                child: Text('YES'),
+                child: Text(MaterialLocalizations.of(context).okButtonLabel),
               ),
             ],
           );

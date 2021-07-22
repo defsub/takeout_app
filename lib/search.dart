@@ -17,6 +17,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:takeout_app/release.dart';
 
 import 'schema.dart';
@@ -55,7 +56,8 @@ class _SearchState extends State<SearchWidget> {
   Widget build(BuildContext context) {
     final view = _view;
     return Scaffold(
-        appBar: AppBar(title: header('Search')),
+        appBar:
+            AppBar(title: header(AppLocalizations.of(context)!.searchLabel)),
         body: Column(children: [
           Container(
             padding: EdgeInsets.all(10),
@@ -66,15 +68,13 @@ class _SearchState extends State<SearchWidget> {
                 border: OutlineInputBorder(),
                 counterText: view == null
                     ? null
-                    : view.hits > 0
-                        ? '${view.hits} matches'
-                        : '',
+                    : AppLocalizations.of(context)!.matchCount(view.hits),
                 errorText: view == null
                     ? null
                     : view.hits == 0
-                        ? 'no matches'
+                        ? AppLocalizations.of(context)!.matchCount(view.hits)
                         : null,
-                helperText: 'text or artist:name or guitar:person',
+                helperText: AppLocalizations.of(context)!.searchHelperText,
               ),
             ),
           ),
@@ -84,28 +84,29 @@ class _SearchState extends State<SearchWidget> {
               if (view.artists != null && view.artists!.isNotEmpty)
                 Container(
                     child: Column(children: [
-                  heading('Artists'),
+                  heading(AppLocalizations.of(context)!.artistsLabel),
                   _ArtistResultsWidget(view.artists!),
                 ])),
               if (view.releases != null && view.releases!.isNotEmpty)
                 Container(
                     child: Column(children: [
-                  heading('Releases'),
+                  heading(AppLocalizations.of(context)!.releasesLabel),
                   ReleaseListWidget(view.releases!),
                 ])),
               if (view.tracks != null && view.tracks!.isNotEmpty)
                 Container(
                     child: Column(children: [
-                  heading('Tracks'),
+                  heading(AppLocalizations.of(context)!.tracksLabel),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       OutlinedButton.icon(
-                          label: Text('Play'),
+                          label: Text(AppLocalizations.of(context)!.playLabel),
                           icon: Icon(Icons.play_arrow),
                           onPressed: () => _onPlay()),
                       OutlinedButton.icon(
-                          label: Text('Download'),
+                          label:
+                              Text(AppLocalizations.of(context)!.downloadLabel),
                           icon: Icon(Icons.radio),
                           onPressed: () => _onDownload()),
                     ],

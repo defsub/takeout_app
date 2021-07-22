@@ -17,6 +17,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:connectivity/connectivity.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import 'schema.dart';
 import 'main.dart';
@@ -63,18 +64,27 @@ class RadioState extends State<RadioWidget> {
                   onRefresh: () => _onRefresh(),
                   child: Scaffold(
                       appBar: AppBar(
-                          title: Text('Radio'),
+                          title: Text(AppLocalizations.of(context)!.radioLabel),
                           actions: [
                             popupMenu(context, [
-                              PopupItem.refresh((_) => _onRefresh()),
+                              PopupItem.refresh(context, (_) => _onRefresh()),
                             ]),
                           ],
                           bottom: TabBar(
                             tabs: [
-                              Tab(text: 'Genres'),
-                              Tab(text: 'Decades'),
-                              Tab(text: 'Other'),
-                              if (haveDownloads) Tab(text: 'Downloads')
+                              Tab(
+                                  text: AppLocalizations.of(context)!
+                                      .genresLabel),
+                              Tab(
+                                  text: AppLocalizations.of(context)!
+                                      .decadesLabel),
+                              Tab(
+                                  text:
+                                      AppLocalizations.of(context)!.otherLabel),
+                              if (haveDownloads)
+                                Tab(
+                                    text: AppLocalizations.of(context)!
+                                        .downloadsLabel)
                             ],
                           )),
                       body: TabBarView(
@@ -178,7 +188,7 @@ class _RefreshSpiffState extends State<RefreshSpiffWidget> {
           title: header(_spiff?.playlist.title ?? ''),
           actions: [
             popupMenu(context, [
-              PopupItem.refresh((_) => _onRefresh()),
+              PopupItem.refresh(context, (_) => _onRefresh()),
             ]),
           ],
         ),
@@ -205,7 +215,9 @@ class _RefreshSpiffState extends State<RefreshSpiffWidget> {
                                         MainAxisAlignment.spaceEvenly,
                                     children: [
                                       OutlinedButton.icon(
-                                          label: Text('Play'),
+                                          label: Text(
+                                              AppLocalizations.of(context)!
+                                                  .playLabel),
                                           icon: Icon(Icons.play_arrow),
                                           onPressed:
                                               TakeoutState.allowStreaming(
@@ -214,8 +226,10 @@ class _RefreshSpiffState extends State<RefreshSpiffWidget> {
                                                   : null),
                                       OutlinedButton.icon(
                                           label: Text(isCached
-                                              ? 'Complete'
-                                              : 'Download'),
+                                              ? AppLocalizations.of(context)!
+                                                  .completeLabel
+                                              : AppLocalizations.of(context)!
+                                                  .downloadLabel),
                                           icon: Icon(
                                               Icons.cloud_download_outlined),
                                           onPressed:

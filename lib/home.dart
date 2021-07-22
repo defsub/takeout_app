@@ -18,6 +18,7 @@
 import 'dart:collection';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:takeout_app/global.dart';
 import 'package:takeout_app/menu.dart';
 import 'package:takeout_app/model.dart';
@@ -104,7 +105,8 @@ class _HomeItem {
   Widget get trailing {
     if (album.year > 1) return Text('${album.year}');
     if (album is DownloadEntry) {
-      return downloadIcon(album as DownloadEntry, Icons.cloud_done_outlined, Icons.cloud_download_outlined);
+      return downloadIcon(album as DownloadEntry, Icons.cloud_done_outlined,
+          Icons.cloud_download_outlined);
     }
     return Text('');
   }
@@ -205,14 +207,14 @@ class _HomeGrid extends StatelessWidget {
         pinned: false,
         floating: true,
         snap: true,
-        title: header('Takeout'),
+        title: header(AppLocalizations.of(context)!.takeoutTitle),
         actions: [
           popupMenu(context, [
-            PopupItem.settings((context) => _onSettings(context)),
-            PopupItem.downloads((context) => _onDownloads(context)),
-            PopupItem.logout((_) => TakeoutState.logout()),
+            PopupItem.settings(context, (context) => _onSettings(context)),
+            PopupItem.downloads(context, (context) => _onDownloads(context)),
+            PopupItem.logout(context, (_) => TakeoutState.logout()),
             PopupItem.divider(),
-            PopupItem.about((context) => _onAbout(context)),
+            PopupItem.about(context, (context) => _onAbout(context)),
           ]),
         ],
       ),
@@ -239,7 +241,7 @@ class _HomeGrid extends StatelessWidget {
   void _onAbout(BuildContext context) {
     showAboutDialog(
         context: context,
-        applicationName: appName,
+        applicationName: AppLocalizations.of(context)!.takeoutTitle,
         applicationVersion: appVersion,
         applicationLegalese: 'Copyleft \u00a9 2020-2021 The Takeout Authors',
         children: <Widget>[

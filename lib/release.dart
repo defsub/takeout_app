@@ -17,6 +17,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:takeout_app/global.dart';
 import 'package:takeout_app/menu.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -120,15 +121,17 @@ class _ReleaseState extends State<ReleaseWidget> {
                           expandedHeight: expandedHeight,
                           actions: [
                             popupMenu(context, [
-                              PopupItem.play((_) => _onPlay()),
-                              PopupItem.download((_) => _onDownload()),
+                              PopupItem.play(context, (_) => _onPlay()),
+                              PopupItem.download(context, (_) => _onDownload()),
                               PopupItem.divider(),
-                              PopupItem.link('MusicBrainz Release',
+                              PopupItem.link(context, 'MusicBrainz Release',
                                   (_) => launch(releaseUrl)),
-                              PopupItem.link('MusicBrainz Release Group',
+                              PopupItem.link(
+                                  context,
+                                  'MusicBrainz Release Group',
                                   (_) => launch(releaseGroupUrl)),
                               PopupItem.divider(),
-                              PopupItem.refresh((_) => _onRefresh()),
+                              PopupItem.refresh(context, (_) => _onRefresh()),
                             ]),
                           ],
                           flexibleSpace: FlexibleSpaceBar(
@@ -177,7 +180,8 @@ class _ReleaseState extends State<ReleaseWidget> {
                               child: _ReleaseTracksWidget(_view!)),
                         if (_view != null && _view!.similar.isNotEmpty)
                           SliverToBoxAdapter(
-                            child: heading('Similar Releases'),
+                            child: heading(AppLocalizations.of(context)!
+                                .similarReleasesLabel),
                           ),
                         if (_view != null && _view!.similar.isNotEmpty)
                           AlbumGridWidget(_view!.similar),
@@ -244,14 +248,18 @@ class _ReleaseTracksWidget extends StatelessWidget {
               if (e.discNum > 1) {
                 children.add(Divider());
               }
-              children.add(smallHeading('Disc ${e.discNum} of $discs'));
+              children.add(smallHeading(
+                  AppLocalizations.of(context)!.discLabel(e.discNum, discs)));
               d = e.discNum;
             }
             var subtitle;
-            final subartist = _view.artist.name != _view.tracks[i].artist ?
-                _view.tracks[i].artist : null;
-            final subrelease = _view.release.name != _view.tracks[i].releaseTitle ?
-                _view.tracks[i].releaseTitle : null;
+            final subartist = _view.artist.name != _view.tracks[i].artist
+                ? _view.tracks[i].artist
+                : null;
+            final subrelease =
+                _view.release.name != _view.tracks[i].releaseTitle
+                    ? _view.tracks[i].releaseTitle
+                    : null;
             if (subartist != null && subrelease != null) {
               subtitle = '$subartist \u2022 $subrelease';
             } else if (subartist != null) {

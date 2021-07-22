@@ -1,0 +1,110 @@
+{
+  "takeoutTitle": "Takeout",
+  "artistsLabel": "Artists",
+  "confirmDelete": "Really delete?",
+  "deleteAll": "Delete all?",
+  "deleteItem": "Delete?",
+  "deleteDownloadedTracks": "This will delete all downloaded tracks.",
+  "downloadsLabel": "Downloads",
+  "downloadLabel": "Download",
+  "hostLabel": "Host",
+  "userLabel": "User",
+  "passwordLabel": "Password",
+  "loginLabel": "Login",
+  "navHome": "Home",
+  "navArtists": "Artists",
+  "navSearch": "Search",
+  "navRadio": "Radio",
+  "navPlayer": "Player",
+  "similarArtists": "Similar Artists",
+  "playLabel": "Play",
+  "refreshLabel": "Refresh",
+  "logoutLabel": "Logout",
+  "aboutLabel": "About",
+  "singlesLabel": "Singles",
+  "popularLabel": "Popular",
+  "shuffleLabel": "Shuffle",
+  "radioLabel": "Radio",
+  "settingsLabel": "Settings",
+  "completeLabel": "Complete",
+  "genresLabel": "Genres",
+  "otherLabel": "Other",
+  "decadesLabel": "Decades",
+  "similarReleasesLabel": "Similar Releases",
+  "searchLabel": "Search",
+  "releasesLabel": "Releases",
+  "tracksLabel": "Tracks",
+  "searchHelperText": "text or artist:name or guitar:person",
+  "homeSettingsTitle": "Home Settings",
+  "networkSettingsTitle": "Network Settings",
+
+  "settingHomeGridTitle": "Home Grid",
+  "settingHomeGridSubtitle": "What to show on the home page",
+  "settingHomeGridMix": "Downloads + Added",
+  "settingHomeGridDownloads": "Downloads Only",
+  "settingHomeGridAdded": "Recently Added",
+  "settingHomeGridReleased": "Recently Released",
+
+  "settingStreamingTitle": "Streaming",
+  "settingStreamingSubtitle": "Allow streaming on mobile networks",
+  "settingDownloadsTitle": "Downloads",
+  "settingDownloadsSubtitle": "Allow downloads on mobile networks",
+  "settingArtworkTitle": "Artwork",
+  "settingArtworkSubtitle": "Allow artwork on mobile networks",
+  "settingEnabled": "Enabled",
+  "settingDisabled": "Disabled",
+
+  "deleteTitle": "Really delete {title}?",
+  "@deleteTitle": {
+    "placeholders": {
+      "title": {
+        "type": "String",
+        "example": "Into the Void"
+      }
+    }
+  },
+
+  "deleteFree": "This will free {size} of storage.",
+  "@deleteFree": {
+    "placeholders": {
+      "size": {
+        "type": "int",
+        "format": "compact",
+        "example": "123456"
+      }
+    }
+  },
+
+  "downloadingLabel": "Downloading {name}",
+  "@downloadingLabel": {
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Top Hits"
+      }
+    }
+  },
+
+  "discLabel": "Disc {num} of {total}",
+  "@discLabel": {
+    "placeholders": {
+      "num": {
+        "type": "int",
+        "format": "compact",
+        "example": "1"
+      },
+      "total": {
+        "type": "int",
+        "format": "compact",
+        "example": "2"
+      }
+    }
+  },
+
+  "matchCount" : "{count, plural, zero{No matches} one{1 match} other{{count} matches}}",
+  "@matchCount" : {
+    "placeholders": {
+      "count": {}
+    }
+  }
+}

@@ -16,6 +16,7 @@
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 typedef MenuCallback = void Function(BuildContext);
 
@@ -33,53 +34,64 @@ class PopupItem {
 
   PopupItem(this.icon, this.title, this.onSelected);
 
-  PopupItem.downloads(MenuCallback onSelected)
-      : this(Icon(Icons.cloud_download_outlined), 'Downloads', onSelected);
+  PopupItem.downloads(BuildContext context, MenuCallback onSelected)
+      : this(Icon(Icons.cloud_download_outlined),
+            AppLocalizations.of(context)!.downloadsLabel, onSelected);
 
-  PopupItem.download(MenuCallback onSelected)
-      : this(Icon(Icons.cloud_download_outlined), 'Download', onSelected);
+  PopupItem.download(BuildContext context, MenuCallback onSelected)
+      : this(Icon(Icons.cloud_download_outlined),
+            AppLocalizations.of(context)!.downloadsLabel, onSelected);
 
-  PopupItem.play(MenuCallback onSelected)
-      : this(Icon(Icons.play_arrow), 'Play', onSelected);
+  PopupItem.play(BuildContext context, MenuCallback onSelected)
+      : this(Icon(Icons.play_arrow), AppLocalizations.of(context)!.playLabel,
+            onSelected);
 
-  PopupItem.refresh(MenuCallback onSelected)
-      : this(Icon(Icons.refresh_sharp), 'Refresh', onSelected);
+  PopupItem.refresh(BuildContext context, MenuCallback onSelected)
+      : this(Icon(Icons.refresh_sharp),
+            AppLocalizations.of(context)!.refreshLabel, onSelected);
 
-  PopupItem.logout(MenuCallback onSelected)
-      : this(Icon(Icons.logout), 'Logout', onSelected);
+  PopupItem.logout(BuildContext context, MenuCallback onSelected)
+      : this(Icon(Icons.logout), AppLocalizations.of(context)!.logoutLabel,
+            onSelected);
 
-  PopupItem.link(String text, MenuCallback onSelected)
+  PopupItem.link(BuildContext context, String text, MenuCallback onSelected)
       : this(Icon(Icons.link), text, onSelected);
 
-  PopupItem.about(MenuCallback onSelected)
-      : this(Icon(Icons.info_outline), 'About', onSelected);
+  PopupItem.about(BuildContext context, MenuCallback onSelected)
+      : this(Icon(Icons.info_outline), AppLocalizations.of(context)!.aboutLabel,
+            onSelected);
 
-  PopupItem.settings(MenuCallback onSelected)
-      : this(Icon(Icons.settings), 'Settings', onSelected);
+  PopupItem.settings(BuildContext context, MenuCallback onSelected)
+      : this(Icon(Icons.settings), AppLocalizations.of(context)!.settingsLabel,
+            onSelected);
 
-  PopupItem.delete(String text, MenuCallback onSelected)
+  PopupItem.delete(BuildContext context, String text, MenuCallback onSelected)
       : this(Icon(Icons.delete), text, onSelected);
 
-  PopupItem.singles(MenuCallback onSelected)
-      : this(Icon(Icons.audiotrack_outlined), 'Singles', onSelected);
+  PopupItem.singles(BuildContext context, MenuCallback onSelected)
+      : this(Icon(Icons.audiotrack_outlined),
+            AppLocalizations.of(context)!.singlesLabel, onSelected);
 
-  PopupItem.popular(MenuCallback onSelected)
-      : this(Icon(Icons.audiotrack_outlined), 'Popular', onSelected);
+  PopupItem.popular(BuildContext context, MenuCallback onSelected)
+      : this(Icon(Icons.audiotrack_outlined),
+            AppLocalizations.of(context)!.popularLabel, onSelected);
 
-  PopupItem.genre(String genre, MenuCallback onSelected)
+  PopupItem.genre(BuildContext context, String genre, MenuCallback onSelected)
       : this(Icon(Icons.people), genre, onSelected);
 
-  PopupItem.area(String area, MenuCallback onSelected)
+  PopupItem.area(BuildContext context, String area, MenuCallback onSelected)
       : this(Icon(Icons.location_pin), area, onSelected);
 
-  PopupItem.artist(String name, MenuCallback onSelected)
+  PopupItem.artist(BuildContext context, String name, MenuCallback onSelected)
       : this(Icon(Icons.people), name, onSelected);
 
-  PopupItem.shuffle(MenuCallback onSelected)
-      : this(Icon(Icons.shuffle_sharp), 'Shuffle', onSelected);
+  PopupItem.shuffle(BuildContext context, MenuCallback onSelected)
+      : this(Icon(Icons.shuffle_sharp),
+            AppLocalizations.of(context)!.shuffleLabel, onSelected);
 
-  PopupItem.radio(MenuCallback onSelected)
-      : this(Icon(Icons.radio), 'Radio', onSelected);
+  PopupItem.radio(BuildContext context, MenuCallback onSelected)
+      : this(Icon(Icons.radio), AppLocalizations.of(context)!.radioLabel,
+            onSelected);
 }
 
 Widget popupMenu(BuildContext context, List<PopupItem> items) {

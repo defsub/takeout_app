@@ -18,6 +18,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:recase/recase.dart';
 import 'package:connectivity/connectivity.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -58,16 +59,17 @@ class _ArtistsState extends State<ArtistsWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final artistsText = AppLocalizations.of(context)!.artistsLabel;
     return Scaffold(
         appBar: AppBar(
             title: genre != null
-                ? header('Artists \u2013 $genre')
+                ? header('$artistsText \u2013 $genre')
                 : area != null
-                    ? header('Artists \u2013 $area')
-                    : header('Artists'),
+                    ? header('$artistsText \u2013 $area')
+                    : header(artistsText),
             actions: [
               popupMenu(context, [
-                PopupItem.refresh((_) => _onRefresh()),
+                PopupItem.refresh(context, (_) => _onRefresh()),
               ])
             ]),
         body: RefreshIndicator(
@@ -257,20 +259,22 @@ class _ArtistState extends State<ArtistWidget> with ArtistBuilder {
     final genre = ReCase(_artist.genre ?? '').titleCase;
     return <Widget>[
       popupMenu(context, [
-        PopupItem.shuffle((_) => _onShuffle()),
-        PopupItem.radio((_) => _onRadio()),
+        PopupItem.shuffle(context, (_) => _onShuffle()),
+        PopupItem.radio(context, (_) => _onRadio()),
         PopupItem.divider(),
-        PopupItem.singles((_) => _onSingles(context)),
-        PopupItem.popular((_) => _onPopular(context)),
+        PopupItem.singles(context, (_) => _onSingles(context)),
+        PopupItem.popular(context, (_) => _onPopular(context)),
         PopupItem.divider(),
         if (_artist.genre != null)
-          PopupItem.genre(genre, (_) => _onGenre(context, _artist.genre!)),
+          PopupItem.genre(
+              context, genre, (_) => _onGenre(context, _artist.genre!)),
         if (_artist.area != null)
-          PopupItem.area(_artist.area!, (_) => _onArea(context, _artist.area!)),
+          PopupItem.area(
+              context, _artist.area!, (_) => _onArea(context, _artist.area!)),
         PopupItem.divider(),
-        PopupItem.link('MusicBrainz Artist', (_) => launch(artistUrl)),
+        PopupItem.link(context, 'MusicBrainz Artist', (_) => launch(artistUrl)),
         PopupItem.divider(),
-        PopupItem.refresh((_) => _onRefresh()),
+        PopupItem.refresh(context, (_) => _onRefresh()),
       ])
     ];
   }
@@ -288,13 +292,15 @@ class _ArtistState extends State<ArtistWidget> with ArtistBuilder {
       return [];
     }
     return [
-      SliverToBoxAdapter(child: heading('Releases')),
+      SliverToBoxAdapter(
+          child: heading(AppLocalizations.of(context)!.releasesLabel)),
       AlbumGridWidget(
         _view!.releases,
         subtitle: false,
       ),
       if (_view!.similar.isNotEmpty)
-        SliverToBoxAdapter(child: heading('Similar Artists')),
+        SliverToBoxAdapter(
+            child: heading(AppLocalizations.of(context)!.similarArtists)),
       if (_view!.similar.isNotEmpty)
         SliverToBoxAdapter(child: SimilarArtistListWidget(_view!))
     ];
@@ -338,8 +344,8 @@ class TrackListWidget extends StatelessWidget {
       ..._tracks.asMap().keys.toList().map((index) => ListTile(
           onTap: () => _onPlay(index),
           leading: tileCover(_tracks[index].image),
-          subtitle:
-              Text('${_tracks[index].artist} \u2022 ${_tracks[index].release} \u2022 ${_tracks[index].date}'),
+          subtitle: Text(
+              '${_tracks[index].artist} \u2022 ${_tracks[index].release} \u2022 ${_tracks[index].date}'),
           title: Text(_tracks[index].title)))
     ]);
   }
@@ -451,15 +457,18 @@ class _ArtistTrackListState extends State<ArtistTrackListWidget>
   List<Widget> actions() => [
         popupMenu(context, [
           if (_type == ArtistTrackType.singles)
-            PopupItem.popular((_) => _onChangeType(ArtistTrackType.popular)),
+            PopupItem.popular(
+                context, (_) => _onChangeType(ArtistTrackType.popular)),
           if (_type == ArtistTrackType.popular)
-            PopupItem.singles((_) => _onChangeType(ArtistTrackType.singles)),
-          PopupItem.refresh((_) => _onRefresh()),
+            PopupItem.singles(
+                context, (_) => _onChangeType(ArtistTrackType.singles)),
+          PopupItem.refresh(context, (_) => _onRefresh()),
         ])
       ];
 
   Widget leftButton() {
-    return IconButton(icon: Icon(Icons.play_arrow, size: 32), onPressed: _onPlay);
+    return IconButton(
+        icon: Icon(Icons.play_arrow, size: 32), onPressed: _onPlay);
   }
 
   Widget rightButton() {
@@ -470,8 +479,9 @@ class _ArtistTrackListState extends State<ArtistTrackListWidget>
   List<Widget> slivers() {
     return [
       SliverToBoxAdapter(
-          child: heading(
-              _type == ArtistTrackType.singles ? 'Singles' : 'Popular')),
+          child: heading(_type == ArtistTrackType.singles
+              ? AppLocalizations.of(context)!.singlesLabel
+              : AppLocalizations.of(context)!.popularLabel)),
       SliverToBoxAdapter(child: Column(children: _trackList())),
     ];
   }

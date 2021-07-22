@@ -16,6 +16,7 @@
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import 'client.dart';
 import 'global.dart';
@@ -60,7 +61,7 @@ class _LoginState extends State<LoginWidget> {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
-          title: Text(appName),
+          title: Text(AppLocalizations.of(context)!.takeoutTitle),
         ),
         body: Padding(
             padding: EdgeInsets.all(10),
@@ -70,7 +71,7 @@ class _LoginState extends State<LoginWidget> {
                     alignment: Alignment.center,
                     padding: EdgeInsets.all(10),
                     child: Text(
-                      'Host',
+                      AppLocalizations.of(context)!.hostLabel,
                       style:
                           TextStyle(fontWeight: FontWeight.w500, fontSize: 30),
                     )),
@@ -80,7 +81,7 @@ class _LoginState extends State<LoginWidget> {
                     controller: _hostText,
                     decoration: InputDecoration(
                         border: OutlineInputBorder(),
-                        labelText: 'Host',
+                        labelText: AppLocalizations.of(context)!.hostLabel,
                         helperText: appHome),
                   ),
                 ),
@@ -88,7 +89,7 @@ class _LoginState extends State<LoginWidget> {
                     alignment: Alignment.center,
                     padding: EdgeInsets.all(10),
                     child: Text(
-                      'Login',
+                      AppLocalizations.of(context)!.loginLabel,
                       style:
                           TextStyle(fontWeight: FontWeight.w500, fontSize: 30),
                     )),
@@ -98,7 +99,7 @@ class _LoginState extends State<LoginWidget> {
                     controller: _userText,
                     decoration: InputDecoration(
                       border: OutlineInputBorder(),
-                      labelText: 'User',
+                      labelText: AppLocalizations.of(context)!.userLabel,
                     ),
                   ),
                 ),
@@ -109,7 +110,7 @@ class _LoginState extends State<LoginWidget> {
                     controller: _passwordText,
                     decoration: InputDecoration(
                       border: OutlineInputBorder(),
-                      labelText: 'Password',
+                      labelText: AppLocalizations.of(context)!.passwordLabel,
                     ),
                   ),
                 ),
@@ -117,11 +118,8 @@ class _LoginState extends State<LoginWidget> {
                     height: 70,
                     padding: EdgeInsets.all(10),
                     child: OutlinedButton(
-                      child: Text('Login'),
+                      child: Text(AppLocalizations.of(context)!.loginLabel),
                       onPressed: () async {
-                        print(_hostText.text);
-                        print(_userText.text);
-                        print(_passwordText.text);
                         final client = Client();
                         await client.setEndpoint(_hostText.text);
                         client

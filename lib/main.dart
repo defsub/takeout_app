@@ -23,6 +23,8 @@ import 'dart:io';
 
 import 'package:audio_service/audio_service.dart';
 
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_settings_screens/flutter_settings_screens.dart';
@@ -64,7 +66,18 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: appName,
+      onGenerateTitle: (context) {
+        return AppLocalizations.of(context)!.takeoutTitle;
+      },
+      localizationsDelegates: [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: [
+        const Locale('en', ''),
+      ],
       home: _TakeoutWidget(),
       darkTheme: _darkTheme(),
     );
@@ -304,7 +317,7 @@ class TakeoutState extends State<_TakeoutWidget> {
   StreamSubscription<SnackBarState>? snackBarSubscription;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     snackBarSubscription?.cancel();
     snackBarSubscription = snackBarStateSubject.listen((e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: e.content));
@@ -358,26 +371,26 @@ class TakeoutState extends State<_TakeoutWidget> {
                       showUnselectedLabels: false,
                       showSelectedLabels: false,
                       type: BottomNavigationBarType.fixed,
-                      items: const <BottomNavigationBarItem>[
+                      items: <BottomNavigationBarItem>[
                         BottomNavigationBarItem(
                           icon: Icon(Icons.home),
-                          label: 'Home',
+                          label: AppLocalizations.of(context)!.navHome,
                         ),
                         BottomNavigationBarItem(
                           icon: Icon(Icons.people_alt),
-                          label: 'Artists',
+                          label: AppLocalizations.of(context)!.navArtists,
                         ),
                         BottomNavigationBarItem(
                           icon: Icon(Icons.search),
-                          label: 'Search',
+                          label: AppLocalizations.of(context)!.navSearch,
                         ),
                         BottomNavigationBarItem(
                           icon: Icon(Icons.radio),
-                          label: 'Radio',
+                          label: AppLocalizations.of(context)!.navRadio,
                         ),
                         BottomNavigationBarItem(
                           icon: Icon(Icons.queue_music),
-                          label: 'Player',
+                          label: AppLocalizations.of(context)!.navPlayer,
                         ),
                       ],
                       currentIndex: _selectedIndex,

@@ -6,8 +6,7 @@ import 'package:audio_service/audio_service.dart';
 import 'schema.dart';
 import 'artists.dart'; // TODO remove
 
-const appName = 'Takeout';
-const appVersion = '0.5.0';
+const appVersion = '0.5.1';
 const appSource = 'https://github.com/defsub/takeout_app';
 const appHome = 'https://takeout.fm';
 
@@ -24,7 +23,8 @@ List<GlobalKey<NavigatorState>> navigatorKeys = [
 final bottomNavKey = new GlobalKey();
 
 void navigate(int index) {
-  BottomNavigationBar navBar = bottomNavKey.currentWidget as BottomNavigationBar;
+  BottomNavigationBar navBar =
+      bottomNavKey.currentWidget as BottomNavigationBar;
   navBar.onTap!(index);
 }
 
@@ -69,7 +69,8 @@ Future<String?> prefsString(String key) async {
   return await prefs.then((p) async {
     await p.reload();
     var val = p.getString(key);
-    if (val == 'null') { // TODO why did this happen?
+    if (val == 'null') {
+      // TODO why did this happen?
       val = null;
     }
     return val;
@@ -81,16 +82,15 @@ void showErrorDialog(BuildContext context, String message) {
     context: context,
     builder: (BuildContext ctx) {
       return AlertDialog(
-        title: Text("Error"),
+        title: Text(MaterialLocalizations.of(context).alertDialogLabel),
         content: Text(message),
         actions: [
           TextButton(
-            child: Text("OK"),
-              onPressed: () => Navigator.pop(ctx),
+            child: Text(MaterialLocalizations.of(context).okButtonLabel),
+            onPressed: () => Navigator.pop(ctx),
           )
         ],
       );
     },
   );
 }
-
