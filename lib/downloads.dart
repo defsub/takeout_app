@@ -101,7 +101,7 @@ class DownloadsWidget extends StatelessWidget {
   }
 
   void _onDeleteConfirmed() {
-    Downloads.downloadsSubject.value?.forEach((entry) {
+    Downloads.downloadsSubject.value.forEach((entry) {
       _deleteSpiff(entry.spiff);
     });
     Downloads.reload();

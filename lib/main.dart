@@ -109,7 +109,8 @@ class TakeoutState extends State<_TakeoutWidget> {
 
   static Stream<bool> get loginStream => _loginStream.stream;
 
-  static bool get isLoggedIn => _loginStream.value ?? false;
+  static bool get isLoggedIn =>
+      _loginStream.hasValue ? _loginStream.value : false;
 
   static void logout() async {
     await Client().logout();
@@ -272,7 +273,7 @@ class TakeoutState extends State<_TakeoutWidget> {
       await MediaQueue.sync();
       if (audioHandler.playbackState.hasValue == false ||
           (audioHandler.playbackState.hasValue &&
-              audioHandler.playbackState.value!.playing == false)) {
+              audioHandler.playbackState.value.playing == false)) {
         MediaQueue.restore();
       }
     } on ClientException catch (e) {

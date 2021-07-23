@@ -276,11 +276,7 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
   /// Broadcasts the current state to all clients.
   void _broadcastState(PlaybackEvent event) {
     final playing = _player.playing;
-    final valueWrapper = playbackState.valueWrapper;
-    if (valueWrapper == null) {
-      return;
-    }
-    playbackState.add(valueWrapper.value.copyWith(
+    playbackState.add(playbackState.value.copyWith(
       controls: [
         MediaControl.skipToPrevious,
         if (playing) MediaControl.pause else MediaControl.play,
