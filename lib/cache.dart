@@ -107,6 +107,7 @@ class TrackCache {
     final dir = await checkAppDir(_dir);
     final files = await dir.list().toList();
     await Future.forEach(files, (FileSystemEntity file) async {
+      // entry keys are etags
       _entries[basename(file.path)] = file as File;
     }).whenComplete(() => _broadcast());
   }
@@ -124,6 +125,7 @@ class TrackCache {
 
   Future<File> _trackFile(Locatable d) async {
     return await checkAppDir(_dir).then((dir) {
+      // keys are etags
       final path = '${dir.path}/${d.key}';
       return File(path);
     });
@@ -143,11 +145,16 @@ class TrackCache {
     return completer.future;
   }
 
-  Future<IOSink> put(Locatable d) async {
-    final file = await _trackFile(d);
+  // Put a (downloaded) file in the cache and publish
+  void put(Locatable d, File file) {
+    // key should be the etag
     _entries[d.key] = file;
     _broadcast();
-    return file.openWrite();
+  }
+
+  // Create a file that will later be stored in the cache
+  Future<File> create(Locatable d) async {
+    return await _trackFile(d);
   }
 
   void remove(Locatable d) {

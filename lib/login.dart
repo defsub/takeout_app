@@ -54,6 +54,7 @@ class _LoginState extends State<LoginWidget> {
     setState(() {
       _hostText.text = host ?? "";
       _userText.text = user ?? "";
+      _hostText.text = "https://takeout.fm";
     });
   }
 

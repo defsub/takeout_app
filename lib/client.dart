@@ -390,6 +390,7 @@ class Client {
     final cookie = await _getCookie();
     final completer = Completer();
     final baseUrl = await getEndpoint();
+    final file = await cache.create(d);
 
     HttpClient()
         .getUrl(Uri.parse('$baseUrl${d.location}'))
@@ -398,13 +399,17 @@ class Client {
           return request.close();
         })
         .then((response) {
-          cache.put(d).then((sink) => response
-              .pipe(sink)
-              .then((v) => completer.complete())
-              .catchError((e) => completer.completeError(e)));
+          final sink = file.openWrite();
+          response.pipe(sink).then((v) {
+            cache.put(d, file);
+            completer.complete();
+          }).catchError((e) {
+            completer.completeError(e);
+          });
         })
         .timeout(downloadTimeout)
         .catchError((e) {
+          file.delete();
           completer.completeError(e);
         });
     return completer.future;
