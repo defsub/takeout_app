@@ -15,7 +15,8 @@ dependencies:
   path_provider: ^2.0.2
   audio_session: ^0.1.6
   audio_service: ^0.18.0
-  just_audio: ^0.9.11
+  just_audio: ^0.9.12
+  just_audio_libwinmedia: 0.0.3
   rxdart: ^0.27.1
 
   shared_preferences: ^2.0.6

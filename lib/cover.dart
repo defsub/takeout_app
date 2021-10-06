@@ -46,7 +46,7 @@ dynamic tileCover(String url) {
 }
 
 dynamic artistImage(String url) {
-  return cachedImage(url, width: 1000, height: 1000, fit: BoxFit.cover);
+  return cachedImage(url, width: 1000, height: 1000, fit: BoxFit.fitHeight);
 }
 
 dynamic artistBackground(String url) {
@@ -55,7 +55,7 @@ dynamic artistBackground(String url) {
 
 dynamic releaseLargeCover(String url) {
   return _hero(
-      cachedImage(url, width: 500, height: 500, fit: BoxFit.fill), url);
+      cachedImage(url, width: 500, height: 500, fit: BoxFit.fitHeight), url);
 }
 
 dynamic releaseSmallCover(String url) {
@@ -63,12 +63,12 @@ dynamic releaseSmallCover(String url) {
     return Icon(Icons.album_sharp, size: 40);
   }
   return _hero(
-      cachedImage(url, width: 250, height: 250, fit: BoxFit.fill), url);
+      cachedImage(url, width: 250, height: 250, fit: BoxFit.fitHeight), url);
 }
 
 dynamic spiffCover(String url) {
   return _hero(
-      cachedImage(url, width: 250, height: 250, fit: BoxFit.fill), url);
+      cachedImage(url, width: 250, height: 250, fit: BoxFit.fitHeight), url);
 }
 
 dynamic gridCover(String url) {
@@ -80,7 +80,7 @@ dynamic gridCover(String url) {
 }
 
 dynamic playerCover(String url) {
-  return _hero(cachedImage(url, width: 250, height: 250, fit: BoxFit.fill), url);
+  return _hero(cachedImage(url, width: 250, height: 250, fit: BoxFit.fitHeight), url);
 }
 
 dynamic _hero(dynamic cover, String tag) {

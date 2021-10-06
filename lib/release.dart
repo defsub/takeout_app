@@ -99,94 +99,99 @@ class _ReleaseState extends State<ReleaseWidget> {
         'https://musicbrainz.org/release-group/${release.rgid}';
     return FutureBuilder<Color?>(
         future: getImageBackgroundColor(release.image),
-        builder: (context, snapshot) => Scaffold(
-            backgroundColor: snapshot.data,
-            body: RefreshIndicator(
-                onRefresh: () => _onRefresh(),
-                child: StreamBuilder<Set<String>>(
-                    stream: TrackCache.keysSubject,
-                    builder: (context, snapshot) {
-                      // cover images are 250x250 (or 500x500)
-                      // distort a bit to only take half the screen
-                      final screen = MediaQuery.of(context).size;
-                      final expandedHeight = screen.height / 2;
-                      final keys = snapshot.data ?? Set<String>();
-                      final isCached = _view != null
-                          ? TrackCache.checkAll(keys, _view!.tracks)
-                          : false;
-                      return CustomScrollView(slivers: [
-                        SliverAppBar(
-                          // floating: true,
-                          // snap: false,
-                          expandedHeight: expandedHeight,
-                          actions: [
-                            popupMenu(context, [
-                              PopupItem.play(context, (_) => _onPlay()),
-                              PopupItem.download(context, (_) => _onDownload()),
-                              PopupItem.divider(),
-                              PopupItem.link(context, 'MusicBrainz Release',
-                                  (_) => launch(releaseUrl)),
-                              PopupItem.link(
-                                  context,
-                                  'MusicBrainz Release Group',
-                                  (_) => launch(releaseGroupUrl)),
-                              PopupItem.divider(),
-                              PopupItem.refresh(context, (_) => _onRefresh()),
-                            ]),
-                          ],
-                          flexibleSpace: FlexibleSpaceBar(
-                              // centerTitle: true,
-                              // title: Text(release.name, style: TextStyle(fontSize: 15)),
-                              stretchModes: [
-                                StretchMode.zoomBackground,
-                                StretchMode.fadeTitle
-                              ],
-                              background:
-                                  Stack(fit: StackFit.expand, children: [
-                                releaseSmallCover(release.image),
-                                const DecoratedBox(
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      begin: Alignment(0.0, 0.75),
-                                      end: Alignment(0.0, 0.0),
-                                      colors: <Color>[
-                                        Color(0x60000000),
-                                        Color(0x00000000),
-                                      ],
+        builder: (context, snapshot) {
+          final backgroundColor = snapshot.data;
+          return Scaffold(
+              backgroundColor: backgroundColor,
+              body: RefreshIndicator(
+                  onRefresh: () => _onRefresh(),
+                  child: StreamBuilder<Set<String>>(
+                      stream: TrackCache.keysSubject,
+                      builder: (context, snapshot) {
+                        // cover images are 250x250 (or 500x500)
+                        // distort a bit to only take half the screen
+                        final screen = MediaQuery.of(context).size;
+                        final expandedHeight = screen.height / 2;
+                        final keys = snapshot.data ?? Set<String>();
+                        final isCached = _view != null
+                            ? TrackCache.checkAll(keys, _view!.tracks)
+                            : false;
+                        return CustomScrollView(slivers: [
+                          SliverAppBar(
+                            // floating: true,
+                            // snap: false,
+                            // backgroundColor: backgroundColor,
+                            expandedHeight: expandedHeight,
+                            actions: [
+                              popupMenu(context, [
+                                PopupItem.play(context, (_) => _onPlay()),
+                                PopupItem.download(
+                                    context, (_) => _onDownload()),
+                                PopupItem.divider(),
+                                PopupItem.link(context, 'MusicBrainz Release',
+                                    (_) => launch(releaseUrl)),
+                                PopupItem.link(
+                                    context,
+                                    'MusicBrainz Release Group',
+                                    (_) => launch(releaseGroupUrl)),
+                                PopupItem.divider(),
+                                PopupItem.refresh(context, (_) => _onRefresh()),
+                              ]),
+                            ],
+                            flexibleSpace: FlexibleSpaceBar(
+                                // centerTitle: true,
+                                // title: Text(release.name, style: TextStyle(fontSize: 15)),
+                                stretchModes: [
+                                  StretchMode.zoomBackground,
+                                  StretchMode.fadeTitle
+                                ],
+                                background:
+                                    Stack(fit: StackFit.expand, children: [
+                                  releaseSmallCover(release.image),
+                                  const DecoratedBox(
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment(0.0, 0.75),
+                                        end: Alignment(0.0, 0.0),
+                                        colors: <Color>[
+                                          Color(0x60000000),
+                                          Color(0x00000000),
+                                        ],
+                                      ),
                                     ),
                                   ),
-                                ),
-                                Align(
-                                    alignment: Alignment.bottomLeft,
-                                    child: _playButton(isCached)),
-                                Align(
-                                    alignment: Alignment.bottomRight,
-                                    child: _downloadButton(isCached)),
-                              ])),
-                        ),
-                        SliverToBoxAdapter(
-                            child: Container(
-                                padding: EdgeInsets.fromLTRB(0, 16, 0, 4),
-                                child: Column(children: [
-                                  GestureDetector(
-                                      onTap: () => _onArtist(),
-                                      child: _title()),
-                                  GestureDetector(
-                                      onTap: () => _onArtist(),
-                                      child: _artist()),
-                                ]))),
-                        if (_view != null)
-                          SliverToBoxAdapter(
-                              child: _ReleaseTracksWidget(_view!)),
-                        if (_view != null && _view!.similar.isNotEmpty)
-                          SliverToBoxAdapter(
-                            child: heading(AppLocalizations.of(context)!
-                                .similarReleasesLabel),
+                                  Align(
+                                      alignment: Alignment.bottomLeft,
+                                      child: _playButton(isCached)),
+                                  Align(
+                                      alignment: Alignment.bottomRight,
+                                      child: _downloadButton(isCached)),
+                                ])),
                           ),
-                        if (_view != null && _view!.similar.isNotEmpty)
-                          AlbumGridWidget(_view!.similar),
-                      ]);
-                    }))));
+                          SliverToBoxAdapter(
+                              child: Container(
+                                  padding: EdgeInsets.fromLTRB(0, 16, 0, 4),
+                                  child: Column(children: [
+                                    GestureDetector(
+                                        onTap: () => _onArtist(),
+                                        child: _title()),
+                                    GestureDetector(
+                                        onTap: () => _onArtist(),
+                                        child: _artist()),
+                                  ]))),
+                          if (_view != null)
+                            SliverToBoxAdapter(
+                                child: _ReleaseTracksWidget(_view!)),
+                          if (_view != null && _view!.similar.isNotEmpty)
+                            SliverToBoxAdapter(
+                              child: heading(AppLocalizations.of(context)!
+                                  .similarReleasesLabel),
+                            ),
+                          if (_view != null && _view!.similar.isNotEmpty)
+                            AlbumGridWidget(_view!.similar),
+                        ]);
+                      })));
+        });
   }
 
   Widget _title() {
@@ -293,8 +298,8 @@ class AlbumGridWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SliverGrid.count(
-        crossAxisCount: 3,
+    return SliverGrid.extent(
+        maxCrossAxisExtent: 250,
         crossAxisSpacing: 5,
         mainAxisSpacing: 5,
         children: [

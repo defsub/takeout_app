@@ -174,8 +174,8 @@ class _HomeGrid extends StatelessWidget {
   }
 
   SliverGrid _releaseGrid(BuildContext context, Iterable<_HomeItem> items) {
-    return SliverGrid.count(
-        crossAxisCount: 2,
+    return SliverGrid.extent(
+        maxCrossAxisExtent: 250,
         crossAxisSpacing: 8,
         mainAxisSpacing: 8,
         children: [

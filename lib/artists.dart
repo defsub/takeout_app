@@ -570,7 +570,7 @@ mixin ArtistBuilder {
           // artist banners are 1000x185
           final screen = MediaQuery.of(context).size;
           final expandedHeight =
-              useBackground ? 1080.0 / 1920.0 * screen.width : screen.width;
+              useBackground ? 1080.0 / 1920.0 * screen.width : screen.height / 2;
 
           return FutureBuilder<Color?>(
               future: allowArtwork && artistArtworkUrl != null
