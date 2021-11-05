@@ -103,7 +103,7 @@ class TrackCache {
   static final keysSubject = BehaviorSubject<Set<String>>();
   static final _entries = Map<String, File>();
 
-  static void init() async {
+  static Future<void> init() async {
     final dir = await checkAppDir(_dir);
     final files = await dir.list().toList();
     await Future.forEach(files, (FileSystemEntity file) async {

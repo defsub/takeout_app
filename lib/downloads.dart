@@ -604,6 +604,34 @@ class Downloads {
     });
     return completer.future;
   }
+
+  // check all spiff tracks are cached
+  // incomplete downloads would have the wrong size
+  static Future<void> _checkSpiffCached(Spiff spiff) async {
+    final cache = TrackCache();
+    return Future.forEach<Entry>(spiff.playlist.tracks, (e) async {
+      final result = await cache.get(e);
+      if (result is File) {
+        print('checking $result');
+        if (result.statSync().size != e.size) {
+          print('deleting $result; incorrect size');
+          result.deleteSync();
+          cache.remove(e);
+        }
+      }
+    });
+  }
+
+  static Future<void> check() async {
+    final dir = await checkAppDir(_dir);
+    final list = dir.listSync().toList();
+    return Future.forEach<FileSystemEntity>(list, (file) async {
+      if (file.path.endsWith('.json')) {
+        final spiff = await Spiff.fromFile(file as File);
+        await _checkSpiffCached(spiff);
+      }
+    });
+  }
 }
 
 class DownloadEntry implements MusicAlbum {

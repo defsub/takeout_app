@@ -13,10 +13,10 @@ dependencies:
   intl: ^0.17.0-nullsafety.2
 
   path_provider: ^2.0.2
-  audio_session: ^0.1.6
-  audio_service: ^0.18.0
-  just_audio: ^0.9.12
-  just_audio_libwinmedia: 0.0.3
+  audio_session: ^0.1.6+1
+  audio_service: ^0.18.1
+  just_audio: ^0.9.16
+  just_audio_libwinmedia: ^0.0.4
   rxdart: ^0.27.1
 
   shared_preferences: ^2.0.6

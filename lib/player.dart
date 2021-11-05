@@ -239,7 +239,10 @@ class _MediaTrackListWidget extends StatelessWidget {
                 trailing: _cloudIcon(t),
                 selected: t == state.mediaItem,
                 onTap: () {
-                  audioHandler.playMediaItem(t);
+                  audioHandler.playMediaItem(t).whenComplete(() {
+                    if (!audioHandler.playbackState.value.playing)
+                      audioHandler.play();
+                  });
                 },
                 onLongPress: () {
                   showArtist(t.artist ?? '');

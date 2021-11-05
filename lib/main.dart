@@ -257,8 +257,8 @@ class TakeoutState extends State<_TakeoutWidget> {
   }
 
   void _load() async {
-    TrackCache.init();
-    Downloads.load();
+    await TrackCache.init();
+    await Downloads.check().whenComplete(() => Downloads.load());
     try {
       final client = Client();
       client.home().then((view) {
