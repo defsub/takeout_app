@@ -26,6 +26,7 @@ import 'artists.dart';
 import 'style.dart';
 import 'playlist.dart';
 import 'downloads.dart';
+import 'video.dart';
 
 class SearchWidget extends StatefulWidget {
   @override
@@ -112,7 +113,13 @@ class _SearchState extends State<SearchWidget> {
                     ],
                   ),
                   TrackListWidget(view.tracks!),
-                ]))
+                ])),
+              if (view.movies != null && view.movies!.isNotEmpty)
+                Container(
+                    child: Column(children: [
+                  heading(AppLocalizations.of(context)!.moviesLabel),
+                  MovieListWidget(view.movies!),
+                ])),
             ]))
         ]));
   }

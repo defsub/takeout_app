@@ -380,6 +380,24 @@ class Client {
           .then((j) => MoviesView.fromJson(j))
           .catchError((e) => Future<MoviesView>.error(e));
 
+  /// GET /api/movies/1
+  Future<MovieView> movie(int id, {Duration? ttl}) async =>
+      _getJson('/api/movies/$id', ttl: ttl)
+          .then((j) => MovieView.fromJson(j))
+          .catchError((e) => Future<MovieView>.error(e));
+
+  /// GET /api/movies/1/playlist
+  Future<Spiff> moviePlaylist(int id, {Duration? ttl}) async =>
+      _getJson('/api/movies/$id/playlist', ttl: ttl)
+          .then((j) => Spiff.fromJson(j))
+          .catchError((e) => Future<Spiff>.error(e));
+
+  /// GET /api/profiles/1
+  Future<ProfileView> profile(int id, {Duration? ttl}) async =>
+      _getJson('/api/profiles/$id', ttl: ttl)
+          .then((j) => ProfileView.fromJson(j))
+          .catchError((e) => Future<ProfileView>.error(e));
+
   /// Download locatable to a file.
   Future download(Locatable d) async {
     final cache = TrackCache();

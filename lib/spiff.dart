@@ -65,6 +65,24 @@ class Spiff {
     return playlist.location?.startsWith(RegExp(r'^http')) ?? false;
   }
 
+  bool isMusic() {
+    // TODO music or video based on URI
+    return playlist.tracks.every((e) => e.location.startsWith("/api/music/"));
+  }
+
+  bool isVideo() {
+    // TODO music or video based on URI
+    return playlist.tracks.every((e) => e.location.startsWith("/api/movies/"));
+  }
+
+  MediaType get mediaType {
+    return isMusic()
+        ? MediaType.music
+        : isVideo()
+            ? MediaType.video
+            : MediaType.music; // TODO
+  }
+
   factory Spiff.fromJson(Map<String, dynamic> json) => _$SpiffFromJson(json);
 
   Map<String, dynamic> toJson() => _$SpiffToJson(this);
@@ -101,7 +119,7 @@ class Spiff {
 }
 
 @JsonSerializable()
-class Entry extends Locatable implements MusicTrack {
+class Entry extends Locatable implements MediaTrack {
   final String creator;
   final String album;
   final String title;
@@ -161,7 +179,12 @@ class Playlist {
   @JsonKey(name: 'track')
   final List<Entry> tracks;
 
-  Playlist({this.location, this.creator, required this.title, this.image, required this.tracks});
+  Playlist(
+      {this.location,
+      this.creator,
+      required this.title,
+      this.image,
+      required this.tracks});
 
   Playlist copyWith({
     required String location,

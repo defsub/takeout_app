@@ -46,7 +46,8 @@ class RadioState extends State<RadioWidget> {
 
   List<DownloadEntry> _radioFilter(List<DownloadEntry> entries) {
     final list = List<DownloadEntry>.from(entries);
-    list.retainWhere((e) => e.spiff.playlist.creator == 'Radio');
+    list.retainWhere(
+        (e) => e is SpiffDownloadEntry && e.spiff.playlist.creator == 'Radio');
     return list;
   }
 

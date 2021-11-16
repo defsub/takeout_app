@@ -291,7 +291,7 @@ class _ReleaseTracksWidget extends StatelessWidget {
 }
 
 class AlbumGridWidget extends StatelessWidget {
-  final List<MusicAlbum> _albums;
+  final List<MediaAlbum> _albums;
   final bool subtitle;
 
   AlbumGridWidget(this._albums, {this.subtitle = true});
@@ -323,11 +323,12 @@ class AlbumGridWidget extends StatelessWidget {
         ]);
   }
 
-  void _onTap(BuildContext context, MusicAlbum album) {
+  void _onTap(BuildContext context, MediaAlbum album) {
     Navigator.push(context, MaterialPageRoute(builder: (context) {
       if (album is Release) {
         return ReleaseWidget(album);
-      } else if (album is DownloadEntry) {
+      } else if (album is SpiffDownloadEntry) {
+        // TODO is this used?
         return DownloadWidget(spiff: album.spiff);
       }
       return Text('');

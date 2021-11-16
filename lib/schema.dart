@@ -174,7 +174,7 @@ class Artist {
 }
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
-class Release implements MusicAlbum {
+class Release implements MediaAlbum {
   @JsonKey(name: "ID")
   final int id;
   final String name;
@@ -251,7 +251,7 @@ class Release implements MusicAlbum {
 }
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
-class Track extends Locatable implements MusicTrack {
+class Track extends Locatable implements MediaTrack {
   @JsonKey(name: "ID")
   final int id;
   final String artist;
@@ -472,6 +472,30 @@ class MovieView {
       _$MovieViewFromJson(json);
 
   Map<String, dynamic> toJson() => _$MovieViewToJson(this);
+
+  bool hasRelated() {
+    return other?.isNotEmpty ?? false;
+  }
+
+  bool hasCast() {
+    return cast?.isNotEmpty ?? false;
+  }
+
+  bool hasCrew() {
+    return crew?.isNotEmpty ?? false;
+  }
+
+  List<Cast> castMembers() {
+    return cast ?? [];
+  }
+
+  List<Crew> crewMembers() {
+    return crew ?? [];
+  }
+
+  List<Movie> relatedMovies() {
+    return other ?? [];
+  }
 }
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
@@ -500,6 +524,12 @@ class Person {
   factory Person.fromJson(Map<String, dynamic> json) => _$PersonFromJson(json);
 
   Map<String, dynamic> toJson() => _$PersonToJson(this);
+
+  String get image => _profileImageUrl();
+
+  String _profileImageUrl({String size = 'w185'}) {
+    return 'http://image.tmdb.org/t/p/$size/$profilePath';
+  }
 }
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
@@ -557,7 +587,7 @@ class Collection {
   final String name;
   final String sortName;
   @JsonKey(name: "TMID")
-  final String tmid;
+  final int tmid;
 
   Collection(
       {required this.id,
@@ -572,7 +602,50 @@ class Collection {
 }
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
-class Movie extends Locatable {
+class ProfileView {
+  final Person person;
+  final List<Movie>? starring;
+  final List<Movie>? directing;
+  final List<Movie>? writing;
+
+  ProfileView(
+      {required this.person,
+      this.starring = const [],
+      this.directing = const [],
+      this.writing = const []});
+
+  factory ProfileView.fromJson(Map<String, dynamic> json) =>
+      _$ProfileViewFromJson(json);
+
+  Map<String, dynamic> toJson() => _$ProfileViewToJson(this);
+
+  bool hasStarring() {
+    return starring?.isNotEmpty ?? false;
+  }
+
+  bool hasDirecting() {
+    return directing?.isNotEmpty ?? false;
+  }
+
+  bool hasWriting() {
+    return writing?.isNotEmpty ?? false;
+  }
+
+  List<Movie> starringMovies() {
+    return starring ?? [];
+  }
+
+  List<Movie> directingMovies() {
+    return directing ?? [];
+  }
+
+  List<Movie> writingMovies() {
+    return writing ?? [];
+  }
+}
+
+@JsonSerializable(fieldRename: FieldRename.pascal)
+class Movie extends Locatable with MediaAlbum, MediaTrack {
   @JsonKey(name: "ID")
   final int id;
   @JsonKey(name: "TMID")
@@ -594,6 +667,7 @@ class Movie extends Locatable {
   final String posterPath;
   @JsonKey(name: "ETag")
   final String etag;
+  final int size;
 
   Movie(
       {required this.id,
@@ -612,7 +686,8 @@ class Movie extends Locatable {
       this.voteCount,
       required this.backdropPath,
       required this.posterPath,
-      required this.etag});
+      required this.etag,
+      required this.size});
 
   factory Movie.fromJson(Map<String, dynamic> json) => _$MovieFromJson(json);
 
@@ -630,6 +705,7 @@ class Movie extends Locatable {
 
   int _year = -1;
 
+  @override
   int get year {
     if (_year == -1) {
       final d = DateTime.parse(date);
@@ -637,4 +713,25 @@ class Movie extends Locatable {
     }
     return _year;
   }
+
+  @override
+  String get image => _moviePosterUrl();
+
+  @override
+  String get creator => '';
+
+  @override
+  String get album => title;
+
+  @override
+  int get disc => 1;
+
+  @override
+  int get number => 0;
+
+  String _moviePosterUrl({String size = 'w342'}) {
+    return 'http://image.tmdb.org/t/p/$size/${posterPath}';
+  }
+
+  String get titleYear => '$title ($year)';
 }

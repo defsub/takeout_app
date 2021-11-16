@@ -20,10 +20,23 @@ import 'package:flutter_settings_screens/flutter_settings_screens.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:rxdart/rxdart.dart';
 
+import 'model.dart';
+
 const settingAllowStreaming = 'allow_streaming';
 const settingAllowDownload = 'allow_download';
 const settingAllowArtistArtwork = 'allow_artist_artwork';
 const settingHomeGridType = 'home_grid_type';
+const settingMediaType = 'home_media_type';
+
+MediaType settingsMediaType(MediaType def) {
+  final v = Settings.getValue(settingMediaType, def.index);
+  return MediaType.values[v];
+}
+
+Future<void> changeMediaType(MediaType mediaType) async {
+  settingsChangeSubject.add(settingMediaType);
+  return Settings.setValue(settingMediaType, mediaType.index);
+}
 
 enum GridType { mix, downloads, released, added }
 

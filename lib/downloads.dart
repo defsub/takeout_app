@@ -35,6 +35,7 @@ import 'global.dart';
 import 'menu.dart';
 import 'model.dart';
 import 'util.dart';
+import 'video.dart';
 import 'main.dart';
 
 Random _random = Random();
@@ -102,7 +103,9 @@ class DownloadsWidget extends StatelessWidget {
 
   void _onDeleteConfirmed() {
     Downloads.downloadsSubject.value.forEach((entry) {
-      _deleteSpiff(entry.spiff);
+      if (entry is SpiffDownloadEntry) {
+        _deleteSpiff(entry.spiff);
+      }
     });
     Downloads.reload();
   }
@@ -131,8 +134,7 @@ void downloadsSort(DownloadSortType sortType, List<DownloadEntry> entries) {
       entries.sort((a, b) => b.modified.compareTo(a.modified));
       break;
     case DownloadSortType.name:
-      entries.sort(
-          (a, b) => a.spiff.playlist.title.compareTo(b.spiff.playlist.title));
+      entries.sort((a, b) => a.title.compareTo(b.title));
       break;
     case DownloadSortType.size:
       entries.sort((a, b) => a.size.compareTo(b.size));
@@ -169,24 +171,35 @@ class DownloadListState extends State<DownloadListWidget> {
                     _limit == -1 ? entries.length : min(_limit, entries.length))
                 .map((entry) => Container(
                     child: ListTile(
-                        leading: tileCover(_spiffCover(entry.spiff)),
+                        leading: entry.leading,
                         trailing: IconButton(
                             icon: Icon(Icons.play_arrow),
-                            onPressed: () => _onPlay(entry.spiff)),
-                        onTap: () => _onTap(context, entry.spiff),
-                        title: Text(entry.spiff.playlist.title),
-                        subtitle: Text(entry.footer()))))
+                            onPressed: () => _onPlay(entry)),
+                        onTap: () => _onTap(context, entry),
+                        title: Text(entry.title),
+                        subtitle: Text(entry.subtitle))))
           ]);
         });
   }
 
-  void _onTap(BuildContext context, Spiff spiff) {
-    Navigator.push(context,
-        MaterialPageRoute(builder: (context) => DownloadWidget(spiff: spiff)));
+  void _onTap(BuildContext context, DownloadEntry entry) {
+    if (entry is SpiffDownloadEntry) {
+      Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) => DownloadWidget(spiff: entry.spiff)));
+    }
   }
 
-  void _onPlay(Spiff spiff) {
-    MediaQueue.playSpiff(spiff);
+  void _onPlay(DownloadEntry entry) {
+    if (entry is SpiffDownloadEntry) {
+      var spiff = entry.spiff;
+      if (spiff.isMusic()) {
+        MediaQueue.playSpiff(entry.spiff);
+      } else if (spiff.isVideo()) {
+        // TODO
+      }
+    }
   }
 }
 
@@ -283,7 +296,7 @@ class DownloadState extends State<DownloadWidget> {
                     ),
                     Align(
                         alignment: Alignment.bottomLeft,
-                        child: _playButton(isCached)),
+                        child: _playButton(context, isCached)),
                     Align(
                         alignment: Alignment.bottomRight,
                         child: _bottomRight(context, isCached))
@@ -337,12 +350,12 @@ class DownloadState extends State<DownloadWidget> {
     }
   }
 
-  Widget _playButton(bool isCached) {
+  Widget _playButton(BuildContext context, bool isCached) {
     if (isCached) {
       return IconButton(
-          icon: Icon(Icons.play_arrow, size: 32), onPressed: () => _onPlay());
+          icon: Icon(Icons.play_arrow, size: 32), onPressed: () => _onPlay(context));
     }
-    return allowStreamingIconButton(Icon(Icons.play_arrow, size: 32), _onPlay);
+    return allowStreamingIconButton(Icon(Icons.play_arrow, size: 32), () => _onPlay(context));
   }
 
   Widget _downloadButton(bool isCached) {
@@ -373,9 +386,14 @@ class DownloadState extends State<DownloadWidget> {
   //   showArtist(spiff!.playlist.creator!);
   // }
 
-  void _onPlay() {
-    MediaQueue.playSpiff(spiff!);
-    showPlayer();
+  void _onPlay(BuildContext context) {
+    if (spiff!.isMusic()) {
+      MediaQueue.playSpiff(spiff!);
+      showPlayer();
+    } else if (spiff!.isVideo()) {
+      var entry = spiff!.playlist.tracks.first;
+      showMovie(context, entry);
+    }
   }
 
   void _onDelete(BuildContext context) async {
@@ -434,8 +452,12 @@ class SpiffTrackListView extends StatelessWidget {
 
   SpiffTrackListView(this._spiff);
 
-  void _onTrack(int index) {
-    MediaQueue.playSpiff(_spiff, index: index);
+  void _onTrack(BuildContext context, int index) {
+    if (_spiff.isMusic()) {
+      MediaQueue.playSpiff(_spiff, index: index);
+    } else if (_spiff.isVideo()) {
+      showMovie(context, _spiff.playlist.tracks[index]);
+    }
   }
 
   @override
@@ -448,7 +470,7 @@ class SpiffTrackListView extends StatelessWidget {
           for (var i = 0; i < _spiff.playlist.tracks.length; i++) {
             final e = _spiff.playlist.tracks[i];
             children.add(ListTile(
-                onTap: () => _onTrack(i),
+                onTap: () => _onTrack(context, i),
                 onLongPress: () => showArtist(e.creator),
                 leading: tileCover(e.image),
                 trailing: Icon(
@@ -517,7 +539,7 @@ class Downloads {
             playlist: spiff.playlist.copyWith(location: file.uri.toString()));
         print('download to $file');
         _saveAs(spiff, file).then((_) async {
-          _add(DownloadEntry.create(file, spiff));
+          _add(SpiffDownloadEntry.create(file, spiff));
           _broadcast();
           try {
             completer.complete(await _downloadTracks(client, spiff));
@@ -545,7 +567,8 @@ class Downloads {
   static Future<bool> downloadArtist(Artist artist) async {
     final client = Client();
     showSnackBar('Downloading ${artist.name}');
-    return _download(client, () => client.artistPlaylist(artist.id))
+    return _download(
+            client, () => client.artistPlaylist(artist.id, ttl: Duration.zero))
         .whenComplete(() => showSnackBar('Finished ${artist.name}'));
   }
 
@@ -562,6 +585,14 @@ class Downloads {
     showSnackBar('Downloading ${spiff.playlist.title}');
     return _download(client, () => Future.value(spiff))
         .whenComplete(() => showSnackBar('Finished ${spiff.playlist.title}'));
+  }
+
+  static Future<bool> downloadMovie(Movie movie) async {
+    final client = Client();
+    showSnackBar('Downloading ${movie.title}');
+    return _download(
+            client, () => client.moviePlaylist(movie.id, ttl: Duration.zero))
+        .whenComplete(() => showSnackBar('Finished ${movie.title}'));
   }
 
   static final List<DownloadEntry> _downloads = [];
@@ -596,7 +627,7 @@ class Downloads {
     await Future.forEach<FileSystemEntity>(list, (file) async {
       if (file.path.endsWith('.json')) {
         final spiff = await Spiff.fromFile(file as File);
-        _add(DownloadEntry.create(file, spiff));
+        _add(SpiffDownloadEntry.create(file, spiff));
       }
     }).whenComplete(() {
       _broadcast();
@@ -634,30 +665,60 @@ class Downloads {
   }
 }
 
-class DownloadEntry implements MusicAlbum {
-  final File file;
-  final Spiff spiff;
-  final DateTime modified;
+abstract class DownloadEntry {
+  File get file;
 
-  DownloadEntry(this.file, this.spiff, this.modified);
+  Widget get leading;
 
-  // Widget image() {
-  //   return cover(_spiffCover(spiff));
-  // }
+  String get title;
 
-  String footer() {
-    final creator = subtitle();
+  String get subtitle;
+
+  DateTime get modified;
+
+  int get size;
+}
+
+class SpiffDownloadEntry extends DownloadEntry with MediaAlbum {
+  final File _file;
+  final Spiff _spiff;
+  final DateTime _modified;
+
+  SpiffDownloadEntry(this._file, this._spiff, this._modified);
+
+  static SpiffDownloadEntry create(File file, Spiff spiff) {
+    FileStat stat = file.statSync();
+    return SpiffDownloadEntry(file, spiff, stat.modified);
+  }
+
+  Spiff get spiff => _spiff;
+
+  String _footer() {
+    final creator = _subtitle();
     return '$creator \u2022 ${storage(size)}';
   }
 
-  String subtitle() {
-    return spiff.playlist.creator ?? 'Playlist';
+  String _subtitle() {
+    return _spiff.playlist.creator ?? 'Playlist';
   }
 
-  static DownloadEntry create(File file, Spiff spiff) {
-    FileStat stat = file.statSync();
-    return DownloadEntry(file, spiff, stat.modified);
-  }
+  @override
+  File get file => _file;
+
+  @override
+  Widget get leading => tileCover(_spiffCover(_spiff));
+
+  @override
+  String get title => _spiff.playlist.title;
+
+  @override
+  String get subtitle => _footer();
+
+  @override
+  DateTime get modified => _modified;
+
+  @override
+  int get size => _spiff.size;
 
   @override
   String get album => spiff.playlist.title;
@@ -670,7 +731,50 @@ class DownloadEntry implements MusicAlbum {
 
   @override
   int get year => 0;
-
-  @override
-  int get size => spiff.size;
 }
+
+//
+// class Movie\\\DownloadEntry extends SpiffDownloadEntry with MediaAlbum {
+//   MovieDownloadEntry(File file, Spiff spiff, DateTime modified)
+//       : super(file, spiff, modified);
+//
+//   static MovieDownloadEntry create(File file, Spiff spiff) {
+//     FileStat stat = file.statSync();
+//     return MovieDownloadEntry(file, spiff, stat.modified);
+//   }
+//
+//   @override
+//   String get album => spiff.playlist.title;
+//
+//   @override
+//   String get creator => spiff.playlist.creator!;
+//
+//   @override
+//   String get image => _spiffCover(spiff);
+//
+//   @override
+//   int get year => 0;
+// }
+//
+// class MusicDownloadEntry extends SpiffDownloadEntry with MediaAlbum {
+//
+//   MusicDownloadEntry(File file, Spiff spiff, DateTime modified)
+//       : super(file, spiff, modified);
+//
+//   static MusicDownloadEntry create(File file, Spiff spiff) {
+//     FileStat stat = file.statSync();
+//     return MusicDownloadEntry(file, spiff, stat.modified);
+//   }
+//
+//   @override
+//   String get album => spiff.playlist.title;
+//
+//   @override
+//   String get creator => spiff.playlist.creator!;
+//
+//   @override
+//   String get image => _spiffCover(spiff);
+//
+//   @override
+//   int get year => 0;
+// }

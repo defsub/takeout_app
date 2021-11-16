@@ -19,6 +19,7 @@ import 'package:flutter/material.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:audio_service/audio_service.dart';
+import 'package:takeout_app/client.dart';
 
 import 'schema.dart';
 import 'artists.dart'; // TODO remove

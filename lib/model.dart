@@ -15,21 +15,24 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
-abstract class MusicAlbum {
+enum MediaType { music, video }
+
+abstract class MediaAlbum {
   String get creator;
   String get album;
   String get image;
   int get year;
-  int get size;
 }
 
-abstract class MusicTrack {
+abstract class MediaTrack {
   String get creator;
   String get album;
-  String get title;
   String get image;
   int get year;
+
+  String get title;
+  int get size;
+
   int get number;
   int get disc;
-  int get size;
 }

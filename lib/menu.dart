@@ -34,6 +34,12 @@ class PopupItem {
 
   PopupItem(this.icon, this.title, this.onSelected);
 
+  PopupItem.music(BuildContext context, MenuCallback onSelected) :
+      this(Icon(Icons.music_note), AppLocalizations.of(context)!.musicSwitchLabel, onSelected);
+
+  PopupItem.video(BuildContext context, MenuCallback onSelected) :
+        this(Icon(Icons.movie), AppLocalizations.of(context)!.videoSwitchLabel, onSelected);
+
   PopupItem.downloads(BuildContext context, MenuCallback onSelected)
       : this(Icon(Icons.cloud_download_outlined),
             AppLocalizations.of(context)!.downloadsLabel, onSelected);

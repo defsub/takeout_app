@@ -20,6 +20,14 @@ import 'package:flutter/material.dart';
 import 'package:palette_generator/palette_generator.dart';
 import 'package:takeout_app/util.dart';
 
+const coverAspectRatio = 1.0;
+const coverGridWidth = 250.0;
+const coverGridHeight = 250.0;
+
+const posterAspectRatio = 0.6667;
+const posterGridWidth = 166.75;
+const posterGridHeight = 250.0;
+
 dynamic radiusCover(String? url, {double? width, double? height, BoxFit? fit}) {
   if (url == null) {
     return null;
@@ -43,6 +51,10 @@ dynamic cachedImage(String url, {double? width, double? height, BoxFit? fit}) {
 
 dynamic tileCover(String url) {
   return isNullOrEmpty(url) ? Icon(Icons.album_sharp, size: 40) : radiusCover(url);
+}
+
+dynamic tilePoster(String url) {
+  return isNullOrEmpty(url) ? Icon(Icons.movie, size: 40) : radiusCover(url);
 }
 
 dynamic artistImage(String url) {
@@ -76,7 +88,18 @@ dynamic gridCover(String url) {
     return Icon(Icons.album_sharp, size: 40);
   }
   return _hero(
-      cachedImage(url, width: 250, height: 250, fit: BoxFit.fill), url);
+      cachedImage(url, width: coverGridWidth, height: coverGridHeight, fit: BoxFit.fill), url);
+}
+
+dynamic gridPoster(String url) {
+  if (isNullOrEmpty(url)) {
+    // 342x513
+    return Icon(Icons.album_sharp, size: 40);
+  }
+  // 250x375
+  // 166.75x250
+  return _hero(
+      cachedImage(url, width: posterGridWidth, height: posterGridHeight, fit: BoxFit.fitHeight), url);
 }
 
 dynamic playerCover(String url) {
