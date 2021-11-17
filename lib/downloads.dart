@@ -174,7 +174,7 @@ class DownloadListState extends State<DownloadListWidget> {
                         leading: entry.leading,
                         trailing: IconButton(
                             icon: Icon(Icons.play_arrow),
-                            onPressed: () => _onPlay(entry)),
+                            onPressed: () => _onPlay(context, entry)),
                         onTap: () => _onTap(context, entry),
                         title: Text(entry.title),
                         subtitle: Text(entry.subtitle))))
@@ -191,13 +191,15 @@ class DownloadListState extends State<DownloadListWidget> {
     }
   }
 
-  void _onPlay(DownloadEntry entry) {
+  void _onPlay(BuildContext context, DownloadEntry entry) {
     if (entry is SpiffDownloadEntry) {
       var spiff = entry.spiff;
       if (spiff.isMusic()) {
         MediaQueue.playSpiff(entry.spiff);
+        showPlayer();
       } else if (spiff.isVideo()) {
-        // TODO
+        var entry = spiff.playlist.tracks.first;
+        showMovie(context, entry);
       }
     }
   }
@@ -387,6 +389,7 @@ class DownloadState extends State<DownloadWidget> {
   // }
 
   void _onPlay(BuildContext context) {
+    print('_onPlay $spiff');
     if (spiff!.isMusic()) {
       MediaQueue.playSpiff(spiff!);
       showPlayer();

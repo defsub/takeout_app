@@ -67,7 +67,7 @@ class Spiff {
 
   bool isMusic() {
     // TODO music or video based on URI
-    return playlist.tracks.every((e) => e.location.startsWith("/api/music/"));
+    return playlist.tracks.every((e) => e.location.startsWith("/api/tracks/"));
   }
 
   bool isVideo() {

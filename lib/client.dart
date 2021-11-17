@@ -380,6 +380,12 @@ class Client {
           .then((j) => MoviesView.fromJson(j))
           .catchError((e) => Future<MoviesView>.error(e));
 
+  /// GET /api/movies
+  Future<GenreView> moviesGenre(String genre, {Duration? ttl}) async =>
+      _getJson('/api/movies/genres/${Uri.encodeComponent(genre)}', ttl: ttl)
+          .then((j) => GenreView.fromJson(j))
+          .catchError((e) => Future<GenreView>.error(e));
+
   /// GET /api/movies/1
   Future<MovieView> movie(int id, {Duration? ttl}) async =>
       _getJson('/api/movies/$id', ttl: ttl)

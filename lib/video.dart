@@ -111,6 +111,12 @@ class _MovieWidgetState extends State<MovieWidget> {
                                     // GestureDetector(
                                     //     onTap: () => _onArtist(), child: _artist()),
                                   ]))),
+                          if (_view != null && _view!.hasGenres())
+                            SliverToBoxAdapter(child: Center(child: ButtonBar(mainAxisSize: MainAxisSize.min,
+                              children: [
+                                ..._view!.genres!.map((g) => TextButton(
+                                    onPressed: () => _onGenre(context, g), child: Text(g)))
+                              ]))),
                           if (_view != null && _view!.hasCast())
                             SliverToBoxAdapter(
                                 child: heading(
@@ -170,6 +176,11 @@ class _MovieWidgetState extends State<MovieWidget> {
 
   void _onDownload() {
     Downloads.downloadMovie(_movie);
+  }
+
+  void _onGenre(BuildContext context, String genre) {
+    Navigator.push(context,
+        MaterialPageRoute(builder: (context) => GenreWidget(genre)));
   }
 }
 
@@ -324,6 +335,57 @@ class _ProfileWidgetState extends State<ProfileWidget> {
 
   Widget _title() {
     return Text(_person.name, style: Theme.of(context).textTheme.headline5);
+  }
+}
+
+
+class GenreWidget extends StatefulWidget {
+  final String _genre;
+
+  GenreWidget(this._genre);
+
+  @override
+  _GenreWidgetState createState() => _GenreWidgetState(_genre);
+}
+
+class _GenreWidgetState extends State<GenreWidget> {
+  final String _genre;
+  GenreView? _view;
+
+  _GenreWidgetState(this._genre);
+
+  @override
+  void initState() {
+    super.initState();
+    final client = Client();
+    client.moviesGenre(_genre).then((v) => _onViewUpdated(v));
+  }
+
+  void _onViewUpdated(GenreView view) {
+    if (mounted) {
+      setState(() {
+        _view = view;
+      });
+    }
+  }
+
+  Future<void> _onRefresh() async {
+    final client = Client();
+    await client
+        .moviesGenre(_genre, ttl: Duration.zero)
+        .then((v) => _onViewUpdated(v));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+              body: RefreshIndicator(
+                  onRefresh: () => _onRefresh(),
+                  child: CustomScrollView(slivers: [
+                    SliverAppBar(title: Text(_genre)),
+                    if (_view != null && _view!.movies.isNotEmpty)
+                      MovieGridWidget(_view!.movies),
+                  ])));
   }
 }
 
@@ -565,16 +627,21 @@ class MovieListWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(children: [
       ..._movies.asMap().keys.toList().map((index) => ListTile(
-          onTap: () => MovieWidget(_movies[index]),
+          onTap: () => _onTapped(context, _movies[index]),
           leading: tilePoster(_movies[index].image),
           subtitle:
               Text('${_movies[index].rating} \u2022 ${_movies[index].year}'),
           title: Text(_movies[index].title)))
     ]);
   }
+
+  void _onTapped(BuildContext context, Movie movie) {
+    Navigator.push(
+        context, MaterialPageRoute(builder: (context) => MovieWidget(movie)));
+  }
 }
 
 void showMovie(BuildContext context, Locatable movie) {
   Navigator.of(context, rootNavigator: true)
-  .push(MaterialPageRoute(builder: (context) => MoviePlayer(movie)));
+      .push(MaterialPageRoute(builder: (context) => MoviePlayer(movie)));
 }

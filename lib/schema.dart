@@ -442,6 +442,19 @@ class MoviesView {
 }
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
+class GenreView {
+  final String name;
+  final List<Movie> movies;
+
+  GenreView({required this.name, this.movies = const []});
+
+  factory GenreView.fromJson(Map<String, dynamic> json) =>
+      _$GenreViewFromJson(json);
+
+  Map<String, dynamic> toJson() => _$GenreViewToJson(this);
+}
+
+@JsonSerializable(fieldRename: FieldRename.pascal)
 class MovieView {
   final Movie movie;
   final Collection? collection;
@@ -472,6 +485,10 @@ class MovieView {
       _$MovieViewFromJson(json);
 
   Map<String, dynamic> toJson() => _$MovieViewToJson(this);
+
+  bool hasGenres() {
+    return genres?.isNotEmpty ?? false;
+  }
 
   bool hasRelated() {
     return other?.isNotEmpty ?? false;

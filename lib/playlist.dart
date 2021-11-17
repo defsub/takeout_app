@@ -86,6 +86,7 @@ class MediaQueue {
   }
 
   static Future playSpiff(Spiff spiff, {int index = -1}) async {
+    print('playSpiff $spiff');
     if (index != -1 && index >= 0 && index < spiff.playlist.tracks.length) {
       spiff = spiff.copyWith(index: index);
     }
