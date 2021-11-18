@@ -33,17 +33,23 @@ class HomeView {
   final List<Release> released;
   final List<Movie> addedMovies;
   final List<Movie> newMovies;
+  final List<Recommend>? recommendMovies;
 
   HomeView(
       {this.added = const [],
       this.released = const [],
       this.addedMovies = const [],
-      this.newMovies = const []});
+      this.newMovies = const [],
+      this.recommendMovies = const []});
 
   factory HomeView.fromJson(Map<String, dynamic> json) =>
       _$HomeViewFromJson(json);
 
   Map<String, dynamic> toJson() => _$HomeViewToJson(this);
+
+  bool hasRecommendMovies() {
+    return recommendMovies?.isNotEmpty ?? false;
+  }
 }
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
@@ -234,7 +240,6 @@ class Release implements MediaAlbum {
     return _year;
   }
 
-  @override
   int get size => 0;
 
   String _releaseCoverUrl({int size = 250}) {
@@ -659,6 +664,19 @@ class ProfileView {
   List<Movie> writingMovies() {
     return writing ?? [];
   }
+}
+
+@JsonSerializable(fieldRename: FieldRename.pascal)
+class Recommend {
+  final String name;
+  final List<Movie>? movies;
+
+  Recommend({required this.name, this.movies = const []});
+
+  factory Recommend.fromJson(Map<String, dynamic> json) =>
+      _$RecommendFromJson(json);
+
+  Map<String, dynamic> toJson() => _$RecommendToJson(this);
 }
 
 @JsonSerializable(fieldRename: FieldRename.pascal)

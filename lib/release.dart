@@ -220,9 +220,7 @@ class _ReleaseState extends State<ReleaseWidget> {
 
   Widget _downloadButton(bool isCached) {
     if (isCached) {
-      return IconButton(
-          icon: Icon(Icons.cloud_download_outlined),
-          onPressed: () => _onDownload());
+      return IconButton(icon: Icon(Icons.cloud_done_outlined), onPressed: () => {});
     }
     return allowDownloadIconButton(
         Icon(Icons.cloud_download_outlined), _onDownload);

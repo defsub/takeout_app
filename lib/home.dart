@@ -191,10 +191,13 @@ class _MovieHomeItem extends _MediaHomeItem {
   String get key => (album as Movie).titleYear;
 
   @override
-  String get title => (album as Movie).rating;
+  String get title => ''; //(album as Movie).rating;
 
   @override
   String? get subtitle => null;
+
+  @override
+  Widget get trailing => Container();
 
   @override
   Widget get image {

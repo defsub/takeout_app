@@ -13,6 +13,7 @@ import 'cover.dart';
 import 'style.dart';
 import 'main.dart';
 import 'downloads.dart';
+import 'cache.dart';
 
 class MovieWidget extends StatefulWidget {
   final Movie _movie;
@@ -59,97 +60,156 @@ class _MovieWidgetState extends State<MovieWidget> {
           final backgroundColor = snapshot.data;
           final screen = MediaQuery.of(context).size;
           final expandedHeight = screen.height / 2;
-          final isCached = false;
           return Scaffold(
               backgroundColor: backgroundColor,
               body: RefreshIndicator(
                   onRefresh: () => _onRefresh(),
                   child: _view == null
                       ? Center(child: CircularProgressIndicator())
-                      : CustomScrollView(slivers: [
-                          SliverAppBar(
-                            // actions: [ ],
-                            expandedHeight: expandedHeight,
-                            flexibleSpace: FlexibleSpaceBar(
-                                // centerTitle: true,
-                                // title: Text(release.name, style: TextStyle(fontSize: 15)),
-                                stretchModes: [
-                                  StretchMode.zoomBackground,
-                                  StretchMode.fadeTitle
-                                ],
-                                background:
-                                    Stack(fit: StackFit.expand, children: [
-                                  releaseSmallCover(_movie.image),
-                                  const DecoratedBox(
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        begin: Alignment(0.0, 0.75),
-                                        end: Alignment(0.0, 0.0),
-                                        colors: <Color>[
-                                          Color(0x60000000),
-                                          Color(0x00000000),
-                                        ],
+                      : StreamBuilder<Set<String>>(
+                          stream: TrackCache.keysSubject,
+                          builder: (context, snapshot) {
+                            final keys = snapshot.data ?? Set<String>();
+                            final isCached = TrackCache.checkAll(keys, [_movie]);
+                            return CustomScrollView(slivers: [
+                              SliverAppBar(
+                                // actions: [ ],
+                                expandedHeight: expandedHeight,
+                                flexibleSpace: FlexibleSpaceBar(
+                                    // centerTitle: true,
+                                    // title: Text(release.name, style: TextStyle(fontSize: 15)),
+                                    stretchModes: [
+                                      StretchMode.zoomBackground,
+                                      StretchMode.fadeTitle
+                                    ],
+                                    background:
+                                        Stack(fit: StackFit.expand, children: [
+                                      releaseSmallCover(_movie.image),
+                                      const DecoratedBox(
+                                        decoration: BoxDecoration(
+                                          gradient: LinearGradient(
+                                            begin: Alignment(0.0, 0.75),
+                                            end: Alignment(0.0, 0.0),
+                                            colors: <Color>[
+                                              Color(0x60000000),
+                                              Color(0x00000000),
+                                            ],
+                                          ),
+                                        ),
                                       ),
-                                    ),
-                                  ),
-                                  Align(
-                                      alignment: Alignment.bottomLeft,
-                                      child: _playButton(isCached)),
-                                  Align(
-                                      alignment: Alignment.bottomRight,
-                                      child: _downloadButton(isCached)),
-                                ])),
-                          ),
-                          SliverToBoxAdapter(
-                              child: Container(
-                                  padding: EdgeInsets.fromLTRB(4, 16, 4, 4),
-                                  child: Column(children: [
-                                    _title(),
-                                    _tagline(),
-                                    // GestureDetector(
-                                    //     onTap: () => _onArtist(), child: _title()),
-                                    // GestureDetector(
-                                    //     onTap: () => _onArtist(), child: _artist()),
-                                  ]))),
-                          if (_view != null && _view!.hasGenres())
-                            SliverToBoxAdapter(child: Center(child: ButtonBar(mainAxisSize: MainAxisSize.min,
-                              children: [
-                                ..._view!.genres!.map((g) => TextButton(
-                                    onPressed: () => _onGenre(context, g), child: Text(g)))
-                              ]))),
-                          if (_view != null && _view!.hasCast())
-                            SliverToBoxAdapter(
-                                child: heading(
-                                    AppLocalizations.of(context)!.castLabel)),
-                          if (_view != null && _view!.hasCast())
-                            SliverToBoxAdapter(child: _CastListWidget(_view!)),
-                          if (_view != null && _view!.hasCrew())
-                            SliverToBoxAdapter(
-                                child: heading(
-                                    AppLocalizations.of(context)!.crewLabel)),
-                          if (_view != null && _view!.hasCrew())
-                            SliverToBoxAdapter(child: _CrewListWidget(_view!)),
-                          if (_view != null && _view!.hasRelated())
-                            SliverToBoxAdapter(
-                              child: heading(
-                                  AppLocalizations.of(context)!.relatedLabel),
-                            ),
-                          if (_view != null && _view!.hasRelated())
-                            MovieGridWidget(_view!.other!),
-                        ])));
+                                      Align(
+                                          alignment: Alignment.bottomLeft,
+                                          child: _playButton(isCached)),
+                                      Align(
+                                          alignment: Alignment.bottomRight,
+                                          child: _downloadButton(isCached)),
+                                    ])),
+                              ),
+                              SliverToBoxAdapter(
+                                  child: Container(
+                                      padding: EdgeInsets.fromLTRB(4, 16, 4, 4),
+                                      child: Column(children: [
+                                        _title(),
+                                        _details(),
+                                        _tagline(),
+                                        if (_view != null && _view!.hasGenres())
+                                          _genres(),
+                                        // GestureDetector(
+                                        //     onTap: () => _onArtist(), child: _title()),
+                                        // GestureDetector(
+                                        //     onTap: () => _onArtist(), child: _artist()),
+                                      ]))),
+                              if (_view != null && _view!.hasCast())
+                                SliverToBoxAdapter(
+                                    child: heading(AppLocalizations.of(context)!
+                                        .castLabel)),
+                              if (_view != null && _view!.hasCast())
+                                SliverToBoxAdapter(
+                                    child: _CastListWidget(_view!)),
+                              if (_view != null && _view!.hasCrew())
+                                SliverToBoxAdapter(
+                                    child: heading(AppLocalizations.of(context)!
+                                        .crewLabel)),
+                              if (_view != null && _view!.hasCrew())
+                                SliverToBoxAdapter(
+                                    child: _CrewListWidget(_view!)),
+                              if (_view != null && _view!.hasRelated())
+                                SliverToBoxAdapter(
+                                  child: heading(AppLocalizations.of(context)!
+                                      .relatedLabel),
+                                ),
+                              if (_view != null && _view!.hasRelated())
+                                MovieGridWidget(_view!.other!),
+                            ]);
+                          })));
         });
   }
 
   Widget _title() {
-    return Text(_movie.title, style: Theme.of(context).textTheme.headline5);
+    return Container(
+        padding: EdgeInsets.fromLTRB(10, 0, 10, 0),
+        child:
+            Text(_movie.title, style: Theme.of(context).textTheme.headline5));
+  }
+
+  Widget _rating() {
+    return Container(
+      margin: const EdgeInsets.all(15.0),
+      padding: const EdgeInsets.all(3.0),
+      decoration: BoxDecoration(border: Border.all(color: Colors.white)),
+      child: Text(_movie.rating),
+    );
+  }
+
+  Widget _details() {
+    var list = <Widget>[];
+    if (_movie.rating.isNotEmpty) {
+      list.add(_rating());
+    }
+    var text = '';
+    if (_movie.runtime > 0) {
+      var hours = (_movie.runtime / 60).floor();
+      var mins = (_movie.runtime % 60).floor();
+      if (text.isNotEmpty) {
+        text += ' \u2022 ';
+      }
+      text += '${hours}h ${mins}m';
+    }
+    if (_movie.year > 1) {
+      if (text.isNotEmpty) {
+        text += ' \u2022 ';
+      }
+      text += '${_movie.year}';
+    }
+    int vote = (10 * (_movie.voteAverage ?? 0)).round();
+    if (vote > 0) {
+      if (text.isNotEmpty) {
+        text += ' \u2022 ';
+      }
+      text += '${vote}%';
+    }
+    if (text.isNotEmpty) {
+      list.add(Text(text, style: Theme.of(context).textTheme.subtitle2));
+    }
+    return Row(mainAxisAlignment: MainAxisAlignment.center, children: list);
   }
 
   Widget _tagline() {
-    return Text(_movie.tagline,
-        style: Theme.of(context)
-            .textTheme
-            .subtitle1!
-            .copyWith(color: Colors.white60));
+    return Container(
+        padding: EdgeInsets.fromLTRB(5, 5, 5, 10),
+        child: Text(_movie.tagline,
+            style: Theme.of(context)
+                .textTheme
+                .subtitle1!
+                .copyWith(color: Colors.white60)));
+  }
+
+  Widget _genres() {
+    return Center(
+        child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
+      ..._view!.genres!.map((g) =>
+          OutlinedButton(onPressed: () => _onGenre(context, g), child: Text(g)))
+    ]));
   }
 
   Widget _playButton(bool isCached) {
@@ -162,9 +222,7 @@ class _MovieWidgetState extends State<MovieWidget> {
 
   Widget _downloadButton(bool isCached) {
     if (isCached) {
-      return IconButton(
-          icon: Icon(Icons.cloud_download_outlined),
-          onPressed: () => _onDownload());
+      return IconButton(icon: Icon(Icons.cloud_done_outlined), onPressed: () => {});
     }
     return allowDownloadIconButton(
         Icon(Icons.cloud_download_outlined), _onDownload);
@@ -179,8 +237,8 @@ class _MovieWidgetState extends State<MovieWidget> {
   }
 
   void _onGenre(BuildContext context, String genre) {
-    Navigator.push(context,
-        MaterialPageRoute(builder: (context) => GenreWidget(genre)));
+    Navigator.push(
+        context, MaterialPageRoute(builder: (context) => GenreWidget(genre)));
   }
 }
 
@@ -338,7 +396,6 @@ class _ProfileWidgetState extends State<ProfileWidget> {
   }
 }
 
-
 class GenreWidget extends StatefulWidget {
   final String _genre;
 
@@ -379,13 +436,13 @@ class _GenreWidgetState extends State<GenreWidget> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-              body: RefreshIndicator(
-                  onRefresh: () => _onRefresh(),
-                  child: CustomScrollView(slivers: [
-                    SliverAppBar(title: Text(_genre)),
-                    if (_view != null && _view!.movies.isNotEmpty)
-                      MovieGridWidget(_view!.movies),
-                  ])));
+        body: RefreshIndicator(
+            onRefresh: () => _onRefresh(),
+            child: CustomScrollView(slivers: [
+              SliverAppBar(title: Text(_genre)),
+              if (_view != null && _view!.movies.isNotEmpty)
+                MovieGridWidget(_view!.movies),
+            ])));
   }
 }
 
@@ -415,8 +472,8 @@ class MovieGridWidget extends StatelessWidget {
                         clipBehavior: Clip.antiAlias,
                         child: GridTileBar(
                           backgroundColor: Colors.black26,
-                          title: Text('${m.rating}'),
-                          trailing: Text('${m.year}'),
+                          // title: Text('${m.rating}'),
+                          // trailing: Text('${m.year}'),
                         )),
                     child: gridPoster(m.image),
                   ))))
@@ -630,7 +687,7 @@ class MovieListWidget extends StatelessWidget {
           onTap: () => _onTapped(context, _movies[index]),
           leading: tilePoster(_movies[index].image),
           subtitle:
-              Text('${_movies[index].rating} \u2022 ${_movies[index].year}'),
+              Text('${_movies[index].year} \u2022 ${_movies[index].rating}'),
           title: Text(_movies[index].title)))
     ]);
   }
