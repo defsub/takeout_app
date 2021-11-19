@@ -14,6 +14,7 @@ import 'style.dart';
 import 'main.dart';
 import 'downloads.dart';
 import 'cache.dart';
+import 'util.dart';
 
 class MovieWidget extends StatefulWidget {
   final Movie _movie;
@@ -139,7 +140,7 @@ class _MovieWidgetState extends State<MovieWidget> {
                                       .relatedLabel),
                                 ),
                               if (_view != null && _view!.hasRelated())
-                                MovieGridWidget(_view!.other!),
+                                MovieGridWidget(_sortByTitle(_view!.other!)),
                             ]);
                           })));
         });
@@ -187,6 +188,10 @@ class _MovieWidgetState extends State<MovieWidget> {
         text += ' \u2022 ';
       }
       text += '${vote}%';
+    }
+    if (text.isNotEmpty) {
+      text += ' \u2022 ';
+      text += storage(_movie.size);
     }
     if (text.isNotEmpty) {
       list.add(Text(text, style: Theme.of(context).textTheme.subtitle2));
@@ -373,20 +378,20 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                           child: heading(
                               AppLocalizations.of(context)!.starringLabel)),
                     if (_view != null && _view!.hasStarring())
-                      MovieGridWidget(_view!.starringMovies()),
+                      MovieGridWidget(_sortByTitle(_view!.starringMovies())),
                     if (_view != null && _view!.hasDirecting())
                       SliverToBoxAdapter(
                           child: heading(
                               AppLocalizations.of(context)!.directingLabel)),
                     if (_view != null && _view!.hasDirecting())
-                      MovieGridWidget(_view!.directingMovies()),
+                      MovieGridWidget(_sortByTitle(_view!.directingMovies())),
                     if (_view != null && _view!.hasWriting())
                       SliverToBoxAdapter(
                         child:
                             heading(AppLocalizations.of(context)!.writingLabel),
                       ),
                     if (_view != null && _view!.hasWriting())
-                      MovieGridWidget(_view!.writingMovies()),
+                      MovieGridWidget(_sortByTitle(_view!.writingMovies())),
                   ])));
         });
   }
@@ -441,7 +446,7 @@ class _GenreWidgetState extends State<GenreWidget> {
             child: CustomScrollView(slivers: [
               SliverAppBar(title: Text(_genre)),
               if (_view != null && _view!.movies.isNotEmpty)
-                MovieGridWidget(_view!.movies),
+                MovieGridWidget(_sortByTitle(_view!.movies)),
             ])));
   }
 }
@@ -701,4 +706,10 @@ class MovieListWidget extends StatelessWidget {
 void showMovie(BuildContext context, Locatable movie) {
   Navigator.of(context, rootNavigator: true)
       .push(MaterialPageRoute(builder: (context) => MoviePlayer(movie)));
+}
+
+// Note this modifies the original list.
+List<Movie> _sortByTitle(List<Movie> movies) {
+  movies.sort((a, b) => a.sortTitle.compareTo(b.sortTitle));
+  return movies;
 }

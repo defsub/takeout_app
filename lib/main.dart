@@ -219,9 +219,13 @@ class TakeoutState extends State<_TakeoutWidget> {
   }
 
   void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+    if (_selectedIndex == index) {
+      navigatorKeys[_selectedIndex].currentState!.popUntil((route) => route.isFirst);
+    } else {
+      setState(() {
+        _selectedIndex = index;
+      });
+    }
   }
 
   void _onHomeUpdated(HomeView view) {
