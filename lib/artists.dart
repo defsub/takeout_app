@@ -32,6 +32,7 @@ import 'playlist.dart';
 import 'release.dart';
 import 'style.dart';
 import 'spiff.dart';
+import 'widget.dart';
 import 'menu.dart';
 import 'util.dart';
 import 'global.dart';
@@ -181,7 +182,7 @@ class _ArtistState extends State<ArtistWidget> with ArtistBuilder {
     Navigator.push(
         context,
         MaterialPageRoute(
-            builder: (context) => DownloadWidget(
+            builder: (context) => SpiffWidget(
                 fetch: () =>
                     Client().artistRadio(_artist.id, ttl: Duration.zero))));
   }
@@ -190,7 +191,7 @@ class _ArtistState extends State<ArtistWidget> with ArtistBuilder {
     Navigator.push(
         context,
         MaterialPageRoute(
-            builder: (context) => DownloadWidget(
+            builder: (context) => SpiffWidget(
                 fetch: () =>
                     Client().artistPlaylist(_artist.id, ttl: Duration.zero))));
   }
@@ -329,7 +330,7 @@ class SimilarArtistListWidget extends StatelessWidget {
 }
 
 class TrackListWidget extends StatelessWidget {
-  final List<Track> _tracks;
+  final List<MediaLocatable> _tracks;
 
   TrackListWidget(this._tracks);
 
@@ -345,7 +346,7 @@ class TrackListWidget extends StatelessWidget {
           onTap: () => _onPlay(index),
           leading: tileCover(_tracks[index].image),
           subtitle: Text(
-              '${_tracks[index].artist} \u2022 ${_tracks[index].release} \u2022 ${_tracks[index].date}'),
+              '${_tracks[index].creator} \u2022 ${_tracks[index].album} \u2022 ${_tracks[index].year}'),
           title: Text(_tracks[index].title)))
     ]);
   }
@@ -473,7 +474,7 @@ class _ArtistTrackListState extends State<ArtistTrackListWidget>
 
   Widget rightButton() {
     return IconButton(
-        icon: Icon(Icons.cloud_download_outlined), onPressed: _onDownload);
+        icon: Icon(IconsDownload), onPressed: _onDownload);
   }
 
   List<Widget> slivers() {

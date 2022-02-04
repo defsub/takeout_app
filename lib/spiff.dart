@@ -32,8 +32,13 @@ class Spiff {
   final int index;
   final double position;
   final Playlist playlist;
+  final String type;
 
-  Spiff({required this.index, required this.position, required this.playlist});
+  Spiff(
+      {required this.index,
+      required this.position,
+      required this.playlist,
+      required this.type});
 
   int get size {
     return playlist.tracks.fold(0, (sum, t) => sum + t.size);
@@ -46,6 +51,7 @@ class Spiff {
           playlist.creator == other.playlist.creator &&
           playlist.location == other.playlist.location &&
           playlist.image == other.playlist.image &&
+          playlist.date == other.playlist.date &&
           playlist.tracks.length == other.playlist.tracks.length &&
           listEquals(playlist.tracks, other.playlist.tracks);
     }
@@ -66,21 +72,23 @@ class Spiff {
   }
 
   bool isMusic() {
-    // TODO music or video based on URI
-    return playlist.tracks.every((e) => e.location.startsWith("/api/tracks/"));
+    return MediaTypes.from(type) == MediaType.music;
   }
 
   bool isVideo() {
-    // TODO music or video based on URI
-    return playlist.tracks.every((e) => e.location.startsWith("/api/movies/"));
+    return MediaTypes.from(type) == MediaType.video;
+  }
+
+  bool isPodcast() {
+    return MediaTypes.from(type) == MediaType.podcast;
   }
 
   MediaType get mediaType {
-    return isMusic()
-        ? MediaType.music
-        : isVideo()
-            ? MediaType.video
-            : MediaType.music; // TODO
+    if (type == "") {
+      // FIXME remove after transition to require type is done
+      return MediaType.music;
+    }
+    return MediaTypes.from(type);
   }
 
   factory Spiff.fromJson(Map<String, dynamic> json) => _$SpiffFromJson(json);
@@ -91,15 +99,20 @@ class Spiff {
     int? index,
     double? position,
     Playlist? playlist,
+    String? type,
   }) =>
       Spiff(
         index: index ?? this.index,
         position: position ?? this.position,
         playlist: playlist ?? this.playlist,
+        type: type ?? this.type,
       );
 
-  static Spiff empty() =>
-      Spiff(index: -1, position: 0, playlist: Playlist(title: '', tracks: []));
+  static Spiff empty() => Spiff(
+      index: -1,
+      position: 0,
+      playlist: Playlist(title: '', tracks: []),
+      type: MediaType.music.name);
 
   static Future<Spiff> fromFile(File file) async {
     final completer = Completer<Spiff>();
@@ -124,6 +137,7 @@ class Entry extends Locatable implements MediaTrack {
   final String album;
   final String title;
   final String image;
+  final String date;
   @JsonKey(name: 'location')
   final List<String> locations;
   @JsonKey(name: 'identifier')
@@ -136,6 +150,7 @@ class Entry extends Locatable implements MediaTrack {
       required this.album,
       required this.title,
       required this.image,
+      this.date = "",
       required this.locations,
       required this.identifiers,
       this.sizes});
@@ -176,6 +191,7 @@ class Playlist {
   final String? creator;
   final String title;
   final String? image;
+  final String? date;
   @JsonKey(name: 'track')
   final List<Entry> tracks;
 
@@ -184,6 +200,7 @@ class Playlist {
       this.creator,
       required this.title,
       this.image,
+      this.date,
       required this.tracks});
 
   Playlist copyWith({

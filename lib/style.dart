@@ -17,6 +17,10 @@
 
 import 'package:flutter/material.dart';
 
+const IconsDownload = Icons.cloud_download_outlined;
+const IconsDownloadDone = Icons.cloud_done_outlined;
+const IconsCached = Icons.download_done_outlined;
+
 Widget header(String text) {
   return Container(
       child: Text(text.toUpperCase(),

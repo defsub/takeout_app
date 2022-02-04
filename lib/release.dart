@@ -220,10 +220,10 @@ class _ReleaseState extends State<ReleaseWidget> {
 
   Widget _downloadButton(bool isCached) {
     if (isCached) {
-      return IconButton(icon: Icon(Icons.cloud_done_outlined), onPressed: () => {});
+      return IconButton(icon: Icon(IconsDownloadDone), onPressed: () => {});
     }
     return allowDownloadIconButton(
-        Icon(Icons.cloud_download_outlined), _onDownload);
+        Icon(IconsDownload), _onDownload);
   }
 }
 
@@ -279,7 +279,7 @@ class _ReleaseTracksWidget extends StatelessWidget {
                     child: Text('${e.trackNum}',
                         style: TextStyle(fontWeight: FontWeight.w200))),
                 trailing: Icon(
-                    keys.contains(e.key) ? Icons.download_done_sharp : null),
+                    keys.contains(e.key) ? IconsCached : null),
                 subtitle: subtitle != null ? Text(subtitle) : null,
                 title: Text(e.title)));
           }
@@ -325,9 +325,9 @@ class AlbumGridWidget extends StatelessWidget {
     Navigator.push(context, MaterialPageRoute(builder: (context) {
       if (album is Release) {
         return ReleaseWidget(album);
-      } else if (album is SpiffDownloadEntry) {
-        // TODO is this used?
-        return DownloadWidget(spiff: album.spiff);
+      // } else if (album is SpiffDownloadEntry) {
+      //   TODO is this used?
+        // return DownloadWidget(spiff: album.spiff);
       }
       return Text('');
     }));

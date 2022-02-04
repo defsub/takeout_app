@@ -24,6 +24,7 @@ import 'package:audio_service/audio_service.dart';
 import 'package:audio_session/audio_session.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:takeout_app/model.dart';
 
 import 'playlist.dart';
 import 'client.dart';
@@ -31,6 +32,18 @@ import 'client.dart';
 extension TakeoutMediaItem on MediaItem {
   bool isLocalFile() {
     return id.startsWith(RegExp(r'^file'));
+  }
+
+  bool isPodcast() {
+    return _isMediaType(MediaType.podcast);
+  }
+
+  bool isMusic() {
+    return _isMediaType(MediaType.music);
+  }
+
+  bool _isMediaType(MediaType type) {
+    return (extras?[ExtraMediaType] ?? '') == type.name;
   }
 }
 
@@ -124,7 +137,8 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
     final source = ConcatenatingAudioSource(
         children: newState.queue
             .map((item) => AudioSource.uri(Uri.parse(item.id),
-                headers: item.isLocalFile() ? null : item.extras?['headers']))
+                headers:
+                    item.isLocalFile() ? null : item.extras?[ExtraHeaders]))
             .toList());
     _playlist = source;
     print('player index ${newState.index} pos ${newState.position.toInt()}');
@@ -151,7 +165,10 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
 
   @override
   Future<void> addQueueItem(MediaItem item) {
-    return _loadPlaylist(Client.getDefaultPlaylistUrl());
+    // TODO is this used?
+    //return _loadPlaylist(Client.getDefaultPlaylistUrl());
+    print('XXX add queue item $item');
+    return Future.value();
   }
 
   // TODO
@@ -247,48 +264,66 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
   @override
   Future<void> seek(Duration position) => _player.seek(position);
 
-  // @override
-  // Future<void> fastForward() => _seekRelative(fastForwardInterval);
-  //
-  // @override
-  // Future<void> rewind() => _seekRelative(-rewindInterval);
+  @override
+  Future<void> fastForward() => _player.seek(
+      _seekCheck(_player.position + AudioService.config.fastForwardInterval));
+
+  @override
+  Future<void> rewind() => _player
+      .seek(_seekCheck(_player.position - AudioService.config.rewindInterval));
 
   @override
   Future<void> stop() async {
     await _player.stop();
     await playbackState.firstWhere(
-            (state) => state.processingState == AudioProcessingState.idle);
+        (state) => state.processingState == AudioProcessingState.idle);
   }
 
-  /// Jumps away from the current position by [offset].
-  // Future<void> _seekRelative(Duration offset) async {
-  //   var newPosition = _player.position + offset;
-  //   // Make sure we don't jump out of bounds.
-  //   if (newPosition < Duration.zero) newPosition = Duration.zero;
-  //   final duration = currentItem?.duration;
-  //   if (duration != null) {
-  //     if (newPosition > duration) newPosition = duration;
-  //   }
-  //   // Perform the jump via a seek.
-  //   await _player.seek(newPosition);
-  // }
+  Duration _seekCheck(Duration pos) {
+    if (pos < Duration.zero) {
+      return Duration.zero;
+    }
+    final end = currentItem?.duration;
+    if (end != null && pos > end) {
+      pos = end;
+    }
+    return pos;
+  }
 
   /// Broadcasts the current state to all clients.
   void _broadcastState(PlaybackEvent event) {
     final playing = _player.playing;
-    playbackState.add(playbackState.value.copyWith(
-      controls: [
+    var controls = <MediaControl>[];
+    var compactControls = <int>[];
+    final isPodcast = currentItem?.isPodcast() ?? false;
+
+    if (isPodcast) {
+      controls = [
+        MediaControl.rewind,
+        if (playing) MediaControl.pause else MediaControl.play,
+        MediaControl.fastForward,
+      ];
+      compactControls = const [0, 1, 2];
+    } else {
+      controls = [
         MediaControl.skipToPrevious,
         if (playing) MediaControl.pause else MediaControl.play,
-        MediaControl.stop,
         MediaControl.skipToNext,
-      ],
+      ];
+      compactControls = const [0, 1, 2];
+    }
+
+    playbackState.add(playbackState.value.copyWith(
+      controls: controls,
       systemActions: const {
+        MediaAction.skipToPrevious,
+        MediaAction.skipToNext,
+        MediaAction.stop,
         MediaAction.seek,
         MediaAction.seekForward,
         MediaAction.seekBackward,
       },
-      androidCompactActionIndices: const [0, 1, 3],
+      androidCompactActionIndices: compactControls,
       processingState: const {
         ProcessingState.idle: AudioProcessingState.idle,
         ProcessingState.loading: AudioProcessingState.loading,

@@ -34,13 +34,17 @@ class HomeView {
   final List<Movie> addedMovies;
   final List<Movie> newMovies;
   final List<Recommend>? recommendMovies;
+  final List<Episode>? newEpisodes;
+  final List<Series>? newSeries;
 
   HomeView(
       {this.added = const [],
       this.released = const [],
       this.addedMovies = const [],
       this.newMovies = const [],
-      this.recommendMovies = const []});
+      this.recommendMovies = const [],
+      this.newEpisodes = const [],
+      this.newSeries = const []});
 
   factory HomeView.fromJson(Map<String, dynamic> json) =>
       _$HomeViewFromJson(json);
@@ -255,13 +259,15 @@ class Release implements MediaAlbum {
   }
 }
 
+abstract class MediaLocatable extends MediaTrack with Locatable {}
+
 @JsonSerializable(fieldRename: FieldRename.pascal)
-class Track extends Locatable implements MediaTrack {
+class Track extends MediaLocatable {
   @JsonKey(name: "ID")
   final int id;
   final String artist;
   final String release;
-  final String? date;
+  final String date;
   final int trackNum;
   final int discNum;
   final String title;
@@ -283,7 +289,7 @@ class Track extends Locatable implements MediaTrack {
       {required this.id,
       required this.artist,
       required this.release,
-      this.date,
+      this.date = "",
       required this.trackNum,
       required this.discNum,
       required this.title,
@@ -331,8 +337,8 @@ class Track extends Locatable implements MediaTrack {
 
   @override
   int get year {
-    if (_year == -1 && date != null) {
-      final d = DateTime.parse(date!);
+    if (_year == -1) {
+      final d = DateTime.parse(date);
       _year = d.year;
     }
     return _year;
@@ -769,4 +775,170 @@ class Movie extends Locatable with MediaAlbum, MediaTrack {
   }
 
   String get titleYear => '$title ($year)';
+}
+
+@JsonSerializable(fieldRename: FieldRename.pascal)
+class Series with MediaAlbum {
+  @JsonKey(name: "ID")
+  final int id;
+  @JsonKey(name: "SID")
+  final String sid;
+  final String title;
+  final String author;
+  final String description;
+  final String date;
+  final String link;
+  final String image;
+  final String copyright;
+  @JsonKey(name: "TTL")
+  final int ttl;
+
+  Series(
+      {required this.id,
+      required this.sid,
+      required this.title,
+      required this.author,
+      required this.description,
+      required this.date,
+      required this.link,
+      required this.image,
+      required this.copyright,
+      required this.ttl});
+
+  factory Series.fromJson(Map<String, dynamic> json) => _$SeriesFromJson(json);
+
+  Map<String, dynamic> toJson() => _$SeriesToJson(this);
+
+  int _year = -1;
+
+  @override
+  int get year {
+    if (_year == -1) {
+      final d = DateTime.parse(date);
+      _year = d.year;
+    }
+    return _year;
+  }
+
+  @override
+  String get creator => author;
+
+  @override
+  String get album => title;
+
+  @override
+  int get disc => 1;
+
+  @override
+  int get number => 0;
+}
+
+@JsonSerializable(fieldRename: FieldRename.pascal)
+class Episode extends MediaLocatable {
+  @JsonKey(name: "ID")
+  final int id;
+  @JsonKey(name: "SID")
+  final String sid;
+  @JsonKey(name: "EID")
+  final String eid;
+  final String title;
+  final String author;
+  final String description;
+  final String date;
+  final String link;
+  @JsonKey(name: "URL")
+  final String url; // needed?
+  final int size;
+
+  @JsonKey(ignore: true)
+  String album = '';
+  @JsonKey(ignore: true)
+  String image = ''; // set from series
+
+  Episode(
+      {required this.id,
+      required this.sid,
+      required this.eid,
+      required this.title,
+      required this.author,
+      required this.description,
+      required this.date,
+      required this.link,
+      required this.url,
+      required this.size});
+
+  factory Episode.fromJson(Map<String, dynamic> json) =>
+      _$EpisodeFromJson(json);
+
+  Map<String, dynamic> toJson() => _$EpisodeToJson(this);
+
+  @override
+  String get key {
+    return eid;
+  }
+
+  @override
+  String get location {
+    return '/api/episodes/$id/location';
+  }
+
+  int _year = -1;
+
+  @override
+  int get year {
+    if (_year == -1) {
+      final d = DateTime.parse(date);
+      _year = d.year;
+    }
+    return _year;
+  }
+
+  @override
+  String get creator => author;
+
+  // @override
+  // String get album => title;
+
+  @override
+  int get disc => 1;
+
+  @override
+  int get number => 0;
+}
+
+@JsonSerializable(fieldRename: FieldRename.pascal)
+class PodcastsView {
+  final List<Series> series;
+
+  PodcastsView({this.series = const []});
+
+  factory PodcastsView.fromJson(Map<String, dynamic> json) =>
+      _$PodcastsViewFromJson(json);
+
+  Map<String, dynamic> toJson() => _$PodcastsViewToJson(this);
+}
+
+@JsonSerializable(fieldRename: FieldRename.pascal)
+class SeriesView {
+  final Series series;
+  final List<Episode> episodes;
+
+  SeriesView({required this.series, this.episodes = const []});
+
+  factory SeriesView.fromJson(Map<String, dynamic> json) =>
+      _$SeriesViewFromJson(json);
+
+  Map<String, dynamic> toJson() => _$SeriesViewToJson(this);
+}
+
+@JsonSerializable(fieldRename: FieldRename.pascal)
+class EpisodeView {
+  final Episode episode;
+
+  EpisodeView({required this.episode});
+
+  factory EpisodeView.fromJson(Map<String, dynamic> json) =>
+      _$EpisodeViewFromJson(json);
+
+  Map<String, dynamic> toJson() => _$EpisodeViewToJson(this);
 }

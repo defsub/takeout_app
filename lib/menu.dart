@@ -17,6 +17,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'style.dart';
 
 typedef MenuCallback = void Function(BuildContext);
 
@@ -40,12 +41,15 @@ class PopupItem {
   PopupItem.video(BuildContext context, MenuCallback onSelected) :
         this(Icon(Icons.movie), AppLocalizations.of(context)!.videoSwitchLabel, onSelected);
 
+  PopupItem.podcasts(BuildContext context, MenuCallback onSelected) :
+        this(Icon(Icons.podcasts), AppLocalizations.of(context)!.podcastsSwitchLabel, onSelected);
+
   PopupItem.downloads(BuildContext context, MenuCallback onSelected)
-      : this(Icon(Icons.cloud_download_outlined),
+      : this(Icon(IconsDownload),
             AppLocalizations.of(context)!.downloadsLabel, onSelected);
 
   PopupItem.download(BuildContext context, MenuCallback onSelected)
-      : this(Icon(Icons.cloud_download_outlined),
+      : this(Icon(IconsDownload),
             AppLocalizations.of(context)!.downloadsLabel, onSelected);
 
   PopupItem.play(BuildContext context, MenuCallback onSelected)

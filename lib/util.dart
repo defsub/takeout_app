@@ -15,6 +15,8 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
+import 'package:timeago/timeago.dart' as timeago;
+
 bool isNullOrEmpty(String? s) => s?.trim().isEmpty ?? true;
 
 bool isNotNullOrEmpty(String? s) => s?.trim().isNotEmpty ?? false;
@@ -24,17 +26,41 @@ const megabyte = kilobyte*1024;
 const gigabyte = megabyte*1024;
 
 String storage(int size) {
-  int n = size ~/ gigabyte;
-  if (n > 0) {
-    return '$n GB';
+  double f = size / gigabyte;
+  if (f >= 1.0) {
+    return '${f.toStringAsFixed(2)} GB';
   }
-  n = size ~/ megabyte;
-  if (n > 0) {
-    return '$n MB';
+  f = size / megabyte;
+  if (f >= 1.0) {
+    return '${f.toStringAsFixed(2)} MB';
   }
-  n = size ~/ kilobyte;
-  if (n > 0) {
-    return '$n KB';
+  f = size / kilobyte;
+  if (f >= 1.0) {
+    return '${f.toStringAsFixed(2)} KB';
   }
-  return '$size B';
+  return '${f.toStringAsFixed(2)} B';
+}
+
+String twoDigits(int n) => n.toString().padLeft(2, "0");
+
+String hhmmss(Duration duration) {
+  final hours = twoDigits(duration.inHours);
+  final mins = twoDigits(duration.inMinutes.remainder(60));
+  final secs = twoDigits(duration.inSeconds.remainder(60));
+  return '$hours:$mins:$secs';
+}
+
+String relativeDate(String date) {
+  final now = DateTime.now();
+  final d = DateTime.parse(date);
+  if (now.subtract(Duration(days: 30)).isBefore(d)) {
+    return timeago.format(d);
+  } else if (now.subtract(Duration(days: 365)).isBefore(d)) {
+    final year = d.year;
+    final month = twoDigits(d.month);
+    final day = twoDigits(d.day);
+    return '${year}-${month}-${day}';
+  } else {
+    return '${d.year}';
+  }
 }

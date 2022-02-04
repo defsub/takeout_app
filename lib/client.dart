@@ -72,6 +72,7 @@ class Client {
   static const settingCookie = 'client_cookie';
   static const settingEndpoint = 'endpoint';
   static const cookieName = 'Takeout';
+  static const _defaultPlaylist = '/api/playlist';
 
   static const locationTTL = Duration(hours: 1);
   static const playlistTTL = Duration(minutes: 1);
@@ -79,20 +80,10 @@ class Client {
 
   static String? _endpoint;
   static String? _cookie;
-  static late String _defaultPlaylistUrl;
-  static late Uri _defaultPlaylistUri;
-
-  static String getDefaultPlaylistUrl() {
-    return _defaultPlaylistUrl;
-  }
+  static Uri _defaultPlaylistUri = Uri.parse(_defaultPlaylist);
 
   static Uri defaultPlaylistUri() {
     return _defaultPlaylistUri;
-  }
-
-  void _applyEndpoint() {
-    _defaultPlaylistUrl = '$_endpoint/api/playlist';
-    _defaultPlaylistUri = Uri.parse(_defaultPlaylistUrl);
   }
 
   Future<void> setEndpoint(String? v) async {
@@ -102,7 +93,6 @@ class Client {
       prefs.remove(settingEndpoint);
     } else {
       prefs.setString(settingEndpoint, v);
-      _applyEndpoint();
     }
   }
 
@@ -111,7 +101,6 @@ class Client {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       if (prefs.containsKey(settingEndpoint)) {
         _endpoint = prefs.getString(settingEndpoint);
-        _applyEndpoint();
       }
     }
     return _endpoint!;
@@ -314,9 +303,7 @@ class Client {
 
   /// GET /api/artists/1/singles/playlist
   Future<Spiff> artistSinglesPlaylist(int id, {Duration? ttl}) async =>
-      _getJson('/api/artists/$id/singles/playlist', ttl: ttl)
-          .then((j) => Spiff.fromJson(j))
-          .catchError((e) => Future<Spiff>.error(e));
+      spiff('/api/artists/$id/singles/playlist', ttl: ttl);
 
   /// GET /api/artists/1/popular
   Future<PopularView> artistPopular(int id, {Duration? ttl}) async =>
@@ -326,21 +313,15 @@ class Client {
 
   /// GET /api/artists/1/popular/playlist
   Future<Spiff> artistPopularPlaylist(int id, {Duration? ttl}) async =>
-      _getJson('/api/artists/$id/popular/playlist', ttl: ttl)
-          .then((j) => Spiff.fromJson(j))
-          .catchError((e) => Future<Spiff>.error(e));
+      spiff('/api/artists/$id/popular/playlist', ttl: ttl);
 
   /// GET /api/artists/1/playlist
   Future<Spiff> artistPlaylist(int id, {Duration? ttl}) async =>
-      _getJson('/api/artists/$id/playlist', ttl: ttl)
-          .then((j) => Spiff.fromJson(j))
-          .catchError((e) => Future<Spiff>.error(e));
+      spiff('/api/artists/$id/playlist', ttl: ttl);
 
   /// GET /api/artists/1/radio
   Future<Spiff> artistRadio(int id, {Duration? ttl}) async =>
-      _getJson('/api/artists/$id/radio', ttl: ttl)
-          .then((j) => Spiff.fromJson(j))
-          .catchError((e) => Future<Spiff>.error(e));
+      spiff('/api/artists/$id/radio', ttl: ttl);
 
   /// GET /api/releases/1
   Future<ReleaseView> release(int id, {Duration? ttl}) async =>
@@ -350,14 +331,10 @@ class Client {
 
   /// GET /api/releases/1/playlist
   Future<Spiff> releasePlaylist(int id, {Duration? ttl}) async =>
-      _getJson('/api/releases/$id/playlist', ttl: ttl)
-          .then((j) => Spiff.fromJson(j))
-          .catchError((e) => Future<Spiff>.error(e));
+      spiff('/api/releases/$id/playlist', ttl: ttl);
 
   /// GET /api/playlist
-  Future<Spiff> playlist() async => _getJson('/api/playlist', ttl: playlistTTL)
-      .then((j) => Spiff.fromJson(j))
-      .catchError((e) => Future<Spiff>.error(e));
+  Future<Spiff> playlist() async => spiff('/api/playlist', ttl: playlistTTL);
 
   /// GET /api/radio
   Future<RadioView> radio({Duration? ttl}) async =>
@@ -367,7 +344,11 @@ class Client {
 
   /// GET /api/radio/1
   Future<Spiff> station(int id, {Duration? ttl}) async =>
-      _getJson('/api/radio/$id', ttl: ttl)
+      spiff('/api/radio/$id', ttl: ttl);
+
+  /// GET /path -> spiff
+  Future<Spiff> spiff(String path, {Duration? ttl}) async =>
+      _getJson(path, ttl: ttl)
           .then((j) => Spiff.fromJson(j))
           .catchError((e) => Future<Spiff>.error(e));
 
@@ -394,15 +375,35 @@ class Client {
 
   /// GET /api/movies/1/playlist
   Future<Spiff> moviePlaylist(int id, {Duration? ttl}) async =>
-      _getJson('/api/movies/$id/playlist', ttl: ttl)
-          .then((j) => Spiff.fromJson(j))
-          .catchError((e) => Future<Spiff>.error(e));
+      spiff('/api/movies/$id/playlist', ttl: ttl);
 
   /// GET /api/profiles/1
   Future<ProfileView> profile(int id, {Duration? ttl}) async =>
       _getJson('/api/profiles/$id', ttl: ttl)
           .then((j) => ProfileView.fromJson(j))
           .catchError((e) => Future<ProfileView>.error(e));
+
+  /// GET /api/podcasts
+  Future<PodcastsView> podcasts({Duration? ttl}) async =>
+      _getJson('/api/podcasts', ttl: ttl)
+          .then((j) => PodcastsView.fromJson(j))
+          .catchError((e) => Future<PodcastsView>.error(e));
+
+  /// GET /api/series/1
+  Future<SeriesView> series(int id, {Duration? ttl}) async =>
+      _getJson('/api/series/$id', ttl: ttl)
+          .then((j) => SeriesView.fromJson(j))
+          .catchError((e) => Future<SeriesView>.error(e));
+
+  /// GET /api/series/1/playlist
+  Future<Spiff> seriesPlaylist(int id, {Duration? ttl}) async =>
+      spiff('/api/series/$id/playlist', ttl: ttl);
+
+  /// GET /api/episodes/1
+  Future<EpisodeView> episode(int id, {Duration? ttl}) async =>
+      _getJson('/api/episodes/$id', ttl: ttl)
+          .then((j) => EpisodeView.fromJson(j))
+          .catchError((e) => Future<EpisodeView>.error(e));
 
   /// Download locatable to a file.
   Future download(Locatable d) async {
@@ -415,6 +416,7 @@ class Client {
     final completer = Completer();
     final baseUrl = await getEndpoint();
     final file = await cache.create(d);
+    print('download file is $file');
 
     HttpClient()
         .getUrl(Uri.parse('$baseUrl${d.location}'))
@@ -428,11 +430,13 @@ class Client {
             cache.put(d, file);
             completer.complete();
           }).catchError((e) {
+            print('error $e');
             completer.completeError(e);
           });
         })
         .timeout(downloadTimeout)
         .catchError((e) {
+          print('error2 $e');
           file.delete();
           completer.completeError(e);
         });

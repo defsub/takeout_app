@@ -25,8 +25,9 @@ List<Map<String, dynamic>> patchAppend(String ref) {
   ];
 }
 
-List<Map<String, dynamic>> patchReplace(String ref) {
+List<Map<String, dynamic>> patchReplace(String ref, String type) {
   return [
+    {'op': 'replace', 'path': '/type', 'value': type},
     {'op': 'replace', 'path': '/playlist/track', 'value': []},
     {
       'op': 'add',

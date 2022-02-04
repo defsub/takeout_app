@@ -37,21 +37,8 @@ import 'model.dart';
 import 'util.dart';
 import 'video.dart';
 import 'main.dart';
-
-Random _random = Random();
-
-String _spiffCover(Spiff spiff) {
-  if (isNotNullOrEmpty(spiff.playlist.image)) {
-    return spiff.playlist.image!;
-  }
-  for (var i = 0; i < spiff.playlist.tracks.length; i++) {
-    final pick = _random.nextInt(spiff.playlist.tracks.length);
-    if (isNotNullOrEmpty(spiff.playlist.tracks[pick].image)) {
-      return spiff.playlist.tracks[pick].image;
-    }
-  }
-  return ''; // TODO what to return?
-}
+import 'style.dart';
+import 'widget.dart';
 
 class DownloadsWidget extends StatelessWidget {
   @override
@@ -104,7 +91,7 @@ class DownloadsWidget extends StatelessWidget {
   void _onDeleteConfirmed() {
     Downloads.downloadsSubject.value.forEach((entry) {
       if (entry is SpiffDownloadEntry) {
-        _deleteSpiff(entry.spiff);
+        _deleteSpiff(entry);
       }
     });
     Downloads.reload();
@@ -184,17 +171,15 @@ class DownloadListState extends State<DownloadListWidget> {
 
   void _onTap(BuildContext context, DownloadEntry entry) {
     if (entry is SpiffDownloadEntry) {
-      Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (context) => DownloadWidget(spiff: entry.spiff)));
+      Navigator.push(context,
+          MaterialPageRoute(builder: (context) => DownloadWidget(entry)));
     }
   }
 
   void _onPlay(BuildContext context, DownloadEntry entry) {
     if (entry is SpiffDownloadEntry) {
       var spiff = entry.spiff;
-      if (spiff.isMusic()) {
+      if (spiff.isMusic() || spiff.isPodcast()) {
         MediaQueue.playSpiff(entry.spiff);
         showPlayer();
       } else if (spiff.isVideo()) {
@@ -206,127 +191,79 @@ class DownloadListState extends State<DownloadListWidget> {
 }
 
 class DownloadWidget extends StatefulWidget {
-  final Spiff? spiff;
-  final Future<Spiff> Function()? fetch;
+  final SpiffDownloadEntry entry;
 
-  DownloadWidget({this.spiff, this.fetch});
+  DownloadWidget(this.entry);
 
   @override
-  DownloadState createState() => DownloadState(spiff: spiff, fetch: fetch);
+  DownloadState createState() => DownloadState(entry);
 }
 
-class DownloadState extends State<DownloadWidget> {
-  Spiff? spiff;
-  Future<Spiff> Function()? fetch;
-  String? _coverUrl;
+class DownloadState extends State<DownloadWidget> with SpiffWidgetBuilder {
+  SpiffDownloadEntry entry;
+  late String _cover;
 
-  DownloadState({this.spiff, this.fetch});
+  DownloadState(this.entry);
 
   @override
   void initState() {
     super.initState();
-    if (spiff != null) {
-      _coverUrl = _spiffCover(spiff!);
-    }
-    if (fetch != null) {
-      _onRefresh();
-    }
+    _cover = pickCover(entry.spiff);
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<Color?>(
-        future: getImageBackgroundColor(_coverUrl ?? ''),
-        builder: (context, snapshot) => Scaffold(
-            backgroundColor: snapshot.data,
-            // appBar: AppBar(
-            //     title: header(spiff.playlist.title),
-            //     backgroundColor: snapshot?.data),
-            body: spiff == null
-                ? Center(child: CircularProgressIndicator())
-                : fetch != null
-                    ? RefreshIndicator(
-                        onRefresh: () => _onRefresh(), child: body())
-                    : body()));
-  }
+  Spiff? get spiff => entry.spiff;
 
-  Widget body() {
-    return StreamBuilder<Set<String>>(
-        stream: TrackCache.keysSubject,
-        builder: (context, snapshot) {
-          // cover images are 250x250 (or 500x500)
-          // distort a bit to only take half the screen
-          final screen = MediaQuery.of(context).size;
-          final expandedHeight = screen.height / 2;
-          final keys = snapshot.data ?? Set<String>();
-          final isCached = TrackCache.checkAll(keys, spiff!.playlist.tracks);
-          bool isRadio = spiff!.playlist.creator == 'Radio';
-          return CustomScrollView(slivers: [
-            SliverAppBar(
-              expandedHeight: expandedHeight,
-              actions: [
-                popupMenu(context, [
-                  if (isCached)
-                    PopupItem.delete(
-                        context,
-                        AppLocalizations.of(context)!.deleteItem,
-                        (_) => _onDelete(context)),
-                  if (fetch != null)
-                    PopupItem.refresh(context, (_) => _onRefresh()),
-                ]),
-              ],
-              flexibleSpace: FlexibleSpaceBar(
-                  // centerTitle: true,
-                  // title: Text(release.name, style: TextStyle(fontSize: 15)),
-                  stretchModes: [
-                    StretchMode.zoomBackground,
-                    StretchMode.fadeTitle
-                  ],
-                  background: Stack(fit: StackFit.expand, children: [
-                    spiffCover(_coverUrl!),
-                    const DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment(0.0, 0.75),
-                          end: Alignment(0.0, 0.0),
-                          colors: <Color>[
-                            Color(0x60000000),
-                            Color(0x00000000),
-                          ],
-                        ),
-                      ),
-                    ),
-                    Align(
-                        alignment: Alignment.bottomLeft,
-                        child: _playButton(context, isCached)),
-                    Align(
-                        alignment: Alignment.bottomRight,
-                        child: _bottomRight(context, isCached))
-                  ])),
-            ),
-            SliverToBoxAdapter(
-                child: Container(
-                    padding: EdgeInsets.fromLTRB(0, 16, 0, 0),
-                    child: Column(children: [
-                      _title(context),
-                      _subtitle(context, isRadio),
-                    ]))),
-            SliverToBoxAdapter(child: SpiffTrackListView(spiff!)),
-          ]);
+  String? get coverUrl => _cover;
+
+  Future<Spiff> Function()? get fetch => () {
+        return Client()
+            .spiff(entry.spiff.playlist.location!, ttl: Duration.zero);
+      };
+
+  Future<void> onRefresh() async {
+    Future<Spiff> Function()? fetcher = fetch;
+    if (fetcher != null) {
+      try {
+        final result = await fetcher();
+        print('got $result');
+        // TODO !!! at this point tracks *may* get orphaned in the cache
+        Downloads.refreshSpiff(entry, result).then((freshEntry) {
+          entry = freshEntry;
+        }).whenComplete(() {
+          if (mounted) {
+            setState(() {
+              _cover = pickCover(entry.spiff);
+            });
+          }
         });
+      } catch (error) {
+        print('refresh err $error');
+      }
+    }
   }
 
-  Widget _bottomRight(BuildContext context, bool isCached) {
-    return isCached ? _deleteButton(context) : _downloadButton(isCached);
+  List<Widget>? actions(BuildContext context) {
+    return [
+      popupMenu(context, [
+        PopupItem.delete(context, AppLocalizations.of(context)!.deleteItem,
+            (_) => _onDelete(context)),
+        if (fetch != null) PopupItem.refresh(context, (_) => onRefresh()),
+      ]),
+    ];
   }
 
-  Widget _title(BuildContext context) {
-    return Text(spiff!.playlist.title,
-        style: Theme.of(context).textTheme.headline5);
+  Widget bottomRight(BuildContext context, bool isCached) {
+    return isCached ? deleteButton(context) : downloadButton(isCached);
   }
 
-  Widget _subtitle(BuildContext context, bool isRadio) {
-    final text = '${spiff!.playlist.creator} \u2022 ${storage(spiff!.size)}';
+  Widget deleteButton(BuildContext context) {
+    return IconButton(
+        icon: Icon(Icons.delete), onPressed: () => _onDelete(context));
+  }
+
+  Widget subtitle(BuildContext context) {
+    final text =
+        '${spiff!.playlist.creator} \u2022 ${relativeDate(spiff!.playlist.date ?? '')} \u2022 ${storage(spiff!.size)}';
     return Text(text,
         style: Theme.of(context)
             .textTheme
@@ -334,45 +271,12 @@ class DownloadState extends State<DownloadWidget> {
             .copyWith(color: Colors.white60));
   }
 
-  Future<void> _onRefresh() async {
-    Future<Spiff> Function()? fetcher = fetch;
-    if (fetcher != null) {
-      try {
-        final result = await fetcher();
-        print('got $result');
-        if (mounted) {
-          setState(() {
-            spiff = result;
-            _coverUrl = _spiffCover(spiff!);
-          });
-        }
-      } catch (error) {
-        print('refresh err $error');
-      }
-    }
-  }
-
-  Widget _playButton(BuildContext context, bool isCached) {
+  Widget downloadButton(bool isCached) {
     if (isCached) {
       return IconButton(
-          icon: Icon(Icons.play_arrow, size: 32), onPressed: () => _onPlay(context));
+          icon: Icon(IconsDownload), onPressed: () => _onDownloadCheck());
     }
-    return allowStreamingIconButton(Icon(Icons.play_arrow, size: 32), () => _onPlay(context));
-  }
-
-  Widget _downloadButton(bool isCached) {
-    if (isCached) {
-      return IconButton(
-          icon: Icon(Icons.cloud_download_outlined),
-          onPressed: () => _onDownloadCheck());
-    }
-    return allowDownloadIconButton(
-        Icon(Icons.cloud_download_outlined), _onDownloadCheck);
-  }
-
-  Widget _deleteButton(BuildContext context) {
-    return IconButton(
-        icon: Icon(Icons.delete), onPressed: () => _onDelete(context));
+    return allowDownloadIconButton(Icon(IconsDownload), _onDownloadCheck);
   }
 
   void _onDownloadCheck() {
@@ -381,21 +285,6 @@ class DownloadState extends State<DownloadWidget> {
       Downloads.downloadSpiff(spiff!);
     } else {
       Downloads.downloadSpiffTracks(spiff!);
-    }
-  }
-
-  // void _onArtist(BuildContext context) {
-  //   showArtist(spiff!.playlist.creator!);
-  // }
-
-  void _onPlay(BuildContext context) {
-    print('_onPlay $spiff');
-    if (spiff!.isMusic()) {
-      MediaQueue.playSpiff(spiff!);
-      showPlayer();
-    } else if (spiff!.isVideo()) {
-      var entry = spiff!.playlist.tracks.first;
-      showMovie(context, entry);
     }
   }
 
@@ -428,61 +317,30 @@ class DownloadState extends State<DownloadWidget> {
   }
 
   Future<void> _onDeleteConfirmed() async {
-    await _deleteSpiff(spiff!);
+    await _deleteSpiff(entry);
     Downloads.reload();
   }
 }
 
-Future<void> _deleteSpiff(Spiff spiff) async {
+Future<void> _deleteSpiff(SpiffDownloadEntry entry) async {
   final cache = TrackCache();
-  spiff.playlist.tracks.forEach((e) async {
-    final result = await cache.get(e);
-    if (result is File) {
-      print('delete $result');
-      result.delete();
-      cache.remove(e);
-    }
+  entry.spiff.playlist.tracks.forEach((e) async {
+    await _deleteLocatable(cache, e);
   });
 
-  final uri = Uri.parse(spiff.playlist.location!);
-  final file = File.fromUri(uri);
+  // final uri = Uri.parse(spiff.playlist.location!);
+  // final file = File.fromUri(uri);
+  final file = entry.file;
   print('delete $file');
-  file.delete();
+  file.deleteSync();
 }
 
-class SpiffTrackListView extends StatelessWidget {
-  final Spiff _spiff;
-
-  SpiffTrackListView(this._spiff);
-
-  void _onTrack(BuildContext context, int index) {
-    if (_spiff.isMusic()) {
-      MediaQueue.playSpiff(_spiff, index: index);
-    } else if (_spiff.isVideo()) {
-      showMovie(context, _spiff.playlist.tracks[index]);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<Set<String>>(
-        stream: TrackCache.keysSubject,
-        builder: (context, snapshot) {
-          final keys = snapshot.data ?? Set<String>();
-          final children = <Widget>[];
-          for (var i = 0; i < _spiff.playlist.tracks.length; i++) {
-            final e = _spiff.playlist.tracks[i];
-            children.add(ListTile(
-                onTap: () => _onTrack(context, i),
-                onLongPress: () => showArtist(e.creator),
-                leading: tileCover(e.image),
-                trailing: Icon(
-                    keys.contains(e.key) ? Icons.download_done_sharp : null),
-                subtitle: Text('${e.creator} \u2022 ${storage(e.size)}'),
-                title: Text(e.title)));
-          }
-          return Column(children: children);
-        });
+Future _deleteLocatable(TrackCache cache, Locatable l) async {
+  print('delete $l');
+  final entry = await cache.get(l);
+  if (entry is File) {
+    entry.deleteSync();
+    cache.remove(l);
   }
 }
 
@@ -501,8 +359,8 @@ class Downloads {
     return await checkAppDir(_dir).then((dir) {
       File file = File('${dir.path}/$fileName');
       for (var n = 1; file.existsSync(); n++) {
-        var ext = extension(fileName);
-        var name = '${basenameWithoutExtension(fileName)}_$n$ext';
+        final ext = extension(fileName);
+        final name = '${basenameWithoutExtension(fileName)}_$n$ext';
         // foo.json -> foo-1.json, foo-2.json, etc.
         file = File('${dir.path}/$name');
       }
@@ -514,7 +372,7 @@ class Downloads {
     final completer = Completer<void>();
     final data = utf8.encode(jsonEncode(spiff.toJson()));
     file
-        .writeAsBytes(data)
+        .writeAsBytes(data) // truncates if exists
         .then((f) => completer.complete())
         .catchError((e) => completer.completeError(e));
     return completer.future;
@@ -532,22 +390,29 @@ class Downloads {
     });
   }
 
+  static Future<File> _spiffFile(Spiff spiff) async =>
+      _downloadFile(_downloadFileName(spiff));
+
   static Future<bool> _download(
-      Client client, Future<Spiff> Function() fetchSpiff) async {
+      Client client, Future<Spiff> Function() fetchSpiff,
+      {Future<File> Function(Spiff) spiffFile = _spiffFile,
+      bool includeTracks = true}) async {
     final completer = Completer<bool>();
     fetchSpiff().then((spiff) {
-      _downloadFile(_downloadFileName(spiff)).then((file) {
-        // override location with local file URI
-        spiff = spiff.copyWith(
-            playlist: spiff.playlist.copyWith(location: file.uri.toString()));
+      spiffFile(spiff).then((file) {
         print('download to $file');
         _saveAs(spiff, file).then((_) async {
           _add(SpiffDownloadEntry.create(file, spiff));
           _broadcast();
-          try {
-            completer.complete(await _downloadTracks(client, spiff));
-          } catch (e) {
-            completer.completeError(e);
+          if (includeTracks) {
+            try {
+              completer.complete(await _downloadTracks(client, spiff));
+            } catch (e) {
+              completer.completeError(e);
+            }
+          } else {
+            // just the spiff
+            completer.complete(true);
           }
         }).catchError(((error) {
           completer.completeError(error);
@@ -583,10 +448,20 @@ class Downloads {
         .whenComplete(() => showSnackBar('Finished ${station.name}'));
   }
 
-  static Future<bool> downloadSpiff(Spiff spiff) async {
+  static Future<SpiffDownloadEntry> refreshSpiff(
+      SpiffDownloadEntry entry, Spiff spiff) async {
+    final client = Client();
+    await _download(client, () => Future.value(spiff),
+        spiffFile: (_) => Future.value(entry.file), includeTracks: false);
+    return Future.value(entry.copyWith(spiff: spiff));
+  }
+
+  static Future<bool> downloadSpiff(Spiff spiff,
+      {bool includeTracks = true}) async {
     final client = Client();
     showSnackBar('Downloading ${spiff.playlist.title}');
-    return _download(client, () => Future.value(spiff))
+    return _download(client, () => Future.value(spiff),
+            includeTracks: includeTracks)
         .whenComplete(() => showSnackBar('Finished ${spiff.playlist.title}'));
   }
 
@@ -596,6 +471,34 @@ class Downloads {
     return _download(
             client, () => client.moviePlaylist(movie.id, ttl: Duration.zero))
         .whenComplete(() => showSnackBar('Finished ${movie.title}'));
+  }
+
+  static Future<bool> downloadSeries(Series series) async {
+    final client = Client();
+    showSnackBar('Series ${series.title}');
+    return _download(
+            client, () => client.seriesPlaylist(series.id, ttl: Duration.zero))
+        .whenComplete(() => showSnackBar('Finished ${series.title}'));
+  }
+
+  static Future downloadSeriesEpisode(Series series, Episode episode) async {
+    final client = Client();
+    showSnackBar('Downloading ${episode.title}');
+    final success = await _download(
+        client, () => client.seriesPlaylist(series.id, ttl: Duration.zero),
+        includeTracks: false); // just one track
+    if (success) {
+      return client
+          .download(episode)
+          .whenComplete(() => showSnackBar('Finished ${episode.title}'));
+    } else {
+      showSnackBar('Failed ${episode.title}');
+    }
+  }
+
+  static Future deleteEpisode(Episode episode) async {
+    final cache = TrackCache();
+    return _deleteLocatable(cache, episode);
   }
 
   static final List<DownloadEntry> _downloads = [];
@@ -686,13 +589,23 @@ class SpiffDownloadEntry extends DownloadEntry with MediaAlbum {
   final File _file;
   final Spiff _spiff;
   final DateTime _modified;
+  final String _cover;
 
-  SpiffDownloadEntry(this._file, this._spiff, this._modified);
+  SpiffDownloadEntry(this._file, this._spiff, this._modified, this._cover);
 
   static SpiffDownloadEntry create(File file, Spiff spiff) {
     FileStat stat = file.statSync();
-    return SpiffDownloadEntry(file, spiff, stat.modified);
+    return SpiffDownloadEntry(file, spiff, stat.modified, pickCover(spiff));
   }
+
+  SpiffDownloadEntry copyWith({
+    File? file,
+    Spiff? spiff,
+    DateTime? modified,
+    String? cover,
+  }) =>
+      SpiffDownloadEntry(file ?? this._file, spiff ?? this._spiff,
+          modified ?? this._modified, cover ?? this._cover);
 
   Spiff get spiff => _spiff;
 
@@ -709,7 +622,7 @@ class SpiffDownloadEntry extends DownloadEntry with MediaAlbum {
   File get file => _file;
 
   @override
-  Widget get leading => tileCover(_spiffCover(_spiff));
+  Widget get leading => tileCover(_cover);
 
   @override
   String get title => _spiff.playlist.title;
@@ -730,7 +643,7 @@ class SpiffDownloadEntry extends DownloadEntry with MediaAlbum {
   String get creator => spiff.playlist.creator!;
 
   @override
-  String get image => _spiffCover(spiff);
+  String get image => _cover;
 
   @override
   int get year => 0;

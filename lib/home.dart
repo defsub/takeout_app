@@ -24,6 +24,7 @@ import 'package:takeout_app/menu.dart';
 import 'package:takeout_app/model.dart';
 import 'package:takeout_app/video.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:timeago/timeago.dart' as timeago;
 
 import 'client.dart';
 import 'downloads.dart';
@@ -34,6 +35,7 @@ import 'settings.dart';
 import 'style.dart';
 import 'cover.dart';
 import 'cache.dart';
+import 'podcasts.dart';
 
 class HomeWidget extends StatefulWidget {
   final HomeView _view;
@@ -50,10 +52,13 @@ class HomeState extends State<HomeWidget> {
   HomeState(this._view);
 
   _HomeGrid _grid(MediaType mediaType, GridType gridType, HomeView view) {
-    if (mediaType == MediaType.video) {
-      return _MovieHomeGrid(gridType, view);
-    } else {
-      return _MusicHomeGrid(gridType, view);
+    switch (mediaType) {
+      case MediaType.video:
+        return _MovieHomeGrid(gridType, view);
+      case MediaType.music:
+        return _MusicHomeGrid(gridType, view);
+      case MediaType.podcast:
+        return _SeriesHomeGrid(gridType, view);
     }
   }
 
@@ -64,7 +69,7 @@ class HomeState extends State<HomeWidget> {
         builder: (context, snapshot) {
           // TODO will rebuild on any settings change
           final type = settingsGridType(settingHomeGridType, GridType.mix);
-          final mediaType = settingsMediaType(MediaType.music);
+          final mediaType = settingsMediaType(type: MediaType.music);
           return Scaffold(
               body: RefreshIndicator(
             onRefresh: () => _onRefresh(),
@@ -122,7 +127,7 @@ class _MediaHomeItem extends _HomeItem {
 
   @override
   Widget Function() get onTap {
-    return () => DownloadWidget(spiff: (album as SpiffDownloadEntry).spiff);
+    return () => DownloadWidget(album as SpiffDownloadEntry);
   }
 
   @override
@@ -149,7 +154,7 @@ class _MediaHomeItem extends _HomeItem {
     var year = album.year;
     if (album is SpiffDownloadEntry) {
       return _downloadIcon(album as SpiffDownloadEntry,
-          Icons.cloud_done_outlined, Icons.cloud_download_outlined);
+          IconsDownloadDone, IconsDownload);
     } else if (year > 1) {
       return Text('$year');
     }
@@ -202,6 +207,37 @@ class _MovieHomeItem extends _MediaHomeItem {
   @override
   Widget get image {
     return gridPoster(album.image);
+  }
+}
+
+class _SeriesHomeItem extends _MediaHomeItem {
+  _SeriesHomeItem(Series series) : super(series);
+
+  @override
+  Widget Function() get onTap {
+    return () => SeriesWidget(album as Series);
+  }
+
+  @override
+  String get key => album.album + "/" + album.creator; // == title/author
+
+  @override
+  String get title => '';
+
+  @override
+  String? get subtitle => when((album as Series).date);
+
+  @override
+  Widget get trailing => Container();
+
+  @override
+  Widget get image {
+    return gridPoster(album.image);
+  }
+
+  String when(String date) {
+    final d = DateTime.parse(date);
+    return timeago.format(d);
   }
 }
 
@@ -264,7 +300,7 @@ abstract class _HomeGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final mediaType = settingsMediaType(MediaType.music);
+    final mediaType = settingsMediaType(type: MediaType.music);
     return CustomScrollView(slivers: [
       SliverAppBar(
         pinned: false,
@@ -273,10 +309,19 @@ abstract class _HomeGrid extends StatelessWidget {
         title: header(AppLocalizations.of(context)!.takeoutTitle),
         actions: [
           popupMenu(context, [
+            // TODO fix this
             if (mediaType == MediaType.music)
               PopupItem.video(context, (context) => _onVideoSelected(context)),
+            if (mediaType == MediaType.music)
+              PopupItem.podcasts(context, (context) => _onPodcastsSelected(context)),
             if (mediaType == MediaType.video)
               PopupItem.music(context, (context) => _onMusicSelected(context)),
+            if (mediaType == MediaType.video)
+              PopupItem.podcasts(context, (context) => _onPodcastsSelected(context)),
+            if (mediaType == MediaType.podcast)
+              PopupItem.music(context, (context) => _onMusicSelected(context)),
+            if (mediaType == MediaType.podcast)
+              PopupItem.video(context, (context) => _onVideoSelected(context)),
             PopupItem.settings(context, (context) => _onSettings(context)),
             PopupItem.downloads(context, (context) => _onDownloads(context)),
             PopupItem.logout(context, (_) => TakeoutState.logout()),
@@ -303,6 +348,10 @@ abstract class _HomeGrid extends StatelessWidget {
     return changeMediaType(MediaType.music);
   }
 
+  Future<void> _onPodcastsSelected(BuildContext context) async {
+    return changeMediaType(MediaType.podcast);
+  }
+
   void _onDownloads(BuildContext context) {
     Navigator.push(
         context, MaterialPageRoute(builder: (context) => DownloadsWidget()));
@@ -318,7 +367,7 @@ abstract class _HomeGrid extends StatelessWidget {
         context: context,
         applicationName: AppLocalizations.of(context)!.takeoutTitle,
         applicationVersion: appVersion,
-        applicationLegalese: 'Copyleft \u00a9 2020-2021 The Takeout Authors',
+        applicationLegalese: 'Copyleft \u00a9 2020-2022 The Takeout Authors',
         children: <Widget>[
           InkWell(
               child: Text(
@@ -389,6 +438,32 @@ class _MovieHomeGrid extends _HomeGrid {
         final LinkedHashSet<_HomeItem> items = LinkedHashSet();
         items.addAll(_downloadedItems(MediaType.video, downloads));
         _view.addedMovies.forEach((v) => items.add(_MovieHomeItem(v)));
+        return items;
+    }
+  }
+}
+
+class _SeriesHomeGrid extends _HomeGrid {
+  _SeriesHomeGrid(GridType _type, HomeView _view) : super(_type, _view);
+
+  @override
+  double _gridAspectRatio() => seriesAspectRatio;
+
+  @override
+  double _gridMaxCrossAxisExtent() => seriesGridWidth;
+
+  @override
+  Iterable<_HomeItem> _items(List<DownloadEntry> downloads) {
+    switch (_type) {
+      case GridType.released:
+      case GridType.added:
+        return _view.newSeries!.map((v) => _SeriesHomeItem(v));
+      case GridType.downloads:
+        return _downloadedItems(MediaType.podcast, downloads);
+      case GridType.mix:
+        final LinkedHashSet<_HomeItem> items = LinkedHashSet();
+        items.addAll(_downloadedItems(MediaType.podcast, downloads));
+        _view.newSeries!.forEach((v) => items.add(_SeriesHomeItem(v)));
         return items;
     }
   }

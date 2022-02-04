@@ -115,6 +115,8 @@ class TrackCache {
   static bool checkAll(Set<String> cacheKeys, Iterable<Locatable> entries) {
     final entryKeys = Set<String>();
     entries.forEach((e) => entryKeys.add(e.key));
+    // entryKeys.forEach((e) {print('checking ${e}\n');});
+    // print(cacheKeys.containsAll(entryKeys));
     return cacheKeys.containsAll(entryKeys);
   }
 
@@ -147,7 +149,7 @@ class TrackCache {
 
   // Put a (downloaded) file in the cache and publish
   void put(Locatable d, File file) {
-    // key should be the etag
+    // key should be the etag or similar hash
     _entries[d.key] = file;
     _broadcast();
   }

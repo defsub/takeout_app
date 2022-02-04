@@ -30,6 +30,7 @@ import 'cover.dart';
 import 'global.dart';
 import 'menu.dart';
 import 'player_handler.dart';
+import 'style.dart';
 
 class _PlayState {
   final QueueState queueState;
@@ -102,7 +103,7 @@ class PlayerWidget extends StatelessWidget {
                       if (queue.isNotEmpty && mediaItem != null)
                         SliverToBoxAdapter(
                             child: Container(
-                                padding: EdgeInsets.fromLTRB(0, 16, 0, 0),
+                                padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
                                 child: Column(children: [
                                   GestureDetector(
                                       onTap: () =>
@@ -132,6 +133,7 @@ class PlayerWidget extends StatelessWidget {
   }
 
   Widget _controls(List<MediaItem> queue, MediaItem mediaItem, bool playing) {
+    final isPodcast = mediaItem.isPodcast();
     return Container(
         padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
         child: Row(
@@ -142,8 +144,11 @@ class PlayerWidget extends StatelessWidget {
               onPressed:
                   mediaItem == queue.first ? null : audioHandler.skipToPrevious,
             ),
+            if (isPodcast) rewindButton(),
             if (playing) pauseButton() else playButton(),
             // stopButton(),
+            if (isPodcast)
+              fastForwardButton(),
             IconButton(
               icon: Icon(Icons.skip_next),
               onPressed:
@@ -215,6 +220,18 @@ class PlayerWidget extends StatelessWidget {
         iconSize: 64.0,
         onPressed: audioHandler.stop,
       );
+
+  IconButton rewindButton() => IconButton(
+        icon: Icon(Icons.replay_10_outlined),
+        iconSize: 36,
+        onPressed: audioHandler.rewind,
+      );
+
+  IconButton fastForwardButton() => IconButton(
+        iconSize: 36,
+        icon: Icon(Icons.forward_30_outlined),
+        onPressed: audioHandler.fastForward,
+      );
 }
 
 class _MediaTrackListWidget extends StatelessWidget {
@@ -232,11 +249,13 @@ class _MediaTrackListWidget extends StatelessWidget {
             return Text('');
           }
           final List<MediaItem> mediaItems = state.queue ?? [];
+          final sameArtwork = mediaItems.every(
+              (t) => t.artUri.toString() == mediaItems.first.artUri.toString());
           return Container(
               child: Column(children: [
             ...mediaItems.map((t) => ListTile(
-                leading: tileCover(t.artUri.toString()),
-                trailing: _cloudIcon(t),
+                leading: sameArtwork ? null : tileCover(t.artUri.toString()),
+                trailing: _cachedIcon(t),
                 selected: t == state.mediaItem,
                 onTap: () {
                   audioHandler.playMediaItem(t).whenComplete(() {
@@ -254,10 +273,9 @@ class _MediaTrackListWidget extends StatelessWidget {
         });
   }
 
-  Widget _cloudIcon(MediaItem mediaItem) {
+  Widget _cachedIcon(MediaItem mediaItem) {
     if (mediaItem.isLocalFile()) {
-      return IconButton(
-          icon: Icon(Icons.cloud_done_outlined), onPressed: () => {});
+      return IconButton(icon: Icon(IconsCached), onPressed: () => {});
     }
     return SizedBox();
   }

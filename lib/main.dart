@@ -26,7 +26,6 @@ import 'package:audio_service/audio_service.dart';
 
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_settings_screens/flutter_settings_screens.dart';
 import 'package:rxdart/rxdart.dart';
@@ -55,6 +54,8 @@ void main() {
         androidNotificationChannelId: 'com.ryanheise.myapp.channel.audio',
         androidNotificationChannelName: 'Audio playback',
         androidNotificationOngoing: true,
+        fastForwardInterval: Duration(seconds: 30),
+        rewindInterval: Duration(seconds: 10),
       ),
     );
     runApp(MyApp());
@@ -418,9 +419,7 @@ class TakeoutState extends State<_TakeoutWidget> {
 
   Widget _buildOffstageNavigator(int index) {
     final routeBuilders = _routeBuilders(context, index);
-
-    HeroController _heroController;
-    _heroController = HeroController(createRectTween: _createRectTween);
+    final _heroController = HeroController(createRectTween: _createRectTween);
 
     return Offstage(
       offstage: _selectedIndex != index,

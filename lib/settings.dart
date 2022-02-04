@@ -21,6 +21,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:rxdart/rxdart.dart';
 
 import 'model.dart';
+import 'style.dart';
 
 const settingAllowStreaming = 'allow_streaming';
 const settingAllowDownload = 'allow_download';
@@ -28,8 +29,8 @@ const settingAllowArtistArtwork = 'allow_artist_artwork';
 const settingHomeGridType = 'home_grid_type';
 const settingMediaType = 'home_media_type';
 
-MediaType settingsMediaType(MediaType def) {
-  final v = Settings.getValue(settingMediaType, def.index);
+MediaType settingsMediaType({MediaType type = MediaType.music}) {
+  final v = Settings.getValue(settingMediaType, type.index);
   return MediaType.values[v];
 }
 
@@ -106,7 +107,7 @@ class _AppSettingsState extends State<AppSettings> {
                     AppLocalizations.of(context)!.settingDownloadsSubtitle,
                 enabledLabel: AppLocalizations.of(context)!.settingEnabled,
                 disabledLabel: AppLocalizations.of(context)!.settingDisabled,
-                leading: Icon(Icons.cloud_download_outlined),
+                leading: Icon(IconsDownload),
                 onChange: (value) {
                   debugPrint('downloads: $value');
                 },

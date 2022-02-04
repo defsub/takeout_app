@@ -29,6 +29,7 @@ import 'style.dart';
 import 'cache.dart';
 import 'menu.dart';
 import 'global.dart';
+import 'widget.dart';
 
 class RadioWidget extends StatefulWidget {
   final RadioView _view;
@@ -125,7 +126,7 @@ class RadioState extends State<RadioWidget> {
                   leading: Icon(Icons.radio),
                   title: Text(stations[index].name),
                   trailing: IconButton(
-                      icon: Icon(Icons.cloud_download_outlined),
+                      icon: Icon(IconsDownload),
                       onPressed: TakeoutState.allowDownload(result)
                           ? () => _onDownload(stations[index])
                           : null),
@@ -231,8 +232,7 @@ class _RefreshSpiffState extends State<RefreshSpiffWidget> {
                                                   .completeLabel
                                               : AppLocalizations.of(context)!
                                                   .downloadLabel),
-                                          icon: Icon(
-                                              Icons.cloud_download_outlined),
+                                          icon: Icon(IconsDownload),
                                           onPressed:
                                               TakeoutState.allowDownload(result)
                                                   ? () => _onDownload()

@@ -26,9 +26,20 @@ import 'patch.dart';
 import 'spiff.dart';
 import 'global.dart';
 import 'cache.dart';
+import 'model.dart';
+
+const ExtraHeaders = 'headers';
+const ExtraMediaType = 'mediaType';
 
 class PlaylistException implements Exception {
   const PlaylistException();
+}
+
+class Reference {
+  final String reference;
+  final MediaType type;
+
+  Reference(this.reference, this.type);
 }
 
 class MediaQueue {
@@ -47,16 +58,24 @@ class MediaQueue {
     await (await prefs).setString(settingPlaylist, uri.toString());
   }
 
-  static String _ref({Release? release, Track? track, Station? station}) {
+  static Reference _ref(
+      {Release? release, Track? track, Station? station, Series? series}) {
     String ref = '';
+    MediaType type = MediaType.music;
     if (release != null) {
       ref = '/music/releases/${release.id}/tracks';
+      type = MediaType.music;
     } else if (station != null) {
       ref = '/music/radio/${station.id}';
+      type = MediaType.music;
     } else if (track != null) {
       ref = '/music/tracks/${track.id}'; // TODO
+      type = MediaType.music;
+    } else if (series != null) {
+      ref = '/series/${series.id}';
+      type = MediaType.podcast;
     }
-    return ref;
+    return Reference(ref, type);
   }
 
   static Future restore() async {
@@ -66,7 +85,7 @@ class MediaQueue {
     return _stage(spiff);
   }
 
-  static Spiff fromTracks(List<Track> tracks,
+  static Spiff fromTracks(List<MediaLocatable> tracks,
       {String location = 'file:spiff.json',
       String creator = '',
       String title = '',
@@ -76,12 +95,21 @@ class MediaQueue {
       creator: creator,
       title: title,
       image: '',
+      date: DateTime.now().toString(),
       tracks: _trackEntries(tracks),
     );
-    return Spiff(index: index, position: 0, playlist: playlist);
+    return Spiff(
+        index: index,
+        position: 0,
+        playlist: playlist,
+        type: MediaType.music.name);
   }
 
-  static Future playTracks(List<Track> tracks, {int index = 0}) {
+  static Future playTrack(MediaLocatable track) {
+    return playSpiff(fromTracks([track]), index: 0);
+  }
+
+  static Future playTracks(List<MediaLocatable> tracks, {int index = 0}) {
     return playSpiff(fromTracks(tracks), index: index);
   }
 
@@ -93,16 +121,22 @@ class MediaQueue {
     final uri = Uri.parse(spiff.playlist.location ?? 'location-missing');
     await setCurrentPlaylist(uri);
     await SpiffCache.put(spiff);
-    return audioHandler.customAction('doit', <String,dynamic>{'spiff': uri.toString()});
+    return audioHandler
+        .customAction('doit', <String, dynamic>{'spiff': uri.toString()});
   }
 
   /// Play a release or station, replacing current playlist.
-  static Future play({Release? release, Station? station, int index = 0}) async {
-    return _playRef(_ref(release: release, station: station), index: index);
+  static Future play(
+      {Release? release,
+      Station? station,
+      Series? series,
+      int index = 0}) async {
+    return _playRef(_ref(release: release, station: station, series: series),
+        index: index);
   }
 
   /// Play remote reference to release, track, station, etc.
-  static Future _playRef(String ref, {int index = 0}) async {
+  static Future _playRef(Reference ref, {int index = 0}) async {
     await setCurrentPlaylist(null);
     final uri = Client.defaultPlaylistUri();
 
@@ -114,14 +148,16 @@ class MediaQueue {
 
     // ref patch with position
     final position = 0.0;
-    final patch = patchReplace(ref) + patchPosition(index, position);
+    final patch = patchReplace(ref.reference, ref.type.name) +
+        patchPosition(index, position);
     client.patch(patch).then((result) async {
       if (result.notModified()) {
         SpiffCache.get(uri).then((spiff) {
           spiff = spiff!.copyWith(index: index, position: position);
           SpiffCache.put(spiff).then((_) {
-            audioHandler.customAction('doit', <String,dynamic>{'spiff': uri.toString()})
-                .then((_) => completer.complete());
+            audioHandler.customAction('doit', <String, dynamic>{
+              'spiff': uri.toString()
+            }).then((_) => completer.complete());
           });
         }).catchError((e) {
           completer.completeError(e);
@@ -133,8 +169,9 @@ class MediaQueue {
         //   index: index, playlist: spiff.playlist
         //         .copyWith(location: uri.toString())); // TODO fixme
         SpiffCache.put(spiff).then((_) {
-          audioHandler.customAction('doit', <String,dynamic>{'spiff': uri.toString()})
-              .then((_) => completer.complete());
+          audioHandler.customAction('doit', <String, dynamic>{
+            'spiff': uri.toString()
+          }).then((_) => completer.complete());
         });
       }
     }).catchError((e) {
@@ -144,7 +181,8 @@ class MediaQueue {
   }
 
   // Only call this from player task
-  static Future<Spiff> update(Spiff spiff, {int? index, double? position}) async {
+  static Future<Spiff> update(Spiff spiff,
+      {int? index, double? position}) async {
     spiff = spiff.copyWith(
         index: index ?? spiff.index, position: position ?? spiff.position);
 
@@ -152,7 +190,7 @@ class MediaQueue {
     await SpiffCache.put(spiff);
 
     if (spiff.isRemote()) {
-      final defaultLocation = Client.getDefaultPlaylistUrl();
+      final defaultLocation = Client.defaultPlaylistUri().toString();
       if (spiff.playlist.location == defaultLocation) {
         _updateServer(spiff);
       }
@@ -175,7 +213,8 @@ class MediaQueue {
 
   static Future _stage(Spiff spiff) async {
     Uri uri = Uri.parse(spiff.playlist.location ?? 'location-missing');
-    audioHandler.customAction('stage', <String,dynamic>{'spiff': uri.toString()});
+    audioHandler
+        .customAction('stage', <String, dynamic>{'spiff': uri.toString()});
   }
 
   /// Append a release, track or station to current playlist.
@@ -183,14 +222,15 @@ class MediaQueue {
   static Future<Spiff> append(
       {Release? release, Track? track, Station? station}) async {
     final completer = Completer<Spiff>();
-    String ref = _ref(release: release, track: track, station: station);
-    if (isNotNullOrEmpty(ref)) {
+    Reference ref = _ref(release: release, track: track, station: station);
+    if (isNotNullOrEmpty(ref.reference)) {
       final client = Client();
-      client.patch(patchAppend(ref)).then((result) {
+      client.patch(patchAppend(ref.reference)).then((result) {
         final spiff = result.toSpiff();
         SpiffCache.put(spiff).then((_) {
-          audioHandler.customAction('test', <String,dynamic>{'fixme': 'test'})
-              .whenComplete(() => completer.complete(spiff));
+          audioHandler.customAction('test', <String, dynamic>{
+            'fixme': 'test'
+          }).whenComplete(() => completer.complete(spiff));
         }).catchError((e) {
           completer.completeError(e);
         });
@@ -246,7 +286,7 @@ class MediaQueue {
 
   static Future<MediaState> fromSpiff(Spiff spiff) async {
     final client = Client();
-    final queue = await _createQueue(client, spiff.playlist.tracks);
+    final queue = await _createQueue(client, spiff);
     // for (var q in queue) {
     //   print('${q.artist} / ${q.title} / ${q.id} / ${q.extras['headers']}');
     // }
@@ -256,7 +296,7 @@ class MediaQueue {
     return MediaState(spiff, queue, spiff.index, spiff.position);
   }
 
-  static List<Entry> _trackEntries(List<Track> tracks) {
+  static List<Entry> _trackEntries(List<MediaLocatable> tracks) {
     final entries = <Entry>[];
     for (var t in tracks) {
       entries.add(_trackEntry(t));
@@ -264,15 +304,15 @@ class MediaQueue {
     return entries;
   }
 
-  static Entry _trackEntry(Track track) {
-    final coverUri = track.image;
+  static Entry _trackEntry(MediaLocatable track) {
     return Entry(
-      creator: track.artist,
-      album: track.release,
+      creator: track.creator,
+      album: track.album,
       title: track.title,
-      image: coverUri,
+      image: track.image,
+      date: track.date,
       locations: [track.location],
-      identifiers: [track.etag],
+      identifiers: [track.key],
       sizes: [track.size],
     );
   }
@@ -289,25 +329,26 @@ class MediaQueue {
   //   );
   // }
 
-  static MediaItem _entryMediaItem(Entry entry, Uri uri, Map headers) {
+  static MediaItem _entryMediaItem(
+      Entry entry, Uri uri, Map headers, MediaType mediaType) {
     return MediaItem(
       id: uri.toString(),
       album: entry.album,
       title: entry.title,
       artist: entry.creator,
       artUri: Uri.parse(entry.image),
-      extras: {'headers': headers},
+      extras: {ExtraHeaders: headers, ExtraMediaType: mediaType.name},
     );
   }
 
   static Future<List<MediaItem>> _createQueue(
-      Client client, List<Entry> entries) async {
+      Client client, Spiff spiff) async {
     final List<MediaItem> items = [];
     final headers = await client.headers();
-    for (var t in entries) {
+    for (var t in spiff.playlist.tracks) {
       final uri = await client.locate(t);
-      print('locate $uri ${headers['cookie']}');
-      items.add(_entryMediaItem(t, uri, headers));
+      // print('locate $uri ${headers['cookie']}');
+      items.add(_entryMediaItem(t, uri, headers, spiff.mediaType));
     }
     return items;
   }

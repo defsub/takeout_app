@@ -15,7 +15,18 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
-enum MediaType { music, video }
+enum MediaType { music, video, podcast }
+
+class MediaTypes {
+  static final _types = {
+    MediaType.music.name: MediaType.music,
+    MediaType.video.name: MediaType.video,
+    MediaType.podcast.name: MediaType.podcast,
+  };
+  static MediaType from(String name) {
+    return _types[name]!;
+  }
+}
 
 abstract class MediaAlbum {
   String get creator;
@@ -35,4 +46,8 @@ abstract class MediaTrack {
 
   int get number;
   int get disc;
+
+  // 1999-07-27T00:00:00Z
+  // 2022-02-03T09:21:26-08:00
+  String get date;
 }

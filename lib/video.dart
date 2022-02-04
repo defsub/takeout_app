@@ -111,8 +111,8 @@ class _MovieWidgetState extends State<MovieWidget> {
                                       padding: EdgeInsets.fromLTRB(4, 16, 4, 4),
                                       child: Column(children: [
                                         _title(),
-                                        _details(),
                                         _tagline(),
+                                        _details(),
                                         if (_view != null && _view!.hasGenres())
                                           _genres(),
                                         // GestureDetector(
@@ -201,7 +201,7 @@ class _MovieWidgetState extends State<MovieWidget> {
 
   Widget _tagline() {
     return Container(
-        padding: EdgeInsets.fromLTRB(5, 5, 5, 10),
+        padding: EdgeInsets.fromLTRB(5, 5, 5, 5),
         child: Text(_movie.tagline,
             style: Theme.of(context)
                 .textTheme
@@ -227,10 +227,10 @@ class _MovieWidgetState extends State<MovieWidget> {
 
   Widget _downloadButton(bool isCached) {
     if (isCached) {
-      return IconButton(icon: Icon(Icons.cloud_done_outlined), onPressed: () => {});
+      return IconButton(icon: Icon(IconsDownloadDone), onPressed: () => {});
     }
     return allowDownloadIconButton(
-        Icon(Icons.cloud_download_outlined), _onDownload);
+        Icon(IconsDownload), _onDownload);
   }
 
   void _onPlay() {
@@ -589,17 +589,8 @@ class _MoviePlayerState extends State<MoviePlayer> {
     });
   }
 
-  String _twoDigits(int n) => n.toString().padLeft(2, "0");
-
-  String _hhmmss(Duration duration) {
-    var hours = _twoDigits(duration.inHours);
-    var mins = _twoDigits(duration.inMinutes.remainder(60));
-    var secs = _twoDigits(duration.inSeconds.remainder(60));
-    return "$hours:$mins:$secs";
-  }
-
   String _pos(Duration pos) {
-    return "${_hhmmss(pos)} ~ ${_hhmmss(_controller?.value.duration ?? Duration.zero)}";
+    return "${hhmmss(pos)} ~ ${hhmmss(_controller?.value.duration ?? Duration.zero)}";
   }
 
   @override

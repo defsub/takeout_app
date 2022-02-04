@@ -28,6 +28,10 @@ const posterAspectRatio = 0.6667;
 const posterGridWidth = 166.75;
 const posterGridHeight = 250.0;
 
+const seriesAspectRatio = 1.0;
+const seriesGridWidth = 250.0;
+const seriesGridHeight = 250.0;
+
 dynamic radiusCover(String? url, {double? width, double? height, BoxFit? fit}) {
   if (url == null) {
     return null;
