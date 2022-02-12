@@ -385,13 +385,15 @@ class RadioView {
   final List<Station>? period;
   final List<Station>? series;
   final List<Station>? other;
+  final List<Station>? stream;
 
   RadioView(
       {this.genre = const [],
       this.similar = const [],
       this.period = const [],
       this.series = const [],
-      this.other = const []});
+      this.other = const [],
+      this.stream = const []});
 
   factory RadioView.fromJson(Map<String, dynamic> json) =>
       _$RadioViewFromJson(json);
@@ -404,9 +406,9 @@ class Station {
   @JsonKey(name: "ID")
   final int id;
   final String name;
-  final String ref;
+  final String type;
 
-  Station({required this.id, required this.name, required this.ref});
+  Station({required this.id, required this.name, required this.type});
 
   factory Station.fromJson(Map<String, dynamic> json) =>
       _$StationFromJson(json);

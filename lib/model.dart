@@ -15,13 +15,14 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
-enum MediaType { music, video, podcast }
+enum MediaType { music, video, podcast, stream }
 
 class MediaTypes {
   static final _types = {
     MediaType.music.name: MediaType.music,
     MediaType.video.name: MediaType.video,
     MediaType.podcast.name: MediaType.podcast,
+    MediaType.stream.name: MediaType.stream,
   };
   static MediaType from(String name) {
     return _types[name]!;

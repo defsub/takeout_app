@@ -83,6 +83,10 @@ class Spiff {
     return MediaTypes.from(type) == MediaType.podcast;
   }
 
+  bool isStream() {
+    return MediaTypes.from(type) == MediaType.stream;
+  }
+
   MediaType get mediaType {
     if (type == "") {
       // FIXME remove after transition to require type is done
@@ -141,7 +145,7 @@ class Entry extends Locatable implements MediaTrack {
   @JsonKey(name: 'location')
   final List<String> locations;
   @JsonKey(name: 'identifier')
-  final List<String> identifiers;
+  final List<String>? identifiers;
   @JsonKey(name: 'size')
   final List<int>? sizes;
 
@@ -152,7 +156,7 @@ class Entry extends Locatable implements MediaTrack {
       required this.image,
       this.date = "",
       required this.locations,
-      required this.identifiers,
+      this.identifiers,
       this.sizes});
 
   factory Entry.fromJson(Map<String, dynamic> json) => _$EntryFromJson(json);
@@ -161,7 +165,7 @@ class Entry extends Locatable implements MediaTrack {
 
   @override
   String get key {
-    final etag = identifiers[0];
+    final etag = identifiers?[0] ?? '';
     return etag.replaceAll(new RegExp(r'"'), '');
   }
 

@@ -344,10 +344,10 @@ class MediaQueue {
   static Future<List<MediaItem>> _createQueue(
       Client client, Spiff spiff) async {
     final List<MediaItem> items = [];
-    final headers = await client.headers();
+    // streams shouldn't send the cookie header
+    final headers = spiff.isStream() ? <String,String>{} : await client.headers();
     for (var t in spiff.playlist.tracks) {
       final uri = await client.locate(t);
-      // print('locate $uri ${headers['cookie']}');
       items.add(_entryMediaItem(t, uri, headers, spiff.mediaType));
     }
     return items;

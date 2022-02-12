@@ -27,7 +27,6 @@ import 'package:rxdart/rxdart.dart';
 import 'package:takeout_app/model.dart';
 
 import 'playlist.dart';
-import 'client.dart';
 
 extension TakeoutMediaItem on MediaItem {
   bool isLocalFile() {
@@ -36,6 +35,10 @@ extension TakeoutMediaItem on MediaItem {
 
   bool isPodcast() {
     return _isMediaType(MediaType.podcast);
+  }
+
+  bool isStream() {
+    return _isMediaType(MediaType.stream);
   }
 
   bool isMusic() {
@@ -90,6 +93,15 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
       if (state != null) {
         state.current = state.current.copyWith(duration: duration);
         mediaItem.add(state.current);
+      }
+    });
+
+    _player.icyMetadataStream.listen((event) {
+      var current = currentItem;
+      if (currentItem != null) {
+        final title = event?.info?.title ?? current?.title ?? '';
+        current = current!.copyWith(title: title);
+        mediaItem.add(current);
       }
     });
 
@@ -296,14 +308,22 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
     var controls = <MediaControl>[];
     var compactControls = <int>[];
     final isPodcast = currentItem?.isPodcast() ?? false;
+    final isStream = currentItem?.isStream() ?? false;
 
     if (isPodcast) {
       controls = [
         MediaControl.rewind,
-        if (playing) MediaControl.pause else MediaControl.play,
+        if (playing) MediaControl.pause else
+          MediaControl.play,
         MediaControl.fastForward,
       ];
       compactControls = const [0, 1, 2];
+    } else if (isStream) {
+      controls = [
+        if (playing) MediaControl.pause else
+          MediaControl.play,
+      ];
+      compactControls = const [0];
     } else {
       controls = [
         MediaControl.skipToPrevious,

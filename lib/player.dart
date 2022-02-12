@@ -22,7 +22,6 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:audio_service/audio_service.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:rxdart/rxdart.dart';
 
@@ -77,6 +76,7 @@ class PlayerWidget extends StatelessWidget {
                     final mediaItem = queueState?.mediaItem;
                     final screen = MediaQuery.of(context).size;
                     final expandedHeight = screen.height / 2;
+                    final isStream = mediaItem?.isStream() ?? false;
                     return CustomScrollView(slivers: [
                       if (mediaItem != null)
                         SliverAppBar(
@@ -120,7 +120,7 @@ class PlayerWidget extends StatelessWidget {
                                   _controls(queue, mediaItem, playing),
                                   _seekBar(),
                                 ]))),
-                      if (queue.isNotEmpty)
+                      if (queue.isNotEmpty && !isStream)
                         SliverToBoxAdapter(
                             child: _MediaTrackListWidget(_queueStateStream))
                     ]);
@@ -134,26 +134,29 @@ class PlayerWidget extends StatelessWidget {
 
   Widget _controls(List<MediaItem> queue, MediaItem mediaItem, bool playing) {
     final isPodcast = mediaItem.isPodcast();
+    final isStream = mediaItem.isStream();
     return Container(
         padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            IconButton(
-              icon: Icon(Icons.skip_previous),
-              onPressed:
-                  mediaItem == queue.first ? null : audioHandler.skipToPrevious,
-            ),
+            if (!isStream)
+              IconButton(
+                icon: Icon(Icons.skip_previous),
+                onPressed: mediaItem == queue.first
+                    ? null
+                    : audioHandler.skipToPrevious,
+              ),
             if (isPodcast) rewindButton(),
             if (playing) pauseButton() else playButton(),
             // stopButton(),
-            if (isPodcast)
-              fastForwardButton(),
-            IconButton(
-              icon: Icon(Icons.skip_next),
-              onPressed:
-                  mediaItem == queue.last ? null : audioHandler.skipToNext,
-            ),
+            if (isPodcast) fastForwardButton(),
+            if (!isStream)
+              IconButton(
+                icon: Icon(Icons.skip_next),
+                onPressed:
+                    mediaItem == queue.last ? null : audioHandler.skipToNext,
+              ),
           ],
         ));
   }

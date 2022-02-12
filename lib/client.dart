@@ -474,6 +474,10 @@ class Client {
   /// Obtain the Uri to playback/stream a resource. This will either be a local
   /// file from the cache or a url indirectly pointing to s3 bucket item.
   Future<Uri> locate(Locatable d) async {
+    if (d.location.startsWith("http")) {
+      // already located or internet radio
+      return Uri.parse(d.location);
+    }
     final cache = TrackCache();
     final result = await cache.get(d);
     if (result is File) {

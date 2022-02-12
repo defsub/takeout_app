@@ -56,6 +56,7 @@ class HomeState extends State<HomeWidget> {
       case MediaType.video:
         return _MovieHomeGrid(gridType, view);
       case MediaType.music:
+      case MediaType.stream: // unused for now
         return _MusicHomeGrid(gridType, view);
       case MediaType.podcast:
         return _SeriesHomeGrid(gridType, view);

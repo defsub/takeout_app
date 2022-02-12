@@ -60,8 +60,9 @@ class RadioState extends State<RadioWidget> {
           List<DownloadEntry> entries = snapshot.data ?? [];
           entries = _radioFilter(entries);
           bool haveDownloads = entries.isNotEmpty;
+          haveDownloads = false;
           return DefaultTabController(
-              length: haveDownloads ? 4 : 3,
+              length: haveDownloads ? 5 : 4,
               child: RefreshIndicator(
                   onRefresh: () => _onRefresh(),
                   child: Scaffold(
@@ -83,6 +84,9 @@ class RadioState extends State<RadioWidget> {
                               Tab(
                                   text:
                                       AppLocalizations.of(context)!.otherLabel),
+                              Tab(
+                                  text: AppLocalizations.of(context)!
+                                      .streamsLabel),
                               if (haveDownloads)
                                 Tab(
                                     text: AppLocalizations.of(context)!
@@ -96,6 +100,7 @@ class RadioState extends State<RadioWidget> {
                           _stations(_merge(
                               _view.series != null ? _view.series! : [],
                               _view.other != null ? _view.other! : [])),
+                          if (_view.stream != null) _stations(_view.stream!),
                           if (haveDownloads)
                             DownloadListWidget(filter: _radioFilter)
                         ],
@@ -117,22 +122,33 @@ class RadioState extends State<RadioWidget> {
               stream: TakeoutState.connectivityStream.distinct(),
               builder: (context, snapshot) {
                 final result = snapshot.data;
+                final isStream = stations[index].type == "stream";
                 return ListTile(
-                  // enabled: TakeoutState.allowStreaming(result),
-                  // onTap: TakeoutState.allowStreaming(result)
-                  //     ? () => _onPlay(stations[index])
-                  //     : null,
-                  onTap: () => _onStation(stations[index]),
-                  leading: Icon(Icons.radio),
-                  title: Text(stations[index].name),
-                  trailing: IconButton(
-                      icon: Icon(IconsDownload),
-                      onPressed: TakeoutState.allowDownload(result)
-                          ? () => _onDownload(stations[index])
-                          : null),
-                );
+                    enabled: isStream ? TakeoutState.allowStreaming(result) : true,
+                    // onTap: TakeoutState.allowStreaming(result)
+                    //     ? () => _onPlay(stations[index])
+                    //     : null,
+                    onTap: () => isStream
+                        ? _onStream(stations[index])
+                        : _onStation(stations[index]),
+                    leading: Icon(Icons.radio),
+                    title: Text(stations[index].name),
+                    trailing: isStream
+                        ? Icon(Icons.play_arrow)
+                        : IconButton(
+                            icon: Icon(IconsDownload),
+                            onPressed: TakeoutState.allowDownload(result)
+                                ? () => _onDownload(stations[index])
+                                : null));
               });
         });
+  }
+
+  void _onStream(Station station) async {
+    Client().station(station.id, ttl: Duration.zero).then((spiff) {
+      MediaQueue.playSpiff(spiff);
+      showPlayer();
+    });
   }
 
   void _onStation(Station station) {

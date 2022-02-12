@@ -32,6 +32,7 @@
   "genresLabel": "Genres",
   "otherLabel": "Other",
   "decadesLabel": "Decades",
+  "streamsLabel": "Streams",
   "similarReleasesLabel": "Similar Releases",
   "searchLabel": "Search",
   "releasesLabel": "Releases",
