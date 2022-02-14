@@ -19,12 +19,11 @@ import 'package:flutter/material.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:audio_service/audio_service.dart';
-import 'package:takeout_app/client.dart';
 
 import 'schema.dart';
 import 'artists.dart'; // TODO remove
 
-const appVersion = '0.5.2';
+const appVersion = '0.6.0';
 const appSource = 'https://github.com/defsub/takeout_app';
 const appHome = 'https://takeout.fm';
 

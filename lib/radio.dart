@@ -122,12 +122,9 @@ class RadioState extends State<RadioWidget> {
               stream: TakeoutState.connectivityStream.distinct(),
               builder: (context, snapshot) {
                 final result = snapshot.data;
-                final isStream = stations[index].type == "stream";
+                final isStream = stations[index].type == "stream"; // enum for station types
                 return ListTile(
                     enabled: isStream ? TakeoutState.allowStreaming(result) : true,
-                    // onTap: TakeoutState.allowStreaming(result)
-                    //     ? () => _onPlay(stations[index])
-                    //     : null,
                     onTap: () => isStream
                         ? _onStream(stations[index])
                         : _onStation(stations[index]),
@@ -145,7 +142,8 @@ class RadioState extends State<RadioWidget> {
   }
 
   void _onStream(Station station) async {
-    Client().station(station.id, ttl: Duration.zero).then((spiff) {
+    final client = Client();
+    client.station(station.id, ttl: Duration.zero).then((spiff) {
       MediaQueue.playSpiff(spiff);
       showPlayer();
     });

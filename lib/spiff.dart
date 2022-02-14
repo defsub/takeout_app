@@ -159,6 +159,19 @@ class Entry extends Locatable implements MediaTrack {
       this.identifiers,
       this.sizes});
 
+  Entry copyWith({
+    required List<String> locations,
+  }) =>
+      Entry(
+          creator: this.creator,
+          album: this.album,
+          title: this.title,
+          image: this.image,
+          date: this.date,
+          locations: locations,
+          identifiers: this.identifiers,
+          sizes: this.sizes);
+
   factory Entry.fromJson(Map<String, dynamic> json) => _$EntryFromJson(json);
 
   Map<String, dynamic> toJson() => _$EntryToJson(this);
@@ -209,13 +222,14 @@ class Playlist {
 
   Playlist copyWith({
     required String location,
+    List<Entry>? tracks,
   }) =>
       Playlist(
         location: location,
         creator: this.creator,
         title: this.title,
         image: this.image,
-        tracks: this.tracks,
+        tracks: tracks ?? this.tracks,
       );
 
   factory Playlist.fromJson(Map<String, dynamic> json) =>

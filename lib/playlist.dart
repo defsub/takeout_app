@@ -87,9 +87,9 @@ class MediaQueue {
 
   static Spiff fromTracks(List<MediaLocatable> tracks,
       {String location = 'file:spiff.json',
-      String creator = '',
-      String title = '',
-      int index = 0}) {
+        String creator = '',
+        String title = '',
+        int index = 0}) {
     final playlist = Playlist(
       location: location,
       creator: creator,
@@ -329,8 +329,8 @@ class MediaQueue {
   //   );
   // }
 
-  static MediaItem _entryMediaItem(
-      Entry entry, Uri uri, Map headers, MediaType mediaType) {
+  static MediaItem _entryMediaItem(Entry entry, Uri uri, Map headers,
+      MediaType mediaType) {
     return MediaItem(
       id: uri.toString(),
       album: entry.album,
@@ -341,11 +341,12 @@ class MediaQueue {
     );
   }
 
-  static Future<List<MediaItem>> _createQueue(
-      Client client, Spiff spiff) async {
+  static Future<List<MediaItem>> _createQueue(Client client,
+      Spiff spiff) async {
     final List<MediaItem> items = [];
     // streams shouldn't send the cookie header
-    final headers = spiff.isStream() ? <String,String>{} : await client.headers();
+    final headers = spiff.isStream() ? <String, String>{} : await client
+        .headers();
     for (var t in spiff.playlist.tracks) {
       final uri = await client.locate(t);
       items.add(_entryMediaItem(t, uri, headers, spiff.mediaType));
