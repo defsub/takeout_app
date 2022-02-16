@@ -41,6 +41,20 @@ class ClientException implements Exception {
   String toString() => 'ClientException: $statusCode => $url';
 }
 
+class ClientError extends Error {
+  final Object? message;
+
+  /// Creates a client error with the provided [message].
+  ClientError([this.message]);
+
+  String toString() {
+    if (message != null) {
+      return "Client error: ${Error.safeToString(message)}";
+    }
+    return "Client error";
+  }
+}
+
 abstract class Locatable {
   /// Cache key.
   String get key;
@@ -85,6 +99,10 @@ class Client {
   static Uri defaultPlaylistUri() {
     return _defaultPlaylistUri;
   }
+
+  bool Function()? _allowDownload;
+
+  Client([this._allowDownload]);
 
   Future<void> setEndpoint(String? v) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -412,6 +430,11 @@ class Client {
     if (result is File) {
       return Future.value();
     }
+
+    if (_allowDownload != null && _allowDownload!() == false) {
+      return Future.error(ClientError('download not allowed'));
+    }
+
     final cookie = await _getCookie();
     final completer = Completer();
     final baseUrl = await getEndpoint();
@@ -443,17 +466,6 @@ class Client {
     return completer.future;
   }
 
-  /// Download a list of tracks
-  Future<List<bool>> downloadTracks(List<Track> tracks) async {
-    final result = <bool>[];
-    for (var t in tracks) {
-      await download(t)
-          .then((v) => result.add(true))
-          .catchError((e) => result.add(false));
-    }
-    return result;
-  }
-
   /// Download
   Future<List<bool>> downloadSpiffTracks(Spiff spiff) async {
     final result = <bool>[];
@@ -463,12 +475,6 @@ class Client {
           .catchError((e) => result.add(false));
     }
     return result;
-  }
-
-  /// Download
-  Future<List<bool>> downloadRelease(Release r) async {
-    final spiff = await releasePlaylist(r.id);
-    return downloadSpiffTracks(spiff);
   }
 
   /// Obtain the Uri to playback/stream a resource. This will either be a local

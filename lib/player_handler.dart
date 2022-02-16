@@ -33,6 +33,10 @@ extension TakeoutMediaItem on MediaItem {
     return id.startsWith(RegExp(r'^file'));
   }
 
+  bool isRemote() {
+    return id.startsWith(RegExp(r'^http'));
+  }
+
   bool isPodcast() {
     return _isMediaType(MediaType.podcast);
   }

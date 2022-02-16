@@ -127,7 +127,7 @@ class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
 
   static final _connectivityStream = BehaviorSubject<ConnectivityResult>();
 
-  static Stream<ConnectivityResult> get connectivityStream =>
+  static ValueStream<ConnectivityResult> get connectivityStream =>
       _connectivityStream.stream;
 
   final Connectivity _connectivity = Connectivity();
@@ -287,7 +287,20 @@ class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
     }
   }
 
+  void _onMediaItem(MediaItem? mediaItem) {
+    if (_playbackState != null && _playbackState!.playing) {
+      final streaming = mediaItem?.isRemote() ?? false;
+      if (streaming && allowStreaming(connectivityStream.value) == false) {
+        print('mediaItem pause due to loss of wifi');
+        audioHandler.pause();
+      }
+    }
+  }
+
   void _load() async {
+    audioHandler.playbackState.distinct().listen((state) => _onPlaybackState(state));
+    audioHandler.mediaItem.distinct().listen((mediaItem) => _onMediaItem(mediaItem));
+
     await TrackCache.init();
     await Downloads.check().whenComplete(() => Downloads.load());
     try {
@@ -314,10 +327,6 @@ class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
     } on TlsException catch (e) {
       showErrorDialog(context, e.message);
     }
-
-    audioHandler.playbackState.distinct().listen((state) {
-      _onPlaybackState(state);
-    });
   }
 
   Widget _item(int index) {

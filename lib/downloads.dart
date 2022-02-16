@@ -379,7 +379,7 @@ class Downloads {
   }
 
   static Future<bool> downloadSpiffTracks(Spiff spiff) async {
-    final client = Client();
+    final client = _downloadClient();
     return await _downloadTracks(client, spiff);
   }
 
@@ -424,8 +424,14 @@ class Downloads {
     return completer.future;
   }
 
+  static Client _downloadClient() {
+    // client that monitors connectivity
+    return Client(() =>
+        TakeoutState.allowDownload(TakeoutState.connectivityStream.value));
+  }
+
   static Future<bool> downloadRelease(Release release) async {
-    final client = Client();
+    final client = _downloadClient();
     showSnackBar('Downloading ${release.name}');
     return _download(client,
             () => client.releasePlaylist(release.id, ttl: Duration.zero))
@@ -433,7 +439,7 @@ class Downloads {
   }
 
   static Future<bool> downloadArtist(Artist artist) async {
-    final client = Client();
+    final client = _downloadClient();
     showSnackBar('Downloading ${artist.name}');
     return _download(
             client, () => client.artistPlaylist(artist.id, ttl: Duration.zero))
@@ -441,7 +447,7 @@ class Downloads {
   }
 
   static Future<bool> downloadStation(Station station) async {
-    final client = Client();
+    final client = _downloadClient();
     showSnackBar('Downloading ${station.name}');
     return _download(
             client, () => client.station(station.id, ttl: Duration.zero))
@@ -450,7 +456,7 @@ class Downloads {
 
   static Future<SpiffDownloadEntry> refreshSpiff(
       SpiffDownloadEntry entry, Spiff spiff) async {
-    final client = Client();
+    final client = _downloadClient();
     await _download(client, () => Future.value(spiff),
         spiffFile: (_) => Future.value(entry.file), includeTracks: false);
     return Future.value(entry.copyWith(spiff: spiff));
@@ -458,7 +464,7 @@ class Downloads {
 
   static Future<bool> downloadSpiff(Spiff spiff,
       {bool includeTracks = true}) async {
-    final client = Client();
+    final client = _downloadClient();
     showSnackBar('Downloading ${spiff.playlist.title}');
     return _download(client, () => Future.value(spiff),
             includeTracks: includeTracks)
@@ -466,7 +472,7 @@ class Downloads {
   }
 
   static Future<bool> downloadMovie(Movie movie) async {
-    final client = Client();
+    final client = _downloadClient();
     showSnackBar('Downloading ${movie.title}');
     return _download(
             client, () => client.moviePlaylist(movie.id, ttl: Duration.zero))
@@ -474,7 +480,7 @@ class Downloads {
   }
 
   static Future<bool> downloadSeries(Series series) async {
-    final client = Client();
+    final client = _downloadClient();
     showSnackBar('Series ${series.title}');
     return _download(
             client, () => client.seriesPlaylist(series.id, ttl: Duration.zero))
@@ -482,7 +488,7 @@ class Downloads {
   }
 
   static Future downloadSeriesEpisode(Series series, Episode episode) async {
-    final client = Client();
+    final client = _downloadClient();
     showSnackBar('Downloading ${episode.title}');
     final success = await _download(
         client, () => client.seriesPlaylist(series.id, ttl: Duration.zero),
