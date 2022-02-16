@@ -60,6 +60,8 @@ class PlayerWidget extends StatelessWidget {
         stream: _backgroundColorSubject,
         builder: (context, snapshot) {
           final backgroundColor = snapshot.data ?? null;
+          final screen = MediaQuery.of(context).size;
+          final expandedHeight = screen.height / 2;
           return Scaffold(
               backgroundColor: backgroundColor,
               body: StreamBuilder<_PlayState>(
@@ -74,8 +76,6 @@ class PlayerWidget extends StatelessWidget {
                     final queueState = snapshot.data?.queueState;
                     final queue = queueState?.queue ?? [];
                     final mediaItem = queueState?.mediaItem;
-                    final screen = MediaQuery.of(context).size;
-                    final expandedHeight = screen.height / 2;
                     final isStream = mediaItem?.isStream() ?? false;
                     return CustomScrollView(slivers: [
                       if (mediaItem != null)

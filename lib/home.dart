@@ -24,7 +24,6 @@ import 'package:takeout_app/menu.dart';
 import 'package:takeout_app/model.dart';
 import 'package:takeout_app/video.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:timeago/timeago.dart' as timeago;
 
 import 'client.dart';
 import 'downloads.dart';
@@ -36,6 +35,7 @@ import 'style.dart';
 import 'cover.dart';
 import 'cache.dart';
 import 'podcasts.dart';
+import 'util.dart';
 
 class HomeWidget extends StatefulWidget {
   final HomeView _view;
@@ -237,8 +237,7 @@ class _SeriesHomeItem extends _MediaHomeItem {
   }
 
   String when(String date) {
-    final d = DateTime.parse(date);
-    return timeago.format(d);
+    return relativeDate(date);
   }
 }
 

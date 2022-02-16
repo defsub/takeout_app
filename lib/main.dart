@@ -29,7 +29,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_settings_screens/flutter_settings_screens.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:connectivity/connectivity.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 import 'artists.dart';
 import 'client.dart';
@@ -58,6 +58,7 @@ void main() {
         rewindInterval: Duration(seconds: 10),
       ),
     );
+    WidgetsFlutterBinding.ensureInitialized();
     runApp(MyApp());
   });
 }
@@ -106,7 +107,7 @@ class _TakeoutWidget extends StatefulWidget {
   TakeoutState createState() => TakeoutState();
 }
 
-class TakeoutState extends State<_TakeoutWidget> {
+class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
   static final _loginStream = BehaviorSubject<bool>();
 
   static Stream<bool> get loginStream => _loginStream.stream;
@@ -129,8 +130,6 @@ class TakeoutState extends State<_TakeoutWidget> {
   static Stream<ConnectivityResult> get connectivityStream =>
       _connectivityStream.stream;
 
-  // static ConnectivityResult get connectivityState => _connectivityStream.value;
-
   final Connectivity _connectivity = Connectivity();
   StreamSubscription<ConnectivityResult>? _connectivitySubscription;
 
@@ -145,6 +144,8 @@ class TakeoutState extends State<_TakeoutWidget> {
   void initState() {
     super.initState();
 
+    WidgetsBinding.instance!.addObserver(this);
+
     _loginSubscription = _loginStream.listen(_onLogin);
 
     _initConnectivity();
@@ -157,10 +158,29 @@ class TakeoutState extends State<_TakeoutWidget> {
 
   @override
   void dispose() {
-    super.dispose();
+    WidgetsBinding.instance?.removeObserver(this);
     snackBarStateSubject.close();
     _connectivitySubscription?.cancel();
     _loginSubscription?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    switch (state) {
+      case AppLifecycleState.resumed:
+        // check connectivity after being away
+        _connectivity
+            .checkConnectivity()
+            .then((value) => _updateConnectionStatus(value));
+        break;
+      case AppLifecycleState.inactive:
+        break;
+      case AppLifecycleState.paused:
+        break;
+      case AppLifecycleState.detached:
+        break;
+    }
   }
 
   static bool _allowOrWifi(String key, ConnectivityResult? result) {
@@ -221,7 +241,9 @@ class TakeoutState extends State<_TakeoutWidget> {
 
   void _onItemTapped(int index) {
     if (_selectedIndex == index) {
-      navigatorKeys[_selectedIndex].currentState!.popUntil((route) => route.isFirst);
+      navigatorKeys[_selectedIndex]
+          .currentState!
+          .popUntil((route) => route.isFirst);
     } else {
       setState(() {
         _selectedIndex = index;
@@ -258,6 +280,9 @@ class TakeoutState extends State<_TakeoutWidget> {
     if (mounted) {
       setState(() {
         _playbackState = playbackState;
+        if (playbackState.playing == false) {
+          MediaQueue.savePosition(playbackState.position);
+        }
       });
     }
   }

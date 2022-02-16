@@ -231,9 +231,10 @@ class SpiffCache {
     final key = Uri.parse(location);
     final curr = _cache[key];
     print('put ${key.toString()} -> ${spiff.playlist.tracks.length} tracks');
-    if (curr != null && spiff == curr && spiff.index == curr.index) {
-      // TODO check if Spiff == is good enough
-      // TODO position changes aren't saved right now
+    if (curr != null &&
+        spiff == curr &&
+        spiff.index == curr.index &&
+        spiff.position == curr.position) {
       print('put unchanged');
     } else {
       await _save(key, spiff);

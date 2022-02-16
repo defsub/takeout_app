@@ -16,7 +16,7 @@
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
 import 'package:flutter/material.dart';
-import 'package:connectivity/connectivity.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import 'schema.dart';

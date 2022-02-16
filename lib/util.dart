@@ -51,16 +51,30 @@ String hhmmss(Duration duration) {
 }
 
 String relativeDate(String date) {
-  final now = DateTime.now();
+  // final now = DateTime.now();
   final d = DateTime.parse(date);
-  if (now.subtract(Duration(days: 30)).isBefore(d)) {
-    return timeago.format(d);
-  } else if (now.subtract(Duration(days: 365)).isBefore(d)) {
-    final year = d.year;
-    final month = twoDigits(d.month);
-    final day = twoDigits(d.day);
-    return '${year}-${month}-${day}';
-  } else {
-    return '${d.year}';
+  return timeago.format(d);
+  // if (now.subtract(Duration(days: 60)).isBefore(d)) {
+  //   return timeago.format(d);
+  // } else if (now.subtract(Duration(days: 365)).isBefore(d)) {
+  //   final year = d.year;
+  //   final month = twoDigits(d.month);
+  //   final day = twoDigits(d.day);
+  //   return '${year}-${month}-${day}';
+  // } else {
+  //   return '${d.year}';
+  // }
+}
+
+int parseYear(String date) {
+  var year = -1;
+  try {
+    // parse supports many expected formats
+    final d = DateTime.parse(date);
+    year = d.year;
+  } on FormatException {
+    // try year only
+    year = int.tryParse(date) ?? 0;
   }
+  return year;
 }

@@ -24,6 +24,7 @@ import 'package:json_annotation/json_annotation.dart';
 import 'package:takeout_app/client.dart';
 
 import 'model.dart';
+import 'util.dart';
 
 part 'spiff.g.dart';
 
@@ -61,6 +62,10 @@ class Spiff {
   @override
   int get hashCode {
     return super.hashCode;
+  }
+
+  int get length {
+    return playlist.tracks.length;
   }
 
   bool isLocal() {
@@ -197,9 +202,15 @@ class Entry extends Locatable implements MediaTrack {
   @override
   int get number => 0;
 
+  int _year = -1;
+
   @override
-  // TODO: implement year
-  int get year => 0;
+  int get year {
+    if (_year == -1) {
+      _year = parseYear(date);
+    }
+    return _year;
+  }
 }
 
 @JsonSerializable()
@@ -236,4 +247,20 @@ class Playlist {
       _$PlaylistFromJson(json);
 
   Map<String, dynamic> toJson() => _$PlaylistToJson(this);
+}
+
+String spiffDate(Spiff spiff, {Entry? entry, Playlist? playlist}) {
+  if (entry != null) {
+    return spiff.isPodcast() ? relativeDate(entry.date) : entry.year.toString();
+  }
+  if (playlist != null && playlist.date != null) {
+    return spiff.isPodcast()
+        ? relativeDate(playlist.date!)
+        : parseYear(playlist.date!).toString();
+  }
+  return '';
+}
+
+String playlistDate(Spiff spiff) {
+  return spiffDate(spiff, playlist: spiff.playlist);
 }

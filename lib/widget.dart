@@ -231,7 +231,6 @@ mixin SpiffWidgetBuilder {
   }
 }
 
-
 class SpiffTrackListView extends StatelessWidget {
   final Spiff _spiff;
 
@@ -255,7 +254,7 @@ class SpiffTrackListView extends StatelessWidget {
           final children = <Widget>[];
           final tracks = _spiff.playlist.tracks;
           final sameArtwork =
-          tracks.every((e) => e.image == tracks.first.image);
+              tracks.every((e) => e.image == tracks.first.image);
           for (var i = 0; i < tracks.length; i++) {
             final e = tracks[i];
             children.add(ListTile(
@@ -263,7 +262,8 @@ class SpiffTrackListView extends StatelessWidget {
                 onLongPress: () => showArtist(e.creator),
                 leading: sameArtwork ? null : tileCover(e.image),
                 trailing: Icon(keys.contains(e.key) ? IconsCached : null),
-                subtitle: Text('${e.creator} \u2022 ${relativeDate(e.date)} \u2022 ${storage(e.size)}'),
+                subtitle: Text(
+                    '${e.creator} \u2022 ${spiffDate(_spiff, entry: e)} \u2022 ${storage(e.size)}'),
                 title: Text(e.title)));
           }
           return Column(children: children);

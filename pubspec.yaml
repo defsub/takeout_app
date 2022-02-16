@@ -27,7 +27,7 @@ dependencies:
   shared_preferences: ^2.0.6
   json_annotation: ^4.0.1
   cached_network_image: ^3.0.0
-  connectivity: ^3.0.2
+  connectivity_plus: ^2.2.0
   palette_generator: ^0.3.0
   recase: ^4.0.0
   url_launcher: ^6.0.2

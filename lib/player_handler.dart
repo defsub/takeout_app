@@ -153,10 +153,11 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
                     item.isLocalFile() ? null : item.extras?[ExtraHeaders]))
             .toList());
     _playlist = source;
-    print('player index ${newState.index} pos ${newState.position.toInt()}');
+    final pos = Duration(seconds: newState.position.toInt());
+    print('player index ${newState.index} pos $pos');
     await _player.setAudioSource(source,
         preload: false,
-        initialPosition: Duration(seconds: newState.position.toInt()),
+        initialPosition: pos,
         initialIndex: newState.index);
     if (wasPlaying) {
       _player.play();

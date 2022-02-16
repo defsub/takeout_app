@@ -263,7 +263,7 @@ class DownloadState extends State<DownloadWidget> with SpiffWidgetBuilder {
 
   Widget subtitle(BuildContext context) {
     final text =
-        '${spiff!.playlist.creator} \u2022 ${relativeDate(spiff!.playlist.date ?? '')} \u2022 ${storage(spiff!.size)}';
+        '${spiff!.playlist.creator} \u2022 ${playlistDate(spiff!)} \u2022 ${storage(spiff!.size)}';
     return Text(text,
         style: Theme.of(context)
             .textTheme

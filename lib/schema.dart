@@ -238,8 +238,7 @@ class Release implements MediaAlbum {
   @override
   int get year {
     if (_year == -1 && date != null) {
-      final d = DateTime.parse(date!);
-      _year = d.year;
+      _year = parseYear(date!);
     }
     return _year;
   }
@@ -338,8 +337,7 @@ class Track extends MediaLocatable {
   @override
   int get year {
     if (_year == -1) {
-      final d = DateTime.parse(date);
-      _year = d.year;
+      _year = parseYear(date);
     }
     return _year;
   }
@@ -751,8 +749,7 @@ class Movie extends Locatable with MediaAlbum, MediaTrack {
   @override
   int get year {
     if (_year == -1) {
-      final d = DateTime.parse(date);
-      _year = d.year;
+      _year = parseYear(date);
     }
     return _year;
   }
@@ -816,8 +813,7 @@ class Series with MediaAlbum {
   @override
   int get year {
     if (_year == -1) {
-      final d = DateTime.parse(date);
-      _year = d.year;
+      _year = parseYear(date);
     }
     return _year;
   }
@@ -889,8 +885,7 @@ class Episode extends MediaLocatable {
   @override
   int get year {
     if (_year == -1) {
-      final d = DateTime.parse(date);
-      _year = d.year;
+      _year = parseYear(date);
     }
     return _year;
   }

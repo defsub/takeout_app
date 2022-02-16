@@ -58,6 +58,15 @@ class MediaQueue {
     await (await prefs).setString(settingPlaylist, uri.toString());
   }
 
+  static Future savePosition(Duration position) async {
+    final uri = await getCurrentPlaylist();
+    var spiff = await SpiffCache.get(uri);
+    if (spiff != null) {
+      spiff = spiff.copyWith(position: position.inSeconds.toDouble());
+      SpiffCache.put(spiff);
+    }
+  }
+
   static Reference _ref(
       {Release? release, Track? track, Station? station, Series? series}) {
     String ref = '';
@@ -87,9 +96,9 @@ class MediaQueue {
 
   static Spiff fromTracks(List<MediaLocatable> tracks,
       {String location = 'file:spiff.json',
-        String creator = '',
-        String title = '',
-        int index = 0}) {
+      String creator = '',
+      String title = '',
+      int index = 0}) {
     final playlist = Playlist(
       location: location,
       creator: creator,
@@ -113,11 +122,12 @@ class MediaQueue {
     return playSpiff(fromTracks(tracks), index: index);
   }
 
-  static Future playSpiff(Spiff spiff, {int index = -1}) async {
-    print('playSpiff $spiff');
-    if (index != -1 && index >= 0 && index < spiff.playlist.tracks.length) {
-      spiff = spiff.copyWith(index: index);
-    }
+  static Future playSpiff(Spiff spiff, {int index = 0, double position = 0}) async {
+    // unless provided, this will restart at index 0 position 0
+    print('playSpiff $spiff $index $position');
+    spiff = spiff.copyWith(
+        index: index >= 0 && index < spiff.length ? index : 0,
+        position: position);
     final uri = Uri.parse(spiff.playlist.location ?? 'location-missing');
     await setCurrentPlaylist(uri);
     await SpiffCache.put(spiff);
@@ -164,10 +174,6 @@ class MediaQueue {
         });
       } else {
         var spiff = result.toSpiff();
-        // print('fixing index ${spiff.index} location ${spiff.playlist.location}');
-        // spiff = spiff.copyWith(
-        //   index: index, playlist: spiff.playlist
-        //         .copyWith(location: uri.toString())); // TODO fixme
         SpiffCache.put(spiff).then((_) {
           audioHandler.customAction('doit', <String, dynamic>{
             'spiff': uri.toString()
@@ -255,10 +261,9 @@ class MediaQueue {
     final uri = Client.defaultPlaylistUri();
     final completer = Completer<Spiff>();
     _fetch().then((spiff) {
-      print('fixing2 location ${spiff.playlist.location}');
-      spiff = spiff.copyWith(
-          playlist:
-              spiff.playlist.copyWith(location: uri.toString())); // TODO fixme
+      // spiff = spiff.copyWith(
+      //     playlist:
+      //         spiff.playlist.copyWith(location: uri.toString())); // TODO fixme
       SpiffCache.put(spiff).then((_) => completer.complete(spiff));
     }).catchError((e) {
       completer.completeError(e);
@@ -329,8 +334,8 @@ class MediaQueue {
   //   );
   // }
 
-  static MediaItem _entryMediaItem(Entry entry, Uri uri, Map headers,
-      MediaType mediaType) {
+  static MediaItem _entryMediaItem(
+      Entry entry, Uri uri, Map headers, MediaType mediaType) {
     return MediaItem(
       id: uri.toString(),
       album: entry.album,
@@ -341,12 +346,12 @@ class MediaQueue {
     );
   }
 
-  static Future<List<MediaItem>> _createQueue(Client client,
-      Spiff spiff) async {
+  static Future<List<MediaItem>> _createQueue(
+      Client client, Spiff spiff) async {
     final List<MediaItem> items = [];
     // streams shouldn't send the cookie header
-    final headers = spiff.isStream() ? <String, String>{} : await client
-        .headers();
+    final headers =
+        spiff.isStream() ? <String, String>{} : await client.headers();
     for (var t in spiff.playlist.tracks) {
       final uri = await client.locate(t);
       items.add(_entryMediaItem(t, uri, headers, spiff.mediaType));
