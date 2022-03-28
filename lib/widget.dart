@@ -31,7 +31,6 @@ import 'playlist.dart';
 import 'video.dart';
 import 'global.dart';
 import 'spiff.dart';
-import 'util.dart';
 
 Random _random = Random();
 
@@ -92,7 +91,7 @@ class SpiffState extends State<SpiffWidget> with SpiffWidgetBuilder {
   Widget bottomRight(BuildContext context, bool isCached) {
     return isCached
         ? IconButton(icon: Icon(IconsDownloadDone), onPressed: () => {})
-        : downloadButton(isCached);
+        : downloadButton(context, isCached);
   }
 
   Widget subtitle(BuildContext context) {
@@ -104,12 +103,12 @@ class SpiffState extends State<SpiffWidget> with SpiffWidgetBuilder {
             .copyWith(color: Colors.white60));
   }
 
-  Widget downloadButton(bool isCached) {
+  Widget downloadButton(BuildContext context, bool isCached) {
     if (isCached) {
       return IconButton(icon: Icon(IconsDownload), onPressed: () => {});
     }
     return allowDownloadIconButton(
-        Icon(IconsDownload), () => Downloads.downloadSpiff(spiff!));
+        Icon(IconsDownload), () => Downloads.downloadSpiff(context, spiff!));
   }
 }
 
@@ -139,16 +138,15 @@ mixin SpiffWidgetBuilder {
   }
 
   Widget body() {
-    return StreamBuilder<Set<String>>(
-        stream: TrackCache.keysSubject,
+    return StreamBuilder<CacheSnapshot>(
+        stream: MediaCache.stream(),
         builder: (context, snapshot) {
           // cover images are 250x250 (or 500x500)
           // distort a bit to only take half the screen
           final screen = MediaQuery.of(context).size;
           final expandedHeight = screen.height / 2;
-          final keys = snapshot.data ?? Set<String>();
-          final isCached = TrackCache.checkAll(keys, spiff!.playlist.tracks);
-          bool isRadio = spiff!.playlist.creator == 'Radio';
+          final cacheSnapshot = snapshot.data ?? CacheSnapshot.empty();
+          final isCached = cacheSnapshot.containsAll(spiff!.playlist.tracks);
           return CustomScrollView(slivers: [
             SliverAppBar(
               expandedHeight: expandedHeight,
@@ -236,21 +234,23 @@ class SpiffTrackListView extends StatelessWidget {
 
   SpiffTrackListView(this._spiff);
 
-  void _onTrack(BuildContext context, int index) {
+  void _onTrack(BuildContext context, CacheSnapshot snapshot, int index) {
     if (_spiff.isMusic() || _spiff.isPodcast()) {
       MediaQueue.playSpiff(_spiff, index: index);
       showPlayer();
     } else if (_spiff.isVideo()) {
-      showMovie(context, _spiff.playlist.tracks[index]);
+      final video = _spiff.playlist.tracks[index];
+      final pos = snapshot.position(video) ?? Duration.zero;
+      showMovie(context, video, startOffset: pos);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<Set<String>>(
-        stream: TrackCache.keysSubject,
+    return StreamBuilder<CacheSnapshot>(
+        stream: MediaCache.stream(),
         builder: (context, snapshot) {
-          final keys = snapshot.data ?? Set<String>();
+          final cacheSnapshot = snapshot.data ?? CacheSnapshot.empty();
           final children = <Widget>[];
           final tracks = _spiff.playlist.tracks;
           final sameArtwork =
@@ -258,16 +258,57 @@ class SpiffTrackListView extends StatelessWidget {
           for (var i = 0; i < tracks.length; i++) {
             final e = tracks[i];
             children.add(ListTile(
-                onTap: () => _onTrack(context, i),
+                onTap: () => _onTrack(context, cacheSnapshot, i),
                 onLongPress: () => showArtist(e.creator),
-                leading: sameArtwork ? null : tileCover(e.image),
-                trailing: Icon(keys.contains(e.key) ? IconsCached : null),
-                subtitle: Text(
-                    '${e.creator} \u2022 ${spiffDate(_spiff, entry: e)} \u2022 ${storage(e.size)}'),
+                leading: _leading(context, cacheSnapshot, e, sameArtwork),
+                trailing: _trailing(cacheSnapshot, e),
+                subtitle: _subtitle(context, cacheSnapshot, e),
                 title: Text(e.title)));
+            // children.add(SizedBox(height: 10));
           }
           return Column(children: children);
         });
+  }
+
+  Widget? _leading(BuildContext context, CacheSnapshot snapshot, Entry entry,
+      bool sameArtwork) {
+    // final pos = snapshot.position(entry);
+    // final end = snapshot.duration(entry);
+    // if (pos != null && end != null) {
+    //   final value = pos.inSeconds.toDouble() / end.inSeconds.toDouble();
+    //   return CircularProgressIndicator(value: value);
+    // } else {
+    return sameArtwork ? null : tileCover(entry.image);
+  }
+
+  Widget _trailing(CacheSnapshot snapshot, Entry entry) {
+    final downloading = snapshot.downloadSnapshot(entry);
+    if (downloading != null) {
+      final value = downloading.value;
+      return value > 1.0
+          ? CircularProgressIndicator()
+          : CircularProgressIndicator(value: value);
+    }
+    return Icon(snapshot.contains(entry) ? IconsCached : null);
+  }
+
+  Widget _subtitle(BuildContext context, CacheSnapshot snapshot, Entry entry) {
+    final children = <Widget>[];
+    final duration = snapshot.remaining(entry);
+    if (duration != null) {
+      if (_spiff.isPodcast() || _spiff.isVideo()) {
+        final value = snapshot.value(entry);
+        if (value != null) {
+          children.add(LinearProgressIndicator(value: value));
+        }
+      }
+    }
+    children.add(Text(merge([
+      entry.creator,
+      spiffDate(_spiff, entry: entry),
+      storage(entry.size)
+    ])));
+    return Column(children: children, crossAxisAlignment: CrossAxisAlignment.start);
   }
 }
 

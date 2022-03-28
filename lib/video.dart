@@ -14,6 +14,7 @@ import 'style.dart';
 import 'main.dart';
 import 'downloads.dart';
 import 'cache.dart';
+import 'progress.dart';
 import 'util.dart';
 
 class MovieWidget extends StatefulWidget {
@@ -67,11 +68,13 @@ class _MovieWidgetState extends State<MovieWidget> {
                   onRefresh: () => _onRefresh(),
                   child: _view == null
                       ? Center(child: CircularProgressIndicator())
-                      : StreamBuilder<Set<String>>(
-                          stream: TrackCache.keysSubject,
+                      : StreamBuilder<CacheSnapshot>(
+                          stream: MediaCache.stream(),
                           builder: (context, snapshot) {
-                            final keys = snapshot.data ?? Set<String>();
-                            final isCached = TrackCache.checkAll(keys, [_movie]);
+                            final cacheSnapshot =
+                                snapshot.data ?? CacheSnapshot.empty();
+                            final isCached =
+                                cacheSnapshot.containsAll([_movie]);
                             return CustomScrollView(slivers: [
                               SliverAppBar(
                                 // actions: [ ],
@@ -100,10 +103,15 @@ class _MovieWidgetState extends State<MovieWidget> {
                                       ),
                                       Align(
                                           alignment: Alignment.bottomLeft,
-                                          child: _playButton(isCached)),
+                                          child: _playButton(
+                                              cacheSnapshot, isCached)),
+                                      Align(
+                                          alignment: Alignment.bottomCenter,
+                                          child: _progress(cacheSnapshot)),
                                       Align(
                                           alignment: Alignment.bottomRight,
-                                          child: _downloadButton(isCached)),
+                                          child: _downloadButton(
+                                              context, isCached)),
                                     ])),
                               ),
                               SliverToBoxAdapter(
@@ -112,7 +120,7 @@ class _MovieWidgetState extends State<MovieWidget> {
                                       child: Column(children: [
                                         _title(),
                                         _tagline(),
-                                        _details(),
+                                        _details(cacheSnapshot),
                                         if (_view != null && _view!.hasGenres())
                                           _genres(),
                                         // GestureDetector(
@@ -140,10 +148,15 @@ class _MovieWidgetState extends State<MovieWidget> {
                                       .relatedLabel),
                                 ),
                               if (_view != null && _view!.hasRelated())
-                                MovieGridWidget(_sortByTitle(_view!.other!)),
+                                MovieGridWidget(_view!.other!),
                             ]);
                           })));
         });
+  }
+
+  Widget _progress(CacheSnapshot snapshot) {
+    final value = snapshot.value(_movie);
+    return value != null ? LinearProgressIndicator(value: value) : Container();
   }
 
   Widget _title() {
@@ -162,40 +175,37 @@ class _MovieWidgetState extends State<MovieWidget> {
     );
   }
 
-  Widget _details() {
+  Widget _details(CacheSnapshot snapshot) {
     var list = <Widget>[];
     if (_movie.rating.isNotEmpty) {
       list.add(_rating());
     }
-    var text = '';
+
+    final fields = <String>[];
+
+    // runtime
     if (_movie.runtime > 0) {
       var hours = (_movie.runtime / 60).floor();
-      var mins = (_movie.runtime % 60).floor();
-      if (text.isNotEmpty) {
-        text += ' \u2022 ';
-      }
-      text += '${hours}h ${mins}m';
+      var min = (_movie.runtime % 60).floor();
+      fields.add('${hours}h ${min}m');
     }
+
+    // year
     if (_movie.year > 1) {
-      if (text.isNotEmpty) {
-        text += ' \u2022 ';
-      }
-      text += '${_movie.year}';
+      fields.add(_movie.year.toString());
     }
+
+    // vote%
     int vote = (10 * (_movie.voteAverage ?? 0)).round();
     if (vote > 0) {
-      if (text.isNotEmpty) {
-        text += ' \u2022 ';
-      }
-      text += '${vote}%';
+      fields.add('${vote}%');
     }
-    if (text.isNotEmpty) {
-      text += ' \u2022 ';
-      text += storage(_movie.size);
-    }
-    if (text.isNotEmpty) {
-      list.add(Text(text, style: Theme.of(context).textTheme.subtitle2));
-    }
+
+    // storage
+    fields.add(storage(_movie.size));
+
+    list.add(Text(merge(fields), style: Theme.of(context).textTheme.subtitle2));
+
     return Row(mainAxisAlignment: MainAxisAlignment.center, children: list);
   }
 
@@ -217,28 +227,31 @@ class _MovieWidgetState extends State<MovieWidget> {
     ]));
   }
 
-  Widget _playButton(bool isCached) {
+  Widget _playButton(CacheSnapshot snapshot, bool isCached) {
+    final pos = snapshot.position(_movie) ?? Duration.zero;
     if (isCached) {
       return IconButton(
-          icon: Icon(Icons.play_arrow, size: 32), onPressed: () => _onPlay());
+          icon: Icon(Icons.play_arrow, size: 32),
+          onPressed: () => _onPlay(pos));
     }
-    return allowStreamingIconButton(Icon(Icons.play_arrow, size: 32), _onPlay);
+    return allowStreamingIconButton(
+        Icon(Icons.play_arrow, size: 32), () => _onPlay(pos));
   }
 
-  Widget _downloadButton(bool isCached) {
+  Widget _downloadButton(BuildContext context, bool isCached) {
     if (isCached) {
       return IconButton(icon: Icon(IconsDownloadDone), onPressed: () => {});
     }
     return allowDownloadIconButton(
-        Icon(IconsDownload), _onDownload);
+        Icon(IconsDownload), () => _onDownload(context));
   }
 
-  void _onPlay() {
-    showMovie(context, _movie);
+  void _onPlay(Duration startOffset) {
+    showMovie(context, _movie, startOffset: startOffset);
   }
 
-  void _onDownload() {
-    Downloads.downloadMovie(_movie);
+  void _onDownload(BuildContext context) {
+    Downloads.downloadMovie(context, _movie);
   }
 
   void _onGenre(BuildContext context, String genre) {
@@ -378,20 +391,20 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                           child: heading(
                               AppLocalizations.of(context)!.starringLabel)),
                     if (_view != null && _view!.hasStarring())
-                      MovieGridWidget(_sortByTitle(_view!.starringMovies())),
+                      MovieGridWidget(_view!.starringMovies()),
                     if (_view != null && _view!.hasDirecting())
                       SliverToBoxAdapter(
                           child: heading(
                               AppLocalizations.of(context)!.directingLabel)),
                     if (_view != null && _view!.hasDirecting())
-                      MovieGridWidget(_sortByTitle(_view!.directingMovies())),
+                      MovieGridWidget(_view!.directingMovies()),
                     if (_view != null && _view!.hasWriting())
                       SliverToBoxAdapter(
                         child:
                             heading(AppLocalizations.of(context)!.writingLabel),
                       ),
                     if (_view != null && _view!.hasWriting())
-                      MovieGridWidget(_sortByTitle(_view!.writingMovies())),
+                      MovieGridWidget(_view!.writingMovies()),
                   ])));
         });
   }
@@ -496,11 +509,13 @@ enum MovieState { buffering, playing, paused, none }
 
 class MoviePlayer extends StatefulWidget {
   final Locatable _movie;
+  final Duration? startOffset;
 
-  MoviePlayer(this._movie);
+  MoviePlayer(this._movie, {this.startOffset = Duration.zero});
 
   @override
-  _MoviePlayerState createState() => _MoviePlayerState(_movie);
+  _MoviePlayerState createState() =>
+      _MoviePlayerState(_movie, startOffset ?? Duration.zero);
 }
 
 class _MoviePlayerState extends State<MoviePlayer> {
@@ -510,11 +525,12 @@ class _MoviePlayerState extends State<MoviePlayer> {
   late final VideoProgressIndicator? _progress;
   late final StreamSubscription<MovieState> _stateSubscription;
   final Locatable _movie;
+  final Duration _startOffset;
   var _showControls = false;
   var _videoInitialized = false;
   Timer? _controlsTimer = null;
 
-  _MoviePlayerState(this._movie);
+  _MoviePlayerState(this._movie, this._startOffset);
 
   @override
   void initState() {
@@ -544,6 +560,7 @@ class _MoviePlayerState extends State<MoviePlayer> {
       final value = controller.value;
       if (_videoInitialized == false && value.isInitialized) {
         _videoInitialized = true;
+        controller.seekTo(_startOffset);
         controller.play(); // autoplay
       }
       if (value.isPlaying) {
@@ -591,6 +608,11 @@ class _MoviePlayerState extends State<MoviePlayer> {
 
   String _pos(Duration pos) {
     return "${hhmmss(pos)} ~ ${hhmmss(_controller?.value.duration ?? Duration.zero)}";
+  }
+
+  void _saveState() {
+    Progress.update(_movie.key, _controller?.value.position ?? Duration.zero,
+        _controller?.value.duration ?? Duration.zero);
   }
 
   @override
@@ -642,6 +664,7 @@ class _MoviePlayerState extends State<MoviePlayer> {
                                                     if (state ==
                                                         MovieState.playing) {
                                                       _controller!.pause();
+                                                      _saveState();
                                                     } else {
                                                       _controller!.play();
                                                     }
@@ -682,8 +705,8 @@ class MovieListWidget extends StatelessWidget {
       ..._movies.asMap().keys.toList().map((index) => ListTile(
           onTap: () => _onTapped(context, _movies[index]),
           leading: tilePoster(_movies[index].image),
-          subtitle:
-              Text('${_movies[index].year} \u2022 ${_movies[index].rating}'),
+          subtitle: Text(
+              merge([_movies[index].year.toString(), _movies[index].rating])),
           title: Text(_movies[index].title)))
     ]);
   }
@@ -694,9 +717,9 @@ class MovieListWidget extends StatelessWidget {
   }
 }
 
-void showMovie(BuildContext context, Locatable movie) {
-  Navigator.of(context, rootNavigator: true)
-      .push(MaterialPageRoute(builder: (context) => MoviePlayer(movie)));
+void showMovie(BuildContext context, Locatable movie, {Duration? startOffset}) {
+  Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(
+      builder: (context) => MoviePlayer(movie, startOffset: startOffset)));
 }
 
 // Note this modifies the original list.

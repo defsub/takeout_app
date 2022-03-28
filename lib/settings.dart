@@ -46,7 +46,8 @@ GridType settingsGridType(String key, GridType def) {
   return GridType.values[v];
 }
 
-final settingsChangeSubject = PublishSubject<String>();
+final settingsChangeSubject =
+    BehaviorSubject<String>.seeded(settingMediaType); // TODO seems ok
 
 class AppSettings extends StatefulWidget {
   @override

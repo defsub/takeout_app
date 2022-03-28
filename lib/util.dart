@@ -78,3 +78,8 @@ int parseYear(String date) {
   }
   return year;
 }
+
+String merge(List<String> args, {String separator = " \u2022 "}) {
+  args.retainWhere((s) => s.toString().isNotEmpty);
+  return args.join(separator);
+}

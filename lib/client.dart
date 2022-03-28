@@ -21,6 +21,7 @@ import 'dart:core';
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
+import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'cache.dart';
@@ -61,25 +62,81 @@ abstract class Locatable {
 
   /// Location URL to get location.
   String get location;
+
+  int get size;
 }
 
-class PatchResult {
+class PostResult {
   final int statusCode;
-  final Map<String, dynamic> body;
 
-  PatchResult(this.statusCode, this.body);
+  PostResult(this.statusCode);
 
-  bool notModified() {
+  bool noContent() {
     return statusCode == HttpStatus.noContent;
   }
+
+  bool resetContent() {
+    return statusCode == HttpStatus.resetContent;
+  }
+
+  bool clientError() {
+    return statusCode == HttpStatus.badRequest;
+  }
+
+  bool serverError() {
+    return statusCode == HttpStatus.internalServerError;
+  }
+}
+
+class PatchResult extends PostResult {
+  final Map<String, dynamic> body;
+
+  PatchResult(statusCode, this.body) : super(statusCode);
 
   bool isModified() {
     return statusCode == HttpStatus.ok;
   }
 
+  bool notModified() => noContent();
+
   Spiff toSpiff() {
     return Spiff.fromJson(body);
   }
+}
+
+class DownloadSnapshot {
+  final int size;
+  final int offset;
+  final Object? err;
+
+  DownloadSnapshot(this.size, this.offset, {this.err});
+
+  bool hasError() {
+    return err != null;
+  }
+
+  bool isComplete() {
+    return offset == size;
+  }
+
+  // Value used for progress display.
+  double get value {
+    return offset.toDouble() / size;
+  }
+}
+
+class _SnapshotSink extends Sink<int> {
+  final Locatable locatable;
+  int offset = 0;
+
+  _SnapshotSink(this.locatable);
+
+  void add(int chunk) {
+    offset += chunk;
+    Client._downloadSnapshotUpdate(locatable, offset);
+  }
+
+  void close() {}
 }
 
 class Client {
@@ -100,9 +157,30 @@ class Client {
     return _defaultPlaylistUri;
   }
 
-  bool Function()? _allowDownload;
+  static final downloadStream =
+      BehaviorSubject<Map<String, DownloadSnapshot>>.seeded(
+          <String, DownloadSnapshot>{});
+  static final _downloadSnapshots = <String, DownloadSnapshot>{};
 
-  Client([this._allowDownload]);
+  static void _downloadSnapshotUpdate(Locatable l, int offset) {
+    _downloadSnapshots[l.key] = DownloadSnapshot(l.size, offset);
+    _publish();
+  }
+
+  static void _downloadSnapshotRemove(Locatable l) {
+    _downloadSnapshots.remove(l.key);
+  }
+
+  static void _publish() {
+    downloadStream.add(_downloadSnapshots);
+  }
+
+  bool Function()? _allowDownloads;
+
+  Client([this._allowDownloads]);
+
+  bool get allowDownloads =>
+      _allowDownloads != null ? _allowDownloads!() : true;
 
   Future<void> setEndpoint(String? v) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -193,7 +271,7 @@ class Client {
 
     try {
       final baseUrl = await getEndpoint();
-      print('$baseUrl$uri');
+      print('GET $baseUrl$uri');
       final response = await http.get(Uri.parse('$baseUrl$uri'),
           headers: {HttpHeaders.cookieHeader: '$cookieName=$cookie'});
       print('got ${response.statusCode}');
@@ -212,17 +290,60 @@ class Client {
     }
   }
 
-  /// no cookie, no caching
-  Future<Map<String, dynamic>> _postJson(
-      String uri, Map<String, dynamic> json) async {
+  Future _delete(String uri) async {
+    final cookie = await _getCookie();
+    if (cookie == null) {
+      throw ClientException(
+        statusCode: HttpStatus.networkAuthenticationRequired,
+      );
+    }
+
+    try {
+      final baseUrl = await getEndpoint();
+      print('DELETE $baseUrl$uri');
+      final response = await http.delete(Uri.parse('$baseUrl$uri'),
+          headers: {HttpHeaders.cookieHeader: '$cookieName=$cookie'});
+      print('got ${response.statusCode}');
+      switch (response.statusCode) {
+        case HttpStatus.accepted:
+        case HttpStatus.noContent:
+        case HttpStatus.ok:
+          // success
+          break;
+        default:
+          // failure
+          throw ClientException(
+              statusCode: response.statusCode,
+              url: response.request?.url.toString());
+      }
+    } on TlsException catch (e) {
+      return Future.error(e);
+    }
+  }
+
+  /// no caching
+  Future<Map<String, dynamic>> _postJson(String uri, Map<String, dynamic> json,
+      {bool requireCookie = false}) async {
+    Map<String, String> headers = {
+      HttpHeaders.contentTypeHeader: ContentType.json.toString(),
+    };
+
+    if (requireCookie) {
+      final cookie = await _getCookie();
+      if (cookie == null) {
+        throw ClientException(
+          statusCode: HttpStatus.networkAuthenticationRequired,
+        );
+      }
+      headers[HttpHeaders.cookieHeader] = '$cookieName=$cookie';
+    }
+
     final baseUrl = await getEndpoint();
     print('$baseUrl$uri');
+    print(jsonEncode(json));
     return http
         .post(Uri.parse('$baseUrl$uri'),
-            headers: {
-              HttpHeaders.contentTypeHeader: ContentType.json.toString()
-            },
-            body: jsonEncode(json))
+            headers: headers, body: jsonEncode(json))
         .then((response) {
       print('response ${response.statusCode}');
       if (response.statusCode != HttpStatus.ok) {
@@ -230,10 +351,39 @@ class Client {
             statusCode: response.statusCode,
             url: response.request?.url.toString());
       }
-      // print('got response ${response.body}');
-      return jsonDecode(utf8.decode(response.bodyBytes));
+      if (response.body.isEmpty) {
+        return {
+          'reasonPhrase': response.reasonPhrase,
+          'statusCode': response.statusCode
+        };
+      } else {
+        return jsonDecode(utf8.decode(response.bodyBytes));
+      }
     });
   }
+
+  // /// no cookie, no caching
+  // Future<Map<String, dynamic>> _oldPostJson(
+  //     String uri, Map<String, dynamic> json) async {
+  //   final baseUrl = await getEndpoint();
+  //   print('$baseUrl$uri');
+  //   return http
+  //       .post(Uri.parse('$baseUrl$uri'),
+  //           headers: {
+  //             HttpHeaders.contentTypeHeader: ContentType.json.toString()
+  //           },
+  //           body: jsonEncode(json))
+  //       .then((response) {
+  //     print('response ${response.statusCode}');
+  //     if (response.statusCode != HttpStatus.ok) {
+  //       throw ClientException(
+  //           statusCode: response.statusCode,
+  //           url: response.request?.url.toString());
+  //     }
+  //     // print('got response ${response.body}');
+  //     return jsonDecode(utf8.decode(response.bodyBytes));
+  //   });
+  // }
 
   /// no caching
   Future<PatchResult> _patchJson(
@@ -294,6 +444,12 @@ class Client {
       _getJson('/api/search?q=${Uri.encodeQueryComponent(q)}', ttl: ttl)
           .then((j) => SearchView.fromJson(j))
           .catchError((e) => Future<SearchView>.error(e));
+
+  /// GET /api/index
+  Future<IndexView> index({Duration? ttl}) async =>
+      _getJson('/api/index', ttl: ttl)
+          .then((j) => IndexView.fromJson(j))
+          .catchError((e) => Future<IndexView>.error(e));
 
   /// GET /api/home
   Future<HomeView> home({Duration? ttl}) async =>
@@ -423,16 +579,58 @@ class Client {
           .then((j) => EpisodeView.fromJson(j))
           .catchError((e) => Future<EpisodeView>.error(e));
 
+  /// GET /api/progress
+  Future<ProgressView> progress({Duration? ttl}) async =>
+      _getJson('/api/progress', ttl: ttl)
+          .then((j) => ProgressView.fromJson(j))
+          .catchError((e) => Future<ProgressView>.error(e));
+
+  /// POST /api/progress
+  Future<int> updateProgress(Offset offset, {void Function()? onError}) async {
+    try {
+      print('updateProgress $offset');
+      final result = await _postJson('/api/progress', offset.toJson(),
+          requireCookie: true);
+      print('updateProgress got $result');
+      return result['_statusCode'];
+    } on ClientException {
+      return HttpStatus.badRequest;
+    }
+  }
+
+  Future deleteProgress(Offset offset) async {
+    return _delete('/api/progress/${offset.id}');
+  }
+
+  /// Download locatable to a file with optional retries.
+  Future download(Locatable d, {int retries = 0}) async {
+    for (;;) {
+      try {
+        return await _download(d);
+      } catch (err) {
+        print(err);
+        if (retries > 0) {
+          // try again
+          retries--;
+          continue;
+        }
+        rethrow;
+      } finally {
+        _downloadSnapshotRemove(d);
+      }
+    }
+  }
+
   /// Download locatable to a file.
-  Future download(Locatable d) async {
+  Future _download(Locatable d) async {
     final cache = TrackCache();
     final result = await cache.get(d);
     if (result is File) {
       return Future.value();
     }
 
-    if (_allowDownload != null && _allowDownload!() == false) {
-      return Future.error(ClientError('download not allowed'));
+    if (!allowDownloads) {
+      return Future.error(ClientError('downloads not allowed'));
     }
 
     final cookie = await _getCookie();
@@ -449,18 +647,24 @@ class Client {
         })
         .then((response) {
           final sink = file.openWrite();
-          response.pipe(sink).then((v) {
+          final snap = _SnapshotSink(d);
+          response.listen((data) {
+            sink.add(data);
+            snap.add(data.length);
+          }, onDone: () {
+            sink.close();
+            snap.close();
             cache.put(d, file);
             completer.complete();
-          }).catchError((e) {
-            print('error $e');
-            completer.completeError(e);
+          }, onError: (err) {
+            completer.completeError(err);
           });
         })
         .timeout(downloadTimeout)
         .catchError((e) {
-          print('error2 $e');
-          file.delete();
+          if (file.existsSync()) {
+            file.deleteSync();
+          }
           completer.completeError(e);
         });
     return completer.future;

@@ -16,6 +16,7 @@
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -27,6 +28,92 @@ import 'package:path/path.dart';
 
 import 'client.dart';
 import 'spiff.dart';
+import 'schema.dart';
+
+class CacheSnapshot {
+  final Set<String> downloaded;
+  final Map<String, Offset> offsets;
+  final Map<String, DownloadSnapshot> downloading;
+
+  CacheSnapshot(this.downloaded, this.offsets, this.downloading);
+
+  factory CacheSnapshot.empty() => CacheSnapshot(
+      Set<String>(), <String, Offset>{}, Map<String, DownloadSnapshot>());
+
+  bool containsAll(Iterable<Locatable> entries) {
+    final entryKeys = Set<String>();
+    entries.forEach((e) => entryKeys.add(e.key));
+    return downloaded.containsAll(entryKeys);
+  }
+
+  bool contains(Locatable l) {
+    return downloaded.contains(l.key);
+  }
+
+  Duration? duration(Locatable l) {
+    final offset = offsets[l.key];
+    return offset != null && offset.hasDuration()
+        ? Duration(seconds: offset.duration)
+        : null;
+  }
+
+  Duration? position(Locatable l) {
+    final offset = offsets[l.key];
+    return offset != null ? offset.position() : null;
+  }
+
+  Duration? remaining(Locatable l) {
+    final offset = offsets[l.key];
+    return offset != null
+        ? Duration(seconds: offset.duration - offset.offset)
+        : null;
+  }
+
+  double? value(Locatable l) {
+    final offset = offsets[l.key];
+    final pos = offset?.offset ?? null;
+    final end = offset?.duration;
+    if (pos != null && end != null) {
+      final value = pos.toDouble() / end.toDouble();
+      return value;
+    }
+    return null;
+  }
+
+  bool isDownloading(Locatable l) {
+    return downloading.containsKey(l.key);
+  }
+
+  DownloadSnapshot? downloadSnapshot(Locatable l) {
+    return downloading[l.key];
+  }
+}
+
+class MediaCache {
+  static final _cachedMediaStream =
+      BehaviorSubject<Set<String>>.seeded(Set<String>());
+  static final _cachedOffsetsStream =
+      BehaviorSubject<Map<String, Offset>>.seeded(<String, Offset>{});
+
+  static void _updateMedia(Set<String> media) {
+    _cachedMediaStream.add(media);
+  }
+
+  static void _updateOffsets(Map<String, Offset> offsets) {
+    _cachedOffsetsStream.add(offsets);
+  }
+
+  static Stream<CacheSnapshot> stream() {
+    return Rx.combineLatest3(
+        _cachedMediaStream.stream,
+        _cachedOffsetsStream.stream,
+        Client.downloadStream.stream,
+        (Set<String>? media, Map<String, Offset>? offsets,
+                Map<String, DownloadSnapshot>? downloading) =>
+            CacheSnapshot(media ?? Set<String>(), offsets ?? <String, Offset>{},
+                downloading ?? Map<String, DownloadSnapshot>()));
+  }
+}
 
 Future<Directory> checkAppDir(String name) async {
   final docDir = await getApplicationDocumentsDirectory();
@@ -100,7 +187,6 @@ class JsonCache {
 
 class TrackCache {
   static const _dir = 'track_cache';
-  static final keysSubject = BehaviorSubject<Set<String>>();
   static final _entries = Map<String, File>();
 
   static Future<void> init() async {
@@ -109,7 +195,7 @@ class TrackCache {
     await Future.forEach(files, (FileSystemEntity file) async {
       // entry keys are etags
       _entries[basename(file.path)] = file as File;
-    }).whenComplete(() => _broadcast());
+    }).whenComplete(() => _publish());
   }
 
   static bool checkAll(Set<String> cacheKeys, Iterable<Locatable> entries) {
@@ -120,9 +206,9 @@ class TrackCache {
     return cacheKeys.containsAll(entryKeys);
   }
 
-  static void _broadcast() {
+  static void _publish() {
     final keys = Set<String>.from(_entries.keys);
-    keysSubject.add(keys);
+    MediaCache._updateMedia(keys);
   }
 
   Future<File> _trackFile(Locatable d) async {
@@ -151,7 +237,7 @@ class TrackCache {
   void put(Locatable d, File file) {
     // key should be the etag or similar hash
     _entries[d.key] = file;
-    _broadcast();
+    _publish();
   }
 
   // Create a file that will later be stored in the cache
@@ -161,7 +247,7 @@ class TrackCache {
 
   void remove(Locatable d) {
     _entries.remove(d.key);
-    _broadcast();
+    _publish();
   }
 
   Future<bool> contains(List<Locatable> list) async {
@@ -255,5 +341,121 @@ class SpiffCache {
         'loaded ${spiff.playlist.title} with ${spiff.playlist.tracks.length} tracks');
     await put(spiff);
     return spiff;
+  }
+}
+
+class OffsetCache {
+  static const _dir = 'offset_cache';
+
+  static Map<String, Offset> _entries = {};
+
+  static Future<File> _cacheFile(String etag) async {
+    // ensure no weird chars
+    var fileName = etag.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
+    fileName = '$fileName.json';
+    return await checkAppDir(_dir).then((dir) {
+      return File('${dir.path}/$fileName');
+    });
+  }
+
+  static Offset _decode(File file) {
+    return Offset.fromJson(jsonDecode(file.readAsStringSync()));
+  }
+
+  static void _publish() {
+    MediaCache._updateOffsets(UnmodifiableMapView(_entries));
+  }
+
+  static Future<File> _save(Offset offset) async {
+    final completer = Completer<File>();
+    File file = await _cacheFile(offset.etag);
+    final data = jsonEncode(offset.toJson());
+    file.writeAsString(data).then((f) {
+      completer.complete(f);
+    }).catchError((e) {
+      print(e);
+      completer.completeError(e);
+    });
+    return completer.future;
+  }
+
+  // Init populates the cache from storage.
+  static Future<void> init() async {
+    _entries.clear();
+    final dir = await checkAppDir(_dir);
+    final files = await dir.list().toList();
+    await Future.forEach(files, (FileSystemEntity file) async {
+      final offset = _decode(file as File);
+      put(offset);
+    });
+  }
+
+  // Merge obtains the latest progress from the server and updates and newer
+  // local progress as needed.
+  static Future merge(Client client) async {
+    final view = await client.progress(ttl: Duration.zero);
+    return Future.forEach(view.offsets, (Offset remote) async {
+      final local = await get(remote.etag);
+      if (local != null && local.newerThan(remote)) {
+        await client.updateProgress(local);
+      } else {
+        await put(remote);
+      }
+    });
+  }
+
+  static Future<Offset?> get(String etag, {Duration? ttl}) async {
+    final completer = Completer<Offset?>();
+    final file = await _cacheFile(etag);
+    file.exists().then((exists) {
+      if (exists) {
+        final lastModified = file.lastModifiedSync();
+        if (ttl != null) {
+          final expirationTime = lastModified.add(ttl);
+          final expired = DateTime.now().isAfter(expirationTime);
+          completer.complete(expired ? null : _decode(file));
+          if (expired) {
+            print("deleting $file");
+            remove(etag);
+          }
+        } else {
+          completer.complete(_decode(file));
+        }
+      } else {
+        completer.complete(null);
+      }
+    });
+    return completer.future;
+  }
+
+  static Future remove(String etag) async {
+    if (_entries.containsKey(etag) == false) {
+      // optimize this case
+      return;
+    }
+
+    _entries.remove(etag);
+    _publish();
+    final file = await _cacheFile(etag);
+    if (file.existsSync()) {
+      file.deleteSync();
+    }
+  }
+
+  static Future removeAll() async {
+    return Future.forEach<String>(_entries.keys, (etag) async {
+      await remove(etag);
+    });
+  }
+
+  static Future put(Offset offset) async {
+    final curr = _entries[offset.etag];
+    if (curr != null && curr.hasDuration() && offset.duration == 0) {
+      // duration is dynamic so don't zero out previously found duration
+      offset = offset.copyWith(duration: curr.duration);
+    }
+    _entries[offset.etag] = offset;
+    _publish();
+    return _save(offset);
   }
 }

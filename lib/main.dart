@@ -20,7 +20,6 @@
 
 import 'dart:async';
 import 'dart:io';
-import 'dart:ui';
 
 import 'package:audio_service/audio_service.dart';
 
@@ -30,6 +29,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_settings_screens/flutter_settings_screens.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:takeout_app/progress.dart';
 
 import 'artists.dart';
 import 'client.dart';
@@ -46,10 +46,13 @@ import 'downloads.dart';
 import 'cache.dart';
 import 'settings.dart';
 
+late AudioPlayerHandler audioPlayerHandler;
+
 void main() {
   Settings.init().then((_) async {
+    audioPlayerHandler = AudioPlayerHandler();
     audioHandler = await AudioService.init(
-      builder: () => AudioPlayerHandler(),
+      builder: () => audioPlayerHandler,
       config: const AudioServiceConfig(
         androidNotificationChannelId: 'com.ryanheise.myapp.channel.audio',
         androidNotificationChannelName: 'Audio playback',
@@ -91,11 +94,11 @@ class MyApp extends StatelessWidget {
     return base.copyWith(
       colorScheme: ColorScheme.dark().copyWith(
           primary: Colors.orangeAccent,
-          primaryVariant: Colors.orangeAccent,
+          primaryContainer: Colors.orangeAccent,
           secondary: Colors.orangeAccent,
-          secondaryVariant: Colors.orangeAccent),
+          secondaryContainer: Colors.orangeAccent),
       indicatorColor: Colors.orangeAccent,
-      accentColor: Colors.orangeAccent,
+      // accentColor: Colors.orangeAccent,
     );
   }
 }
@@ -135,6 +138,7 @@ class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
 
   PlaybackState? _playbackState;
   int _selectedIndex = 0;
+  IndexView? _indexView;
   HomeView? _homeView;
   ArtistsView? _artistsView;
   RadioView? _radioView;
@@ -169,7 +173,7 @@ class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     switch (state) {
       case AppLifecycleState.resumed:
-        // check connectivity after being away
+        // check connectivity after being awaycontinue
         _connectivity
             .checkConnectivity()
             .then((value) => _updateConnectionStatus(value));
@@ -251,6 +255,14 @@ class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
     }
   }
 
+  void _onIndexUpdated(IndexView view) {
+    if (mounted) {
+      setState(() {
+        _indexView = view;
+      });
+    }
+  }
+
   void _onHomeUpdated(HomeView view) {
     if (mounted) {
       setState(() {
@@ -276,19 +288,9 @@ class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
     }
   }
 
-  void _onPlaybackState(PlaybackState playbackState) {
-    if (mounted) {
-      setState(() {
-        _playbackState = playbackState;
-        if (playbackState.playing == false) {
-          MediaQueue.savePosition(playbackState.position);
-        }
-      });
-    }
-  }
-
+  // This will auto-pause playback for remote media when streaming is disabled.
   void _onMediaItem(MediaItem? mediaItem) {
-    if (_playbackState != null && _playbackState!.playing) {
+    if (_playbackState?.playing == true) {
       final streaming = mediaItem?.isRemote() ?? false;
       if (streaming && allowStreaming(connectivityStream.value) == false) {
         print('mediaItem pause due to loss of wifi');
@@ -298,13 +300,18 @@ class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
   }
 
   void _load() async {
-    audioHandler.playbackState.distinct().listen((state) => _onPlaybackState(state));
-    audioHandler.mediaItem.distinct().listen((mediaItem) => _onMediaItem(mediaItem));
+    audioHandler.mediaItem
+        .distinct()
+        .listen((mediaItem) => _onMediaItem(mediaItem));
 
     await TrackCache.init();
+    await OffsetCache.init();
     await Downloads.check().whenComplete(() => Downloads.load());
     try {
       final client = Client();
+      client.index().then((view) {
+        _onIndexUpdated(view);
+      });
       client.home().then((view) {
         _onHomeUpdated(view);
       });
@@ -314,6 +321,7 @@ class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
       client.radio().then((view) {
         _onRadioUpdated(view);
       });
+      await Progress.sync();
       await MediaQueue.sync();
       if (audioHandler.playbackState.hasValue == false ||
           (audioHandler.playbackState.hasValue &&
@@ -332,9 +340,9 @@ class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
   Widget _item(int index) {
     switch (index) {
       case 0:
-        return _homeView == null
+        return _homeView == null && _indexView == null
             ? Center(child: CircularProgressIndicator())
-            : HomeWidget(_homeView!);
+            : HomeWidget(_indexView!, _homeView!); // FIXME _indexView was null?!
       case 1:
         return _artistsView == null
             ? Center(child: CircularProgressIndicator())

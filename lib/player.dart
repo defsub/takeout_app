@@ -30,6 +30,7 @@ import 'global.dart';
 import 'menu.dart';
 import 'player_handler.dart';
 import 'style.dart';
+import 'util.dart';
 
 class _PlayState {
   final QueueState queueState;
@@ -269,8 +270,7 @@ class _MediaTrackListWidget extends StatelessWidget {
                 onLongPress: () {
                   showArtist(t.artist ?? '');
                 },
-                subtitle: Text(
-                    '${t.artist ?? 'no artist'} \u2022 ${t.album ?? 'no album'}'),
+                subtitle: Text(merge([t.artist ?? '', t.album ?? ''])),
                 title: Text(t.title)))
           ]));
         });

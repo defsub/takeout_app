@@ -27,6 +27,7 @@ import 'package:rxdart/rxdart.dart';
 import 'package:takeout_app/model.dart';
 
 import 'playlist.dart';
+import 'progress.dart';
 
 extension TakeoutMediaItem on MediaItem {
   bool isLocalFile() {
@@ -52,6 +53,19 @@ extension TakeoutMediaItem on MediaItem {
   bool _isMediaType(MediaType type) {
     return (extras?[ExtraMediaType] ?? '') == type.name;
   }
+
+  // EndZone is considered the "end" at which progress is complete.
+  // Currently this is the last 5% of the media.
+  Duration? get endZone {
+    final end = duration;
+    return end == null ? null : end * 0.95;
+  }
+
+  bool trackProgress() {
+    return isPodcast();
+  }
+
+  String get etag => extras?[ExtraETag] ?? '';
 }
 
 class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
@@ -110,13 +124,31 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
     });
 
     // Propagate all events from the audio player to AudioService clients.
-    _player.playbackEventStream.listen(_broadcastState);
+    _player.playbackEventStream.listen((state) {
+      _broadcastState(state);
+    });
 
     // Special processing for state transitions.
     _player.processingStateStream.listen((state) {
       if (state == ProcessingState.completed) {
         currentState?.update(0, 0);
         stop();
+      }
+    });
+
+    _player.playerStateStream.listen((state) {
+      if (state.playing == false) {
+        _savePosition();
+      }
+    });
+
+    _player.positionStream.listen((pos) {
+      final item = mediaItem.value;
+      if (item != null) {
+        final endZone = item.endZone;
+        if (endZone != null && pos > endZone) {
+          Progress.remove(item.etag);
+        }
       }
     });
   }
@@ -157,25 +189,23 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
                     item.isLocalFile() ? null : item.extras?[ExtraHeaders]))
             .toList());
     _playlist = source;
-    final pos = Duration(seconds: newState.position.toInt());
+    final pos = await _fetchSavedPosition(newState.current);
     print('player index ${newState.index} pos $pos');
     await _player.setAudioSource(source,
-        preload: false,
-        initialPosition: pos,
-        initialIndex: newState.index);
+        preload: false, initialPosition: pos, initialIndex: newState.index);
     if (wasPlaying) {
       _player.play();
     }
   }
 
   void _mediaIndexChanged(int index) {
-    print('update index changed $index');
     final state = currentState;
     if (state != null) {
       final item = state.item(index);
       if (item != null) {
-        state.update(index, _player.position.inSeconds.toDouble());
         mediaItem.add(item);
+        _restorePosition();
+        state.update(index, _player.position.inSeconds.toDouble());
       }
     }
   }
@@ -184,7 +214,6 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
   Future<void> addQueueItem(MediaItem item) {
     // TODO is this used?
     //return _loadPlaylist(Client.getDefaultPlaylistUrl());
-    print('XXX add queue item $item');
     return Future.value();
   }
 
@@ -279,7 +308,7 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
   Future<void> pause() => _player.pause();
 
   @override
-  Future<void> seek(Duration position) => _player.seek(position);
+  Future<void> seek(Duration position) => _player.seek(position); // TODO _savePosition?
 
   @override
   Future<void> fastForward() => _player.seek(
@@ -318,15 +347,13 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
     if (isPodcast) {
       controls = [
         MediaControl.rewind,
-        if (playing) MediaControl.pause else
-          MediaControl.play,
+        if (playing) MediaControl.pause else MediaControl.play,
         MediaControl.fastForward,
       ];
       compactControls = const [0, 1, 2];
     } else if (isStream) {
       controls = [
-        if (playing) MediaControl.pause else
-          MediaControl.play,
+        if (playing) MediaControl.pause else MediaControl.play,
       ];
       compactControls = const [0];
     } else {
@@ -362,5 +389,33 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
       speed: _player.speed,
       queueIndex: event.currentIndex,
     ));
+  }
+
+  Future<Duration> _fetchSavedPosition(MediaItem item) async {
+    return item.trackProgress()
+        ? Progress.position(item.etag)
+        : Future.value(Duration.zero);
+  }
+
+  void _restorePosition() {
+    final item = mediaItem.value;
+    if (item != null && item.trackProgress()) {
+      Progress.position(item.etag).then((pos) {
+        seek(pos);
+      });
+    }
+  }
+
+  void _savePosition() {
+    final pos = _player.position;
+
+    // save the spiff state
+    MediaQueue.savePosition(pos);
+
+    // save progress
+    final item = mediaItem.value;
+    if (item != null && item.trackProgress()) {
+      Progress.update(item.etag, pos, _player.duration ?? Duration.zero);
+    }
   }
 }

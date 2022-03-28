@@ -16,7 +16,6 @@
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:takeout_app/release.dart';
 
@@ -44,12 +43,12 @@ class _SearchState extends State<SearchWidget> {
     }
   }
 
-  void _onDownload() {
+  void _onDownload(BuildContext context) {
     final List<Track>? tracks = _view!.tracks;
     if (tracks != null && tracks.length > 0) {
       final spiff = MediaQueue.fromTracks(tracks,
           creator: 'Search', title: _searchText.text);
-      Downloads.downloadSpiff(spiff);
+      Downloads.downloadSpiff(context, spiff);
     }
   }
 
@@ -109,7 +108,7 @@ class _SearchState extends State<SearchWidget> {
                           label:
                               Text(AppLocalizations.of(context)!.downloadLabel),
                           icon: Icon(Icons.radio),
-                          onPressed: () => _onDownload()),
+                          onPressed: () => _onDownload(context)),
                     ],
                   ),
                   TrackListWidget(view.tracks!),

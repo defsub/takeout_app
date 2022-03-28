@@ -253,7 +253,7 @@ class DownloadState extends State<DownloadWidget> with SpiffWidgetBuilder {
   }
 
   Widget bottomRight(BuildContext context, bool isCached) {
-    return isCached ? deleteButton(context) : downloadButton(isCached);
+    return isCached ? deleteButton(context) : downloadButton(context, isCached);
   }
 
   Widget deleteButton(BuildContext context) {
@@ -262,8 +262,11 @@ class DownloadState extends State<DownloadWidget> with SpiffWidgetBuilder {
   }
 
   Widget subtitle(BuildContext context) {
-    final text =
-        '${spiff!.playlist.creator} \u2022 ${playlistDate(spiff!)} \u2022 ${storage(spiff!.size)}';
+    final text = merge([
+      spiff!.playlist.creator ?? '',
+      playlistDate(spiff!),
+      storage(spiff!.size)
+    ]);
     return Text(text,
         style: Theme.of(context)
             .textTheme
@@ -271,18 +274,20 @@ class DownloadState extends State<DownloadWidget> with SpiffWidgetBuilder {
             .copyWith(color: Colors.white60));
   }
 
-  Widget downloadButton(bool isCached) {
+  Widget downloadButton(BuildContext context, bool isCached) {
     if (isCached) {
       return IconButton(
-          icon: Icon(IconsDownload), onPressed: () => _onDownloadCheck());
+          icon: Icon(IconsDownload),
+          onPressed: () => _onDownloadCheck(context));
     }
-    return allowDownloadIconButton(Icon(IconsDownload), _onDownloadCheck);
+    return allowDownloadIconButton(
+        Icon(IconsDownload), () => _onDownloadCheck(context));
   }
 
-  void _onDownloadCheck() {
+  void _onDownloadCheck(BuildContext context) {
     // TODO this assumes that fetch-able will always download a new spiff
     if (fetch != null) {
-      Downloads.downloadSpiff(spiff!);
+      Downloads.downloadSpiff(context, spiff!);
     } else {
       Downloads.downloadSpiffTracks(spiff!);
     }
@@ -430,28 +435,30 @@ class Downloads {
         TakeoutState.allowDownload(TakeoutState.connectivityStream.value));
   }
 
-  static Future<bool> downloadRelease(Release release) async {
+  static Future<bool> _downloadSpiff(
+      BuildContext context, String name, Future<Spiff> Function() fetchSpiff,
+      {bool includeTracks = true}) {
+    final L = AppLocalizations.of(context)!;
     final client = _downloadClient();
-    showSnackBar('Downloading ${release.name}');
-    return _download(client,
-            () => client.releasePlaylist(release.id, ttl: Duration.zero))
-        .whenComplete(() => showSnackBar('Finished ${release.name}'));
+    showSnackBar(L.downloadingLabel(name));
+    return _download(client, fetchSpiff, includeTracks: includeTracks)
+        .then((success) {
+      showSnackBar(
+          success ? L.downloadFinishedLabel(name) : L.downloadErrorLabel(name));
+      return success;
+    });
   }
 
-  static Future<bool> downloadArtist(Artist artist) async {
-    final client = _downloadClient();
-    showSnackBar('Downloading ${artist.name}');
-    return _download(
-            client, () => client.artistPlaylist(artist.id, ttl: Duration.zero))
-        .whenComplete(() => showSnackBar('Finished ${artist.name}'));
+  static Future<bool> downloadRelease(
+      BuildContext context, Release release) async {
+    return _downloadSpiff(context, release.name,
+        () => Client().releasePlaylist(release.id, ttl: Duration.zero));
   }
 
-  static Future<bool> downloadStation(Station station) async {
-    final client = _downloadClient();
-    showSnackBar('Downloading ${station.name}');
-    return _download(
-            client, () => client.station(station.id, ttl: Duration.zero))
-        .whenComplete(() => showSnackBar('Finished ${station.name}'));
+  static Future<bool> downloadStation(
+      BuildContext context, Station station) async {
+    return _downloadSpiff(context, station.name,
+        () => Client().station(station.id, ttl: Duration.zero));
   }
 
   static Future<SpiffDownloadEntry> refreshSpiff(
@@ -462,29 +469,22 @@ class Downloads {
     return Future.value(entry.copyWith(spiff: spiff));
   }
 
-  static Future<bool> downloadSpiff(Spiff spiff,
+  static Future<bool> downloadSpiff(BuildContext context, Spiff spiff,
       {bool includeTracks = true}) async {
-    final client = _downloadClient();
-    showSnackBar('Downloading ${spiff.playlist.title}');
-    return _download(client, () => Future.value(spiff),
-            includeTracks: includeTracks)
-        .whenComplete(() => showSnackBar('Finished ${spiff.playlist.title}'));
+    return _downloadSpiff(
+        context, spiff.playlist.title, () => Future.value(spiff),
+        includeTracks: includeTracks);
   }
 
-  static Future<bool> downloadMovie(Movie movie) async {
-    final client = _downloadClient();
-    showSnackBar('Downloading ${movie.title}');
-    return _download(
-            client, () => client.moviePlaylist(movie.id, ttl: Duration.zero))
-        .whenComplete(() => showSnackBar('Finished ${movie.title}'));
+  static Future<bool> downloadMovie(BuildContext context, Movie movie) async {
+    return _downloadSpiff(context, movie.title,
+        () => Client().moviePlaylist(movie.id, ttl: Duration.zero));
   }
 
-  static Future<bool> downloadSeries(Series series) async {
-    final client = _downloadClient();
-    showSnackBar('Series ${series.title}');
-    return _download(
-            client, () => client.seriesPlaylist(series.id, ttl: Duration.zero))
-        .whenComplete(() => showSnackBar('Finished ${series.title}'));
+  static Future<bool> downloadSeries(
+      BuildContext context, Series series) async {
+    return _downloadSpiff(context, series.title,
+        () => Client().seriesPlaylist(series.id, ttl: Duration.zero));
   }
 
   static Future downloadSeriesEpisode(Series series, Episode episode) async {
@@ -555,11 +555,17 @@ class Downloads {
     return Future.forEach<Entry>(spiff.playlist.tracks, (e) async {
       final result = await cache.get(e);
       if (result is File) {
-        print('checking $result');
-        if (result.statSync().size != e.size) {
-          print('deleting $result; incorrect size');
-          result.deleteSync();
-          cache.remove(e);
+        // print('checking $result');
+        final fileSize = result.statSync().size;
+        if (fileSize != e.size) {
+          if (spiff.isPodcast() && fileSize > e.size) {
+            // Allow podcasts download to be larger - TWiT sizes can be off
+            print('episode size is larger than expected; keeping');
+          } else {
+            print('deleting $result; incorrect size');
+            result.deleteSync();
+            cache.remove(e);
+          }
         }
       }
     });
@@ -617,7 +623,7 @@ class SpiffDownloadEntry extends DownloadEntry with MediaAlbum {
 
   String _footer() {
     final creator = _subtitle();
-    return '$creator \u2022 ${storage(size)}';
+    return merge([creator, storage(size).toString()]);
   }
 
   String _subtitle() {

@@ -62,7 +62,7 @@ class RadioState extends State<RadioWidget> {
           bool haveDownloads = entries.isNotEmpty;
           haveDownloads = false;
           return DefaultTabController(
-              length: haveDownloads ? 5 : 4,
+              length: haveDownloads ? 5 : 4, // TODO FIXME
               child: RefreshIndicator(
                   onRefresh: () => _onRefresh(),
                   child: Scaffold(
@@ -122,9 +122,11 @@ class RadioState extends State<RadioWidget> {
               stream: TakeoutState.connectivityStream.distinct(),
               builder: (context, snapshot) {
                 final result = snapshot.data;
-                final isStream = stations[index].type == "stream"; // enum for station types
+                final isStream =
+                    stations[index].type == "stream"; // enum for station types
                 return ListTile(
-                    enabled: isStream ? TakeoutState.allowStreaming(result) : true,
+                    enabled:
+                        isStream ? TakeoutState.allowStreaming(result) : true,
                     onTap: () => isStream
                         ? _onStream(stations[index])
                         : _onStation(stations[index]),
@@ -135,7 +137,7 @@ class RadioState extends State<RadioWidget> {
                         : IconButton(
                             icon: Icon(IconsDownload),
                             onPressed: TakeoutState.allowDownload(result)
-                                ? () => _onDownload(stations[index])
+                                ? () => _onDownload(context, stations[index])
                                 : null));
               });
         });
@@ -157,8 +159,8 @@ class RadioState extends State<RadioWidget> {
                 () => Client().station(station.id, ttl: Duration.zero))));
   }
 
-  void _onDownload(Station station) {
-    Downloads.downloadStation(station);
+  void _onDownload(BuildContext context, Station station) {
+    Downloads.downloadStation(context, station);
   }
 
   Future<void> _onRefresh() async {
@@ -217,13 +219,14 @@ class _RefreshSpiffState extends State<RefreshSpiffWidget> {
                   return (_spiff == null)
                       ? Center(child: CircularProgressIndicator())
                       : SingleChildScrollView(
-                          child: StreamBuilder<Set<String>>(
-                              stream: TrackCache.keysSubject,
+                          child: StreamBuilder<CacheSnapshot>(
+                              stream: MediaCache.stream(),
                               builder: (context, snapshot) {
-                                final keys = snapshot.data ?? Set<String>();
+                                final cacheSnapshot =
+                                    snapshot.data ?? CacheSnapshot.empty();
                                 final isCached = _spiff != null
-                                    ? TrackCache.checkAll(
-                                        keys, _spiff!.playlist.tracks)
+                                    ? cacheSnapshot
+                                        .containsAll(_spiff!.playlist.tracks)
                                     : false;
                                 return Column(children: [
                                   Row(
@@ -249,7 +252,7 @@ class _RefreshSpiffState extends State<RefreshSpiffWidget> {
                                           icon: Icon(IconsDownload),
                                           onPressed:
                                               TakeoutState.allowDownload(result)
-                                                  ? () => _onDownload()
+                                                  ? () => _onDownload(context)
                                                   : null),
                                     ],
                                   ),
@@ -265,8 +268,8 @@ class _RefreshSpiffState extends State<RefreshSpiffWidget> {
     showPlayer();
   }
 
-  void _onDownload() {
-    Downloads.downloadSpiff(_spiff!);
+  void _onDownload(BuildContext context) {
+    Downloads.downloadSpiff(context, _spiff!);
   }
 
   Future<void> _onRefresh() async {

@@ -118,7 +118,7 @@ String _subtitle(Artist artist) {
   }
 
   // have both
-  return '$genre \u2022 $y';
+  return merge([genre, y]);
 }
 
 class ArtistListWidget extends StatelessWidget {
@@ -345,8 +345,12 @@ class TrackListWidget extends StatelessWidget {
       ..._tracks.asMap().keys.toList().map((index) => ListTile(
           onTap: () => _onPlay(index),
           leading: tileCover(_tracks[index].image),
-          subtitle: Text(
-              '${_tracks[index].creator} \u2022 ${_tracks[index].album} \u2022 ${_tracks[index].year}'),
+          trailing: Icon(Icons.play_arrow),
+          subtitle: Text(merge([
+            _tracks[index].creator,
+            _tracks[index].album,
+            _tracks[index].year.toString()
+          ])),
           title: Text(_tracks[index].title)))
     ]);
   }
@@ -441,9 +445,9 @@ class _ArtistTrackListState extends State<ArtistTrackListWidget>
     result.then((spiff) => MediaQueue.playSpiff(spiff));
   }
 
-  void _onDownload() async {
+  void _onDownload(BuildContext context) async {
     Future<Spiff> result = _playlist();
-    result.then((spiff) => Downloads.downloadSpiff(spiff));
+    result.then((spiff) => Downloads.downloadSpiff(context, spiff));
   }
 
   void _onTrack(int index) {
@@ -474,7 +478,7 @@ class _ArtistTrackListState extends State<ArtistTrackListWidget>
 
   Widget rightButton() {
     return IconButton(
-        icon: Icon(IconsDownload), onPressed: _onDownload);
+        icon: Icon(IconsDownload), onPressed: () => _onDownload(context));
   }
 
   List<Widget> slivers() {
@@ -494,7 +498,7 @@ class _ArtistTrackListState extends State<ArtistTrackListWidget>
       list.add(ListTile(
           onTap: () => _onTrack(index),
           leading: tileCover(t.image),
-          subtitle: Text('${t.release} \u2022 ${t.date}'),
+          subtitle: Text(merge([t.release, t.date])),
           title: Text(t.title)));
       index++;
     }
@@ -570,8 +574,9 @@ mixin ArtistBuilder {
           // artist images are 1000x1000
           // artist banners are 1000x185
           final screen = MediaQuery.of(context).size;
-          final expandedHeight =
-              useBackground ? 1080.0 / 1920.0 * screen.width : screen.height / 2;
+          final expandedHeight = useBackground
+              ? 1080.0 / 1920.0 * screen.width
+              : screen.height / 2;
 
           return FutureBuilder<Color?>(
               future: allowArtwork && artistArtworkUrl != null

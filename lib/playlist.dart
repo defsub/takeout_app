@@ -30,6 +30,7 @@ import 'model.dart';
 
 const ExtraHeaders = 'headers';
 const ExtraMediaType = 'mediaType';
+const ExtraETag = 'etag';
 
 class PlaylistException implements Exception {
   const PlaylistException();
@@ -122,12 +123,11 @@ class MediaQueue {
     return playSpiff(fromTracks(tracks), index: index);
   }
 
-  static Future playSpiff(Spiff spiff, {int index = 0, double position = 0}) async {
-    // unless provided, this will restart at index 0 position 0
-    print('playSpiff $spiff $index $position');
-    spiff = spiff.copyWith(
-        index: index >= 0 && index < spiff.length ? index : 0,
-        position: position);
+  static Future playSpiff(Spiff spiff, {int index = 0}) async {
+    // unless provided, this will restart at index 0
+    print('playSpiff $spiff $index');
+    spiff =
+        spiff.copyWith(index: index >= 0 && index < spiff.length ? index : 0);
     final uri = Uri.parse(spiff.playlist.location ?? 'location-missing');
     await setCurrentPlaylist(uri);
     await SpiffCache.put(spiff);
@@ -146,7 +146,8 @@ class MediaQueue {
   }
 
   /// Play remote reference to release, track, station, etc.
-  static Future _playRef(Reference ref, {int index = 0}) async {
+  static Future _playRef(Reference ref,
+      {int index = 0, double position = 0.0}) async {
     await setCurrentPlaylist(null);
     final uri = Client.defaultPlaylistUri();
 
@@ -157,7 +158,6 @@ class MediaQueue {
     // get playlist from server, resolving refs
 
     // ref patch with position
-    final position = 0.0;
     final patch = patchReplace(ref.reference, ref.type.name) +
         patchPosition(index, position);
     client.patch(patch).then((result) async {
@@ -258,12 +258,8 @@ class MediaQueue {
 
   /// Fetch and cache the current playlist from the server.
   static Future<Spiff> sync() async {
-    final uri = Client.defaultPlaylistUri();
     final completer = Completer<Spiff>();
     _fetch().then((spiff) {
-      // spiff = spiff.copyWith(
-      //     playlist:
-      //         spiff.playlist.copyWith(location: uri.toString())); // TODO fixme
       SpiffCache.put(spiff).then((_) => completer.complete(spiff));
     }).catchError((e) {
       completer.completeError(e);
@@ -342,13 +338,17 @@ class MediaQueue {
       title: entry.title,
       artist: entry.creator,
       artUri: Uri.parse(entry.image),
-      extras: {ExtraHeaders: headers, ExtraMediaType: mediaType.name},
+      extras: {
+        ExtraHeaders: headers,
+        ExtraMediaType: mediaType.name,
+        ExtraETag: entry.key
+      },
     );
   }
 
   static Future<List<MediaItem>> _createQueue(
       Client client, Spiff spiff) async {
-    final List<MediaItem> items = [];
+    final items = <MediaItem>[];
     // streams shouldn't send the cookie header
     final headers =
         spiff.isStream() ? <String, String>{} : await client.headers();

@@ -26,6 +26,25 @@ import 'util.dart';
 part 'schema.g.dart';
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
+class IndexView {
+  final int time;
+  final bool hasMusic;
+  final bool hasMovies;
+  final bool hasPodcasts;
+
+  IndexView(
+      {required this.time,
+      required this.hasMusic,
+      required this.hasMovies,
+      required this.hasPodcasts});
+
+  factory IndexView.fromJson(Map<String, dynamic> json) =>
+      _$IndexViewFromJson(json);
+
+  Map<String, dynamic> toJson() => _$IndexViewToJson(this);
+}
+
+@JsonSerializable(fieldRename: FieldRename.pascal)
 class HomeView {
   @JsonKey(name: "AddedReleases")
   final List<Release> added;
@@ -824,10 +843,8 @@ class Series with MediaAlbum {
   @override
   String get album => title;
 
-  @override
   int get disc => 1;
 
-  @override
   int get number => 0;
 }
 
@@ -938,4 +955,74 @@ class EpisodeView {
       _$EpisodeViewFromJson(json);
 
   Map<String, dynamic> toJson() => _$EpisodeViewToJson(this);
+}
+
+@JsonSerializable(fieldRename: FieldRename.pascal)
+class Offset {
+  @JsonKey(name: "ID")
+  final int? id;
+  @JsonKey(name: "ETag")
+  final String etag;
+  final int duration;
+  final int offset;
+  final String date;
+
+  Offset(
+      {this.id,
+      required this.etag,
+      required this.duration,
+      required this.offset,
+      required this.date});
+
+  Offset copyWith({int? offset, int? duration, String? date}) => Offset(
+      id: this.id,
+      etag: this.etag,
+      duration: duration ?? this.duration,
+      offset: offset ?? this.offset,
+      date: date ?? this.date);
+
+  DateTime get dateTime => DateTime.parse(date);
+
+  bool newerThan(Offset o) {
+    return dateTime.isAfter(o.dateTime);
+  }
+
+  bool hasDuration() {
+    return duration > 0;
+  }
+
+  Duration position() {
+    return Duration(seconds: offset);
+  }
+
+  factory Offset.now(
+      {required String etag, required Duration offset, Duration? duration}) {
+    final date = _offsetDate();
+    return Offset(
+        etag: etag,
+        offset: offset.inSeconds,
+        duration: duration?.inSeconds ?? 0,
+        date: date);
+  }
+
+  static String _offsetDate() {
+    // server expects 2006-01-02T15:04:05Z07:00
+    return DateTime.now().toUtc().toIso8601String();
+  }
+
+  factory Offset.fromJson(Map<String, dynamic> json) => _$OffsetFromJson(json);
+
+  Map<String, dynamic> toJson() => _$OffsetToJson(this);
+}
+
+@JsonSerializable(fieldRename: FieldRename.pascal)
+class ProgressView {
+  final List<Offset> offsets;
+
+  ProgressView({required this.offsets});
+
+  factory ProgressView.fromJson(Map<String, dynamic> json) =>
+      _$ProgressViewFromJson(json);
+
+  Map<String, dynamic> toJson() => _$ProgressViewToJson(this);
 }

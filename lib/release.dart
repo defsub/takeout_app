@@ -16,7 +16,6 @@
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:takeout_app/global.dart';
 import 'package:takeout_app/menu.dart';
@@ -81,8 +80,8 @@ class _ReleaseState extends State<ReleaseWidget> {
     showPlayer();
   }
 
-  void _onDownload() {
-    Downloads.downloadRelease(release);
+  void _onDownload(BuildContext context) {
+    Downloads.downloadRelease(context, release);
   }
 
   Future<void> _onRefresh() async {
@@ -105,16 +104,17 @@ class _ReleaseState extends State<ReleaseWidget> {
               backgroundColor: backgroundColor,
               body: RefreshIndicator(
                   onRefresh: () => _onRefresh(),
-                  child: StreamBuilder<Set<String>>(
-                      stream: TrackCache.keysSubject,
+                  child: StreamBuilder<CacheSnapshot>(
+                      stream: MediaCache.stream(),
                       builder: (context, snapshot) {
                         // cover images are 250x250 (or 500x500)
                         // distort a bit to only take half the screen
                         final screen = MediaQuery.of(context).size;
                         final expandedHeight = screen.height / 2;
-                        final keys = snapshot.data ?? Set<String>();
+                        final cacheSnapshot =
+                            snapshot.data ?? CacheSnapshot.empty();
                         final isCached = _view != null
-                            ? TrackCache.checkAll(keys, _view!.tracks)
+                            ? cacheSnapshot.containsAll(_view!.tracks)
                             : false;
                         return CustomScrollView(slivers: [
                           SliverAppBar(
@@ -126,7 +126,7 @@ class _ReleaseState extends State<ReleaseWidget> {
                               popupMenu(context, [
                                 PopupItem.play(context, (_) => _onPlay()),
                                 PopupItem.download(
-                                    context, (_) => _onDownload()),
+                                    context, (_) => _onDownload(context)),
                                 PopupItem.divider(),
                                 PopupItem.link(context, 'MusicBrainz Release',
                                     (_) => launch(releaseUrl)),
@@ -201,7 +201,7 @@ class _ReleaseState extends State<ReleaseWidget> {
   Widget _artist() {
     var artist = release.artist;
     if (isNotNullOrEmpty(release.date)) {
-      artist = '$artist \u2022 ${year(release.date ?? '')}';
+      artist = merge([artist, year(release.date ?? '')]);
     }
     return Text(artist,
         style: Theme.of(context)
@@ -223,7 +223,7 @@ class _ReleaseState extends State<ReleaseWidget> {
       return IconButton(icon: Icon(IconsDownloadDone), onPressed: () => {});
     }
     return allowDownloadIconButton(
-        Icon(IconsDownload), _onDownload);
+        Icon(IconsDownload), () => _onDownload(context));
   }
 }
 
@@ -238,10 +238,10 @@ class _ReleaseTracksWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<Set<String>>(
-        stream: TrackCache.keysSubject,
+    return StreamBuilder<CacheSnapshot>(
+        stream: MediaCache.stream(),
         builder: (context, snapshot) {
-          final keys = snapshot.data ?? Set<String>();
+          final cacheSnapshot = snapshot.data ?? CacheSnapshot.empty();
           int discs = _view.discs;
           int d = 0;
           List<Widget> children = [];
@@ -255,36 +255,34 @@ class _ReleaseTracksWidget extends StatelessWidget {
                   AppLocalizations.of(context)!.discLabel(e.discNum, discs)));
               d = e.discNum;
             }
-            var subtitle;
             final subartist = _view.artist.name != _view.tracks[i].artist
                 ? _view.tracks[i].artist
-                : null;
-            final subrelease =
-                _view.release.name != _view.tracks[i].releaseTitle
-                    ? _view.tracks[i].releaseTitle
-                    : null;
-            if (subartist != null && subrelease != null) {
-              subtitle = '$subartist \u2022 $subrelease';
-            } else if (subartist != null) {
-              subtitle = subartist;
-            } else if (subrelease != null) {
-              subtitle = subrelease;
-            } else {
-              subtitle = _view.tracks[i].releaseTitle;
-            }
+                : '';
+            final subrelease = _view.tracks[i].releaseTitle;
+            final subtitle = merge([subartist, subrelease]);
+
             children.add(ListTile(
                 onTap: () => _onTap(i),
                 leading: Container(
                     padding: EdgeInsets.fromLTRB(12, 12, 0, 0),
                     child: Text('${e.trackNum}',
                         style: TextStyle(fontWeight: FontWeight.w200))),
-                trailing: Icon(
-                    keys.contains(e.key) ? IconsCached : null),
-                subtitle: subtitle != null ? Text(subtitle) : null,
+                trailing: _trailing(context, cacheSnapshot, e),
+                subtitle: subtitle.isNotEmpty ? Text(subtitle) : null,
                 title: Text(e.title)));
           }
           return Column(children: children);
         });
+  }
+
+  Widget _trailing(BuildContext context, CacheSnapshot snapshot, Track t) {
+    final downloading = snapshot.downloadSnapshot(t);
+    if (downloading != null) {
+      return CircularProgressIndicator(value: downloading.value);
+    }
+    return Icon(snapshot.contains(t)
+            ? IconsCached
+            : null);
   }
 }
 
@@ -325,8 +323,8 @@ class AlbumGridWidget extends StatelessWidget {
     Navigator.push(context, MaterialPageRoute(builder: (context) {
       if (album is Release) {
         return ReleaseWidget(album);
-      // } else if (album is SpiffDownloadEntry) {
-      //   TODO is this used?
+        // } else if (album is SpiffDownloadEntry) {
+        //   TODO is this used?
         // return DownloadWidget(spiff: album.spiff);
       }
       return Text('');

@@ -82,12 +82,13 @@ class _SeriesWidgetState extends State<SeriesWidget> {
                   onRefresh: () => _onRefresh(),
                   child: _view == null
                       ? Center(child: CircularProgressIndicator())
-                      : StreamBuilder<Set<String>>(
-                          stream: TrackCache.keysSubject,
+                      : StreamBuilder<CacheSnapshot>(
+                          stream: MediaCache.stream(),
                           builder: (context, snapshot) {
-                            final keys = snapshot.data ?? Set<String>();
+                            final cacheSnapshot =
+                                snapshot.data ?? CacheSnapshot.empty();
                             final isCached =
-                                TrackCache.checkAll(keys, _view!.episodes);
+                                cacheSnapshot.containsAll(_view!.episodes);
                             return CustomScrollView(slivers: [
                               SliverAppBar(
                                 // actions: [ ],
@@ -119,7 +120,8 @@ class _SeriesWidgetState extends State<SeriesWidget> {
                                           child: _playButton(isCached)),
                                       Align(
                                           alignment: Alignment.bottomRight,
-                                          child: _downloadButton(isCached)),
+                                          child: _downloadButton(
+                                              context, isCached)),
                                     ])),
                               ),
                               SliverToBoxAdapter(
@@ -151,11 +153,12 @@ class _SeriesWidgetState extends State<SeriesWidget> {
     return allowStreamingIconButton(Icon(Icons.play_arrow, size: 32), _onPlay);
   }
 
-  Widget _downloadButton(bool isCached) {
+  Widget _downloadButton(BuildContext context, bool isCached) {
     if (isCached) {
       return IconButton(icon: Icon(IconsDownloadDone), onPressed: () => {});
     }
-    return allowDownloadIconButton(Icon(IconsDownload), _onDownload);
+    return allowDownloadIconButton(
+        Icon(IconsDownload), () => _onDownload(context));
   }
 
   void _onPlay() {
@@ -163,8 +166,8 @@ class _SeriesWidgetState extends State<SeriesWidget> {
     showPlayer();
   }
 
-  void _onDownload() {
-    Downloads.downloadSeries(_series);
+  void _onDownload(BuildContext context) {
+    Downloads.downloadSeries(context, _series);
   }
 }
 
@@ -180,25 +183,49 @@ class _EpisodeListWidget extends StatelessWidget {
       e.album = _view.series.title;
     });
 
-    return StreamBuilder<Set<String>>(
-        stream: TrackCache.keysSubject,
+    return StreamBuilder<CacheSnapshot>(
+        stream: MediaCache.stream(),
         builder: (context, snapshot) {
-          final keys = snapshot.data ?? Set<String>();
+          final cacheSnapshot = snapshot.data ?? CacheSnapshot.empty();
           final episodes = _view.episodes;
           return Column(children: [
             ...episodes.asMap().keys.toList().map((index) => ListTile(
-                trailing: IconButton(
-                    icon: Icon(keys.contains(episodes[index].key)
-                        ? IconsCached
-                        : IconsDownload),
-                    onPressed: () => _onCache(context,
-                        keys.contains(episodes[index].key), episodes[index])),
-                onTap: () => _onEpisode(context, episodes[index], index),
+                trailing: _trailing(context, cacheSnapshot, episodes[index]),
+                onTap: () => _onPlay(context, episodes[index], index),
                 title: Text(episodes[index].title),
-                subtitle: Text(
-                    '${episodes[index].author} \u2022 ${relativeDate(episodes[index].date)}')))
+                subtitle: _subtitle(context, cacheSnapshot, episodes[index])))
           ]);
         });
+  }
+
+  Widget _trailing(
+      BuildContext context, CacheSnapshot snapshot, Episode episode) {
+    final downloading = snapshot.downloadSnapshot(episode);
+    if (downloading != null) {
+      final value = downloading.value;
+      return value > 1.0
+          ? CircularProgressIndicator()
+          : CircularProgressIndicator(value: value);
+    }
+    return IconButton(
+        icon: Icon(snapshot.contains(episode) ? IconsCached : IconsDownload),
+        onPressed: () =>
+            _onCache(context, snapshot.contains(episode), episode));
+  }
+
+  Widget _subtitle(
+      BuildContext context, CacheSnapshot snapshot, Episode episode) {
+    final children = <Widget>[];
+    final duration = snapshot.remaining(episode);
+    if (duration != null) {
+      final value = snapshot.value(episode);
+      if (value != null) {
+        children.add(LinearProgressIndicator(value: value));
+      }
+    }
+    children.add(Text(merge([episode.author, relativeDate(episode.date)])));
+    return Column(
+        children: children, crossAxisAlignment: CrossAxisAlignment.start);
   }
 
   void _onCache(BuildContext context, bool isCached, Episode episode) {
@@ -209,7 +236,7 @@ class _EpisodeListWidget extends StatelessWidget {
     }
   }
 
-  void _onEpisode(BuildContext context, Episode episode, int index) {
+  void _onPlay(BuildContext context, Episode episode, int index) {
     print('index is $index');
     MediaQueue.play(series: _view.series, index: index);
     showPlayer();
