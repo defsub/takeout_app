@@ -31,6 +31,7 @@ import 'playlist.dart';
 import 'video.dart';
 import 'global.dart';
 import 'spiff.dart';
+import 'progress.dart';
 
 Random _random = Random();
 
@@ -217,11 +218,12 @@ mixin SpiffWidgetBuilder {
   //   showArtist(spiff!.playlist.creator!);
   // }
 
-  void onPlay(BuildContext context) {
+  void onPlay(BuildContext context) async {
     print('_onPlay $spiff');
     if (spiff!.isVideo()) {
-      var entry = spiff!.playlist.tracks.first;
-      showMovie(context, entry);
+      final entry = spiff!.playlist.tracks.first;
+      final pos = await Progress.position(entry.key);
+      showMovie(context, entry, startOffset: pos);
     } else {
       MediaQueue.playSpiff(spiff!);
       showPlayer();

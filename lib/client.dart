@@ -167,6 +167,10 @@ class Client {
     _publish();
   }
 
+  static bool _downloadInProgress(Locatable l) {
+    return _downloadSnapshots.containsKey(l.key);
+  }
+
   static void _downloadSnapshotRemove(Locatable l) {
     _downloadSnapshots.remove(l.key);
   }
@@ -604,6 +608,11 @@ class Client {
 
   /// Download locatable to a file with optional retries.
   Future download(Locatable d, {int retries = 0}) async {
+    if (_downloadInProgress(d)) {
+      print('download ${d.location} already in progress');
+      // don't allow duplicate downloads
+      return;
+    }
     for (;;) {
       try {
         return await _download(d);

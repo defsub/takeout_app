@@ -22,8 +22,8 @@ import 'client.dart';
 import 'schema.dart';
 
 class Progress {
-  static Future sync() async {
-    final client = Client();
+  static Future sync({Client? client}) async {
+    client = client ?? Client();
     return OffsetCache.merge(client);
   }
 

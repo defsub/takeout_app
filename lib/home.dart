@@ -36,6 +36,7 @@ import 'style.dart';
 import 'cover.dart';
 import 'cache.dart';
 import 'podcasts.dart';
+import 'progress.dart';
 import 'util.dart';
 
 class HomeWidget extends StatefulWidget {
@@ -101,8 +102,11 @@ class HomeState extends State<HomeWidget> {
   Future<void> _onRefresh() async {
     try {
       final client = Client();
+      // refresh index & home for new media
       final index = await client.index(ttl: Duration.zero);
       final home = await client.home(ttl: Duration.zero);
+      // also refresh progress for progress made elsewhere
+      Progress.sync(client: client); // async
       if (mounted) {
         setState(() {
           _index = index;
@@ -350,6 +354,23 @@ abstract class _HomeGrid extends StatelessWidget {
           onPressed: () => _onPodcastsSelected(context));
     }
 
+    final iconBar = <Widget>[];
+    if (_cacheSnapshot.downloading.isNotEmpty) {
+      // add icon to show download progress
+      final downloadProgress = _cacheSnapshot.downloading.values
+          .fold<DownloadSnapshot>(
+              DownloadSnapshot(0, 0),
+              (total, e) => DownloadSnapshot(
+                  total.size + e.size, total.offset + e.offset));
+      iconBar.add(Center(
+          child: SizedBox(
+              width: iconSize,
+              height: iconSize,
+              child:
+                  CircularProgressIndicator(value: downloadProgress.value))));
+    }
+    iconBar.addAll(buttons.values);
+
     return CustomScrollView(slivers: [
       SliverAppBar(
         pinned: false,
@@ -357,7 +378,7 @@ abstract class _HomeGrid extends StatelessWidget {
         snap: true,
         title: header(AppLocalizations.of(context)!.takeoutTitle),
         actions: [
-          ...buttons.values,
+          ...iconBar,
           popupMenu(context, [
             PopupItem.settings(context, (context) => _onSettings(context)),
             PopupItem.downloads(context, (context) => _onDownloads(context)),

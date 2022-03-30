@@ -390,15 +390,17 @@ class OffsetCache {
     });
   }
 
-  // Merge obtains the latest progress from the server and updates and newer
+  // Merge obtains the latest progress from the server and updates any newer
   // local progress as needed.
   static Future merge(Client client) async {
     final view = await client.progress(ttl: Duration.zero);
     return Future.forEach(view.offsets, (Offset remote) async {
       final local = await get(remote.etag);
       if (local != null && local.newerThan(remote)) {
+        // update the server
         await client.updateProgress(local);
       } else {
+        // update from server
         await put(remote);
       }
     });

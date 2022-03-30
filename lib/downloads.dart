@@ -215,30 +215,28 @@ class DownloadState extends State<DownloadWidget> with SpiffWidgetBuilder {
 
   String? get coverUrl => _cover;
 
-  Future<Spiff> Function()? get fetch => () {
+  Future<Spiff> Function() get fetch => () {
         return Client()
             .spiff(entry.spiff.playlist.location!, ttl: Duration.zero);
       };
 
   Future<void> onRefresh() async {
-    Future<Spiff> Function()? fetcher = fetch;
-    if (fetcher != null) {
-      try {
-        final result = await fetcher();
-        print('got $result');
-        // TODO !!! at this point tracks *may* get orphaned in the cache
-        Downloads.refreshSpiff(entry, result).then((freshEntry) {
-          entry = freshEntry;
-        }).whenComplete(() {
-          if (mounted) {
-            setState(() {
-              _cover = pickCover(entry.spiff);
-            });
-          }
-        });
-      } catch (error) {
-        print('refresh err $error');
-      }
+    Future<Spiff> Function() fetcher = fetch;
+    try {
+      final result = await fetcher();
+      print('got $result');
+      // TODO !!! at this point tracks *may* get orphaned in the cache
+      Downloads.refreshSpiff(entry, result).then((freshEntry) {
+        entry = freshEntry;
+      }).whenComplete(() {
+        if (mounted) {
+          setState(() {
+            _cover = pickCover(entry.spiff);
+          });
+        }
+      });
+    } catch (error) {
+      print('refresh err $error');
     }
   }
 
@@ -285,12 +283,7 @@ class DownloadState extends State<DownloadWidget> with SpiffWidgetBuilder {
   }
 
   void _onDownloadCheck(BuildContext context) {
-    // TODO this assumes that fetch-able will always download a new spiff
-    if (fetch != null) {
-      Downloads.downloadSpiff(context, spiff!);
-    } else {
-      Downloads.downloadSpiffTracks(spiff!);
-    }
+    Downloads.downloadSpiffTracks(entry.spiff);
   }
 
   void _onDelete(BuildContext context) async {
@@ -395,6 +388,7 @@ class Downloads {
     });
   }
 
+  // Creates a unique spiff file name.
   static Future<File> _spiffFile(Spiff spiff) async =>
       _downloadFile(_downloadFileName(spiff));
 
@@ -435,16 +429,17 @@ class Downloads {
         TakeoutState.allowDownload(TakeoutState.connectivityStream.value));
   }
 
-  static Future<bool> _downloadSpiff(
-      BuildContext context, String name, Future<Spiff> Function() fetchSpiff,
+  static Future<bool> _downloadSpiff(BuildContext context, String snackBarName,
+      Future<Spiff> Function() fetchSpiff,
       {bool includeTracks = true}) {
     final L = AppLocalizations.of(context)!;
     final client = _downloadClient();
-    showSnackBar(L.downloadingLabel(name));
+    showSnackBar(L.downloadingLabel(snackBarName));
     return _download(client, fetchSpiff, includeTracks: includeTracks)
         .then((success) {
-      showSnackBar(
-          success ? L.downloadFinishedLabel(name) : L.downloadErrorLabel(name));
+      showSnackBar(success
+          ? L.downloadFinishedLabel(snackBarName)
+          : L.downloadErrorLabel(snackBarName));
       return success;
     });
   }
@@ -469,11 +464,9 @@ class Downloads {
     return Future.value(entry.copyWith(spiff: spiff));
   }
 
-  static Future<bool> downloadSpiff(BuildContext context, Spiff spiff,
-      {bool includeTracks = true}) async {
+  static Future<bool> downloadSpiff(BuildContext context, Spiff spiff) async {
     return _downloadSpiff(
-        context, spiff.playlist.title, () => Future.value(spiff),
-        includeTracks: includeTracks);
+        context, spiff.playlist.title, () => Future.value(spiff));
   }
 
   static Future<bool> downloadMovie(BuildContext context, Movie movie) async {
@@ -660,49 +653,3 @@ class SpiffDownloadEntry extends DownloadEntry with MediaAlbum {
   @override
   int get year => 0;
 }
-
-//
-// class Movie\\\DownloadEntry extends SpiffDownloadEntry with MediaAlbum {
-//   MovieDownloadEntry(File file, Spiff spiff, DateTime modified)
-//       : super(file, spiff, modified);
-//
-//   static MovieDownloadEntry create(File file, Spiff spiff) {
-//     FileStat stat = file.statSync();
-//     return MovieDownloadEntry(file, spiff, stat.modified);
-//   }
-//
-//   @override
-//   String get album => spiff.playlist.title;
-//
-//   @override
-//   String get creator => spiff.playlist.creator!;
-//
-//   @override
-//   String get image => _spiffCover(spiff);
-//
-//   @override
-//   int get year => 0;
-// }
-//
-// class MusicDownloadEntry extends SpiffDownloadEntry with MediaAlbum {
-//
-//   MusicDownloadEntry(File file, Spiff spiff, DateTime modified)
-//       : super(file, spiff, modified);
-//
-//   static MusicDownloadEntry create(File file, Spiff spiff) {
-//     FileStat stat = file.statSync();
-//     return MusicDownloadEntry(file, spiff, stat.modified);
-//   }
-//
-//   @override
-//   String get album => spiff.playlist.title;
-//
-//   @override
-//   String get creator => spiff.playlist.creator!;
-//
-//   @override
-//   String get image => _spiffCover(spiff);
-//
-//   @override
-//   int get year => 0;
-// }
