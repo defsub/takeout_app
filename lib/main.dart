@@ -306,7 +306,7 @@ class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
 
     await TrackCache.init();
     await OffsetCache.init();
-    await Downloads.check().whenComplete(() => Downloads.load());
+    await Downloads.prune().whenComplete(() => Downloads.load());
     try {
       final client = Client();
       client.index().then((view) {
@@ -340,7 +340,7 @@ class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
   Widget _item(int index) {
     switch (index) {
       case 0:
-        return _homeView == null && _indexView == null
+        return _homeView == null || _indexView == null
             ? Center(child: CircularProgressIndicator())
             : HomeWidget(_indexView!, _homeView!); // FIXME _indexView was null?!
       case 1:

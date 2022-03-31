@@ -225,7 +225,6 @@ class DownloadState extends State<DownloadWidget> with SpiffWidgetBuilder {
     try {
       final result = await fetcher();
       print('got $result');
-      // TODO !!! at this point tracks *may* get orphaned in the cache
       Downloads.refreshSpiff(entry, result).then((freshEntry) {
         entry = freshEntry;
       }).whenComplete(() {
@@ -245,7 +244,7 @@ class DownloadState extends State<DownloadWidget> with SpiffWidgetBuilder {
       popupMenu(context, [
         PopupItem.delete(context, AppLocalizations.of(context)!.deleteItem,
             (_) => _onDelete(context)),
-        if (fetch != null) PopupItem.refresh(context, (_) => onRefresh()),
+        PopupItem.refresh(context, (_) => onRefresh()),
       ]),
     ];
   }
@@ -543,9 +542,9 @@ class Downloads {
 
   // check all spiff tracks are cached
   // incomplete downloads would have the wrong size
-  static Future<void> _checkSpiffCached(Spiff spiff) async {
-    final cache = TrackCache();
-    return Future.forEach<Entry>(spiff.playlist.tracks, (e) async {
+  static Future<Set<String>> _pruneSpiffTracks(TrackCache cache, Spiff spiff) async {
+    final keep = Set<String>();
+    await Future.forEach<Entry>(spiff.playlist.tracks, (e) async {
       final result = await cache.get(e);
       if (result is File) {
         // print('checking $result');
@@ -559,20 +558,31 @@ class Downloads {
             result.deleteSync();
             cache.remove(e);
           }
+        } else {
+          keep.add(e.key);
         }
       }
     });
+    return keep;
   }
 
-  static Future<void> check() async {
+  static Future<void> prune() async {
+    final cache = TrackCache();
+    // Iterate all downloaded spiffs and check their tracks
     final dir = await checkAppDir(_dir);
     final list = dir.listSync().toList();
-    return Future.forEach<FileSystemEntity>(list, (file) async {
+    final keep = Set<String>();
+    await Future.forEach<FileSystemEntity>(list, (file) async {
       if (file.path.endsWith('.json')) {
         final spiff = await Spiff.fromFile(file as File);
-        await _checkSpiffCached(spiff);
+        keep.addAll(await _pruneSpiffTracks(cache, spiff));
       }
     });
+    // Any remaining tracks are orphans so remove them now
+    final keys = cache.keys();
+    keys.removeAll(keep);
+    // these are orphans
+    keys.forEach((key) => _deleteLocatable(cache, LocatableKey(key)));
   }
 }
 

@@ -48,8 +48,10 @@ dynamic cachedImage(String url, {double? width, double? height, BoxFit? fit}) {
     height: height,
     fit: fit,
     placeholder: (context, url) => Icon(Icons.image_outlined, size: 40),
-    errorWidget: (context, url, error) =>
-        Icon(Icons.broken_image_outlined, size: 40),
+    errorWidget: (context, url, error) {
+      print('error $url - $error');
+      return Icon(Icons.broken_image_outlined, size: 40);
+    },
   );
 }
 
@@ -125,7 +127,8 @@ Future<Color> getImageBackgroundColor(String url) async {
       await PaletteGenerator.fromImageProvider(CachedNetworkImageProvider(url));
   color = paletteGenerator.darkVibrantColor?.color ??
       paletteGenerator.darkMutedColor?.color;
-  _colorCache[url] = color!;
+  color = color ?? Colors.black;
+  _colorCache[url] = color;
   return color;
 }
 

@@ -132,6 +132,24 @@ Future<Directory> checkAppDir(String name) async {
   return completer.future;
 }
 
+class JsonCacheResult {
+  final bool exists;
+
+  JsonCacheResult(this.exists);
+
+  factory JsonCacheResult.NotFound() => JsonCacheResult(false);
+}
+
+class JsonCacheEntry extends JsonCacheResult {
+  final String uri;
+  final File file;
+  final DateTime lastModified;
+  final bool expired;
+
+  JsonCacheEntry(this.uri, this.file, this.lastModified, this.expired)
+      : super(true);
+}
+
 class JsonCache {
   static const _dir = 'api_cache';
 
@@ -159,8 +177,8 @@ class JsonCache {
     return completer.future;
   }
 
-  Future<dynamic> get(String uri, {Duration? ttl}) async {
-    final completer = Completer<dynamic>();
+  Future<JsonCacheResult> get(String uri, {Duration? ttl}) async {
+    final completer = Completer<JsonCacheResult>();
     final file = await _jsonFile(uri);
     file.exists().then((exists) {
       if (exists) {
@@ -168,17 +186,14 @@ class JsonCache {
         if (ttl != null) {
           final expirationTime = lastModified.add(ttl);
           final expired = DateTime.now().isAfter(expirationTime);
-          completer.complete(expired ? false : file);
-          if (expired) {
-            print("deleting $file");
-            file.delete(); // delete async
-          }
+          final result = JsonCacheEntry(uri, file, lastModified, expired);
+          completer.complete(result);
         } else {
           // no ttl, send file
-          completer.complete(file);
+          completer.complete(JsonCacheEntry(uri, file, lastModified, false));
         }
       } else {
-        completer.complete(false);
+        completer.complete(JsonCacheResult.NotFound());
       }
     });
     return completer.future;
@@ -198,14 +213,6 @@ class TrackCache {
     }).whenComplete(() => _publish());
   }
 
-  static bool checkAll(Set<String> cacheKeys, Iterable<Locatable> entries) {
-    final entryKeys = Set<String>();
-    entries.forEach((e) => entryKeys.add(e.key));
-    // entryKeys.forEach((e) {print('checking ${e}\n');});
-    // print(cacheKeys.containsAll(entryKeys));
-    return cacheKeys.containsAll(entryKeys);
-  }
-
   static void _publish() {
     final keys = Set<String>.from(_entries.keys);
     MediaCache._updateMedia(keys);
@@ -217,6 +224,12 @@ class TrackCache {
       final path = '${dir.path}/${d.key}';
       return File(path);
     });
+  }
+
+  Set<String> keys() {
+    final keys = Set<String>();
+    keys.addAll(_entries.keys);
+    return keys;
   }
 
   Future<bool> exists(Locatable d) async {

@@ -142,15 +142,18 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
       }
     });
 
-    _player.positionStream.listen((pos) {
-      final item = mediaItem.value;
-      if (item != null) {
-        final endZone = item.endZone;
-        if (endZone != null && pos > endZone) {
-          Progress.remove(item.etag);
-        }
-      }
-    });
+    // This will auto-remove progress at the "end" of the media.
+    // Not sure if this is desired right now so commented.
+    //
+    // _player.positionStream.listen((pos) {
+    //   final item = mediaItem.value;
+    //   if (item != null) {
+    //     final endZone = item.endZone;
+    //     if (endZone != null && pos > endZone) {
+    //       Progress.remove(item.etag);
+    //     }
+    //   }
+    // });
   }
 
   @override

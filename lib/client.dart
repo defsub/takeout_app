@@ -66,6 +66,20 @@ abstract class Locatable {
   int get size;
 }
 
+class LocatableKey implements Locatable {
+  final String key;
+
+  LocatableKey(this.key);
+
+  String get location {
+    throw UnimplementedError;
+  }
+
+  int get size {
+    throw UnimplementedError;
+  }
+}
+
 class PostResult {
   final int statusCode;
 
@@ -147,6 +161,8 @@ class Client {
 
   static const locationTTL = Duration(hours: 1);
   static const playlistTTL = Duration(minutes: 1);
+  static const defaultTTL = Duration(hours: 24);
+  static const defaultTimeout = Duration(seconds: 5);
   static const downloadTimeout = Duration(minutes: 5);
 
   static String? _endpoint;
@@ -261,25 +277,36 @@ class Client {
       );
     }
 
+    // Ensure there's a default TTL
+    ttl = ttl ?? defaultTTL;
+
+    Map<String, dynamic>? cachedJson = null;
+
     if (cacheable) {
       final result = await cache.get(uri, ttl: ttl);
-      if (result is File) {
-        final completer = Completer<Map<String, dynamic>>();
-        print('cached $uri');
-        result
+      if (result.exists && result is JsonCacheEntry) {
+        print('cached $uri expired is ${result.expired}');
+        cachedJson = await result.file
             .readAsBytes()
-            .then((body) => completer.complete(jsonDecode(utf8.decode(body))));
-        return completer.future;
+            .then((body) => jsonDecode(utf8.decode(body)));
+        if (cachedJson != null && result.expired == false) {
+          // not expired so use the cached value
+          return cachedJson;
+        }
       }
     }
 
     try {
       final baseUrl = await getEndpoint();
       print('GET $baseUrl$uri');
-      final response = await http.get(Uri.parse('$baseUrl$uri'),
-          headers: {HttpHeaders.cookieHeader: '$cookieName=$cookie'});
+      final response = await http.get(Uri.parse('$baseUrl$uri'), headers: {
+        HttpHeaders.cookieHeader: '$cookieName=$cookie'
+      }).timeout(defaultTimeout);
       print('got ${response.statusCode}');
       if (response.statusCode != HttpStatus.ok) {
+        if (response.statusCode > 500 && cachedJson != null) {
+          return cachedJson;
+        }
         throw ClientException(
             statusCode: response.statusCode,
             url: response.request?.url.toString());
@@ -289,7 +316,13 @@ class Client {
         cache.put(uri, response.bodyBytes);
       }
       return jsonDecode(utf8.decode(response.bodyBytes));
-    } on TlsException catch (e) {
+    } catch (e) {
+      if (e is SocketException || e is TimeoutException || e is TlsException) {
+        if (cachedJson != null) {
+          print('got error $e; using cached json');
+          return cachedJson;
+        }
+      }
       return Future<Map<String, dynamic>>.error(e);
     }
   }
