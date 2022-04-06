@@ -173,7 +173,7 @@ class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     switch (state) {
       case AppLifecycleState.resumed:
-        // check connectivity after being awaycontinue
+        // check connectivity after being away
         _connectivity
             .checkConnectivity()
             .then((value) => _updateConnectionStatus(value));
@@ -288,6 +288,14 @@ class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
     }
   }
 
+  void _onPlaybackState(PlaybackState playbackState) {
+    if (mounted) {
+      setState(() {
+        _playbackState = playbackState;
+      });
+    }
+  }
+
   // This will auto-pause playback for remote media when streaming is disabled.
   void _onMediaItem(MediaItem? mediaItem) {
     if (_playbackState?.playing == true) {
@@ -300,6 +308,9 @@ class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
   }
 
   void _load() async {
+    audioHandler.playbackState
+        .distinct()
+        .listen((state) => _onPlaybackState(state));
     audioHandler.mediaItem
         .distinct()
         .listen((mediaItem) => _onMediaItem(mediaItem));
@@ -342,7 +353,8 @@ class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
       case 0:
         return _homeView == null || _indexView == null
             ? Center(child: CircularProgressIndicator())
-            : HomeWidget(_indexView!, _homeView!); // FIXME _indexView was null?!
+            : HomeWidget(
+                _indexView!, _homeView!); // FIXME _indexView was null?!
       case 1:
         return _artistsView == null
             ? Center(child: CircularProgressIndicator())
@@ -389,19 +401,18 @@ class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
                 ? LoginWidget(() => login())
                 : Scaffold(
                     key: _scaffoldMessengerKey,
-                    floatingActionButton: (_playbackState != null &&
-                            _playbackState!.processingState ==
+                    floatingActionButton: (_playbackState?.processingState ==
                                 AudioProcessingState.ready &&
-                            _selectedIndex != 4)
+                            !_showingPlayer())
                         ? FloatingActionButton(
                             onPressed: () {
-                              if (_playbackState!.playing) {
+                              if (_playbackState?.playing == true) {
                                 audioHandler.pause();
                               } else {
                                 audioHandler.play();
                               }
                             },
-                            child: (_playbackState!.playing)
+                            child: (_playbackState?.playing == true)
                                 ? Icon(Icons.pause)
                                 : Icon(Icons.play_arrow),
                           )
@@ -415,36 +426,58 @@ class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
                         _buildOffstageNavigator(4),
                       ],
                     ),
-                    bottomNavigationBar: BottomNavigationBar(
-                      key: bottomNavKey,
-                      showUnselectedLabels: false,
-                      showSelectedLabels: false,
-                      type: BottomNavigationBarType.fixed,
-                      items: <BottomNavigationBarItem>[
-                        BottomNavigationBarItem(
-                          icon: Icon(Icons.home),
-                          label: AppLocalizations.of(context)!.navHome,
-                        ),
-                        BottomNavigationBarItem(
-                          icon: Icon(Icons.people_alt),
-                          label: AppLocalizations.of(context)!.navArtists,
-                        ),
-                        BottomNavigationBarItem(
-                          icon: Icon(Icons.search),
-                          label: AppLocalizations.of(context)!.navSearch,
-                        ),
-                        BottomNavigationBarItem(
-                          icon: Icon(Icons.radio),
-                          label: AppLocalizations.of(context)!.navRadio,
-                        ),
-                        BottomNavigationBarItem(
-                          icon: Icon(Icons.queue_music),
-                          label: AppLocalizations.of(context)!.navPlayer,
-                        ),
-                      ],
-                      currentIndex: _selectedIndex,
-                      onTap: _onItemTapped,
-                    )));
+                    bottomNavigationBar: _bottomNavigation()));
+  }
+
+  bool _showingPlayer() {
+    return _selectedIndex == 4;
+  }
+
+  Widget _bottomNavigation() {
+    return Stack(children: [
+      BottomNavigationBar(
+        key: bottomNavKey,
+        showUnselectedLabels: false,
+        showSelectedLabels: false,
+        type: BottomNavigationBarType.fixed,
+        items: <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: AppLocalizations.of(context)!.navHome,
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.people_alt),
+            label: AppLocalizations.of(context)!.navArtists,
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.search),
+            label: AppLocalizations.of(context)!.navSearch,
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.radio),
+            label: AppLocalizations.of(context)!.navRadio,
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.queue_music),
+            label: AppLocalizations.of(context)!.navPlayer,
+          ),
+        ],
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+      ),
+      if (!_showingPlayer())
+        StreamBuilder<Duration>(
+            stream: audioPlayerHandler.positionStream(),
+            builder: (context, snapshot) {
+              final position = snapshot.data?.inSeconds.toDouble() ?? 0;
+              final mediaItem = audioPlayerHandler.currentItem;
+              final duration = mediaItem?.duration?.inSeconds.toDouble() ?? 0;
+              if (duration > 0 && position > 0) {
+                return LinearProgressIndicator(value: position / duration);
+              }
+              return SizedBox();
+            })
+    ]);
   }
 
   Map<String, WidgetBuilder> _routeBuilders(BuildContext context, int index) {

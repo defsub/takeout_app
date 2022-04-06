@@ -156,6 +156,10 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
     // });
   }
 
+  Stream<Duration> positionStream() {
+    return _player.positionStream;
+  }
+
   @override
   Future<dynamic> customAction(String name, [Map<String, dynamic>? extras]) {
     print('onCustomAction $name / $extras');

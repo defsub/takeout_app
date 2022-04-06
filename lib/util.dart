@@ -86,6 +86,13 @@ String merge(List<String> args, {String separator = " \u2022 "}) {
   return args.join(separator);
 }
 
+// TODO move below to util, global or other
+String year(String date) {
+  var d = DateTime.parse(date);
+  // year 1 is a Go zero value date
+  return d.year == 1 ? '' : '${d.year}';
+}
+
 class ExpiringMap<K, V> {
   final Duration duration;
   final Map<K, V> _map = {};

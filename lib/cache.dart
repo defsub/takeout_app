@@ -87,6 +87,13 @@ class CacheSnapshot {
   DownloadSnapshot? downloadSnapshot(Locatable l) {
     return downloading[l.key];
   }
+
+  DownloadSnapshot fold() {
+    return downloading.values.fold<DownloadSnapshot>(
+        DownloadSnapshot(0, 0),
+        (total, e) =>
+            DownloadSnapshot(total.size + e.size, total.offset + e.offset));
+  }
 }
 
 class MediaCache {

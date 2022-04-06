@@ -355,20 +355,21 @@ abstract class _HomeGrid extends StatelessWidget {
     }
 
     final iconBar = <Widget>[];
-    if (_cacheSnapshot.downloading.isNotEmpty) {
-      // add icon to show download progress
-      final downloadProgress = _cacheSnapshot.downloading.values
-          .fold<DownloadSnapshot>(
-              DownloadSnapshot(0, 0),
-              (total, e) => DownloadSnapshot(
-                  total.size + e.size, total.offset + e.offset));
-      iconBar.add(Center(
-          child: SizedBox(
-              width: iconSize,
-              height: iconSize,
-              child:
-                  CircularProgressIndicator(value: downloadProgress.value))));
-    }
+    // below adds circular progress indicator status bar
+    // if (_cacheSnapshot.downloading.isNotEmpty) {
+    //   // add icon to show download progress
+    //   final downloadProgress = _cacheSnapshot.downloading.values
+    //       .fold<DownloadSnapshot>(
+    //           DownloadSnapshot(0, 0),
+    //           (total, e) => DownloadSnapshot(
+    //               total.size + e.size, total.offset + e.offset));
+    //   iconBar.add(Center(
+    //       child: SizedBox(
+    //           width: iconSize,
+    //           height: iconSize,
+    //           child:
+    //               CircularProgressIndicator(value: downloadProgress.value))));
+    // }
     iconBar.addAll(buttons.values);
 
     return CustomScrollView(slivers: [
@@ -387,6 +388,13 @@ abstract class _HomeGrid extends StatelessWidget {
             PopupItem.about(context, (context) => _onAbout(context)),
           ]),
         ],
+        bottom: _cacheSnapshot.downloading.isNotEmpty
+            ? PreferredSize(
+                child:
+                    LinearProgressIndicator(value: _cacheSnapshot.fold().value),
+                preferredSize: Size.fromHeight(4.0),
+              )
+            : null,
       ),
       StreamBuilder<List<DownloadEntry>>(
           stream: Downloads.downloadsSubject,

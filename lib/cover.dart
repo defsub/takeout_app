@@ -216,10 +216,3 @@ Future<Color> getImageBackgroundColor(String url) async {
   _colorCache[url] = color;
   return color;
 }
-
-// TODO move below to util, global or other
-String year(String date) {
-  var d = DateTime.parse(date);
-  // year 1 is a Go zero value date
-  return d.year == 1 ? '' : '${d.year}';
-}
