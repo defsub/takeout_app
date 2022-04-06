@@ -699,7 +699,7 @@ class Client {
             cache.put(d, file);
             completer.complete();
           }, onError: (err) {
-            completer.completeError(err);
+            completer.completeError(err); // TODO need to throw?
           });
         })
         .timeout(downloadTimeout)

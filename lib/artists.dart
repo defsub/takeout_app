@@ -21,6 +21,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:recase/recase.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:takeout_app/cache.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'client.dart';
@@ -288,7 +289,7 @@ class _ArtistState extends State<ArtistWidget> with ArtistBuilder {
     return IconButton(icon: Icon(Icons.radio), onPressed: _onRadio);
   }
 
-  List<Widget> slivers() {
+  List<Widget> slivers(CacheSnapshot snapshot) {
     if (_view == null) {
       return [];
     }
@@ -481,28 +482,40 @@ class _ArtistTrackListState extends State<ArtistTrackListWidget>
         icon: Icon(IconsDownload), onPressed: () => _onDownload(context));
   }
 
-  List<Widget> slivers() {
+  List<Widget> slivers(CacheSnapshot snapshot) {
     return [
       SliverToBoxAdapter(
           child: heading(_type == ArtistTrackType.singles
               ? AppLocalizations.of(context)!.singlesLabel
               : AppLocalizations.of(context)!.popularLabel)),
-      SliverToBoxAdapter(child: Column(children: _trackList())),
+      SliverToBoxAdapter(child: Column(children: _trackList(snapshot))),
     ];
   }
 
-  List<ListTile> _trackList() {
-    List<ListTile> list = [];
+  List<ListTile> _trackList(CacheSnapshot snapshot) {
+    final list = <ListTile>[];
     int index = 0;
-    for (var t in _tracks) {
+    _tracks.forEach((t) {
       list.add(ListTile(
           onTap: () => _onTrack(index),
           leading: tileCover(t.image),
+          trailing: _trailing(snapshot, t),
           subtitle: Text(merge([t.release, t.date])),
           title: Text(t.title)));
       index++;
-    }
+    });
     return list;
+  }
+
+  Widget _trailing(CacheSnapshot snapshot, Locatable locatable) {
+    final downloading = snapshot.downloadSnapshot(locatable);
+    if (downloading != null) {
+      final value = downloading.value;
+      return value > 1.0
+          ? CircularProgressIndicator()
+          : CircularProgressIndicator(value: value);
+    }
+    return Icon(snapshot.contains(locatable) ? IconsCached : null);
   }
 }
 
@@ -517,14 +530,14 @@ mixin ArtistBuilder {
 
   Widget rightButton();
 
-  List<Widget> slivers();
+  List<Widget> slivers(CacheSnapshot snapshot);
 
   static Random _random = Random();
 
-  String _randomCover() {
+  String? _randomCover() {
     final artistView = view;
     if (artistView == null) {
-      return '';
+      return null;
     }
     for (var i = 0; i < artistView.releases.length; i++) {
       final pick = _random.nextInt(artistView.releases.length);
@@ -537,12 +550,7 @@ mixin ArtistBuilder {
         return artistView.releases[i].image;
       }
     }
-    return '';
-  }
-
-  Widget _albumArtwork() {
-    String url = _randomCover();
-    return isNotNullOrEmpty(url) ? releaseSmallCover(url) : Icon(Icons.people);
+    return null;
   }
 
   Widget build(BuildContext context) {
@@ -550,89 +558,97 @@ mixin ArtistBuilder {
         stream: TakeoutState.connectivityStream.distinct(),
         builder: (context, snapshot) {
           final connectivity = snapshot.data;
-
-          final useBackground = false;
           final artistView = view;
-          final artistArtworkUrl = artistView != null
-              ? useBackground
-                  ? artistView.background
-                  : artistView.image
-              : null;
-
-          bool allowArtwork = artistView != null &&
-              isNotNullOrEmpty(artistArtworkUrl) &&
-              TakeoutState.allowArtistArtwork(connectivity);
-
-          final artworkImage =
-              allowArtwork && useBackground && artistArtworkUrl != null
-                  ? artistBackground(artistArtworkUrl)
-                  : allowArtwork && artistArtworkUrl != null
-                      ? artistImage(artistArtworkUrl)
-                      : _albumArtwork();
+          final artwork = ArtworkBuilder.artist(
+              TakeoutState.allowArtistArtwork(connectivity)
+                  ? view?.image ?? null
+                  : null,
+              _randomCover());
+          final artistImage = artwork.build();
 
           // artist backgrounds are 1920x1080, expand keeping aspect ratio
           // artist images are 1000x1000
           // artist banners are 1000x185
-          final screen = MediaQuery.of(context).size;
-          final expandedHeight = useBackground
-              ? 1080.0 / 1920.0 * screen.width
-              : screen.height / 2;
+          // final screen = MediaQuery.of(context).size;
+          // final expandedHeight = useBackground
+          //     ? 1080.0 / 1920.0 * screen.width
+          //     : screen.height / 2;
 
-          return FutureBuilder<Color?>(
-              future: allowArtwork && artistArtworkUrl != null
-                  ? getImageBackgroundColor(artistArtworkUrl)
-                  : Future.value(),
-              builder: (context, snapshot) => Scaffold(
-                  backgroundColor: snapshot.data,
-                  body: RefreshIndicator(
-                      onRefresh: () => onRefresh(),
-                      child: view == null
-                          ? Center(child: CircularProgressIndicator())
-                          : CustomScrollView(slivers: [
-                              SliverAppBar(
-                                  expandedHeight: expandedHeight,
-                                  actions: actions(),
-                                  flexibleSpace: FlexibleSpaceBar(
-                                      stretchModes: [
-                                        StretchMode.zoomBackground,
-                                        StretchMode.fadeTitle
-                                      ],
-                                      background: Stack(
-                                          fit: StackFit.expand,
-                                          children: [
-                                            artworkImage,
-                                            const DecoratedBox(
-                                              decoration: BoxDecoration(
-                                                gradient: LinearGradient(
-                                                  begin: Alignment(0.0, 0.75),
-                                                  end: Alignment(0.0, 0.0),
-                                                  colors: <Color>[
-                                                    Color(0x60000000),
-                                                    Color(0x00000000),
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
-                                            Align(
-                                                alignment: Alignment.bottomLeft,
-                                                child: leftButton()),
-                                            Align(
-                                                alignment:
-                                                    Alignment.bottomRight,
-                                                child: rightButton()),
-                                          ]))),
-                              SliverToBoxAdapter(
-                                  child: Container(
-                                      padding: EdgeInsets.fromLTRB(0, 16, 0, 0),
-                                      child: Column(children: [
-                                        if (artistView != null)
-                                          Text(artistView.artist.name,
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .headline5)
-                                      ]))),
-                              ...slivers(),
-                            ]))));
+          final screen = MediaQuery.of(context).size;
+          final expandedHeight = screen.height / 2;
+
+          return StreamBuilder<String?>(
+              stream: artwork.urlStream.stream.distinct(),
+              builder: (context, snapshot) {
+                final url = snapshot.data;
+                return FutureBuilder<Color?>(
+                    future: url != null
+                        ? artwork.backgroundColor
+                        : Future.value(),
+                    builder: (context, snapshot) => Scaffold(
+                        backgroundColor: snapshot.data,
+                        body: RefreshIndicator(
+                            onRefresh: () => onRefresh(),
+                            child: view == null
+                                ? Center(child: CircularProgressIndicator())
+                                : StreamBuilder<CacheSnapshot>(
+                                    stream: MediaCache.stream(),
+                                    builder: (context, snapshot) {
+                                      final cacheSnapshot = snapshot.data ??
+                                          CacheSnapshot.empty();
+                                      return CustomScrollView(slivers: [
+                                        SliverAppBar(
+                                            expandedHeight: expandedHeight,
+                                            actions: actions(),
+                                            flexibleSpace: FlexibleSpaceBar(
+                                                stretchModes: [
+                                                  StretchMode.zoomBackground,
+                                                  StretchMode.fadeTitle
+                                                ],
+                                                background: Stack(
+                                                    fit: StackFit.expand,
+                                                    children: [
+                                                      artistImage,
+                                                      const DecoratedBox(
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          gradient:
+                                                              LinearGradient(
+                                                            begin: Alignment(
+                                                                0.0, 0.75),
+                                                            end: Alignment(
+                                                                0.0, 0.0),
+                                                            colors: <Color>[
+                                                              Color(0x60000000),
+                                                              Color(0x00000000),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      Align(
+                                                          alignment: Alignment
+                                                              .bottomLeft,
+                                                          child: leftButton()),
+                                                      Align(
+                                                          alignment: Alignment
+                                                              .bottomRight,
+                                                          child: rightButton()),
+                                                    ]))),
+                                        SliverToBoxAdapter(
+                                            child: Container(
+                                                padding: EdgeInsets.fromLTRB(
+                                                    0, 16, 0, 0),
+                                                child: Column(children: [
+                                                  if (artistView != null)
+                                                    Text(artistView.artist.name,
+                                                        style: Theme.of(context)
+                                                            .textTheme
+                                                            .headline5)
+                                                ]))),
+                                        ...slivers(cacheSnapshot)
+                                      ]);
+                                    }))));
+              });
         });
   }
 }

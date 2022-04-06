@@ -15,6 +15,8 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
+import 'dart:collection';
+
 import 'package:timeago/timeago.dart' as timeago;
 
 bool isNullOrEmpty(String? s) => s?.trim().isEmpty ?? true;
@@ -22,8 +24,8 @@ bool isNullOrEmpty(String? s) => s?.trim().isEmpty ?? true;
 bool isNotNullOrEmpty(String? s) => s?.trim().isNotEmpty ?? false;
 
 const kilobyte = 1024;
-const megabyte = kilobyte*1024;
-const gigabyte = megabyte*1024;
+const megabyte = kilobyte * 1024;
+const gigabyte = megabyte * 1024;
 
 String storage(int size) {
   double f = size / gigabyte;
@@ -82,4 +84,61 @@ int parseYear(String date) {
 String merge(List<String> args, {String separator = " \u2022 "}) {
   args.retainWhere((s) => s.toString().isNotEmpty);
   return args.join(separator);
+}
+
+class ExpiringMap<K, V> {
+  final Duration duration;
+  final Map<K, V> _map = {};
+
+  ExpiringMap(this.duration);
+
+  V? operator [](K key) => _map[key];
+
+  void operator []=(K key, V value) {
+    _map[key] = value;
+    Future.delayed(duration, () => _map.remove(key));
+  }
+
+  bool containsKey(K key) {
+    return _map.containsKey(key);
+  }
+
+  Iterable<K> keys() {
+    return _map.keys;
+  }
+
+  Iterable<V> values() {
+    return _map.values;
+  }
+
+  int get length {
+    return _map.length;
+  }
+}
+
+class ExpiringSet<V> {
+  final Duration duration;
+  final Set<V> _set = HashSet<V>();
+
+  ExpiringSet(this.duration);
+
+  void add(V value) {
+    if (_set.contains(value)) {
+      return;
+    }
+    _set.add(value);
+    Future.delayed(duration, () => _set.remove(value));
+  }
+
+  bool contains(V value) {
+    return _set.contains(value);
+  }
+
+  Iterator<V> get iterator {
+    return _set.iterator;
+  }
+
+  int get length {
+    return _set.length;
+  }
 }

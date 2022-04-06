@@ -589,7 +589,7 @@ class Downloads {
 abstract class DownloadEntry {
   File get file;
 
-  Widget get leading;
+  Widget? get leading;
 
   String get title;
 
@@ -637,7 +637,7 @@ class SpiffDownloadEntry extends DownloadEntry with MediaAlbum {
   File get file => _file;
 
   @override
-  Widget get leading => tileCover(_cover);
+  Widget? get leading => tileCover(_cover);
 
   @override
   String get title => _spiff.playlist.title;
