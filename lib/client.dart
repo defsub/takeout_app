@@ -623,10 +623,10 @@ class Client {
           .catchError((e) => Future<ProgressView>.error(e));
 
   /// POST /api/progress
-  Future<int> updateProgress(Offset offset, {void Function()? onError}) async {
+  Future<int> updateProgress(Offsets offsets) async {
     try {
-      print('updateProgress $offset');
-      final result = await _postJson('/api/progress', offset.toJson(),
+      print('updateProgress $offsets');
+      final result = await _postJson('/api/progress', offsets.toJson(),
           requireCookie: true);
       print('updateProgress got $result');
       return result['_statusCode'];

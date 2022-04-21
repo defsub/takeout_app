@@ -1016,6 +1016,20 @@ class Offset {
 }
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
+class Offsets {
+  final List<Offset> offsets;
+
+  Offsets({required this.offsets});
+
+  factory Offsets.fromOffset(Offset offset) => Offsets(offsets: [offset]);
+
+  factory Offsets.fromJson(Map<String, dynamic> json) =>
+      _$OffsetsFromJson(json);
+
+  Map<String, dynamic> toJson() => _$OffsetsToJson(this);
+}
+
+@JsonSerializable(fieldRename: FieldRename.pascal)
 class ProgressView {
   final List<Offset> offsets;
 

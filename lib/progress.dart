@@ -36,7 +36,7 @@ class Progress {
     final client = Client();
     final offset = Offset.now(etag: etag, duration: duration, offset: position);
     // async update for local & remote
-    OffsetCache.put(offset).then((_) => client.updateProgress(offset));
+    OffsetCache.put(offset).then((_) => client.updateProgress(Offsets.fromOffset(offset)));
   }
 
   static void remove(String etag) {

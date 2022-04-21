@@ -414,16 +414,23 @@ class OffsetCache {
   // local progress as needed.
   static Future merge(Client client) async {
     final view = await client.progress(ttl: Duration.zero);
-    return Future.forEach(view.offsets, (Offset remote) async {
+    final update = <Offset>[];
+    await Future.forEach(view.offsets, (Offset remote) async {
       final local = await get(remote.etag);
       if (local != null && local.newerThan(remote)) {
         // update the server
-        await client.updateProgress(local);
+        update.add(local);
       } else {
         // update from server
         await put(remote);
       }
     });
+    if (update.isNotEmpty) {
+      print('updating progress with ${update.length} offsets');
+      await client.updateProgress(Offsets(offsets: update));
+    } else {
+      print('no progress to update');
+    }
   }
 
   static Future<Offset?> get(String etag, {Duration? ttl}) async {
