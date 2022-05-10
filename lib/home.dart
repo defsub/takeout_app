@@ -122,6 +122,8 @@ class HomeState extends State<HomeWidget> {
 abstract class _HomeItem {
   Widget Function() get onTap;
 
+  bool get overlay => isNotNullOrEmpty(title) || isNotNullOrEmpty(subtitle);
+
   String get title;
 
   String? get subtitle;
@@ -305,19 +307,21 @@ abstract class _HomeGrid extends StatelessWidget {
               child: GestureDetector(
                   onTap: () => _onTap(context, i),
                   child: GridTile(
-                    footer: Material(
-                        color: Colors.transparent,
-                        // shape: RoundedRectangleBorder(
-                        //     borderRadius: BorderRadius.vertical(
-                        //         bottom: Radius.circular(4))),
-                        clipBehavior: Clip.antiAlias,
-                        child: GridTileBar(
-                          backgroundColor: Colors.black26,
-                          title: Text(i.title),
-                          subtitle:
-                              i.subtitle != null ? Text(i.subtitle!) : null,
-                          trailing: i.trailing,
-                        )),
+                    footer: i.overlay
+                        ? Material(
+                            color: Colors.transparent,
+                            // shape: RoundedRectangleBorder(
+                            //     borderRadius: BorderRadius.vertical(
+                            //         bottom: Radius.circular(4))),
+                            clipBehavior: Clip.antiAlias,
+                            child: GridTileBar(
+                              backgroundColor: Colors.black26,
+                              title: Text(i.title),
+                              subtitle:
+                                  i.subtitle != null ? Text(i.subtitle!) : null,
+                              trailing: i.trailing,
+                            ))
+                        : null,
                     child: i.image,
                   ))))
         ]);

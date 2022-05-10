@@ -320,18 +320,10 @@ class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
     await Downloads.prune().whenComplete(() => Downloads.load());
     try {
       final client = Client();
-      client.index().then((view) {
-        _onIndexUpdated(view);
-      });
-      client.home().then((view) {
-        _onHomeUpdated(view);
-      });
-      client.artists().then((view) {
-        _onArtistsUpdated(view);
-      });
-      client.radio().then((view) {
-        _onRadioUpdated(view);
-      });
+      client.index().then((view) => _onIndexUpdated(view));
+      client.home().then((view) => _onHomeUpdated(view));
+      client.artists().then((view) => _onArtistsUpdated(view));
+      client.radio().then((view) => _onRadioUpdated(view));
       await Progress.sync();
       await MediaQueue.sync();
       if (audioHandler.playbackState.hasValue == false ||

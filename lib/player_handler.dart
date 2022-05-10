@@ -131,8 +131,7 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
     // Special processing for state transitions.
     _player.processingStateStream.listen((state) {
       if (state == ProcessingState.completed) {
-        currentState?.update(0, 0);
-        stop();
+        skipToQueueItem(0).whenComplete(() => stop());
       }
     });
 
@@ -254,7 +253,7 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
 
   @override
   Future<void> skipToQueueItem(int index) async {
-    print('onSkipToQueueItem $index');
+    print('onSkipToQueueItem $index $currentState');
 
     // Then default implementations of onSkipToNext and onSkipToPrevious will
     // delegate to this method.
@@ -288,7 +287,7 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
     }
 
     // This jumps to the beginning of the queue item at newIndex.
-    _player.seek(Duration.zero, index: newIndex);
+    return _player.seek(Duration.zero, index: newIndex);
   }
 
   @override

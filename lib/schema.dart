@@ -368,7 +368,7 @@ class Track extends MediaLocatable {
     if (artwork && frontArtwork) {
       return '$url/front-$size';
     } else if (artwork && isNotNullOrEmpty(otherArtwork)) {
-      return '$url/$otherArtwork}-$size';
+      return '$url/$otherArtwork-$size';
     }
     return '';
   }

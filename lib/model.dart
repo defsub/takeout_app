@@ -24,6 +24,7 @@ class MediaTypes {
     MediaType.podcast.name: MediaType.podcast,
     MediaType.stream.name: MediaType.stream,
   };
+
   static MediaType from(String name) {
     return _types[name]!;
   }
