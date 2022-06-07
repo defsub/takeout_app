@@ -25,6 +25,7 @@ import 'package:crypto/crypto.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:path/path.dart';
+import 'package:logging/logging.dart';
 
 import 'client.dart';
 import 'spiff.dart';
@@ -158,6 +159,7 @@ class JsonCacheEntry extends JsonCacheResult {
 }
 
 class JsonCache {
+  static final log = Logger('JsonCache');
   static const _dir = 'api_cache';
 
   String _md5(String input) {
@@ -178,7 +180,7 @@ class JsonCache {
     file.writeAsBytes(body).then((f) {
       completer.complete();
     }).catchError((e) {
-      print(e);
+      log.warning(e);
       completer.completeError(e);
     });
     return completer.future;
@@ -294,6 +296,7 @@ class TrackCache {
 }
 
 class SpiffCache {
+  static final log = Logger('SpiffCache');
   static const _dir = 'spiff_cache';
   static final Map<Uri, Spiff> _cache = {};
 
@@ -308,21 +311,21 @@ class SpiffCache {
           .replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
       fileName = '$fileName.json';
     }
-    print('$uri -> $fileName');
+    log.fine('$uri -> $fileName');
     return await checkAppDir(_dir).then((dir) {
       return File('${dir.path}/$fileName');
     });
   }
 
   static Future<File> _save(Uri uri, Spiff spiff) async {
-    print('_saving $spiff');
+    log.fine('_saving $spiff');
     final completer = Completer<File>();
     File file = await _cacheFile(uri);
     final data = jsonEncode(spiff.toJson());
     file.writeAsString(data).then((f) {
       completer.complete(f);
     }).catchError((e) {
-      print(e);
+      log.warning(e);
       completer.completeError(e);
     });
     return completer.future;
@@ -331,17 +334,17 @@ class SpiffCache {
   static Future<void> put(Spiff spiff) async {
     String? location = spiff.playlist.location;
     if (location == null || location.isEmpty) {
-      print('put spiff with null location!');
+      log.warning('put spiff with null location!');
       return;
     }
     final key = Uri.parse(location);
     final curr = _cache[key];
-    print('put ${key.toString()} -> ${spiff.playlist.tracks.length} tracks');
+    log.fine('put ${key.toString()} -> ${spiff.playlist.tracks.length} tracks');
     if (curr != null &&
         spiff == curr &&
         spiff.index == curr.index &&
         spiff.position == curr.position) {
-      print('put unchanged');
+      log.fine('put unchanged');
     } else {
       await _save(key, spiff);
       _cache[key] = spiff;
@@ -349,15 +352,15 @@ class SpiffCache {
   }
 
   static Future<Spiff?> get(Uri uri) async {
-    print('get $uri -> ${_cache[uri]}');
+    log.fine('get $uri -> ${_cache[uri]}');
     return _cache[uri];
   }
 
   static Future<Spiff> load(Uri uri) async {
-    print('loading ${uri.toString()}');
+    log.fine('loading ${uri.toString()}');
     final file = await _cacheFile(uri);
     final spiff = await Spiff.fromFile(file);
-    print(
+    log.fine(
         'loaded ${spiff.playlist.title} with ${spiff.playlist.tracks.length} tracks');
     await put(spiff);
     return spiff;
@@ -365,6 +368,7 @@ class SpiffCache {
 }
 
 class OffsetCache {
+  static final log = Logger('SpiffCache');
   static const _dir = 'offset_cache';
 
   static Map<String, Offset> _entries = {};
@@ -378,8 +382,13 @@ class OffsetCache {
     });
   }
 
-  static Offset _decode(File file) {
-    return Offset.fromJson(jsonDecode(file.readAsStringSync()));
+  static Offset? _decode(File file) {
+    try {
+      return Offset.fromJson(jsonDecode(file.readAsStringSync()));
+    } on FormatException {
+      log.warning('_decode failed to parse $file with "${file.readAsStringSync()}"');
+      return null;
+    }
   }
 
   static void _publish() {
@@ -393,7 +402,7 @@ class OffsetCache {
     file.writeAsString(data).then((f) {
       completer.complete(f);
     }).catchError((e) {
-      print(e);
+      log.warning(e);
       completer.completeError(e);
     });
     return completer.future;
@@ -406,7 +415,13 @@ class OffsetCache {
     final files = await dir.list().toList();
     await Future.forEach(files, (FileSystemEntity file) async {
       final offset = _decode(file as File);
-      put(offset);
+      if (offset != null) {
+        put(offset);
+      } else {
+        // corrupt? delete it
+        log.warning('offset deleting $file');
+        file.deleteSync();
+      }
     });
   }
 
@@ -426,10 +441,10 @@ class OffsetCache {
       }
     });
     if (update.isNotEmpty) {
-      print('updating progress with ${update.length} offsets');
+      log.fine('updating progress with ${update.length} offsets');
       await client.updateProgress(Offsets(offsets: update));
     } else {
-      print('no progress to update');
+      log.fine('no progress to update');
     }
   }
 
@@ -444,7 +459,7 @@ class OffsetCache {
           final expired = DateTime.now().isAfter(expirationTime);
           completer.complete(expired ? null : _decode(file));
           if (expired) {
-            print("deleting $file");
+            log.fine("deleting $file");
             remove(etag);
           }
         } else {

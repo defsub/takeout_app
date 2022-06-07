@@ -31,6 +31,7 @@ import 'menu.dart';
 import 'player_handler.dart';
 import 'style.dart';
 import 'util.dart';
+import 'main.dart';
 
 class _PlayState {
   final QueueState queueState;
@@ -52,7 +53,7 @@ class PlayerWidget extends StatelessWidget {
           return;
         }
         if (item.artUri != null) {
-          getImageBackgroundColor(item.artUri.toString())
+          getImageBackgroundColor(context, item.artUri.toString())
               .then((color) => _backgroundColorSubject.add(color));
         }
       });
@@ -81,6 +82,7 @@ class PlayerWidget extends StatelessWidget {
                     return CustomScrollView(slivers: [
                       if (mediaItem != null)
                         SliverAppBar(
+                            foregroundColor: overlayIconColor(context),
                             backgroundColor: backgroundColor,
                             automaticallyImplyLeading: false,
                             expandedHeight: expandedHeight,
@@ -116,8 +118,7 @@ class PlayerWidget extends StatelessWidget {
                                   Text(mediaItem.artist ?? '',
                                       style: Theme.of(context)
                                           .textTheme
-                                          .subtitle1!
-                                          .copyWith(color: Colors.white60)),
+                                          .subtitle1!),
                                   _controls(queue, mediaItem, playing),
                                   _seekBar(),
                                 ]))),

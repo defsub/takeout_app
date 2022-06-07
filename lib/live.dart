@@ -1,0 +1,344 @@
+// Copyright (C) 2022 The Takeout Authors.
+//
+// This file is part of Takeout.
+//
+// Takeout is free software: you can redistribute it and/or modify it under the
+// terms of the GNU Affero General Public License as published by the Free
+// Software Foundation, either version 3 of the License, or (at your option)
+// any later version.
+//
+// Takeout is distributed in the hope that it will be useful, but WITHOUT ANY
+// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+// FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public License for
+// more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
+
+import 'dart:convert';
+import 'dart:async';
+import 'dart:collection';
+import 'package:collection/collection.dart';
+import 'package:rxdart/rxdart.dart';
+import 'package:takeout_app/schema.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:json_annotation/json_annotation.dart';
+import 'package:audio_service/audio_service.dart';
+import 'package:logging/logging.dart';
+import 'playlist.dart';
+
+part 'live.g.dart';
+
+@JsonSerializable(fieldRename: FieldRename.pascal, includeIfNull: false)
+class EventPlaybackState {
+  final bool playing;
+  final int position;
+  final int latency;
+
+  EventPlaybackState(
+      {required this.playing, required this.position, this.latency = 0});
+
+  factory EventPlaybackState.fromPlaybackState(
+      PlaybackState state, int latency) {
+    return EventPlaybackState(
+        playing: state.playing,
+        position: state.position.inMilliseconds,
+        latency: latency);
+  }
+
+  factory EventPlaybackState.fromJson(Map<String, dynamic> json) =>
+      _$EventPlaybackStateFromJson(json);
+
+  Map<String, dynamic> toJson() => _$EventPlaybackStateToJson(this);
+}
+
+@JsonSerializable(fieldRename: FieldRename.pascal, includeIfNull: false)
+class EventTrack implements MediaLocatable {
+  final String creator;
+  final String album;
+  final String title;
+  final String image;
+  final String location;
+  final String key;
+
+  EventTrack({
+    required this.creator,
+    required this.album,
+    required this.title,
+    this.image = "",
+    required this.location,
+    required this.key,
+  });
+
+  factory EventTrack.fromMediaItem(MediaItem item) {
+    return EventTrack(
+        creator: item.artist ?? '',
+        album: item.album ?? '',
+        title: item.title,
+        image: item.artUri.toString(),
+        location: item.extras?[ExtraLocation],
+        key: item.extras?[ExtraETag]);
+  }
+
+  factory EventTrack.fromJson(Map<String, dynamic> json) =>
+      _$EventTrackFromJson(json);
+
+  Map<String, dynamic> toJson() => _$EventTrackToJson(this);
+
+  int get size => 0;
+
+  int get year => throw UnimplementedError;
+
+  int get number => throw UnimplementedError;
+
+  int get disc => throw UnimplementedError;
+
+  String get date => '1970';
+}
+
+@JsonSerializable(fieldRename: FieldRename.pascal, includeIfNull: false)
+class Event {
+  EventTrack? track;
+  EventTrack? nextTrack;
+  EventPlaybackState? playbackState;
+
+  Event({this.track, this.playbackState, this.nextTrack});
+
+  factory Event.fromJson(Map<String, dynamic> json) => _$EventFromJson(json);
+
+  Map<String, dynamic> toJson() => _$EventToJson(this);
+
+  bool isTrack() {
+    return track != null;
+  }
+
+  bool isPlaybackState() {
+    return playbackState != null;
+  }
+
+  bool hasNextTrack() {
+    return nextTrack != null;
+  }
+}
+
+class Latency {
+  final size;
+  final q = Queue<int>();
+
+  Latency({this.size = 3});
+
+  void add(int val) {
+    while (q.length >= size) {
+      q.removeLast();
+    }
+    q.addFirst(val);
+  }
+
+  double get value {
+    return q.average;
+  }
+}
+
+class LiveClient {
+  static final log = Logger('LiveClient');
+  final Uri uri;
+  final String token;
+  final eventSubject = PublishSubject<Event>();
+  Latency? latency;
+  WebSocketChannel? channel;
+  Timer? latencyTimer;
+  bool _allowReconnect = true;
+
+  LiveClient(String host, String token)
+      : uri = Uri.parse('wss://$host/live'),
+        this.token = token;
+
+  void connect() {
+    log.info('connecting to $uri');
+    channel = WebSocketChannel.connect(uri);
+    channel!.sink.add('/auth $token');
+    listen();
+  }
+
+  void disconnect() {
+    _allowReconnect = false;
+    channel?.sink.close();
+    channel = null;
+    latencyTimer?.cancel();
+    latencyTimer = null;
+  }
+
+  void reconnect() {
+    if (!_allowReconnect) {
+      return;
+    }
+    final delay = Duration(seconds: 3);
+    log.info('reconnecting after $delay');
+    Future.delayed(delay, () {
+      connect();
+    });
+  }
+
+  void sendPing(int time) {
+    channel?.sink.add('/ping $time');
+  }
+
+  void send(Event event) {
+    final json = jsonEncode(event.toJson());
+    channel?.sink.add(json);
+  }
+
+  void sendMediaItem(MediaItem mediaItem, MediaItem? nextItem) {
+    send(Event(
+        track: EventTrack.fromMediaItem(mediaItem),
+        nextTrack:
+            nextItem != null ? EventTrack.fromMediaItem(nextItem) : null));
+  }
+
+  void sendPlayback(PlaybackState playbackState) {
+    send(Event(
+        playbackState: EventPlaybackState.fromPlaybackState(
+            playbackState, latency?.value.round() ?? 0)));
+  }
+
+  void listen() async {
+    final pingDuration = Duration(seconds: 15);
+    latencyTimer?.cancel();
+    latency = Latency();
+
+    final doPing = (Timer) {
+      sendPing(DateTime.now().millisecondsSinceEpoch);
+    };
+    latencyTimer = Timer.periodic(pingDuration, doPing);
+    doPing(latencyTimer);
+
+    channel?.stream.listen(
+        (msg) {
+          log.fine('got $msg');
+          if (msg.toString().startsWith('/')) {
+            final cmd = msg.toString().split(' ');
+            if (cmd[0] == '/pong') {
+              final now = DateTime.now().millisecondsSinceEpoch;
+              final time = int.tryParse(cmd[1]) ?? now;
+              final l = (now - time) ~/ 2;
+              latency?.add(l);
+              log.fine('latency is $l (avg ${latency?.value})');
+            }
+          } else {
+            eventSubject.add(Event.fromJson(jsonDecode(msg)));
+          }
+        },
+        cancelOnError: true,
+        onError: (error) {
+          log.warning('error $error', error);
+          reconnect();
+        },
+        onDone: () {
+          log.fine('done');
+          reconnect();
+        });
+  }
+}
+
+class LiveShare {
+  static final log = Logger('LiveShare');
+
+  final LiveClient client;
+  final AudioHandler audioHandler;
+
+  LiveShare(this.client, this.audioHandler);
+
+  void connect() async {
+    client.connect();
+
+    audioHandler.mediaItem
+        .debounceTime(Duration(seconds: 3))
+        .listen((mediaItem) {
+      if (mediaItem == null) {
+        return;
+      }
+      final queue = audioHandler.queue.value;
+      final index = queue.indexOf(mediaItem);
+      if (index + 1 < queue.length) {
+        final nextItem = queue[index + 1];
+        client.sendMediaItem(mediaItem, nextItem);
+      } else {
+        client.sendMediaItem(mediaItem, null);
+      }
+    });
+
+    audioHandler.playbackState.distinct().listen((playbackState) {
+      client.sendPlayback(playbackState);
+    });
+  }
+}
+
+class LiveFollow {
+  static final log = Logger('LiveFollow');
+
+  final LiveClient client;
+  final AudioHandler audioHandler;
+
+  LiveFollow(this.client, this.audioHandler);
+
+  void _enqueueNextTrack(EventTrack track) async {
+    final index = _trackQueueIndex(track);
+    if (index == -1) {
+      final mediaItem = await MediaQueue.trackMediaItem(track);
+      audioHandler.addQueueItem(mediaItem);
+    }
+  }
+
+  bool _isTrackCurrentItem(EventTrack track) {
+    final currentItem = audioHandler.mediaItem.value;
+    return currentItem?.extras?[ExtraETag] == track.key;
+  }
+
+  int _trackQueueIndex(EventTrack track) {
+    final queue = audioHandler.queue.value;
+    return queue.indexWhere((item) => item.extras?[ExtraETag] == track.key);
+  }
+
+  void connect() async {
+    client.connect();
+
+    client.eventSubject.listen((event) {
+      if (event.isTrack()) {
+        final track = event.track!;
+        if (_isTrackCurrentItem(track) == false) {
+          final index = _trackQueueIndex(track);
+          if (index != -1) {
+            audioHandler.skipToQueueItem(index);
+          } else {
+            // start with a new queue
+            MediaQueue.playTracks(<MediaLocatable>[
+              event.track!,
+              if (event.hasNextTrack()) event.nextTrack!
+            ]);
+          }
+        }
+        if (event.hasNextTrack()) {
+          _enqueueNextTrack(event.nextTrack!);
+        }
+      } else if (event.isPlaybackState()) {
+        final eventState = event.playbackState!;
+        if (eventState.playing) {
+          final nextPos = eventState.position +
+              eventState.latency +
+              (client.latency?.value ?? 0);
+          final pos = audioHandler.playbackState.value.position.inMilliseconds;
+          final diff = (pos - nextPos).abs();
+          log.fine('seek to ${eventState.position} / $pos / $nextPos ($diff)');
+          if (diff > 50) {
+            audioHandler.seek(Duration(milliseconds: nextPos.round()));
+          }
+          if (!audioHandler.playbackState.value.playing) {
+            audioHandler.play();
+          }
+        } else {
+          audioHandler.pause();
+        }
+      }
+    });
+  }
+}

@@ -19,7 +19,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:palette_generator/palette_generator.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:takeout_app/util.dart';
+import 'package:logging/logging.dart';
 import 'package:octo_image/octo_image.dart';
 import 'util.dart';
 
@@ -81,6 +81,8 @@ class Artwork {
 }
 
 class ArtworkBuilder {
+  static final log = Logger('ArtworkBuilder');
+
   final Artwork? primary;
   final Artwork? secondary;
   final Icon placeholder;
@@ -113,7 +115,6 @@ class ArtworkBuilder {
   Widget _cachedImage(Artwork artwork) {
     if (ARTWORK_ERRORS.contains(artwork.url)) {
       // TODO not needed due to pick?
-      print('errorUrl ${artwork.url}');
       return errorIcon;
     }
     urlStream.add(artwork.url);
@@ -126,7 +127,7 @@ class ArtworkBuilder {
         fit: artwork.fit,
         placeholderBuilder: (context) => artwork.placeholder ?? placeholder,
         errorBuilder: (context, error, stack) {
-          print('error $error');
+          log.warning(error);
           ARTWORK_ERRORS.add(imageProvider.url);
           if (imageProvider.url == primary?.url && secondary != null) {
             // primary failed, forget it and use secondary
@@ -160,16 +161,29 @@ class ArtworkBuilder {
         : _cachedImage(a);
   }
 
-  Future<Color?> get backgroundColor async {
+  Future<Color?> getBackgroundColor(BuildContext context) async {
     final imageProvider = _provider;
     if (imageProvider == null) {
       return null;
     }
     final paletteGenerator =
-        await PaletteGenerator.fromImageProvider(imageProvider);
-    return paletteGenerator.darkVibrantColor?.color ??
-        paletteGenerator.darkMutedColor?.color ??
-        Colors.black;
+    await PaletteGenerator.fromImageProvider(imageProvider);
+    final brightness = MediaQuery
+        .of(context)
+        .platformBrightness;
+    if (brightness == Brightness.dark) {
+      return paletteGenerator.darkVibrantColor?.color ??
+          paletteGenerator.darkMutedColor?.color ??
+          Theme
+              .of(context)
+              .backgroundColor;
+    } else {
+      return paletteGenerator.lightVibrantColor?.color ??
+          paletteGenerator.lightMutedColor?.color ??
+          Theme
+              .of(context)
+              .backgroundColor;
+    }
   }
 }
 
@@ -203,16 +217,23 @@ Widget playerCover(String url) {
 
 final _colorCache = Map<String, Color>();
 
-Future<Color> getImageBackgroundColor(String url) async {
+Future<Color> getImageBackgroundColor(BuildContext context, String url) async {
   var color = _colorCache[url];
   if (color != null) {
     return color;
   }
   final paletteGenerator =
       await PaletteGenerator.fromImageProvider(CachedNetworkImageProvider(url));
-  color = paletteGenerator.darkVibrantColor?.color ??
-      paletteGenerator.darkMutedColor?.color ??
-      Colors.black;
+  final brightness = MediaQuery.of(context).platformBrightness;
+  if (brightness == Brightness.dark) {
+    color = paletteGenerator.darkVibrantColor?.color ??
+        paletteGenerator.darkMutedColor?.color ??
+        Theme.of(context).backgroundColor;
+  } else {
+    color = paletteGenerator.lightVibrantColor?.color ??
+        paletteGenerator.lightMutedColor?.color ??
+        Theme.of(context).backgroundColor;
+  }
   _colorCache[url] = color;
   return color;
 }

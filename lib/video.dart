@@ -57,7 +57,7 @@ class _MovieWidgetState extends State<MovieWidget> {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<Color?>(
-        future: getImageBackgroundColor(_movie.image),
+        future: getImageBackgroundColor(context, _movie.image),
         builder: (context, snapshot) {
           final backgroundColor = snapshot.data;
           final screen = MediaQuery.of(context).size;
@@ -78,6 +78,8 @@ class _MovieWidgetState extends State<MovieWidget> {
                             return CustomScrollView(slivers: [
                               SliverAppBar(
                                 // actions: [ ],
+                                foregroundColor: overlayIconColor(context),
+                                backgroundColor: Colors.black,
                                 expandedHeight: expandedHeight,
                                 flexibleSpace: FlexibleSpaceBar(
                                     // centerTitle: true,
@@ -103,7 +105,7 @@ class _MovieWidgetState extends State<MovieWidget> {
                                       ),
                                       Align(
                                           alignment: Alignment.bottomLeft,
-                                          child: _playButton(
+                                          child: _playButton(context,
                                               cacheSnapshot, isCached)),
                                       Align(
                                           alignment: Alignment.bottomCenter,
@@ -120,7 +122,7 @@ class _MovieWidgetState extends State<MovieWidget> {
                                       child: Column(children: [
                                         _title(),
                                         _tagline(),
-                                        _details(cacheSnapshot),
+                                        _details(context, cacheSnapshot),
                                         if (_view != null && _view!.hasGenres())
                                           _genres(),
                                         // GestureDetector(
@@ -166,19 +168,21 @@ class _MovieWidgetState extends State<MovieWidget> {
             Text(_movie.title, style: Theme.of(context).textTheme.headline5));
   }
 
-  Widget _rating() {
+  Widget _rating(BuildContext context) {
+    final boxColor = Theme.of(context).textTheme.bodyText1?.color ??
+        Theme.of(context).colorScheme.outline;
     return Container(
       margin: const EdgeInsets.all(15.0),
       padding: const EdgeInsets.all(3.0),
-      decoration: BoxDecoration(border: Border.all(color: Colors.white)),
+      decoration: BoxDecoration(border: Border.all(color: boxColor)),
       child: Text(_movie.rating),
     );
   }
 
-  Widget _details(CacheSnapshot snapshot) {
+  Widget _details(BuildContext context, CacheSnapshot snapshot) {
     var list = <Widget>[];
     if (_movie.rating.isNotEmpty) {
-      list.add(_rating());
+      list.add(_rating(context));
     }
 
     final fields = <String>[];
@@ -213,10 +217,7 @@ class _MovieWidgetState extends State<MovieWidget> {
     return Container(
         padding: EdgeInsets.fromLTRB(5, 5, 5, 5),
         child: Text(_movie.tagline,
-            style: Theme.of(context)
-                .textTheme
-                .subtitle1!
-                .copyWith(color: Colors.white60)));
+            style: Theme.of(context).textTheme.subtitle1!));
   }
 
   Widget _genres() {
@@ -227,23 +228,28 @@ class _MovieWidgetState extends State<MovieWidget> {
     ]));
   }
 
-  Widget _playButton(CacheSnapshot snapshot, bool isCached) {
+  Widget _playButton(
+      BuildContext context, CacheSnapshot snapshot, bool isCached) {
     final pos = snapshot.position(_movie) ?? Duration.zero;
     if (isCached) {
       return IconButton(
+          color: overlayIconColor(context),
           icon: Icon(Icons.play_arrow, size: 32),
           onPressed: () => _onPlay(pos));
     }
     return allowStreamingIconButton(
-        Icon(Icons.play_arrow, size: 32), () => _onPlay(pos));
+        context, Icon(Icons.play_arrow, size: 32), () => _onPlay(pos));
   }
 
   Widget _downloadButton(BuildContext context, bool isCached) {
     if (isCached) {
-      return IconButton(icon: Icon(IconsDownloadDone), onPressed: () => {});
+      return IconButton(
+          color: overlayIconColor(context),
+          icon: Icon(IconsDownloadDone),
+          onPressed: () => {});
     }
     return allowDownloadIconButton(
-        Icon(IconsDownload), () => _onDownload(context));
+        context, Icon(IconsDownload), () => _onDownload(context));
   }
 
   void _onPlay(Duration startOffset) {
@@ -344,7 +350,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<Color?>(
-        future: getImageBackgroundColor(_person.image),
+        future: getImageBackgroundColor(context, _person.image),
         builder: (context, snapshot) {
           final backgroundColor = snapshot.data;
           final screen = MediaQuery.of(context).size;
@@ -356,6 +362,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                   child: CustomScrollView(slivers: [
                     SliverAppBar(
                       // actions: [ ],
+                      foregroundColor: overlayIconColor(context),
                       expandedHeight: expandedHeight,
                       flexibleSpace: FlexibleSpaceBar(
                           // centerTitle: true,

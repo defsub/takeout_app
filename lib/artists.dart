@@ -21,8 +21,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:recase/recase.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:takeout_app/cache.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:logging/logging.dart';
 
 import 'client.dart';
 import 'cover.dart';
@@ -37,6 +37,7 @@ import 'widget.dart';
 import 'menu.dart';
 import 'util.dart';
 import 'global.dart';
+import 'cache.dart';
 
 class ArtistsWidget extends StatefulWidget {
   final ArtistsView _view;
@@ -53,6 +54,8 @@ class ArtistsWidget extends StatefulWidget {
 }
 
 class _ArtistsState extends State<ArtistsWidget> {
+  static final log = Logger('ArtistsState');
+
   ArtistsView _view;
   String? genre;
   String? area;
@@ -94,7 +97,7 @@ class _ArtistsState extends State<ArtistsWidget> {
         });
       }
     } catch (error) {
-      print('refresh err $error');
+      log.warning(error);
     }
   }
 }
@@ -159,6 +162,8 @@ class ArtistWidget extends StatefulWidget {
 }
 
 class _ArtistState extends State<ArtistWidget> with ArtistBuilder {
+  static final log = Logger('ArtistState');
+
   final Artist _artist;
   ArtistView? _view;
 
@@ -235,7 +240,7 @@ class _ArtistState extends State<ArtistWidget> with ArtistBuilder {
           MaterialPageRoute(
               builder: (context) => ArtistsWidget(result, genre: genre)));
     } catch (error) {
-      print('refresh err $error');
+      log.warning(error);
     }
   }
 
@@ -248,7 +253,7 @@ class _ArtistState extends State<ArtistWidget> with ArtistBuilder {
           MaterialPageRoute(
               builder: (context) => ArtistsWidget(result, area: area)));
     } catch (error) {
-      print('refresh err $error');
+      log.warning(error);
     }
   }
 
@@ -281,12 +286,18 @@ class _ArtistState extends State<ArtistWidget> with ArtistBuilder {
     ];
   }
 
-  Widget leftButton() {
-    return IconButton(icon: Icon(Icons.shuffle_sharp), onPressed: _onShuffle);
+  Widget leftButton(BuildContext context) {
+    return IconButton(
+        color: overlayIconColor(context),
+        icon: Icon(Icons.shuffle_sharp),
+        onPressed: _onShuffle);
   }
 
-  Widget rightButton() {
-    return IconButton(icon: Icon(Icons.radio), onPressed: _onRadio);
+  Widget rightButton(BuildContext context) {
+    return IconButton(
+        color: overlayIconColor(context),
+        icon: Icon(Icons.radio),
+        onPressed: _onRadio);
   }
 
   List<Widget> slivers(CacheSnapshot snapshot) {
@@ -472,14 +483,18 @@ class _ArtistTrackListState extends State<ArtistTrackListWidget>
         ])
       ];
 
-  Widget leftButton() {
+  Widget leftButton(BuildContext context) {
     return IconButton(
-        icon: Icon(Icons.play_arrow, size: 32), onPressed: _onPlay);
+        color: overlayIconColor(context),
+        icon: Icon(Icons.play_arrow, size: 32),
+        onPressed: _onPlay);
   }
 
-  Widget rightButton() {
+  Widget rightButton(BuildContext context) {
     return IconButton(
-        icon: Icon(IconsDownload), onPressed: () => _onDownload(context));
+        color: overlayIconColor(context),
+        icon: Icon(IconsDownload),
+        onPressed: () => _onDownload(context));
   }
 
   List<Widget> slivers(CacheSnapshot snapshot) {
@@ -526,9 +541,9 @@ mixin ArtistBuilder {
 
   List<Widget> actions();
 
-  Widget leftButton();
+  Widget leftButton(BuildContext context);
 
-  Widget rightButton();
+  Widget rightButton(BuildContext context);
 
   List<Widget> slivers(CacheSnapshot snapshot);
 
@@ -583,7 +598,7 @@ mixin ArtistBuilder {
                 final url = snapshot.data;
                 return FutureBuilder<Color?>(
                     future: url != null
-                        ? artwork.backgroundColor
+                        ? artwork.getBackgroundColor(context)
                         : Future.value(),
                     builder: (context, snapshot) => Scaffold(
                         backgroundColor: snapshot.data,
@@ -598,6 +613,7 @@ mixin ArtistBuilder {
                                           CacheSnapshot.empty();
                                       return CustomScrollView(slivers: [
                                         SliverAppBar(
+                                            foregroundColor: overlayIconColor(context),
                                             expandedHeight: expandedHeight,
                                             actions: actions(),
                                             flexibleSpace: FlexibleSpaceBar(
@@ -628,11 +644,13 @@ mixin ArtistBuilder {
                                                       Align(
                                                           alignment: Alignment
                                                               .bottomLeft,
-                                                          child: leftButton()),
+                                                          child: leftButton(
+                                                              context)),
                                                       Align(
                                                           alignment: Alignment
                                                               .bottomRight,
-                                                          child: rightButton()),
+                                                          child: rightButton(
+                                                              context)),
                                                     ]))),
                                         SliverToBoxAdapter(
                                             child: Container(

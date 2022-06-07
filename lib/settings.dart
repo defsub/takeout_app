@@ -19,6 +19,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_settings_screens/flutter_settings_screens.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:logging/logging.dart';
 
 import 'model.dart';
 import 'style.dart';
@@ -28,6 +29,7 @@ const settingAllowDownload = 'allow_download';
 const settingAllowArtistArtwork = 'allow_artist_artwork';
 const settingHomeGridType = 'home_grid_type';
 const settingMediaType = 'home_media_type';
+const settingLiveMode = 'live_mode';
 
 MediaType settingsMediaType({MediaType type = MediaType.music}) {
   final v = Settings.getValue(settingMediaType, type.index);
@@ -39,11 +41,17 @@ Future<void> changeMediaType(MediaType mediaType) async {
   return Settings.setValue(settingMediaType, mediaType.index);
 }
 
+enum LiveType { none, share, follow }
 enum GridType { mix, downloads, released, added }
 
 GridType settingsGridType(String key, GridType def) {
   final v = Settings.getValue(key, def.index);
   return GridType.values[v];
+}
+
+LiveType settingsLiveType([LiveType def = LiveType.none]) {
+  final v = Settings.getValue(settingLiveMode, def.index);
+  return LiveType.values[v];
 }
 
 final settingsChangeSubject =
@@ -55,12 +63,27 @@ class AppSettings extends StatefulWidget {
 }
 
 class _AppSettingsState extends State<AppSettings> {
+  static final log = Logger('AppSettingsState');
+
   @override
   Widget build(BuildContext context) {
     return Container(
       child: SettingsScreen(
         title: AppLocalizations.of(context)!.settingsLabel,
         children: [
+          SettingsGroup(title: 'Live', children: <Widget>[
+            DropDownSettingsTile<int>(title: 'Live Mode', settingKey: settingLiveMode,
+                values: <int, String>{
+                  LiveType.none.index: 'None',
+                  LiveType.share.index: 'Share',
+                  LiveType.follow.index: 'Follow',
+                },
+                selected: Settings.getValue(
+                    settingLiveMode, LiveType.none.index),
+                onChange: (value) {
+                  settingsChangeSubject.add(settingLiveMode);
+                })
+          ]),
           SettingsGroup(
               title: AppLocalizations.of(context)!.homeSettingsTitle,
               children: <Widget>[
@@ -98,7 +121,7 @@ class _AppSettingsState extends State<AppSettings> {
                 disabledLabel: AppLocalizations.of(context)!.settingDisabled,
                 leading: Icon(Icons.cloud_outlined),
                 onChange: (value) {
-                  debugPrint('streaming: $value');
+                  log.finer('streaming: $value');
                 },
               ),
               SwitchSettingsTile(
@@ -110,7 +133,7 @@ class _AppSettingsState extends State<AppSettings> {
                 disabledLabel: AppLocalizations.of(context)!.settingDisabled,
                 leading: Icon(IconsDownload),
                 onChange: (value) {
-                  debugPrint('downloads: $value');
+                  log.finer('downloads: $value');
                 },
               ),
               SwitchSettingsTile(
@@ -121,7 +144,7 @@ class _AppSettingsState extends State<AppSettings> {
                 disabledLabel: AppLocalizations.of(context)!.settingDisabled,
                 leading: Icon(Icons.image_outlined),
                 onChange: (value) {
-                  debugPrint('artwork: $value');
+                  log.finer('artwork: $value');
                 },
               ),
             ],

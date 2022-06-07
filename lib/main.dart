@@ -29,7 +29,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_settings_screens/flutter_settings_screens.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:takeout_app/progress.dart';
+import 'package:logging/logging.dart';
+import 'package:dynamic_color/dynamic_color.dart';
 
 import 'artists.dart';
 import 'client.dart';
@@ -45,10 +46,18 @@ import 'global.dart';
 import 'downloads.dart';
 import 'cache.dart';
 import 'settings.dart';
+import 'progress.dart';
+import 'live.dart';
 
 late AudioPlayerHandler audioPlayerHandler;
 
 void main() {
+  // setup the logger
+  Logger.root.level = Level.FINE;
+  Logger.root.onRecord.listen((record) {
+    print('${record.loggerName}: ${record.message}');
+  });
+
   Settings.init().then((_) async {
     audioPlayerHandler = AudioPlayerHandler();
     audioHandler = await AudioService.init(
@@ -71,22 +80,27 @@ final _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      onGenerateTitle: (context) {
-        return AppLocalizations.of(context)!.takeoutTitle;
-      },
-      localizationsDelegates: [
-        AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: [
-        const Locale('en', ''),
-      ],
-      home: _TakeoutWidget(),
-      darkTheme: _darkTheme(),
-    );
+    return DynamicColorBuilder(
+        builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
+      return MaterialApp(
+          onGenerateTitle: (context) {
+            return AppLocalizations.of(context)!.takeoutTitle;
+          },
+          localizationsDelegates: [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: [
+            const Locale('en', ''),
+          ],
+          home: _TakeoutWidget(),
+          theme: ThemeData.light()
+              .copyWith(useMaterial3: true, colorScheme: lightDynamic),
+          darkTheme: ThemeData.dark()
+              .copyWith(useMaterial3: true, colorScheme: darkDynamic));
+    });
   }
 
   ThemeData _darkTheme() {
@@ -98,7 +112,6 @@ class MyApp extends StatelessWidget {
           secondary: Colors.orangeAccent,
           secondaryContainer: Colors.orangeAccent),
       indicatorColor: Colors.orangeAccent,
-      // accentColor: Colors.orangeAccent,
     );
   }
 }
@@ -111,6 +124,7 @@ class _TakeoutWidget extends StatefulWidget {
 }
 
 class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
+  static final log = Logger('TakeoutState');
   static final _loginStream = BehaviorSubject<bool>();
 
   static Stream<bool> get loginStream => _loginStream.stream;
@@ -148,7 +162,7 @@ class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
   void initState() {
     super.initState();
 
-    WidgetsBinding.instance!.addObserver(this);
+    WidgetsBinding.instance.addObserver(this);
 
     _loginSubscription = _loginStream.listen(_onLogin);
 
@@ -162,7 +176,7 @@ class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
 
   @override
   void dispose() {
-    WidgetsBinding.instance?.removeObserver(this);
+    WidgetsBinding.instance.removeObserver(this);
     snackBarStateSubject.close();
     _connectivitySubscription?.cancel();
     _loginSubscription?.cancel();
@@ -209,12 +223,12 @@ class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
     try {
       result = await _connectivity.checkConnectivity();
     } catch (e) {
-      print(e.toString());
-      return Future.value(null);
+      log.warning(e);
+      return Future.value();
     }
 
     if (!mounted) {
-      return Future.value(null);
+      return Future.value();
     }
 
     return _updateConnectionStatus(result);
@@ -226,10 +240,10 @@ class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
       case ConnectivityResult.mobile:
       case ConnectivityResult.none:
         _connectivityStream.add(result);
-        print('connectivity state $result');
+        log.finer('connectivity state $result');
         break;
       default:
-        print('connectivity state failed');
+        log.warning('connectivity state failed');
         break;
     }
   }
@@ -239,6 +253,7 @@ class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
       _loggedIn = loggedIn;
       if (loggedIn) {
         _load();
+        _share();
       }
     });
   }
@@ -301,9 +316,27 @@ class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
     if (_playbackState?.playing == true) {
       final streaming = mediaItem?.isRemote() ?? false;
       if (streaming && allowStreaming(connectivityStream.value) == false) {
-        print('mediaItem pause due to loss of wifi');
+        log.finer('mediaItem pause due to loss of wifi');
         audioHandler.pause();
       }
+    }
+  }
+
+  late LiveClient live;
+
+  void _share() async {
+    final client = Client();
+    final cookie = await client.getCookie();
+    final url = await client.getEndpoint();
+    final uri = Uri.parse(url);
+    live = LiveClient('${uri.host}:${uri.port}', cookie!);
+    if (settingsLiveType() == LiveType.follow) {
+      final follow = LiveFollow(live, audioHandler);
+      follow.connect();
+    }
+    if (settingsLiveType() == LiveType.share) {
+      final follow = LiveShare(live, audioHandler);
+      follow.connect();
     }
   }
 
@@ -381,7 +414,7 @@ class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
           final isFirstRouteInCurrentTab =
               !await navigatorKeys[_selectedIndex].currentState!.maybePop();
 
-          print('isFirstRouteInCurrentTab: ' +
+          log.fine('isFirstRouteInCurrentTab: ' +
               isFirstRouteInCurrentTab.toString());
 
           // let system handle back button if we're on the first route
@@ -505,24 +538,33 @@ class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
   }
 }
 
-Widget allowStreamingIconButton(Icon icon, void Function() onPressed) {
+Color overlayIconColor(BuildContext context) {
+  // Theme.of(context).colorScheme.onBackground
+  return Colors.white;
+}
+
+Widget allowStreamingIconButton(
+    BuildContext context, Icon icon, void Function() onPressed) {
   return StreamBuilder<ConnectivityResult>(
       stream: TakeoutState.connectivityStream.distinct(),
       builder: (context, snapshot) {
         final result = snapshot.data;
         return IconButton(
+            color: overlayIconColor(context),
             icon: icon,
             onPressed:
                 TakeoutState.allowStreaming(result) ? () => onPressed() : null);
       });
 }
 
-Widget allowDownloadIconButton(Icon icon, void Function() onPressed) {
+Widget allowDownloadIconButton(
+    BuildContext context, Icon icon, void Function() onPressed) {
   return StreamBuilder<ConnectivityResult>(
       stream: TakeoutState.connectivityStream.distinct(),
       builder: (context, snapshot) {
         final result = snapshot.data;
         return IconButton(
+            color: overlayIconColor(context),
             icon: icon,
             onPressed:
                 TakeoutState.allowDownload(result) ? () => onPressed() : null);

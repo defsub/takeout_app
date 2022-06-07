@@ -19,12 +19,10 @@ import 'dart:collection';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:takeout_app/global.dart';
-import 'package:takeout_app/menu.dart';
-import 'package:takeout_app/model.dart';
-import 'package:takeout_app/video.dart';
+
 import 'package:url_launcher/url_launcher.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:logging/logging.dart';
 
 import 'client.dart';
 import 'downloads.dart';
@@ -38,6 +36,10 @@ import 'cache.dart';
 import 'podcasts.dart';
 import 'progress.dart';
 import 'util.dart';
+import 'global.dart';
+import 'menu.dart';
+import 'model.dart';
+import 'video.dart';
 
 class HomeWidget extends StatefulWidget {
   final IndexView _index;
@@ -57,6 +59,8 @@ class _GridState {
 }
 
 class HomeState extends State<HomeWidget> {
+  static final log = Logger('HomeState');
+
   IndexView _index;
   HomeView _view;
 
@@ -114,7 +118,7 @@ class HomeState extends State<HomeWidget> {
         });
       }
     } catch (error) {
-      print('refresh err $error');
+      log.warning(error);
     }
   }
 }
@@ -130,7 +134,7 @@ abstract class _HomeItem {
 
   String get key;
 
-  Widget get trailing;
+  Widget getTrailing(BuildContext context);
 
   Widget get image;
 
@@ -166,19 +170,19 @@ class _MediaHomeItem extends _HomeItem {
   @override
   String? get subtitle => album.creator.isNotEmpty ? album.creator : null;
 
-  Widget _downloadIcon(SpiffDownloadEntry download, IconData completeIcon,
-      IconData downloadingIcon) {
+  Widget _downloadIcon(BuildContext context, SpiffDownloadEntry download,
+      IconData completeIcon, IconData downloadingIcon) {
     final isCached = snapshot.containsAll(download.spiff.playlist.tracks);
     return Icon(isCached ? completeIcon : downloadingIcon,
-        color: Colors.white70);
+        color: overlayIconColor(context));
   }
 
   @override
-  Widget get trailing {
+  Widget getTrailing(BuildContext context) {
     var year = album.year;
     if (album is SpiffDownloadEntry) {
-      return _downloadIcon(
-          album as SpiffDownloadEntry, IconsDownloadDone, IconsDownload);
+      return _downloadIcon(context, album as SpiffDownloadEntry,
+          IconsDownloadDone, IconsDownload);
     } else if (year > 1) {
       return Text('$year');
     }
@@ -227,7 +231,7 @@ class _MovieHomeItem extends _MediaHomeItem {
   String? get subtitle => null;
 
   @override
-  Widget get trailing => Container();
+  Widget getTrailing(BuildContext context) => Container();
 
   @override
   Widget get image {
@@ -254,7 +258,7 @@ class _SeriesHomeItem extends _MediaHomeItem {
   String? get subtitle => when((album as Series).date);
 
   @override
-  Widget get trailing => Container();
+  Widget getTrailing(BuildContext context) => Container();
 
   @override
   Widget get image {
@@ -319,7 +323,7 @@ abstract class _HomeGrid extends StatelessWidget {
                               title: Text(i.title),
                               subtitle:
                                   i.subtitle != null ? Text(i.subtitle!) : null,
-                              trailing: i.trailing,
+                              trailing: i.getTrailing(context),
                             ))
                         : null,
                     child: i.image,

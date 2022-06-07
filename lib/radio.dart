@@ -18,6 +18,7 @@
 import 'package:flutter/material.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:logging/logging.dart';
 
 import 'schema.dart';
 import 'main.dart';
@@ -41,6 +42,8 @@ class RadioWidget extends StatefulWidget {
 }
 
 class RadioState extends State<RadioWidget> {
+  static final log = Logger('RadioState');
+
   RadioView _view;
 
   RadioState(this._view);
@@ -173,7 +176,7 @@ class RadioState extends State<RadioWidget> {
         });
       }
     } catch (error) {
-      print('refresh err $error');
+      log.warning(error);
     }
   }
 }
@@ -188,6 +191,8 @@ class RefreshSpiffWidget extends StatefulWidget {
 }
 
 class _RefreshSpiffState extends State<RefreshSpiffWidget> {
+  static final log = Logger('RefreshSpiffState');
+
   final Future<Spiff> Function()? _fetchSpiff;
   Spiff? _spiff;
 
@@ -275,14 +280,13 @@ class _RefreshSpiffState extends State<RefreshSpiffWidget> {
   Future<void> _onRefresh() async {
     try {
       final result = await _fetchSpiff!();
-      print('got $result');
       if (mounted) {
         setState(() {
           _spiff = result;
         });
       }
     } catch (error) {
-      print('refresh err $error');
+      log.warning(error);
     }
   }
 }

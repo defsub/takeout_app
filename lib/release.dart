@@ -97,7 +97,7 @@ class _ReleaseState extends State<ReleaseWidget> {
     final releaseGroupUrl =
         'https://musicbrainz.org/release-group/${release.rgid}';
     return FutureBuilder<Color?>(
-        future: getImageBackgroundColor(release.image),
+        future: getImageBackgroundColor(context, release.image),
         builder: (context, snapshot) {
           final backgroundColor = snapshot.data;
           return Scaffold(
@@ -121,6 +121,7 @@ class _ReleaseState extends State<ReleaseWidget> {
                             // floating: true,
                             // snap: false,
                             // backgroundColor: backgroundColor,
+                            foregroundColor: overlayIconColor(context),
                             expandedHeight: expandedHeight,
                             actions: [
                               popupMenu(context, [
@@ -162,10 +163,11 @@ class _ReleaseState extends State<ReleaseWidget> {
                                   ),
                                   Align(
                                       alignment: Alignment.bottomLeft,
-                                      child: _playButton(isCached)),
+                                      child: _playButton(context, isCached)),
                                   Align(
                                       alignment: Alignment.bottomRight,
-                                      child: _downloadButton(isCached)),
+                                      child:
+                                          _downloadButton(context, isCached)),
                                 ])),
                           ),
                           SliverToBoxAdapter(
@@ -203,27 +205,29 @@ class _ReleaseState extends State<ReleaseWidget> {
     if (isNotNullOrEmpty(release.date)) {
       artist = merge([artist, year(release.date ?? '')]);
     }
-    return Text(artist,
-        style: Theme.of(context)
-            .textTheme
-            .subtitle1!
-            .copyWith(color: Colors.white60));
+    return Text(artist, style: Theme.of(context).textTheme.subtitle1!);
   }
 
-  Widget _playButton(bool isCached) {
+  Widget _playButton(BuildContext context, bool isCached) {
     if (isCached) {
       return IconButton(
-          icon: Icon(Icons.play_arrow, size: 32), onPressed: () => _onPlay());
+          color: overlayIconColor(context),
+          icon: Icon(Icons.play_arrow, size: 32),
+          onPressed: () => _onPlay());
     }
-    return allowStreamingIconButton(Icon(Icons.play_arrow, size: 32), _onPlay);
+    return allowStreamingIconButton(
+        context, Icon(Icons.play_arrow, size: 32), _onPlay);
   }
 
-  Widget _downloadButton(bool isCached) {
+  Widget _downloadButton(BuildContext context, bool isCached) {
     if (isCached) {
-      return IconButton(icon: Icon(IconsDownloadDone), onPressed: () => {});
+      return IconButton(
+          color: overlayIconColor(context),
+          icon: Icon(IconsDownloadDone),
+          onPressed: () => {});
     }
     return allowDownloadIconButton(
-        Icon(IconsDownload), () => _onDownload(context));
+        context, Icon(IconsDownload), () => _onDownload(context));
   }
 }
 
@@ -251,7 +255,7 @@ class _ReleaseTracksWidget extends StatelessWidget {
               if (e.discNum > 1) {
                 children.add(Divider());
               }
-              children.add(smallHeading(
+              children.add(smallHeading(context,
                   AppLocalizations.of(context)!.discLabel(e.discNum, discs)));
               d = e.discNum;
             }
@@ -260,13 +264,12 @@ class _ReleaseTracksWidget extends StatelessWidget {
                 : '';
             final subrelease = _view.tracks[i].releaseTitle;
             final subtitle = merge([subartist, subrelease]);
-
+            final trackNumStyle = Theme.of(context).textTheme.caption;
             children.add(ListTile(
                 onTap: () => _onTap(i),
                 leading: Container(
                     padding: EdgeInsets.fromLTRB(12, 12, 0, 0),
-                    child: Text('${e.trackNum}',
-                        style: TextStyle(fontWeight: FontWeight.w200))),
+                    child: Text('${e.trackNum}', style: trackNumStyle)),
                 trailing: _trailing(context, cacheSnapshot, e),
                 subtitle: subtitle.isNotEmpty ? Text(subtitle) : null,
                 title: Text(e.title)));
@@ -280,9 +283,7 @@ class _ReleaseTracksWidget extends StatelessWidget {
     if (downloading != null) {
       return CircularProgressIndicator(value: downloading.value);
     }
-    return Icon(snapshot.contains(t)
-            ? IconsCached
-            : null);
+    return Icon(snapshot.contains(t) ? IconsCached : null);
   }
 }
 

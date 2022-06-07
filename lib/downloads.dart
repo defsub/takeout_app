@@ -23,8 +23,8 @@ import 'dart:convert';
 import 'package:path/path.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:takeout_app/playlist.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:logging/logging.dart';
 
 import 'client.dart';
 import 'schema.dart';
@@ -39,6 +39,9 @@ import 'video.dart';
 import 'main.dart';
 import 'style.dart';
 import 'widget.dart';
+import 'playlist.dart';
+
+final _log = Logger('Download');
 
 class DownloadsWidget extends StatelessWidget {
   @override
@@ -224,7 +227,7 @@ class DownloadState extends State<DownloadWidget> with SpiffWidgetBuilder {
     Future<Spiff> Function() fetcher = fetch;
     try {
       final result = await fetcher();
-      print('got $result');
+      _log.fine('got $result');
       Downloads.refreshSpiff(entry, result).then((freshEntry) {
         entry = freshEntry;
       }).whenComplete(() {
@@ -235,7 +238,7 @@ class DownloadState extends State<DownloadWidget> with SpiffWidgetBuilder {
         }
       });
     } catch (error) {
-      print('refresh err $error');
+      _log.warning('refresh err', error);
     }
   }
 
@@ -255,7 +258,9 @@ class DownloadState extends State<DownloadWidget> with SpiffWidgetBuilder {
 
   Widget deleteButton(BuildContext context) {
     return IconButton(
-        icon: Icon(Icons.delete), onPressed: () => _onDelete(context));
+        color: overlayIconColor(context),
+        icon: Icon(Icons.delete),
+        onPressed: () => _onDelete(context));
   }
 
   Widget subtitle(BuildContext context) {
@@ -264,21 +269,19 @@ class DownloadState extends State<DownloadWidget> with SpiffWidgetBuilder {
       playlistDate(spiff!),
       storage(spiff!.size)
     ]);
-    return Text(text,
-        style: Theme.of(context)
-            .textTheme
-            .subtitle1!
-            .copyWith(color: Colors.white60));
+
+    return Text(text, style: Theme.of(context).textTheme.subtitle1!);
   }
 
   Widget downloadButton(BuildContext context, bool isCached) {
     if (isCached) {
       return IconButton(
+          color: overlayIconColor(context),
           icon: Icon(IconsDownload),
           onPressed: () => _onDownloadCheck(context));
     }
     return allowDownloadIconButton(
-        Icon(IconsDownload), () => _onDownloadCheck(context));
+        context, Icon(IconsDownload), () => _onDownloadCheck(context));
   }
 
   void _onDownloadCheck(BuildContext context) {
@@ -328,12 +331,12 @@ Future<void> _deleteSpiff(SpiffDownloadEntry entry) async {
   // final uri = Uri.parse(spiff.playlist.location!);
   // final file = File.fromUri(uri);
   final file = entry.file;
-  print('delete $file');
+  _log.fine('delete $file');
   file.deleteSync();
 }
 
 Future _deleteLocatable(TrackCache cache, Locatable l) async {
-  print('delete $l');
+  _log.fine('delete $l');
   final entry = await cache.get(l);
   if (entry is File) {
     entry.deleteSync();
@@ -398,7 +401,7 @@ class Downloads {
     final completer = Completer<bool>();
     fetchSpiff().then((spiff) {
       spiffFile(spiff).then((file) {
-        print('download to $file');
+        _log.fine('download to $file');
         _saveAs(spiff, file).then((_) async {
           _add(SpiffDownloadEntry.create(file, spiff));
           _broadcast();
@@ -542,19 +545,19 @@ class Downloads {
 
   // check all spiff tracks are cached
   // incomplete downloads would have the wrong size
-  static Future<Set<String>> _pruneSpiffTracks(TrackCache cache, Spiff spiff) async {
+  static Future<Set<String>> _pruneSpiffTracks(
+      TrackCache cache, Spiff spiff) async {
     final keep = Set<String>();
     await Future.forEach<Entry>(spiff.playlist.tracks, (e) async {
       final result = await cache.get(e);
       if (result is File) {
-        // print('checking $result');
         final fileSize = result.statSync().size;
         if (fileSize != e.size) {
           if (spiff.isPodcast() && fileSize > e.size) {
             // Allow podcasts download to be larger - TWiT sizes can be off
-            print('episode size is larger than expected; keeping');
+            _log.fine('episode size is larger than expected; keeping');
           } else {
-            print('deleting $result; incorrect size');
+            _log.fine('deleting $result; incorrect size');
             result.deleteSync();
             cache.remove(e);
           }

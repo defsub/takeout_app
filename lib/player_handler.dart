@@ -24,12 +24,21 @@ import 'package:audio_service/audio_service.dart';
 import 'package:audio_session/audio_session.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:takeout_app/model.dart';
+import 'package:logging/logging.dart';
 
+import 'model.dart';
 import 'playlist.dart';
 import 'progress.dart';
 
 extension TakeoutMediaItem on MediaItem {
+  Map<String, String>? headers() {
+    return isLocalFile() ? null : extras?[ExtraHeaders];
+  }
+
+  AudioSource toAudioSource() {
+    return AudioSource.uri(Uri.parse(id), headers: headers());
+  }
+
   bool isLocalFile() {
     return id.startsWith(RegExp(r'^file'));
   }
@@ -69,6 +78,8 @@ extension TakeoutMediaItem on MediaItem {
 }
 
 class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
+  static final log = Logger('AudioPlayerHandler');
+
   AudioPlayer _player = new AudioPlayer();
 
   final BehaviorSubject<List<MediaItem>> _recentSubject =
@@ -161,7 +172,7 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
 
   @override
   Future<dynamic> customAction(String name, [Map<String, dynamic>? extras]) {
-    print('onCustomAction $name / $extras');
+    log.info('onCustomAction $name / $extras');
     if (name == 'stage') {
       _loadPlaylist(extras!['spiff'] as String);
     } else if (name == 'doit') {
@@ -178,7 +189,7 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
   }
 
   void _reload(Uri uri) async {
-    var newState = await MediaQueue.load(uri);
+    final newState = await MediaQueue.load(uri);
 
     //await AudioServiceBackground.setQueue(newState.queue);
     //await AudioServiceBackground.setMediaItem(newState.current);
@@ -189,14 +200,9 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
     // new playlist
     final wasPlaying = _player.playing;
     final source = ConcatenatingAudioSource(
-        children: newState.queue
-            .map((item) => AudioSource.uri(Uri.parse(item.id),
-                headers:
-                    item.isLocalFile() ? null : item.extras?[ExtraHeaders]))
-            .toList());
+        children: newState.queue.map((item) => item.toAudioSource()).toList());
     _playlist = source;
     final pos = await _fetchSavedPosition(newState.current);
-    print('player index ${newState.index} pos $pos');
     await _player.setAudioSource(source,
         preload: false, initialPosition: pos, initialIndex: newState.index);
     if (wasPlaying) {
@@ -218,8 +224,19 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
 
   @override
   Future<void> addQueueItem(MediaItem item) {
-    // TODO is this used?
-    //return _loadPlaylist(Client.getDefaultPlaylistUrl());
+    final state = currentState;
+    if (state != null) {
+      state.add(item);
+      queue.add(state.queue);
+    }
+
+    AudioSource? source = _player.audioSource;
+    if (source is ConcatenatingAudioSource) {
+      log.fine('adding new item!');
+      return source.add(item.toAudioSource());
+    }
+    log.warning('bummer addQueueItem not ConcatenatingAudioSource $source');
+
     return Future.value();
   }
 
@@ -231,7 +248,6 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
   //     case AudioService.recentRootId:
   //       // When the user resumes a media session, tell the system what the most
   //       // recently played item was.
-  //       print("### get recent children: ${_recentSubject.value}:");
   //       return _recentSubject.value];
   //     default:
   //       // Allow client to browse the media library.
@@ -253,8 +269,6 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
 
   @override
   Future<void> skipToQueueItem(int index) async {
-    print('onSkipToQueueItem $index $currentState');
-
     // Then default implementations of onSkipToNext and onSkipToPrevious will
     // delegate to this method.
     final state = currentState;
@@ -314,7 +328,8 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
   Future<void> pause() => _player.pause();
 
   @override
-  Future<void> seek(Duration position) => _player.seek(position); // TODO _savePosition?
+  Future<void> seek(Duration position) =>
+      _player.seek(position); // TODO _savePosition?
 
   @override
   Future<void> fastForward() => _player.seek(

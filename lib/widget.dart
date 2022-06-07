@@ -19,6 +19,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:logging/logging.dart';
 
 import 'menu.dart';
 import 'cover.dart';
@@ -46,6 +47,8 @@ class SpiffWidget extends StatefulWidget {
 }
 
 class SpiffState extends State<SpiffWidget> with SpiffWidgetBuilder {
+  static final log = Logger('SpiffState');
+
   Spiff? spiff;
   Future<Spiff> Function()? fetch;
   String? coverUrl;
@@ -68,7 +71,6 @@ class SpiffState extends State<SpiffWidget> with SpiffWidgetBuilder {
     if (fetcher != null) {
       try {
         final result = await fetcher();
-        print('got $result');
         if (mounted) {
           setState(() {
             spiff = result;
@@ -76,7 +78,7 @@ class SpiffState extends State<SpiffWidget> with SpiffWidgetBuilder {
           });
         }
       } catch (error) {
-        print('refresh err $error');
+        log.warning(error);
       }
     }
   }
@@ -91,25 +93,29 @@ class SpiffState extends State<SpiffWidget> with SpiffWidgetBuilder {
 
   Widget bottomRight(BuildContext context, bool isCached) {
     return isCached
-        ? IconButton(icon: Icon(IconsDownloadDone), onPressed: () => {})
+        ? IconButton(
+            color: overlayIconColor(context),
+            icon: Icon(IconsDownloadDone),
+            onPressed: () => {})
         : downloadButton(context, isCached);
   }
 
   Widget subtitle(BuildContext context) {
-    final text = '${spiff!.playlist.creator}';
-    return Text(text,
-        style: Theme.of(context)
-            .textTheme
-            .subtitle1!
-            .copyWith(color: Colors.white60));
+    final text = spiff!.playlist.creator;
+    return text == null
+        ? Container()
+        : Text(text, style: Theme.of(context).textTheme.subtitle1!);
   }
 
   Widget downloadButton(BuildContext context, bool isCached) {
     if (isCached) {
-      return IconButton(icon: Icon(IconsDownload), onPressed: () => {});
+      return IconButton(
+          color: Theme.of(context).primaryColorLight,
+          icon: Icon(IconsDownload),
+          onPressed: () => {});
     }
-    return allowDownloadIconButton(
-        Icon(IconsDownload), () => Downloads.downloadSpiff(context, spiff!));
+    return allowDownloadIconButton(context, Icon(IconsDownload),
+        () => Downloads.downloadSpiff(context, spiff!));
   }
 }
 
@@ -124,7 +130,7 @@ mixin SpiffWidgetBuilder {
 
   Widget build(BuildContext context) {
     return FutureBuilder<Color?>(
-        future: getImageBackgroundColor(coverUrl ?? ''),
+        future: getImageBackgroundColor(context, coverUrl ?? ''),
         builder: (context, snapshot) => Scaffold(
             backgroundColor: snapshot.data,
             // appBar: AppBar(
@@ -150,6 +156,7 @@ mixin SpiffWidgetBuilder {
           final isCached = cacheSnapshot.containsAll(spiff!.playlist.tracks);
           return CustomScrollView(slivers: [
             SliverAppBar(
+              foregroundColor: overlayIconColor(context),
               expandedHeight: expandedHeight,
               actions: actions(context),
               flexibleSpace: FlexibleSpaceBar(
@@ -207,11 +214,12 @@ mixin SpiffWidgetBuilder {
   Widget playButton(BuildContext context, bool isCached) {
     if (isCached) {
       return IconButton(
+          color: overlayIconColor(context),
           icon: Icon(Icons.play_arrow, size: 32),
           onPressed: () => onPlay(context));
     }
     return allowStreamingIconButton(
-        Icon(Icons.play_arrow, size: 32), () => onPlay(context));
+        context, Icon(Icons.play_arrow, size: 32), () => onPlay(context));
   }
 
   // void _onArtist(BuildContext context) {
@@ -219,7 +227,6 @@ mixin SpiffWidgetBuilder {
   // }
 
   void onPlay(BuildContext context) async {
-    print('_onPlay $spiff');
     if (spiff!.isVideo()) {
       final entry = spiff!.playlist.tracks.first;
       final pos = await Progress.position(entry.key);
@@ -310,7 +317,8 @@ class SpiffTrackListView extends StatelessWidget {
       spiffDate(_spiff, entry: entry),
       storage(entry.size)
     ])));
-    return Column(children: children, crossAxisAlignment: CrossAxisAlignment.start);
+    return Column(
+        children: children, crossAxisAlignment: CrossAxisAlignment.start);
   }
 }
 

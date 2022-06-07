@@ -56,7 +56,6 @@ class _SeriesWidgetState extends State<SeriesWidget> {
     if (mounted) {
       setState(() {
         _view = view;
-        print(_view);
       });
     }
   }
@@ -71,7 +70,7 @@ class _SeriesWidgetState extends State<SeriesWidget> {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<Color?>(
-        future: getImageBackgroundColor(_series.image),
+        future: getImageBackgroundColor(context, _series.image),
         builder: (context, snapshot) {
           final backgroundColor = snapshot.data;
           final screen = MediaQuery.of(context).size;
@@ -92,6 +91,7 @@ class _SeriesWidgetState extends State<SeriesWidget> {
                             return CustomScrollView(slivers: [
                               SliverAppBar(
                                 // actions: [ ],
+                                foregroundColor: overlayIconColor(context),
                                 expandedHeight: expandedHeight,
                                 flexibleSpace: FlexibleSpaceBar(
                                     // centerTitle: true,
@@ -117,7 +117,8 @@ class _SeriesWidgetState extends State<SeriesWidget> {
                                       ),
                                       Align(
                                           alignment: Alignment.bottomLeft,
-                                          child: _playButton(isCached)),
+                                          child:
+                                              _playButton(context, isCached)),
                                       Align(
                                           alignment: Alignment.bottomRight,
                                           child: _downloadButton(
@@ -145,20 +146,26 @@ class _SeriesWidgetState extends State<SeriesWidget> {
             Text(_series.title, style: Theme.of(context).textTheme.headline5));
   }
 
-  Widget _playButton(bool isCached) {
+  Widget _playButton(BuildContext context, bool isCached) {
     if (isCached) {
       return IconButton(
-          icon: Icon(Icons.play_arrow, size: 32), onPressed: () => _onPlay());
+          color: overlayIconColor(context),
+          icon: Icon(Icons.play_arrow, size: 32),
+          onPressed: () => _onPlay());
     }
-    return allowStreamingIconButton(Icon(Icons.play_arrow, size: 32), _onPlay);
+    return allowStreamingIconButton(
+        context, Icon(Icons.play_arrow, size: 32), _onPlay);
   }
 
   Widget _downloadButton(BuildContext context, bool isCached) {
     if (isCached) {
-      return IconButton(icon: Icon(IconsDownloadDone), onPressed: () => {});
+      return IconButton(
+          color: overlayIconColor(context),
+          icon: Icon(IconsDownloadDone),
+          onPressed: () => {});
     }
     return allowDownloadIconButton(
-        Icon(IconsDownload), () => _onDownload(context));
+        context, Icon(IconsDownload), () => _onDownload(context));
   }
 
   void _onPlay() {
@@ -237,7 +244,6 @@ class _EpisodeListWidget extends StatelessWidget {
   }
 
   void _onPlay(BuildContext context, Episode episode, int index) {
-    print('index is $index');
     MediaQueue.play(series: _view.series, index: index);
     showPlayer();
   }

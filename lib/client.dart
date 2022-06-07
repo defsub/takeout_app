@@ -23,6 +23,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:logging/logging.dart';
 
 import 'cache.dart';
 import 'schema.dart';
@@ -154,6 +155,8 @@ class _SnapshotSink extends Sink<int> {
 }
 
 class Client {
+  static final log = Logger('Client');
+
   static const settingCookie = 'client_cookie';
   static const settingEndpoint = 'endpoint';
   static const cookieName = 'Takeout';
@@ -232,6 +235,8 @@ class Client {
     }
   }
 
+  Future<String?> getCookie() async => _getCookie();
+
   Future<String?> _getCookie() async {
     if (_cookie == null) {
       SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -285,7 +290,7 @@ class Client {
     if (cacheable) {
       final result = await cache.get(uri, ttl: ttl);
       if (result.exists && result is JsonCacheEntry) {
-        print('cached $uri expired is ${result.expired}');
+        log.fine('cached $uri expired is ${result.expired}');
         cachedJson = await result.file
             .readAsBytes()
             .then((body) => jsonDecode(utf8.decode(body)));
@@ -298,11 +303,11 @@ class Client {
 
     try {
       final baseUrl = await getEndpoint();
-      print('GET $baseUrl$uri');
+      log.fine('GET $baseUrl$uri');
       final response = await http.get(Uri.parse('$baseUrl$uri'), headers: {
         HttpHeaders.cookieHeader: '$cookieName=$cookie'
       }).timeout(defaultTimeout);
-      print('got ${response.statusCode}');
+      log.fine('got ${response.statusCode}');
       if (response.statusCode != HttpStatus.ok) {
         if (response.statusCode > 500 && cachedJson != null) {
           return cachedJson;
@@ -311,7 +316,7 @@ class Client {
             statusCode: response.statusCode,
             url: response.request?.url.toString());
       }
-      // print('got response ${response.body}');
+      log.finest('got response ${response.body}');
       if (cacheable) {
         cache.put(uri, response.bodyBytes);
       }
@@ -319,7 +324,7 @@ class Client {
     } catch (e) {
       if (e is SocketException || e is TimeoutException || e is TlsException) {
         if (cachedJson != null) {
-          print('got error $e; using cached json');
+          log.warning('got error $e; using cached json');
           return cachedJson;
         }
       }
@@ -337,10 +342,10 @@ class Client {
 
     try {
       final baseUrl = await getEndpoint();
-      print('DELETE $baseUrl$uri');
+      log.fine('DELETE $baseUrl$uri');
       final response = await http.delete(Uri.parse('$baseUrl$uri'),
           headers: {HttpHeaders.cookieHeader: '$cookieName=$cookie'});
-      print('got ${response.statusCode}');
+      log.fine('got ${response.statusCode}');
       switch (response.statusCode) {
         case HttpStatus.accepted:
         case HttpStatus.noContent:
@@ -376,13 +381,13 @@ class Client {
     }
 
     final baseUrl = await getEndpoint();
-    print('$baseUrl$uri');
-    print(jsonEncode(json));
+    log.fine('$baseUrl$uri');
+    log.finer(jsonEncode(json));
     return http
         .post(Uri.parse('$baseUrl$uri'),
             headers: headers, body: jsonEncode(json))
         .then((response) {
-      print('response ${response.statusCode}');
+      log.fine('response ${response.statusCode}');
       if (response.statusCode != HttpStatus.ok) {
         throw ClientException(
             statusCode: response.statusCode,
@@ -399,29 +404,6 @@ class Client {
     });
   }
 
-  // /// no cookie, no caching
-  // Future<Map<String, dynamic>> _oldPostJson(
-  //     String uri, Map<String, dynamic> json) async {
-  //   final baseUrl = await getEndpoint();
-  //   print('$baseUrl$uri');
-  //   return http
-  //       .post(Uri.parse('$baseUrl$uri'),
-  //           headers: {
-  //             HttpHeaders.contentTypeHeader: ContentType.json.toString()
-  //           },
-  //           body: jsonEncode(json))
-  //       .then((response) {
-  //     print('response ${response.statusCode}');
-  //     if (response.statusCode != HttpStatus.ok) {
-  //       throw ClientException(
-  //           statusCode: response.statusCode,
-  //           url: response.request?.url.toString());
-  //     }
-  //     // print('got response ${response.body}');
-  //     return jsonDecode(utf8.decode(response.bodyBytes));
-  //   });
-  // }
-
   /// no caching
   Future<PatchResult> _patchJson(
       String uri, List<Map<String, dynamic>> json) async {
@@ -433,8 +415,8 @@ class Client {
           statusCode: HttpStatus.networkAuthenticationRequired,
         ));
       } else {
-        print('$baseUrl$uri');
-        print(jsonEncode(json));
+        log.fine('$baseUrl$uri');
+        log.finer(jsonEncode(json));
         http
             .patch(Uri.parse('$baseUrl$uri'),
                 headers: {
@@ -443,7 +425,7 @@ class Client {
                 },
                 body: jsonEncode(json))
             .then((response) {
-          print('response ${response.statusCode}');
+          log.fine('response ${response.statusCode}');
           if (response.statusCode == HttpStatus.ok) {
             completer.complete(PatchResult(
                 HttpStatus.ok, jsonDecode(utf8.decode(response.bodyBytes))));
@@ -466,7 +448,7 @@ class Client {
     final json = {'User': user, 'Pass': pass};
     try {
       final result = await _postJson('/api/login', json);
-      print(result);
+      log.fine(result);
       if (result['Status'] == 200) {
         await _setCookie(result['Cookie']);
       }
@@ -625,10 +607,10 @@ class Client {
   /// POST /api/progress
   Future<int> updateProgress(Offsets offsets) async {
     try {
-      print('updateProgress $offsets');
+      log.fine('updateProgress $offsets');
       final result = await _postJson('/api/progress', offsets.toJson(),
           requireCookie: true);
-      print('updateProgress got $result');
+      log.fine('updateProgress got $result');
       return result['_statusCode'];
     } on ClientException {
       return HttpStatus.badRequest;
@@ -642,7 +624,7 @@ class Client {
   /// Download locatable to a file with optional retries.
   Future download(Locatable d, {int retries = 0}) async {
     if (_downloadInProgress(d)) {
-      print('download ${d.location} already in progress');
+      log.fine('download ${d.location} already in progress');
       // don't allow duplicate downloads
       return;
     }
@@ -650,7 +632,7 @@ class Client {
       try {
         return await _download(d);
       } catch (err) {
-        print(err);
+        log.warning(err);
         if (retries > 0) {
           // try again
           retries--;
@@ -679,7 +661,7 @@ class Client {
     final completer = Completer();
     final baseUrl = await getEndpoint();
     final file = await cache.create(d);
-    print('download file is $file');
+    log.fine('download file is $file');
 
     HttpClient()
         .getUrl(Uri.parse('$baseUrl${d.location}'))
