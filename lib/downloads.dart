@@ -274,14 +274,13 @@ class DownloadState extends State<DownloadWidget> with SpiffWidgetBuilder {
   }
 
   Widget downloadButton(BuildContext context, bool isCached) {
-    if (isCached) {
-      return IconButton(
-          color: overlayIconColor(context),
-          icon: Icon(IconsDownload),
-          onPressed: () => _onDownloadCheck(context));
-    }
-    return allowDownloadIconButton(
-        context, Icon(IconsDownload), () => _onDownloadCheck(context));
+    return isCached
+        ? IconButton(
+            color: overlayIconColor(context),
+            icon: Icon(IconsDownload),
+            onPressed: () => _onDownloadCheck(context))
+        : allowDownloadIconButton(
+            context, Icon(IconsDownload), () => _onDownloadCheck(context));
   }
 
   void _onDownloadCheck(BuildContext context) {

@@ -61,6 +61,7 @@ class _SearchState extends State<SearchWidget> {
         body: Column(children: [
           Container(
             padding: EdgeInsets.all(10),
+            // TODO figure out how to auto show keyboard
             child: TextField(
               onSubmitted: _onSubmit,
               controller: _searchText,

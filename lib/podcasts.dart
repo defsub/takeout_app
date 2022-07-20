@@ -147,25 +147,23 @@ class _SeriesWidgetState extends State<SeriesWidget> {
   }
 
   Widget _playButton(BuildContext context, bool isCached) {
-    if (isCached) {
-      return IconButton(
-          color: overlayIconColor(context),
-          icon: Icon(Icons.play_arrow, size: 32),
-          onPressed: () => _onPlay());
-    }
-    return allowStreamingIconButton(
-        context, Icon(Icons.play_arrow, size: 32), _onPlay);
+    return isCached
+        ? IconButton(
+            color: overlayIconColor(context),
+            icon: Icon(Icons.play_arrow, size: 32),
+            onPressed: () => _onPlay())
+        : allowStreamingIconButton(
+            context, Icon(Icons.play_arrow, size: 32), _onPlay);
   }
 
   Widget _downloadButton(BuildContext context, bool isCached) {
-    if (isCached) {
-      return IconButton(
-          color: overlayIconColor(context),
-          icon: Icon(IconsDownloadDone),
-          onPressed: () => {});
-    }
-    return allowDownloadIconButton(
-        context, Icon(IconsDownload), () => _onDownload(context));
+    return isCached
+        ? IconButton(
+            color: overlayIconColor(context),
+            icon: Icon(IconsDownloadDone),
+            onPressed: () => {})
+        : allowDownloadIconButton(
+            context, Icon(IconsDownload), () => _onDownload(context));
   }
 
   void _onPlay() {

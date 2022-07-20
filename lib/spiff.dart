@@ -73,7 +73,8 @@ class Spiff {
   }
 
   bool isRemote() {
-    return playlist.location?.startsWith(RegExp(r'^http')) ?? false;
+    // https, http, or relative "/api" are remote
+    return playlist.location?.startsWith(RegExp(r'^(http|/api)')) ?? false;
   }
 
   bool isMusic() {

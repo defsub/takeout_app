@@ -25,6 +25,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:logging/logging.dart';
+import 'package:wakelock/wakelock.dart';
 import 'playlist.dart';
 
 part 'live.g.dart';
@@ -128,6 +129,10 @@ class Latency {
   Latency({this.size = 3});
 
   void add(int val) {
+    if (val > 1000) {
+      // ignore values > 1 second
+      return;
+    }
     while (q.length >= size) {
       q.removeLast();
     }
@@ -135,12 +140,13 @@ class Latency {
   }
 
   double get value {
-    return q.average;
+    return q.length > 0 ? q.average : 0;
   }
 }
 
 class LiveClient {
   static final log = Logger('LiveClient');
+  static const reconnectDelay = Duration(seconds: 3);
   final Uri uri;
   final String token;
   final eventSubject = PublishSubject<Event>();
@@ -154,6 +160,7 @@ class LiveClient {
         this.token = token;
 
   void connect() {
+    Wakelock.enable();
     log.info('connecting to $uri');
     channel = WebSocketChannel.connect(uri);
     channel!.sink.add('/auth $token');
@@ -161,6 +168,7 @@ class LiveClient {
   }
 
   void disconnect() {
+    Wakelock.disable();
     _allowReconnect = false;
     channel?.sink.close();
     channel = null;
@@ -172,9 +180,8 @@ class LiveClient {
     if (!_allowReconnect) {
       return;
     }
-    final delay = Duration(seconds: 3);
-    log.info('reconnecting after $delay');
-    Future.delayed(delay, () {
+    log.info('reconnecting after $reconnectDelay');
+    Future.delayed(reconnectDelay, () {
       connect();
     });
   }
@@ -185,7 +192,7 @@ class LiveClient {
 
   void send(Event event) {
     final json = jsonEncode(event.toJson());
-    channel?.sink.add(json);
+    channel?.sink.add(utf8.encode(json));
   }
 
   void sendMediaItem(MediaItem mediaItem, MediaItem? nextItem) {
@@ -202,18 +209,19 @@ class LiveClient {
   }
 
   void listen() async {
-    final pingDuration = Duration(seconds: 15);
+    final latencyPingDuration = Duration(seconds: 15);
     latencyTimer?.cancel();
     latency = Latency();
 
     final doPing = (Timer) {
       sendPing(DateTime.now().millisecondsSinceEpoch);
     };
-    latencyTimer = Timer.periodic(pingDuration, doPing);
+    latencyTimer = Timer.periodic(latencyPingDuration, doPing);
     doPing(latencyTimer);
 
     channel?.stream.listen(
-        (msg) {
+        (event) {
+          final msg = utf8.decode(event);
           log.fine('got $msg');
           if (msg.toString().startsWith('/')) {
             final cmd = msg.toString().split(' ');
@@ -245,14 +253,26 @@ class LiveShare {
 
   final LiveClient client;
   final AudioHandler audioHandler;
+  StreamSubscription? mediaItemSubscription;
+  StreamSubscription? playbackStateSubscription;
 
   LiveShare(this.client, this.audioHandler);
 
-  void connect() async {
-    client.connect();
+  void stop() {
+    log.info('stopping');
+    client.disconnect();
+    mediaItemSubscription?.cancel();
+    mediaItemSubscription = null;
+    playbackStateSubscription?.cancel();
+    playbackStateSubscription = null;
+  }
 
-    audioHandler.mediaItem
-        .debounceTime(Duration(seconds: 3))
+  void start() async {
+    log.info('starting');
+    client.connect();
+    mediaItemSubscription = audioHandler.mediaItem
+        // .debounceTime(Duration(seconds: 3))
+        .distinct()
         .listen((mediaItem) {
       if (mediaItem == null) {
         return;
@@ -266,8 +286,9 @@ class LiveShare {
         client.sendMediaItem(mediaItem, null);
       }
     });
-
-    audioHandler.playbackState.distinct().listen((playbackState) {
+    playbackStateSubscription = audioHandler.playbackState
+        .distinct(/*(a, b) => a.playing == b.playing && a.position == b.position*/)
+        .listen((playbackState) {
       client.sendPlayback(playbackState);
     });
   }
@@ -278,6 +299,7 @@ class LiveFollow {
 
   final LiveClient client;
   final AudioHandler audioHandler;
+  StreamSubscription? eventSubscription;
 
   LiveFollow(this.client, this.audioHandler);
 
@@ -299,9 +321,16 @@ class LiveFollow {
     return queue.indexWhere((item) => item.extras?[ExtraETag] == track.key);
   }
 
-  void connect() async {
-    client.connect();
+  void stop() {
+    log.info('stopping');
+    client.disconnect();
+    eventSubscription?.cancel();
+    eventSubscription = null;
+  }
 
+  void start() async {
+    log.info('starting');
+    client.connect();
     client.eventSubject.listen((event) {
       if (event.isTrack()) {
         final track = event.track!;
@@ -328,8 +357,9 @@ class LiveFollow {
               (client.latency?.value ?? 0);
           final pos = audioHandler.playbackState.value.position.inMilliseconds;
           final diff = (pos - nextPos).abs();
-          log.fine('seek to ${eventState.position} / $pos / $nextPos ($diff)');
           if (diff > 50) {
+            log.fine(
+                'seek to $nextPos theirs=${eventState.position} ours=$pos diff=$diff');
             audioHandler.seek(Duration(milliseconds: nextPos.round()));
           }
           if (!audioHandler.playbackState.value.playing) {

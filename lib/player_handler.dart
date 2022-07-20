@@ -25,6 +25,7 @@ import 'package:audio_session/audio_session.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:logging/logging.dart';
+import 'package:takeout_app/settings.dart';
 
 import 'model.dart';
 import 'playlist.dart';
@@ -35,7 +36,7 @@ extension TakeoutMediaItem on MediaItem {
     return isLocalFile() ? null : extras?[ExtraHeaders];
   }
 
-  AudioSource toAudioSource() {
+  IndexedAudioSource toAudioSource() {
     return AudioSource.uri(Uri.parse(id), headers: headers());
   }
 
@@ -71,6 +72,7 @@ extension TakeoutMediaItem on MediaItem {
   }
 
   bool trackProgress() {
+    // don't track songs or radio streams
     return isPodcast();
   }
 
@@ -90,13 +92,18 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
   int? get index => _player.currentIndex;
 
   MediaItem? get currentItem => index == null ? null : _state?.current;
-  ConcatenatingAudioSource? _playlist;
 
   MediaState? get currentState => _state;
+
+  MediaItem? itemAt(int index) {
+    return _state?.queue.elementAt(index);
+  }
 
   AudioPlayerHandler() {
     _init();
   }
+
+  AudioPlayer get player => _player;
 
   Future<void> _init() async {
     final session = await AudioSession.instance;
@@ -109,7 +116,7 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
 
     // Broadcast media item changes.
     _player.currentIndexStream.listen((index) {
-      if (index != null) _mediaIndexChanged(index);
+      if (index != null) onMediaIndexChanged(index);
     });
 
     // Update when media duration changes.
@@ -117,6 +124,7 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
       if (duration == null || index == null) {
         return;
       }
+      log.fine('duration known $duration for ${currentState?.current.title}');
       // duration is known now
       final state = currentState;
       if (state != null) {
@@ -141,9 +149,10 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
 
     // Special processing for state transitions.
     _player.processingStateStream.listen((state) {
-      if (state == ProcessingState.completed) {
-        skipToQueueItem(0).whenComplete(() => stop());
-      }
+      /// FIXME TODO commented out for simple testing
+      // if (state == ProcessingState.completed) {
+      //   skipToQueueItem(0).whenComplete(() => stop());
+      // }
     });
 
     _player.playerStateStream.listen((state) {
@@ -170,47 +179,58 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
     return _player.positionStream;
   }
 
+  bool get playing => _player.playing;
+
   @override
   Future<dynamic> customAction(String name, [Map<String, dynamic>? extras]) {
     log.info('onCustomAction $name / $extras');
     if (name == 'stage') {
       _loadPlaylist(extras!['spiff'] as String);
     } else if (name == 'doit') {
-      _loadPlaylist(extras!['spiff'] as String);
-      if (!_player.playing) {
-        _player.play();
-      }
+      _loadPlaylist(extras!['spiff'] as String, startPlayback: true);
+      // if (!_player.playing) {
+      //   _player.play();
+      // }
     }
     return Future.value(true);
   }
 
-  Future<void> _loadPlaylist(String location) async {
-    _reload(Uri.parse(location));
+  Future<void> _loadPlaylist(String location, {bool startPlayback = false}) async {
+    _reload(Uri.parse(location), startPlayback);
   }
 
-  void _reload(Uri uri) async {
+  GapfulAudioSource? gapfulAudioSource;
+
+  void _reload(Uri uri, bool startPlayback) async {
     final newState = await MediaQueue.load(uri);
-
-    //await AudioServiceBackground.setQueue(newState.queue);
-    //await AudioServiceBackground.setMediaItem(newState.current);
     queue.add(newState.queue);
-
     _state = newState;
 
-    // new playlist
-    final wasPlaying = _player.playing;
-    final source = ConcatenatingAudioSource(
-        children: newState.queue.map((item) => item.toAudioSource()).toList());
-    _playlist = source;
-    final pos = await _fetchSavedPosition(newState.current);
-    await _player.setAudioSource(source,
-        preload: false, initialPosition: pos, initialIndex: newState.index);
-    if (wasPlaying) {
-      _player.play();
+    if (_player.playing) {
+      startPlayback = true;
+    }
+    // final wasPlaying = _player.playing;
+
+    final tracks = newState.queue.map((item) => item.toAudioSource()).toList();
+
+    if (settingsLiveType() == LiveType.none) {
+      final source = ConcatenatingAudioSource(children: tracks);
+      final pos = await getSavedPosition(newState.current);
+      await _player.setAudioSource(source,
+          preload: false, initialPosition: pos, initialIndex: newState.index);
+      if (startPlayback) {
+        _player.play();
+      }
+    } else {
+      log.fine('gapful audiosource ${tracks.length}');
+      gapfulAudioSource?.dispose();
+      gapfulAudioSource = GapfulAudioSource(this, tracks);
+      await gapfulAudioSource?.preparePlayer(startPlayback);
     }
   }
 
-  void _mediaIndexChanged(int index) {
+  void onMediaIndexChanged(int index) {
+    log.fine('onMediaIndexChanged to $index');
     final state = currentState;
     if (state != null) {
       final item = state.item(index);
@@ -232,11 +252,14 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
 
     AudioSource? source = _player.audioSource;
     if (source is ConcatenatingAudioSource) {
-      log.fine('adding new item!');
+      log.fine('adding ConcatenatingAudioSource item');
       return source.add(item.toAudioSource());
+    } else if (source is ProgressiveAudioSource && gapfulAudioSource != null) {
+      log.fine('adding GapfulAudioSource item');
+      gapfulAudioSource?.add(item.toAudioSource());
+      return Future.value();
     }
-    log.warning('bummer addQueueItem not ConcatenatingAudioSource $source');
-
+    log.warning('bummer cannot addQueueItem $source');
     return Future.value();
   }
 
@@ -269,6 +292,7 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
 
   @override
   Future<void> skipToQueueItem(int index) async {
+    log.fine('skipToQueueItem $index');
     // Then default implementations of onSkipToNext and onSkipToPrevious will
     // delegate to this method.
     final state = currentState;
@@ -300,8 +324,15 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
       }
     }
 
-    // This jumps to the beginning of the queue item at newIndex.
-    return _player.seek(Duration.zero, index: newIndex);
+    log.fine('skip seek to $newIndex');
+
+    AudioSource? source = _player.audioSource;
+    if (source is ConcatenatingAudioSource) {
+      // This jumps to the beginning of the queue item at newIndex.
+      return _player.seek(Duration.zero, index: newIndex);
+    } else if (gapfulAudioSource != null) {
+      gapfulAudioSource?.skipToIndex(newIndex);
+    }
   }
 
   @override
@@ -316,7 +347,10 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
   Future<void> removeQueueItem(MediaItem item) {
     int? index = currentState?.findItem(item);
     if (index != null && index != -1) {
-      return _playlist!.removeAt(index);
+      AudioSource? source = _player.audioSource;
+      if (source is ConcatenatingAudioSource) {
+        return source.removeAt(index);
+      }
     }
     return Future.value();
   }
@@ -412,7 +446,7 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
     ));
   }
 
-  Future<Duration> _fetchSavedPosition(MediaItem item) async {
+  Future<Duration> getSavedPosition(MediaItem item) async {
     return item.trackProgress()
         ? Progress.position(item.etag)
         : Future.value(Duration.zero);
@@ -439,4 +473,115 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
       Progress.update(item.etag, pos, _player.duration ?? Duration.zero);
     }
   }
+}
+
+class GapfulAudioSource extends AudioSource {
+  static final Logger log = Logger('GapfulAudioSource');
+  static const gapDuration = Duration(seconds: 5);
+
+  StreamSubscription? stateStreamSubscription;
+  final AudioPlayerHandler _audioPlayerHandler;
+  final List<IndexedAudioSource> tracks;
+  int _index;
+  bool _disposed = false;
+
+  GapfulAudioSource(this._audioPlayerHandler, this.tracks, [int? index])
+      : _index = index ?? 0;
+
+  @override
+  List<IndexedAudioSource> get sequence => tracks;
+
+  @override
+  List<int> get shuffleIndices => [0]; // TODO
+
+  void dispose() {
+    _disposed = true;
+    stateStreamSubscription?.cancel();
+    stateStreamSubscription = null;
+  }
+
+  Future<void> preparePlayer(bool startPlayback) async {
+    if (_audioPlayerHandler.playing) {
+      _audioPlayerHandler.pause();
+    }
+
+    stateStreamSubscription?.cancel();
+    stateStreamSubscription = null;
+
+    final item = _audioPlayerHandler.itemAt(index)!;
+    log.fine('preparePlayer for $index ${item.title}');
+    // final pos = await _audioPlayerHandler.getSavedPosition(item);
+    final pos = Duration(seconds: 0);
+    // _audioPlayerHandler.mediaItem.add(item);
+    await _audioPlayerHandler.player.setAudioSource(currentTrack,
+        preload: true, initialPosition: pos, initialIndex: 0);
+
+    stateStreamSubscription = _audioPlayerHandler.player.processingStateStream
+        .distinct()
+        .listen((state) async {
+      if (_disposed) {
+        stateStreamSubscription?.cancel();
+        return;
+      }
+      if (state == ProcessingState.completed) {
+        log.fine('gapful state is $state');
+        if (hasNext) {
+          // add a gap and play the next track
+          // log.fine('waiting $gapDuration seconds');
+          // await Future.delayed(gapDuration);
+          log.fine('skipToNext $index');
+          skipToNext();
+          // log.fine('after skipToNext $index');
+          // _audioPlayerHandler.onMediaIndexChanged(index);
+          // preparePlayer(_audioPlayerHandler.playing);
+        } else {
+          // all done
+          stateStreamSubscription?.cancel();
+          _audioPlayerHandler.stop();
+        }
+      }
+    });
+
+    if (startPlayback) {
+      log.fine('waiting $gapDuration');
+      await Future.delayed(gapDuration);
+      _audioPlayerHandler.play();
+    }
+  }
+
+  void add(IndexedAudioSource audioSource) {
+    tracks.add(audioSource);
+  }
+
+  bool removeAt(int i) {
+    if (i >= 0 && i < tracks.length) {
+      tracks.removeAt(i);
+      return true;
+    }
+    return false;
+  }
+
+  bool get hasNext {
+    return _index + 1 < tracks.length;
+  }
+
+  bool skipToIndex(int i) {
+    if (i >= 0 && i < tracks.length) {
+      _index = i;
+      _audioPlayerHandler.onMediaIndexChanged(_index);
+      preparePlayer(_audioPlayerHandler.playing);
+      return true;
+    }
+    return false;
+  }
+
+  bool skipToNext() {
+    return skipToIndex(_index + 1);
+  }
+
+  int get index => _index;
+
+  IndexedAudioSource get currentTrack => tracks[_index];
+
+  IndexedAudioSource? get nextTrack => hasNext ? tracks[_index + 1] : null;
 }

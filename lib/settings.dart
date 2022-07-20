@@ -32,7 +32,9 @@ const settingMediaType = 'home_media_type';
 const settingLiveMode = 'live_mode';
 
 MediaType settingsMediaType({MediaType type = MediaType.music}) {
-  final v = Settings.getValue(settingMediaType, type.index);
+  final v =
+      Settings.getValue<int>(settingMediaType, defaultValue: type.index) ??
+          type.index;
   return MediaType.values[v];
 }
 
@@ -42,15 +44,17 @@ Future<void> changeMediaType(MediaType mediaType) async {
 }
 
 enum LiveType { none, share, follow }
+
 enum GridType { mix, downloads, released, added }
 
 GridType settingsGridType(String key, GridType def) {
-  final v = Settings.getValue(key, def.index);
+  final v = Settings.getValue<int>(key, defaultValue: def.index) ?? def.index;
   return GridType.values[v];
 }
 
 LiveType settingsLiveType([LiveType def = LiveType.none]) {
-  final v = Settings.getValue(settingLiveMode, def.index);
+  final v =
+      Settings.getValue(settingLiveMode, defaultValue: def.index) ?? def.index;
   return LiveType.values[v];
 }
 
@@ -71,19 +75,6 @@ class _AppSettingsState extends State<AppSettings> {
       child: SettingsScreen(
         title: AppLocalizations.of(context)!.settingsLabel,
         children: [
-          SettingsGroup(title: 'Live', children: <Widget>[
-            DropDownSettingsTile<int>(title: 'Live Mode', settingKey: settingLiveMode,
-                values: <int, String>{
-                  LiveType.none.index: 'None',
-                  LiveType.share.index: 'Share',
-                  LiveType.follow.index: 'Follow',
-                },
-                selected: Settings.getValue(
-                    settingLiveMode, LiveType.none.index),
-                onChange: (value) {
-                  settingsChangeSubject.add(settingLiveMode);
-                })
-          ]),
           SettingsGroup(
               title: AppLocalizations.of(context)!.homeSettingsTitle,
               children: <Widget>[
@@ -102,8 +93,9 @@ class _AppSettingsState extends State<AppSettings> {
                     GridType.released.index:
                         AppLocalizations.of(context)!.settingHomeGridReleased,
                   },
-                  selected: Settings.getValue(
-                      settingHomeGridType, GridType.mix.index),
+                  selected: Settings.getValue<int>(settingHomeGridType,
+                          defaultValue: GridType.mix.index) ??
+                      GridType.mix.index,
                   onChange: (value) {
                     settingsChangeSubject.add(settingHomeGridType);
                   },
@@ -148,7 +140,28 @@ class _AppSettingsState extends State<AppSettings> {
                 },
               ),
             ],
-          )
+          ),
+          SettingsGroup(
+              title: AppLocalizations.of(context)!.settingLive,
+              children: <Widget>[
+                DropDownSettingsTile<int>(
+                    title: AppLocalizations.of(context)!.settingLiveMode,
+                    settingKey: settingLiveMode,
+                    values: <int, String>{
+                      LiveType.none.index:
+                          AppLocalizations.of(context)!.settingLiveNone,
+                      LiveType.share.index:
+                          AppLocalizations.of(context)!.settingLiveShare,
+                      LiveType.follow.index:
+                          AppLocalizations.of(context)!.settingLiveFollow,
+                    },
+                    selected: Settings.getValue<int>(settingLiveMode,
+                            defaultValue: LiveType.none.index) ??
+                        LiveType.none.index,
+                    onChange: (value) {
+                      settingsChangeSubject.add(settingLiveMode);
+                    })
+              ]),
         ],
       ),
     );

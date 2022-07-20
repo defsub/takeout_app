@@ -64,6 +64,11 @@
   "settingArtworkSubtitle": "Allow artwork on mobile networks",
   "settingEnabled": "Enabled",
   "settingDisabled": "Disabled",
+  "settingLive": "Live",
+  "settingLiveMode": "Live Mode",
+  "settingLiveShare": "Share",
+  "settingLiveFollow": "Follow",
+  "settingLiveNone": "None",
   "deleteTitle": "Really delete {title}?",
   "@deleteTitle": {
     "placeholders": {

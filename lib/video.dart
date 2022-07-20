@@ -231,25 +231,23 @@ class _MovieWidgetState extends State<MovieWidget> {
   Widget _playButton(
       BuildContext context, CacheSnapshot snapshot, bool isCached) {
     final pos = snapshot.position(_movie) ?? Duration.zero;
-    if (isCached) {
-      return IconButton(
-          color: overlayIconColor(context),
-          icon: Icon(Icons.play_arrow, size: 32),
-          onPressed: () => _onPlay(pos));
-    }
-    return allowStreamingIconButton(
-        context, Icon(Icons.play_arrow, size: 32), () => _onPlay(pos));
+    return isCached
+        ? IconButton(
+            color: overlayIconColor(context),
+            icon: Icon(Icons.play_arrow, size: 32),
+            onPressed: () => _onPlay(pos))
+        : allowStreamingIconButton(
+            context, Icon(Icons.play_arrow, size: 32), () => _onPlay(pos));
   }
 
   Widget _downloadButton(BuildContext context, bool isCached) {
-    if (isCached) {
-      return IconButton(
-          color: overlayIconColor(context),
-          icon: Icon(IconsDownloadDone),
-          onPressed: () => {});
-    }
-    return allowDownloadIconButton(
-        context, Icon(IconsDownload), () => _onDownload(context));
+    return isCached
+        ? IconButton(
+            color: overlayIconColor(context),
+            icon: Icon(IconsDownloadDone),
+            onPressed: () => {})
+        : allowDownloadIconButton(
+            context, Icon(IconsDownload), () => _onDownload(context));
   }
 
   void _onPlay(Duration startOffset) {

@@ -450,7 +450,7 @@ abstract class _HomeGrid extends StatelessWidget {
                     decoration: TextDecoration.underline,
                     color: Colors.blueAccent),
               ),
-              onTap: () => launch(appSource)),
+              onTap: () => launchUrl(Uri.parse(appSource))),
           InkWell(
               child: Text(
                 appHome,
@@ -458,7 +458,7 @@ abstract class _HomeGrid extends StatelessWidget {
                     decoration: TextDecoration.underline,
                     color: Colors.blueAccent),
               ),
-              onTap: () => launch(appHome)),
+              onTap: () => launchUrl(Uri.parse(appHome))),
         ]);
   }
 }

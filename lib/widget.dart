@@ -108,14 +108,13 @@ class SpiffState extends State<SpiffWidget> with SpiffWidgetBuilder {
   }
 
   Widget downloadButton(BuildContext context, bool isCached) {
-    if (isCached) {
-      return IconButton(
-          color: Theme.of(context).primaryColorLight,
-          icon: Icon(IconsDownload),
-          onPressed: () => {});
-    }
-    return allowDownloadIconButton(context, Icon(IconsDownload),
-        () => Downloads.downloadSpiff(context, spiff!));
+    return isCached
+        ? IconButton(
+            color: Theme.of(context).primaryColorLight,
+            icon: Icon(IconsDownload),
+            onPressed: () => {})
+        : allowDownloadIconButton(context, Icon(IconsDownload),
+            () => Downloads.downloadSpiff(context, spiff!));
   }
 }
 
@@ -212,14 +211,13 @@ mixin SpiffWidgetBuilder {
   }
 
   Widget playButton(BuildContext context, bool isCached) {
-    if (isCached) {
-      return IconButton(
-          color: overlayIconColor(context),
-          icon: Icon(Icons.play_arrow, size: 32),
-          onPressed: () => onPlay(context));
-    }
-    return allowStreamingIconButton(
-        context, Icon(Icons.play_arrow, size: 32), () => onPlay(context));
+    return isCached
+        ? IconButton(
+            color: overlayIconColor(context),
+            icon: Icon(Icons.play_arrow, size: 32),
+            onPressed: () => onPlay(context))
+        : allowStreamingIconButton(
+            context, Icon(Icons.play_arrow, size: 32), () => onPlay(context));
   }
 
   // void _onArtist(BuildContext context) {

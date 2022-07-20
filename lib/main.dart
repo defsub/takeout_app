@@ -103,17 +103,17 @@ class MyApp extends StatelessWidget {
     });
   }
 
-  ThemeData _darkTheme() {
-    final ThemeData base = ThemeData.dark();
-    return base.copyWith(
-      colorScheme: ColorScheme.dark().copyWith(
-          primary: Colors.orangeAccent,
-          primaryContainer: Colors.orangeAccent,
-          secondary: Colors.orangeAccent,
-          secondaryContainer: Colors.orangeAccent),
-      indicatorColor: Colors.orangeAccent,
-    );
-  }
+  // ThemeData _darkTheme() {
+  //   final ThemeData base = ThemeData.dark();
+  //   return base.copyWith(
+  //     colorScheme: ColorScheme.dark().copyWith(
+  //         primary: Colors.orangeAccent,
+  //         primaryContainer: Colors.orangeAccent,
+  //         secondary: Colors.orangeAccent,
+  //         secondaryContainer: Colors.orangeAccent),
+  //     indicatorColor: Colors.orangeAccent,
+  //   );
+  // }
 }
 
 class _TakeoutWidget extends StatefulWidget {
@@ -202,7 +202,7 @@ class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
   }
 
   static bool _allowOrWifi(String key, ConnectivityResult? result) {
-    final allow = Settings.getValue(key, false);
+    final allow = Settings.getValue<bool>(key, defaultValue: false) ?? false;
     return allow || result == ConnectivityResult.wifi;
   }
 
@@ -253,7 +253,7 @@ class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
       _loggedIn = loggedIn;
       if (loggedIn) {
         _load();
-        _share();
+        _live();
       }
     });
   }
@@ -322,22 +322,44 @@ class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
     }
   }
 
-  late LiveClient live;
-
-  void _share() async {
-    final client = Client();
+  Future<LiveClient> _createLiveClient(Client client) async {
     final cookie = await client.getCookie();
     final url = await client.getEndpoint();
     final uri = Uri.parse(url);
-    live = LiveClient('${uri.host}:${uri.port}', cookie!);
-    if (settingsLiveType() == LiveType.follow) {
-      final follow = LiveFollow(live, audioHandler);
-      follow.connect();
+    return LiveClient('${uri.host}:${uri.port}', cookie!);
+  }
+
+  LiveFollow? _liveFollow;
+  LiveShare? _liveShare;
+
+  void _onLiveChange(LiveType liveType) async {
+    _liveFollow?.stop();
+    _liveFollow = null;
+    _liveShare?.stop();
+    _liveShare = null;
+    if (liveType == LiveType.none) {
+      return;
     }
-    if (settingsLiveType() == LiveType.share) {
-      final follow = LiveShare(live, audioHandler);
-      follow.connect();
+    final client = Client();
+    final live = await _createLiveClient(client);
+    if (liveType == LiveType.follow) {
+      _liveFollow = LiveFollow(live, audioHandler);
+      _liveFollow!.start();
+    } else if (settingsLiveType() == LiveType.share) {
+      _liveShare = LiveShare(live, audioHandler);
+      _liveShare!.start();
     }
+  }
+
+  void _live() async {
+    // start with the current value
+    _onLiveChange(settingsLiveType());
+    // listen for changes
+    settingsChangeSubject.listen((setting) {
+      if (setting == settingLiveMode) {
+        _onLiveChange(settingsLiveType());
+      }
+    });
   }
 
   void _load() async {

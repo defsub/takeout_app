@@ -279,7 +279,7 @@ class _ArtistState extends State<ArtistWidget> with ArtistBuilder {
           PopupItem.area(
               context, _artist.area!, (_) => _onArea(context, _artist.area!)),
         PopupItem.divider(),
-        PopupItem.link(context, 'MusicBrainz Artist', (_) => launch(artistUrl)),
+        PopupItem.link(context, 'MusicBrainz Artist', (_) => launchUrl(Uri.parse(artistUrl))),
         PopupItem.divider(),
         PopupItem.refresh(context, (_) => _onRefresh()),
       ])

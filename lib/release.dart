@@ -43,10 +43,9 @@ class ReleaseWidget extends StatefulWidget {
 }
 
 String _name(Release release) {
-  if (isNotNullOrEmpty(release.disambiguation)) {
-    return '${release.name} (${release.disambiguation})';
-  }
-  return release.name;
+  return isNotNullOrEmpty(release.disambiguation)
+      ? '${release.name} (${release.disambiguation})'
+      : release.name;
 }
 
 class _ReleaseState extends State<ReleaseWidget> {
@@ -130,11 +129,12 @@ class _ReleaseState extends State<ReleaseWidget> {
                                     context, (_) => _onDownload(context)),
                                 PopupItem.divider(),
                                 PopupItem.link(context, 'MusicBrainz Release',
-                                    (_) => launch(releaseUrl)),
+                                    (_) => launchUrl(Uri.parse(releaseUrl))),
                                 PopupItem.link(
                                     context,
                                     'MusicBrainz Release Group',
-                                    (_) => launch(releaseGroupUrl)),
+                                    (_) =>
+                                        launchUrl(Uri.parse(releaseGroupUrl))),
                                 PopupItem.divider(),
                                 PopupItem.refresh(context, (_) => _onRefresh()),
                               ]),
@@ -209,25 +209,23 @@ class _ReleaseState extends State<ReleaseWidget> {
   }
 
   Widget _playButton(BuildContext context, bool isCached) {
-    if (isCached) {
-      return IconButton(
-          color: overlayIconColor(context),
-          icon: Icon(Icons.play_arrow, size: 32),
-          onPressed: () => _onPlay());
-    }
-    return allowStreamingIconButton(
-        context, Icon(Icons.play_arrow, size: 32), _onPlay);
+    return isCached
+        ? IconButton(
+            color: overlayIconColor(context),
+            icon: Icon(Icons.play_arrow, size: 32),
+            onPressed: () => _onPlay())
+        : allowStreamingIconButton(
+            context, Icon(Icons.play_arrow, size: 32), _onPlay);
   }
 
   Widget _downloadButton(BuildContext context, bool isCached) {
-    if (isCached) {
-      return IconButton(
-          color: overlayIconColor(context),
-          icon: Icon(IconsDownloadDone),
-          onPressed: () => {});
-    }
-    return allowDownloadIconButton(
-        context, Icon(IconsDownload), () => _onDownload(context));
+    return isCached
+        ? IconButton(
+            color: overlayIconColor(context),
+            icon: Icon(IconsDownloadDone),
+            onPressed: () => {})
+        : allowDownloadIconButton(
+            context, Icon(IconsDownload), () => _onDownload(context));
   }
 }
 
@@ -280,10 +278,9 @@ class _ReleaseTracksWidget extends StatelessWidget {
 
   Widget _trailing(BuildContext context, CacheSnapshot snapshot, Track t) {
     final downloading = snapshot.downloadSnapshot(t);
-    if (downloading != null) {
-      return CircularProgressIndicator(value: downloading.value);
-    }
-    return Icon(snapshot.contains(t) ? IconsCached : null);
+    return (downloading != null)
+        ? CircularProgressIndicator(value: downloading.value)
+        : Icon(snapshot.contains(t) ? IconsCached : null);
   }
 }
 
