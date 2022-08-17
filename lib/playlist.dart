@@ -85,7 +85,7 @@ class MediaQueue {
       ref = '/music/tracks/${track.id}'; // TODO
       type = MediaType.music;
     } else if (series != null) {
-      ref = '/series/${series.id}';
+      ref = '/podcasts/series/${series.id}';
       type = MediaType.podcast;
     }
     return Reference(ref, type);
