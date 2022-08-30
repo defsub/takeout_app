@@ -40,6 +40,7 @@ import 'global.dart';
 import 'menu.dart';
 import 'model.dart';
 import 'video.dart';
+import 'widget.dart';
 
 class HomeWidget extends StatefulWidget {
   final IndexView _index;
@@ -389,6 +390,9 @@ abstract class _HomeGrid extends StatelessWidget {
         actions: [
           ...iconBar,
           popupMenu(context, [
+            PopupItem.playlist(context, (context) => _onRecentlyPlayed(context)),
+            PopupItem.popular(context, (context) => _onPopularTracks(context)),
+            PopupItem.divider(),
             PopupItem.settings(context, (context) => _onSettings(context)),
             PopupItem.downloads(context, (context) => _onDownloads(context)),
             PopupItem.logout(context, (_) => TakeoutState.logout()),
@@ -434,6 +438,24 @@ abstract class _HomeGrid extends StatelessWidget {
   void _onSettings(BuildContext context) {
     Navigator.push(
         context, MaterialPageRoute(builder: (context) => AppSettings()));
+  }
+
+  void _onRecentlyPlayed(BuildContext context) {
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) => SpiffWidget(
+                fetch: () =>
+                    Client().recentlyPlayed(ttl: Duration.zero))));
+  }
+
+  void _onPopularTracks(BuildContext context) {
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) => SpiffWidget(
+                fetch: () =>
+                    Client().popularTracks(ttl: Duration.zero))));
   }
 
   void _onAbout(BuildContext context) {

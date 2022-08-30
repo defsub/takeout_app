@@ -61,6 +61,7 @@ class EventTrack implements MediaLocatable {
   final String image;
   final String location;
   final String key;
+  final String etag;
 
   EventTrack({
     required this.creator,
@@ -69,6 +70,7 @@ class EventTrack implements MediaLocatable {
     this.image = "",
     required this.location,
     required this.key,
+    this.etag = "",
   });
 
   factory EventTrack.fromMediaItem(MediaItem item) {
@@ -78,7 +80,8 @@ class EventTrack implements MediaLocatable {
         title: item.title,
         image: item.artUri.toString(),
         location: item.extras?[ExtraLocation],
-        key: item.extras?[ExtraETag]);
+        key: item.extras?[ExtraKey],
+        etag: item.extras?[ExtraETag]);
   }
 
   factory EventTrack.fromJson(Map<String, dynamic> json) =>
@@ -313,12 +316,12 @@ class LiveFollow {
 
   bool _isTrackCurrentItem(EventTrack track) {
     final currentItem = audioHandler.mediaItem.value;
-    return currentItem?.extras?[ExtraETag] == track.key;
+    return currentItem?.extras?[ExtraKey] == track.key;
   }
 
   int _trackQueueIndex(EventTrack track) {
     final queue = audioHandler.queue.value;
-    return queue.indexWhere((item) => item.extras?[ExtraETag] == track.key);
+    return queue.indexWhere((item) => item.extras?[ExtraKey] == track.key);
   }
 
   void stop() {

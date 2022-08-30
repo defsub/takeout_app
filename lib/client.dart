@@ -61,6 +61,9 @@ abstract class Locatable {
   /// Cache key.
   String get key;
 
+  /// Etag
+  String get etag;
+
   /// Location URL to get location.
   String get location;
 
@@ -77,6 +80,10 @@ class LocatableKey implements Locatable {
   }
 
   int get size {
+    throw UnimplementedError;
+  }
+
+  String get etag {
     throw UnimplementedError;
   }
 }
@@ -622,6 +629,33 @@ class Client {
     return _delete('/api/progress/${offset.id}');
   }
 
+  /// GET /api/activity
+  Future<ActivityView> activity({Duration? ttl}) async =>
+      _getJson('/api/activity', ttl: ttl)
+          .then((j) => ActivityView.fromJson(j))
+          .catchError((e) => Future<ActivityView>.error(e));
+
+  /// POST /api/activity
+  Future<int> updateActivity(Events events) async {
+    try {
+      log.fine('updateActivity $events');
+      final result = await _postJson('/api/activity', events.toJson(),
+          requireCookie: true);
+      log.fine('updateActivity got $result');
+      return result['_statusCode'];
+    } on ClientException {
+      return HttpStatus.badRequest;
+    }
+  }
+
+  /// GET /api/activity/tracks/recent/playlist
+  Future<Spiff> recentlyPlayed({Duration? ttl}) async =>
+      spiff('/api/activity/tracks/recent/playlist', ttl: ttl);
+
+  /// GET /api/activity/tracks/popular/playlist
+  Future<Spiff> popularTracks({Duration? ttl}) async =>
+      spiff('/api/activity/tracks/popular/playlist', ttl: ttl);
+
   /// Download locatable to a file with optional retries.
   Future download(Locatable d, {int retries = 0}) async {
     if (_downloadInProgress(d)) {
@@ -677,10 +711,16 @@ class Client {
             sink.add(data);
             snap.add(data.length);
           }, onDone: () {
-            sink.close();
             snap.close();
-            cache.put(d, file);
-            completer.complete();
+            sink.flush().whenComplete(() => sink.close().whenComplete(() {
+              if (d.size == file.lengthSync()) {
+                cache.put(d, file);
+                completer.complete();
+              } else {
+                log.fine('download failed ${d.size} != ${file.lengthSync()}');
+                completer.completeError("${d.size} != ${file.lengthSync()}");
+              }
+            }));
           }, onError: (err) {
             completer.completeError(err); // TODO need to throw?
           });

@@ -189,6 +189,11 @@ class Entry extends Locatable implements MediaTrack {
   }
 
   @override
+  String get etag {
+    return identifiers?[0] ?? '';
+  }
+
+  @override
   String get location {
     return locations[0];
   }

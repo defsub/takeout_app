@@ -69,6 +69,9 @@
   "settingLiveShare": "Share",
   "settingLiveFollow": "Follow",
   "settingLiveNone": "None",
+  "recentlyPlayed": "Recently Played",
+  "recentlyWatched": "Recently Watched",
+  "popularTracks": "Popular Tracks",
   "deleteTitle": "Really delete {title}?",
   "@deleteTitle": {
     "placeholders": {

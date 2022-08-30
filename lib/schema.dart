@@ -893,6 +893,11 @@ class Episode extends MediaLocatable {
   }
 
   @override
+  String get etag {
+    return '';
+  }
+
+  @override
   String get location {
     return '/api/episodes/$id/location';
   }
@@ -1039,4 +1044,153 @@ class ProgressView {
       _$ProgressViewFromJson(json);
 
   Map<String, dynamic> toJson() => _$ProgressViewToJson(this);
+}
+
+@JsonSerializable(fieldRename: FieldRename.pascal)
+class ActivityMovie {
+  final String date;
+  final Movie movie;
+
+  ActivityMovie({required this.date, required this.movie});
+
+  factory ActivityMovie.fromJson(Map<String, dynamic> json) =>
+      _$ActivityMovieFromJson(json);
+
+  Map<String, dynamic> toJson() => _$ActivityMovieToJson(this);
+}
+
+@JsonSerializable(fieldRename: FieldRename.pascal)
+class ActivityTrack {
+  final String date;
+  final Track track;
+
+  ActivityTrack({required this.date, required this.track});
+
+  factory ActivityTrack.fromJson(Map<String, dynamic> json) =>
+      _$ActivityTrackFromJson(json);
+
+  Map<String, dynamic> toJson() => _$ActivityTrackToJson(this);
+}
+
+@JsonSerializable(fieldRename: FieldRename.pascal)
+class ActivityRelease {
+  final String date;
+  final Release release;
+
+  ActivityRelease({required this.date, required this.release});
+
+  factory ActivityRelease.fromJson(Map<String, dynamic> json) =>
+      _$ActivityReleaseFromJson(json);
+
+  Map<String, dynamic> toJson() => _$ActivityReleaseToJson(this);
+}
+
+@JsonSerializable(fieldRename: FieldRename.pascal)
+class ActivityView {
+  final List<ActivityMovie> recentMovies;
+  final List<ActivityTrack> recentTracks;
+  final List<ActivityRelease> recentReleases;
+
+  ActivityView({
+    this.recentMovies = const [],
+    this.recentTracks = const [],
+    this.recentReleases = const [],
+  });
+
+  factory ActivityView.fromJson(Map<String, dynamic> json) =>
+      _$ActivityViewFromJson(json);
+
+  Map<String, dynamic> toJson() => _$ActivityViewToJson(this);
+}
+
+@JsonSerializable(fieldRename: FieldRename.pascal)
+class MovieEvent {
+  final String date;
+  @JsonKey(name: "TMID")
+  final String tmid;
+  @JsonKey(name: "IMID")
+  final String imid;
+  @JsonKey(name: "ETag")
+  final String etag;
+
+  MovieEvent(
+      {required this.date, this.tmid = "", this.imid = "", this.etag = ""});
+
+  factory MovieEvent.now(String etag) {
+    final date = Events._eventDate();
+    return MovieEvent(etag: etag, date: date);
+  }
+
+  factory MovieEvent.fromJson(Map<String, dynamic> json) =>
+      _$MovieEventFromJson(json);
+
+  Map<String, dynamic> toJson() => _$MovieEventToJson(this);
+}
+
+@JsonSerializable(fieldRename: FieldRename.pascal)
+class ReleaseEvent {
+  final String date;
+  @JsonKey(name: "RGID")
+  final String rgid;
+  @JsonKey(name: "REID")
+  final String reid;
+
+  ReleaseEvent({required this.date, this.rgid = "", this.reid = ""});
+
+  factory ReleaseEvent.now(Release release) {
+    final date = Events._eventDate();
+    return ReleaseEvent(
+        date: date, rgid: release.rgid ?? '', reid: release.reid ?? '');
+  }
+
+  factory ReleaseEvent.fromJson(Map<String, dynamic> json) =>
+      _$ReleaseEventFromJson(json);
+
+  Map<String, dynamic> toJson() => _$ReleaseEventToJson(this);
+}
+
+@JsonSerializable(fieldRename: FieldRename.pascal)
+class TrackEvent {
+  final String date;
+  @JsonKey(name: "RGID")
+  final String rgid;
+  @JsonKey(name: "RID")
+  final String rid;
+  @JsonKey(name: "ETag")
+  final String etag;
+
+  TrackEvent(
+      {required this.date, this.rgid = "", this.rid = "", this.etag = ""});
+
+  factory TrackEvent.now(String etag) {
+    final date = Events._eventDate();
+    return TrackEvent(etag: etag, date: date);
+  }
+
+  factory TrackEvent.fromJson(Map<String, dynamic> json) =>
+      _$TrackEventFromJson(json);
+
+  Map<String, dynamic> toJson() => _$TrackEventToJson(this);
+}
+
+@JsonSerializable(fieldRename: FieldRename.pascal)
+class Events {
+  final List<MovieEvent> movieEvents;
+  final List<ReleaseEvent> releaseEvents;
+  final List<TrackEvent> trackEvents;
+
+  Events({
+    this.movieEvents = const [],
+    this.releaseEvents = const [],
+    this.trackEvents = const [],
+  });
+
+  factory Events.fromJson(Map<String, dynamic> json) => _$EventsFromJson(json);
+
+  Map<String, dynamic> toJson() => _$EventsToJson(this);
+
+  static String _eventDate() {
+    // server expects 2006-01-02T15:04:05Z07:00
+    return DateTime.now().toUtc().toIso8601String();
+  }
 }

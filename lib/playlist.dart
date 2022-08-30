@@ -32,6 +32,7 @@ import 'util.dart';
 const ExtraHeaders = 'headers';
 const ExtraMediaType = 'mediaType';
 const ExtraETag = 'etag';
+const ExtraKey = 'key';
 const ExtraLocation = 'location';
 
 class PlaylistException implements Exception {
@@ -350,7 +351,8 @@ class MediaQueue {
         ExtraLocation: entry.location,
         ExtraHeaders: headers,
         ExtraMediaType: mediaType.name,
-        ExtraETag: entry.key
+        ExtraETag: entry.etag,
+        ExtraKey: entry.key,
       },
     );
   }

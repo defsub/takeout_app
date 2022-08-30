@@ -217,7 +217,7 @@ class TrackCache {
     final dir = await checkAppDir(_dir);
     final files = await dir.list().toList();
     await Future.forEach(files, (FileSystemEntity file) async {
-      // entry keys are etags
+      // entry keys are etags with any quotes (or other) removed
       _entries[basename(file.path)] = file as File;
     }).whenComplete(() => _publish());
   }

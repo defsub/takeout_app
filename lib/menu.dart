@@ -102,6 +102,10 @@ class PopupItem {
   PopupItem.radio(BuildContext context, MenuCallback onSelected)
       : this(Icon(Icons.radio), AppLocalizations.of(context)!.radioLabel,
             onSelected);
+
+  PopupItem.playlist(BuildContext context, MenuCallback onSelected)
+      : this(Icon(Icons.playlist_play_sharp),
+      AppLocalizations.of(context)!.recentlyPlayed, onSelected);
 }
 
 Widget popupMenu(BuildContext context, List<PopupItem> items) {

@@ -30,6 +30,7 @@ import 'package:takeout_app/settings.dart';
 import 'model.dart';
 import 'playlist.dart';
 import 'progress.dart';
+import 'activity.dart';
 
 extension TakeoutMediaItem on MediaItem {
   Map<String, String>? headers() {
@@ -71,12 +72,20 @@ extension TakeoutMediaItem on MediaItem {
     return end == null ? null : end * 0.95;
   }
 
+  Duration? get halfDuration {
+    final end = duration;
+    return end == null ? null : end * 0.5;
+  }
+
   bool trackProgress() {
     // don't track songs or radio streams
     return isPodcast();
   }
 
   String get etag => extras?[ExtraETag] ?? '';
+
+  // FIXME progress is using key not etag!
+  String get key => extras?[ExtraKey] ?? '';
 }
 
 class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
@@ -131,6 +140,13 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
         state.current = state.current.copyWith(duration: duration);
         mediaItem.add(state.current);
       }
+      final item = currentItem;
+      if (item != null) {
+        // register functions to call at certain positions
+        _positionFuncs.clear();
+        _positionFuncs[item.halfDuration!] = () => _onConsiderPlayed(item);
+        _positionFuncs[item.endZone!] = () => _onConsiderEnded(item);
+      }
     });
 
     _player.icyMetadataStream.listen((event) {
@@ -161,18 +177,38 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
       }
     });
 
-    // This will auto-remove progress at the "end" of the media.
-    // Not sure if this is desired right now so commented.
-    //
-    // _player.positionStream.listen((pos) {
-    //   final item = mediaItem.value;
-    //   if (item != null) {
-    //     final endZone = item.endZone;
-    //     if (endZone != null && pos > endZone) {
-    //       Progress.remove(item.etag);
-    //     }
-    //   }
-    // });
+    // create a position stream that fires about every 10 seconds
+    // to monitor progress and call functions.
+    final stream = _player.createPositionStream(
+        steps: 10,
+        minPeriod: Duration(seconds: 10),
+        maxPeriod: Duration(seconds: 30));
+    stream.listen((pos) {
+      final item = mediaItem.value;
+      // log.finest('pos is ${pos} ${item?.title}');
+      if (pos.inSeconds > 0 && item?.duration != null) {
+        // playback started
+        final keys = _positionFuncs.keys.toList();
+        keys.forEach((d) {
+          if (pos >= d) {
+            final func = _positionFuncs[d]!;
+            _positionFuncs.remove(d);
+            func();
+          }
+        });
+      }
+    });
+  }
+
+  final Map<Duration, Function()> _positionFuncs = {};
+
+  void _onConsiderPlayed(MediaItem item) {
+    log.fine('_onConsiderPlayed ${item.title}');
+    _sendMediaItemActivity(item);
+  }
+
+  void _onConsiderEnded(MediaItem item) {
+    log.fine('_onConsiderEnded ${item.title}');
   }
 
   Stream<Duration> positionStream() {
@@ -195,7 +231,8 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
     return Future.value(true);
   }
 
-  Future<void> _loadPlaylist(String location, {bool startPlayback = false}) async {
+  Future<void> _loadPlaylist(String location,
+      {bool startPlayback = false}) async {
     _reload(Uri.parse(location), startPlayback);
   }
 
@@ -448,14 +485,14 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
 
   Future<Duration> getSavedPosition(MediaItem item) async {
     return item.trackProgress()
-        ? Progress.position(item.etag)
+        ? Progress.position(item.key)
         : Future.value(Duration.zero);
   }
 
   void _restorePosition() {
     final item = mediaItem.value;
     if (item != null && item.trackProgress()) {
-      Progress.position(item.etag).then((pos) {
+      Progress.position(item.key).then((pos) {
         seek(pos);
       });
     }
@@ -470,8 +507,12 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
     // save progress
     final item = mediaItem.value;
     if (item != null && item.trackProgress()) {
-      Progress.update(item.etag, pos, _player.duration ?? Duration.zero);
+      Progress.update(item.key, pos, _player.duration ?? Duration.zero);
     }
+  }
+
+  void _sendMediaItemActivity(MediaItem item) {
+    Activity.sendTrackEvent(item.etag);
   }
 }
 
