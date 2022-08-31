@@ -519,9 +519,9 @@ class Client {
   Future<Spiff> artistPlaylist(int id, {Duration? ttl}) async =>
       spiff('/api/artists/$id/playlist', ttl: ttl);
 
-  /// GET /api/artists/1/radio
+  /// GET /api/artists/1/radio/playlist
   Future<Spiff> artistRadio(int id, {Duration? ttl}) async =>
-      spiff('/api/artists/$id/radio', ttl: ttl);
+      spiff('/api/artists/$id/radio/playlist', ttl: ttl);
 
   /// GET /api/releases/1
   Future<ReleaseView> release(int id, {Duration? ttl}) async =>
@@ -544,7 +544,7 @@ class Client {
 
   /// GET /api/radio/stations/1
   Future<Spiff> station(int id, {Duration? ttl}) async =>
-      spiff('/api/radio/stations/$id', ttl: ttl);
+      spiff('/api/radio/stations/$id/playlist', ttl: ttl);
 
   /// GET /path -> spiff
   Future<Spiff> spiff(String path, {Duration? ttl}) async =>
@@ -717,12 +717,11 @@ class Client {
                 cache.put(d, file);
                 completer.complete();
               } else {
-                log.fine('download failed ${d.size} != ${file.lengthSync()}');
-                completer.completeError("${d.size} != ${file.lengthSync()}");
+                throw ClientError('${d.size} != ${file.lengthSync()}');
               }
             }));
           }, onError: (err) {
-            completer.completeError(err); // TODO need to throw?
+            throw err;
           });
         })
         .timeout(downloadTimeout)

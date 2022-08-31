@@ -52,9 +52,8 @@ class _LoginState extends State<LoginWidget> {
     final host = await prefsString(settingHost);
     final user = await prefsString(settingUser);
     setState(() {
-      _hostText.text = host ?? "";
+      _hostText.text = host ?? "https://yourhost";
       _userText.text = user ?? "";
-      _hostText.text = "https://takeout.fm";
     });
   }
 
@@ -81,9 +80,9 @@ class _LoginState extends State<LoginWidget> {
                   child: TextFormField(
                     controller: _hostText,
                     decoration: InputDecoration(
-                        border: OutlineInputBorder(),
-                        labelText: AppLocalizations.of(context)!.hostLabel,
-                        helperText: appHome),
+                      border: OutlineInputBorder(),
+                      labelText: AppLocalizations.of(context)!.hostLabel,
+                    ),
                   ),
                 ),
                 Container(

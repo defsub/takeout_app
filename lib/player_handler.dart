@@ -512,7 +512,11 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
   }
 
   void _sendMediaItemActivity(MediaItem item) {
-    Activity.sendTrackEvent(item.etag);
+    if (item.isMusic()) {
+      Activity.sendTrackEvent(item.etag);
+    } else if (item.isPodcast()) {
+      // TODO
+    }
   }
 }
 
