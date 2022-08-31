@@ -25,7 +25,7 @@ import 'artists.dart'; // TODO remove
 
 const appVersion = '0.8.1';
 const appSource = 'https://github.com/defsub/takeout_app';
-const appHome = 'https://takeout.fm';
+const appHome = 'https://defsub.github.io';
 
 late AudioHandler audioHandler;
 
