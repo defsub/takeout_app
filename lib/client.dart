@@ -24,6 +24,7 @@ import 'package:http/http.dart' as http;
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:logging/logging.dart';
+import 'package:takeout_app/global.dart';
 
 import 'cache.dart';
 import 'schema.dart';
@@ -161,9 +162,26 @@ class _SnapshotSink extends Sink<int> {
   void close() {}
 }
 
+class ClientWithUserAgent extends http.BaseClient {
+  static final log = Logger('HttpClient');
+
+  final http.Client _client;
+  final String _userAgent;
+
+  ClientWithUserAgent(this._client, this._userAgent);
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    log.finest('${request.method} ${request.url.toString()}');
+    request.headers['User-Agent'] = _userAgent;
+    return _client.send(request);
+  }
+}
+
 class Client {
   static final log = Logger('Client');
 
+  static final userAgent = 'Takeout/${appVersion} (${appHome}; ${Platform.operatingSystem})';
   static const settingCookie = 'client_cookie';
   static const settingEndpoint = 'endpoint';
   static const cookieName = 'Takeout';
@@ -178,6 +196,9 @@ class Client {
   static String? _endpoint;
   static String? _cookie;
   static Uri _defaultPlaylistUri = Uri.parse(_defaultPlaylist);
+  static http.Client _client = ClientWithUserAgent(http.Client(), userAgent);
+
+  static http.Client get client => _client;
 
   static Uri defaultPlaylistUri() {
     return _defaultPlaylistUri;
@@ -311,7 +332,7 @@ class Client {
     try {
       final baseUrl = await getEndpoint();
       log.fine('GET $baseUrl$uri');
-      final response = await http.get(Uri.parse('$baseUrl$uri'), headers: {
+      final response = await _client.get(Uri.parse('$baseUrl$uri'), headers: {
         HttpHeaders.cookieHeader: '$cookieName=$cookie'
       }).timeout(defaultTimeout);
       log.fine('got ${response.statusCode}');
@@ -350,7 +371,7 @@ class Client {
     try {
       final baseUrl = await getEndpoint();
       log.fine('DELETE $baseUrl$uri');
-      final response = await http.delete(Uri.parse('$baseUrl$uri'),
+      final response = await _client.delete(Uri.parse('$baseUrl$uri'),
           headers: {HttpHeaders.cookieHeader: '$cookieName=$cookie'});
       log.fine('got ${response.statusCode}');
       switch (response.statusCode) {
@@ -390,7 +411,7 @@ class Client {
     final baseUrl = await getEndpoint();
     log.fine('$baseUrl$uri');
     log.finer(jsonEncode(json));
-    return http
+    return _client
         .post(Uri.parse('$baseUrl$uri'),
             headers: headers, body: jsonEncode(json))
         .then((response) {

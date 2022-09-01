@@ -16,12 +16,14 @@
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:palette_generator/palette_generator.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:logging/logging.dart';
 import 'package:octo_image/octo_image.dart';
 import 'util.dart';
+import 'client.dart';
 
 const coverAspectRatio = 1.0;
 const coverGridWidth = 250.0;
@@ -118,7 +120,7 @@ class ArtworkBuilder {
       return errorIcon;
     }
     urlStream.add(artwork.url);
-    final imageProvider = CachedNetworkImageProvider(artwork.url);
+    final imageProvider = _imageProvider(artwork.url);
     //CachedNetworkImage.logLevel = CacheManagerLogLevel.verbose;
     final image = OctoImage(
         image: imageProvider,
@@ -167,22 +169,16 @@ class ArtworkBuilder {
       return null;
     }
     final paletteGenerator =
-    await PaletteGenerator.fromImageProvider(imageProvider);
-    final brightness = MediaQuery
-        .of(context)
-        .platformBrightness;
+        await PaletteGenerator.fromImageProvider(imageProvider);
+    final brightness = MediaQuery.of(context).platformBrightness;
     if (brightness == Brightness.dark) {
       return paletteGenerator.darkVibrantColor?.color ??
           paletteGenerator.darkMutedColor?.color ??
-          Theme
-              .of(context)
-              .backgroundColor;
+          Theme.of(context).backgroundColor;
     } else {
       return paletteGenerator.lightVibrantColor?.color ??
           paletteGenerator.lightMutedColor?.color ??
-          Theme
-              .of(context)
-              .backgroundColor;
+          Theme.of(context).backgroundColor;
     }
   }
 }
@@ -223,7 +219,7 @@ Future<Color> getImageBackgroundColor(BuildContext context, String url) async {
     return color;
   }
   final paletteGenerator =
-      await PaletteGenerator.fromImageProvider(CachedNetworkImageProvider(url));
+      await PaletteGenerator.fromImageProvider(_imageProvider(url));
   final brightness = MediaQuery.of(context).platformBrightness;
   if (brightness == Brightness.dark) {
     color = paletteGenerator.darkVibrantColor?.color ??
@@ -236,4 +232,23 @@ Future<Color> getImageBackgroundColor(BuildContext context, String url) async {
   }
   _colorCache[url] = color;
   return color;
+}
+
+CachedNetworkImageProvider _imageProvider(String url) {
+  return CachedNetworkImageProvider(url, cacheManager: _CoverCacheManager());
+}
+
+// redo of DefaultCacheManager to use the takeout client
+class _CoverCacheManager extends CacheManager with ImageCacheManager {
+  static const key = 'libCachedImageData'; // same as DefaultCacheManager
+
+  static final _CoverCacheManager _instance = _CoverCacheManager._();
+
+  factory _CoverCacheManager() {
+    return _instance;
+  }
+
+  _CoverCacheManager._()
+      : super(Config(key,
+            fileService: HttpFileService(httpClient: Client.client)));
 }
