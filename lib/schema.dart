@@ -295,6 +295,7 @@ class Track extends MediaLocatable {
   @JsonKey(name: "REID")
   final String? reid;
   final String releaseTitle;
+  final String trackArtist;
   @JsonKey(name: "ETag")
   final String etag;
   final bool artwork;
@@ -315,6 +316,7 @@ class Track extends MediaLocatable {
       this.rgid,
       this.reid,
       required this.releaseTitle,
+      this.trackArtist = '',
       required this.etag,
       this.artwork = false,
       this.frontArtwork = false,
@@ -340,7 +342,7 @@ class Track extends MediaLocatable {
   String get album => release;
 
   @override
-  String get creator => artist;
+  String get creator => preferredArtist();
 
   @override
   int get disc => discNum;
@@ -371,6 +373,12 @@ class Track extends MediaLocatable {
       return '$url/$otherArtwork-$size';
     }
     return '';
+  }
+
+  String preferredArtist() {
+    return (trackArtist.isNotEmpty && trackArtist != artist)
+        ? trackArtist
+        : artist;
   }
 }
 

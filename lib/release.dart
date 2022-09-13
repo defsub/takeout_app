@@ -257,8 +257,8 @@ class _ReleaseTracksWidget extends StatelessWidget {
                   AppLocalizations.of(context)!.discLabel(e.discNum, discs)));
               d = e.discNum;
             }
-            final subartist = _view.artist.name != _view.tracks[i].artist
-                ? _view.tracks[i].artist
+            final subartist = _view.artist.name != _view.tracks[i].preferredArtist()
+                ? _view.tracks[i].preferredArtist()
                 : '';
             final subrelease = _view.tracks[i].releaseTitle;
             final subtitle = merge([subartist, subrelease]);

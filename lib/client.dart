@@ -275,9 +275,16 @@ class Client {
     return _cookie;
   }
 
-  Future<Map<String, String>> headers() async {
+  Future<Map<String, String>> headersWithCookie() async {
     final cookie = await _getCookie();
-    return {HttpHeaders.cookieHeader: '$cookieName=$cookie'};
+    return {
+      HttpHeaders.cookieHeader: '$cookieName=$cookie',
+      HttpHeaders.userAgentHeader: userAgent,
+    };
+  }
+
+  Future<Map<String, String>> headers() async {
+    return {HttpHeaders.userAgentHeader: userAgent};
   }
 
   Future<bool> needLogin() async {

@@ -548,7 +548,7 @@ class _MoviePlayerState extends State<MoviePlayer> {
     // controller
     final client = Client();
     final uri = await client.locate(_movie);
-    final headers = await client.headers();
+    final headers = await client.headersWithCookie();
     final controller =
         VideoPlayerController.network(uri.toString(), httpHeaders: headers)
           ..initialize().then((_) {
