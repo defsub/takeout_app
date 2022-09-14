@@ -24,13 +24,13 @@ import 'dart:math';
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:takeout_app/widget.dart';
 
 import 'cover.dart';
 import 'global.dart';
 import 'menu.dart';
 import 'player_handler.dart';
 import 'style.dart';
-import 'util.dart';
 import 'main.dart';
 
 class _PlayState {
@@ -258,21 +258,17 @@ class _MediaTrackListWidget extends StatelessWidget {
               (t) => t.artUri.toString() == mediaItems.first.artUri.toString());
           return Container(
               child: Column(children: [
-            ...mediaItems.map((t) => ListTile(
-                leading: sameArtwork ? null : tileCover(t.artUri.toString()),
-                trailing: _cachedIcon(t),
-                selected: t == state.mediaItem,
-                onTap: () {
+            ...mediaItems.map((t) => CoverTrackListTile.mediaItem(t,
+                    showCover: !sameArtwork,
+                    trailing: _cachedIcon(t),
+                    selected: t == state.mediaItem, onTap: () {
                   audioHandler.playMediaItem(t).whenComplete(() {
                     if (!audioHandler.playbackState.value.playing)
                       audioHandler.play();
                   });
-                },
-                onLongPress: () {
+                }, onLongPress: () {
                   showArtist(t.artist ?? '');
-                },
-                subtitle: Text(merge([t.artist ?? '', t.album ?? ''])),
-                title: Text(t.title)))
+                }))
           ]));
         });
   }

@@ -32,6 +32,7 @@ import 'style.dart';
 import 'main.dart';
 import 'model.dart';
 import 'util.dart';
+import 'widget.dart';
 
 class ReleaseWidget extends StatefulWidget {
   final Release _release;
@@ -257,20 +258,9 @@ class _ReleaseTracksWidget extends StatelessWidget {
                   AppLocalizations.of(context)!.discLabel(e.discNum, discs)));
               d = e.discNum;
             }
-            final subartist = _view.artist.name != _view.tracks[i].preferredArtist()
-                ? _view.tracks[i].preferredArtist()
-                : '';
-            final subrelease = _view.tracks[i].releaseTitle;
-            final subtitle = merge([subartist, subrelease]);
-            final trackNumStyle = Theme.of(context).textTheme.caption;
-            children.add(ListTile(
+            children.add(NumberedTrackListTile(e,
                 onTap: () => _onTap(i),
-                leading: Container(
-                    padding: EdgeInsets.fromLTRB(12, 12, 0, 0),
-                    child: Text('${e.trackNum}', style: trackNumStyle)),
-                trailing: _trailing(context, cacheSnapshot, e),
-                subtitle: subtitle.isNotEmpty ? Text(subtitle) : null,
-                title: Text(e.title)));
+                trailing: _trailing(context, cacheSnapshot, e)));
           }
           return Column(children: children);
         });

@@ -195,6 +195,7 @@ class _EpisodeListWidget extends StatelessWidget {
           final episodes = _view.episodes;
           return Column(children: [
             ...episodes.asMap().keys.toList().map((index) => ListTile(
+                isThreeLine: true,
                 trailing: _trailing(context, cacheSnapshot, episodes[index]),
                 onTap: () => _onPlay(context, episodes[index], index),
                 title: Text(episodes[index].title),

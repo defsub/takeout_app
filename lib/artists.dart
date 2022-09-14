@@ -279,7 +279,8 @@ class _ArtistState extends State<ArtistWidget> with ArtistBuilder {
           PopupItem.area(
               context, _artist.area!, (_) => _onArea(context, _artist.area!)),
         PopupItem.divider(),
-        PopupItem.link(context, 'MusicBrainz Artist', (_) => launchUrl(Uri.parse(artistUrl))),
+        PopupItem.link(context, 'MusicBrainz Artist',
+            (_) => launchUrl(Uri.parse(artistUrl))),
         PopupItem.divider(),
         PopupItem.refresh(context, (_) => _onRefresh()),
       ])
@@ -354,16 +355,9 @@ class TrackListWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(children: [
-      ..._tracks.asMap().keys.toList().map((index) => ListTile(
-          onTap: () => _onPlay(index),
-          leading: tileCover(_tracks[index].image),
-          trailing: Icon(Icons.play_arrow),
-          subtitle: Text(merge([
-            _tracks[index].creator,
-            _tracks[index].album,
-            _tracks[index].year.toString()
-          ])),
-          title: Text(_tracks[index].title)))
+      ..._tracks.asMap().keys.toList().map((index) =>
+          CoverTrackListTile.mediaTrack(_tracks[index],
+              onTap: () => _onPlay(index), trailing: Icon(Icons.play_arrow)))
     ]);
   }
 }
@@ -507,16 +501,12 @@ class _ArtistTrackListState extends State<ArtistTrackListWidget>
     ];
   }
 
-  List<ListTile> _trackList(CacheSnapshot snapshot) {
-    final list = <ListTile>[];
+  List<CoverTrackListTile> _trackList(CacheSnapshot snapshot) {
+    final list = <CoverTrackListTile>[];
     int index = 0;
     _tracks.forEach((t) {
-      list.add(ListTile(
-          onTap: () => _onTrack(index),
-          leading: tileCover(t.image),
-          trailing: _trailing(snapshot, t),
-          subtitle: Text(merge([t.release, t.date])),
-          title: Text(t.title)));
+      list.add(CoverTrackListTile.mediaTrack(t,
+          onTap: () => _onTrack(index), trailing: _trailing(snapshot, t)));
       index++;
     });
     return list;
@@ -613,7 +603,8 @@ mixin ArtistBuilder {
                                           CacheSnapshot.empty();
                                       return CustomScrollView(slivers: [
                                         SliverAppBar(
-                                            foregroundColor: overlayIconColor(context),
+                                            foregroundColor:
+                                                overlayIconColor(context),
                                             expandedHeight: expandedHeight,
                                             actions: actions(),
                                             flexibleSpace: FlexibleSpaceBar(

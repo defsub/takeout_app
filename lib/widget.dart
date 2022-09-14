@@ -20,6 +20,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
+import 'package:audio_service/audio_service.dart';
 
 import 'menu.dart';
 import 'cover.dart';
@@ -33,6 +34,7 @@ import 'video.dart';
 import 'global.dart';
 import 'spiff.dart';
 import 'progress.dart';
+import 'schema.dart';
 
 Random _random = Random();
 
@@ -264,14 +266,19 @@ class SpiffTrackListView extends StatelessWidget {
               tracks.every((e) => e.image == tracks.first.image);
           for (var i = 0; i < tracks.length; i++) {
             final e = tracks[i];
+            final subChildren = _subtitle(context, cacheSnapshot, e);
+            final subtitle = Column(
+                children: subChildren,
+                crossAxisAlignment: CrossAxisAlignment.start);
+            final isThreeLine = subChildren.length > 1 || _spiff.isPodcast();
             children.add(ListTile(
+                isThreeLine: isThreeLine,
                 onTap: () => _onTrack(context, cacheSnapshot, i),
                 onLongPress: () => showArtist(e.creator),
                 leading: _leading(context, cacheSnapshot, e, sameArtwork),
                 trailing: _trailing(cacheSnapshot, e),
-                subtitle: _subtitle(context, cacheSnapshot, e),
+                subtitle: subtitle,
                 title: Text(e.title)));
-            // children.add(SizedBox(height: 10));
           }
           return Column(children: children);
         });
@@ -299,24 +306,142 @@ class SpiffTrackListView extends StatelessWidget {
     return Icon(snapshot.contains(entry) ? IconsCached : null);
   }
 
-  Widget _subtitle(BuildContext context, CacheSnapshot snapshot, Entry entry) {
+  List<Widget> _subtitle(
+      BuildContext context, CacheSnapshot snapshot, Entry entry) {
     final children = <Widget>[];
-    final duration = snapshot.remaining(entry);
-    if (duration != null) {
-      if (_spiff.isPodcast() || _spiff.isVideo()) {
-        final value = snapshot.value(entry);
-        if (value != null) {
-          children.add(LinearProgressIndicator(value: value));
+    if (_spiff.isMusic()) {
+      if (entry.creator != _spiff.playlist.creator) {
+        children.add(Text(entry.creator, overflow: TextOverflow.ellipsis));
+      }
+      children.add(Text(
+          merge(
+              [entry.album, if (snapshot.contains(entry)) storage(entry.size)]),
+          overflow: TextOverflow.ellipsis));
+    } else {
+      final duration = snapshot.remaining(entry);
+      if (duration != null) {
+        if (_spiff.isPodcast() || _spiff.isVideo()) {
+          final value = snapshot.value(entry);
+          if (value != null) {
+            children.add(LinearProgressIndicator(value: value));
+          }
         }
       }
+      children.add(Text(
+          merge([
+            entry.creator,
+            spiffDate(_spiff, entry: entry),
+            if (snapshot.contains(entry)) storage(entry.size)
+          ]),
+          overflow: TextOverflow.ellipsis));
     }
-    children.add(Text(merge([
-      entry.creator,
-      spiffDate(_spiff, entry: entry),
-      storage(entry.size)
-    ])));
-    return Column(
-        children: children, crossAxisAlignment: CrossAxisAlignment.start);
+    return children;
+  }
+}
+
+class TrackListTile extends StatelessWidget {
+  final String artist;
+  final String album;
+  final String title;
+  final void Function()? onTap;
+  final void Function()? onLongPress;
+  final Widget? leading;
+  final Widget? trailing;
+  final bool selected;
+
+  TrackListTile(this.artist, this.album, this.title,
+      {this.leading,
+      this.onTap,
+      this.onLongPress,
+      this.trailing,
+      this.selected = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final subtitle =
+        Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
+      if (artist.isNotEmpty) Text(artist, overflow: TextOverflow.ellipsis),
+      Text(album, overflow: TextOverflow.ellipsis)
+    ]);
+
+    return ListTile(
+        selected: selected,
+        isThreeLine: artist.isNotEmpty,
+        onTap: onTap,
+        onLongPress: onLongPress,
+        leading: leading,
+        trailing: trailing,
+        subtitle: subtitle,
+        title: Text(title));
+  }
+}
+
+class NumberedTrackListTile extends StatelessWidget {
+  final Track track;
+  final void Function()? onTap;
+  final void Function()? onLongPress;
+  final Widget? trailing;
+  final bool selected;
+
+  NumberedTrackListTile(this.track,
+      {this.onTap, this.onLongPress, this.trailing, this.selected = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final trackNumStyle = Theme.of(context).textTheme.caption;
+    final leading = Container(
+        padding: EdgeInsets.fromLTRB(12, 12, 0, 0),
+        child: Text('${track.trackNum}', style: trackNumStyle));
+    // only show artist if different from album artist
+    final artist = track.trackArtist != track.artist ? track.trackArtist : '';
+    return TrackListTile(artist, track.releaseTitle, track.title,
+        leading: leading,
+        trailing: trailing,
+        onTap: onTap,
+        onLongPress: onLongPress,
+        selected: selected);
+  }
+}
+
+class CoverTrackListTile extends TrackListTile {
+  CoverTrackListTile(super.artist, super.album, super.title, String? cover,
+      {super.onTap, super.onLongPress, super.trailing, super.selected})
+      : super(leading: cover != null ? tileCover(cover) : null);
+
+  factory CoverTrackListTile.mediaTrack(MediaLocatable track,
+      {bool showCover = true,
+      void Function()? onTap,
+      void Function()? onLongPress,
+      Widget? trailing,
+      bool selected = false}) {
+    return CoverTrackListTile(
+      track.creator,
+      track.album,
+      track.title,
+      showCover ? track.image : null,
+      onTap: onTap,
+      onLongPress: onLongPress,
+      trailing: trailing,
+      selected: selected,
+    );
+  }
+
+  factory CoverTrackListTile.mediaItem(MediaItem item,
+      {bool showCover = true,
+      void Function()? onTap,
+      void Function()? onLongPress,
+      Widget? trailing,
+      bool selected = false}) {
+    return CoverTrackListTile(
+      item.artist ?? '',
+      item.album ?? '',
+      item.title,
+      showCover ? item.artUri.toString() : null,
+      onTap: onTap,
+      onLongPress: onLongPress,
+      trailing: trailing,
+      selected: selected,
+    );
   }
 }
 

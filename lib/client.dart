@@ -326,9 +326,14 @@ class Client {
       final result = await cache.get(uri, ttl: ttl);
       if (result.exists && result is JsonCacheEntry) {
         log.fine('cached $uri expired is ${result.expired}');
-        cachedJson = await result.file
-            .readAsBytes()
-            .then((body) => jsonDecode(utf8.decode(body)));
+        try {
+          cachedJson = await result.file
+              .readAsBytes()
+              .then((body) => jsonDecode(utf8.decode(body)));
+        } catch (e) {
+          // can't parse cached json, will try to replace it
+          log.warning(e);
+        }
         if (cachedJson != null && result.expired == false) {
           // not expired so use the cached value
           return cachedJson;
