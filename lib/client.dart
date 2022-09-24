@@ -875,7 +875,7 @@ class Client {
     HttpClient()
         .getUrl(Uri.parse('$baseUrl${d.location}'))
         .then((request) async {
-          final headers = await _headersWithAccessToken();
+          final headers = await headersWithMediaToken();
           headers.forEach((k, v) {
             request.headers.add(k, v);
           });
