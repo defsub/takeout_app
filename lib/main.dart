@@ -63,7 +63,7 @@ void main() {
     audioHandler = await AudioService.init(
       builder: () => audioPlayerHandler,
       config: const AudioServiceConfig(
-        androidNotificationChannelId: 'com.ryanheise.myapp.channel.audio',
+        androidNotificationChannelId: 'com.defsub.takeout.channel.audio',
         androidNotificationChannelName: 'Audio playback',
         androidNotificationOngoing: true,
         fastForwardInterval: Duration(seconds: 30),
@@ -132,7 +132,7 @@ class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
   static bool get isLoggedIn =>
       _loginStream.hasValue ? _loginStream.value : false;
 
-  static void logout() async {
+  static Future<void> logout() async {
     await Client().logout();
     _loginStream.add(false);
   }
@@ -323,10 +323,10 @@ class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
   }
 
   Future<LiveClient> _createLiveClient(Client client) async {
-    final cookie = await client.getCookie();
+    final token = await client.getAccessToken();
     final url = await client.getEndpoint();
     final uri = Uri.parse(url);
-    return LiveClient('${uri.host}:${uri.port}', cookie!);
+    return LiveClient('${uri.host}:${uri.port}', token!);
   }
 
   LiveFollow? _liveFollow;

@@ -125,7 +125,7 @@ class _LoginState extends State<LoginWidget> {
                         client
                             .login(_userText.text, _passwordText.text)
                             .then((result) {
-                          if (result['Status'] == 200) {
+                          if (result == true) {
                             prefs.then((p) {
                               p.setString(settingHost, _hostText.text);
                               p.setString(settingUser, _userText.text);

@@ -302,7 +302,7 @@ class MediaQueue {
     final client = Client();
     final entry = _trackEntry(track);
     final uri = await client.locate(track);
-    final headers = await client.headersWithCookie();
+    final headers = await client.headersWithMediaToken();
     return _entryMediaItem(entry, uri, headers, MediaType.music);
   }
 
@@ -363,7 +363,7 @@ class MediaQueue {
     // streams shouldn't send the cookie header
     final headers = spiff.isStream()
         ? await client.headers()
-        : await client.headersWithCookie();
+        : await client.headersWithMediaToken();
     for (var t in spiff.playlist.tracks) {
       final uri = await client.locate(t);
       items.add(_entryMediaItem(t, uri, headers, spiff.mediaType));

@@ -77,7 +77,7 @@ extension TakeoutMediaItem on MediaItem {
     return end == null ? null : end * 0.5;
   }
 
-  bool trackProgress() {
+  bool monitorProgress() {
     // don't track songs or radio streams
     return isPodcast();
   }
@@ -413,8 +413,15 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
   @override
   Future<void> stop() async {
     await _player.stop();
+
+    // TODO what does this do?
     await playbackState.firstWhere(
         (state) => state.processingState == AudioProcessingState.idle);
+
+    // Set the audio_service state to `idle` to deactivate the notification.
+    playbackState.add(playbackState.value.copyWith(
+      processingState: AudioProcessingState.idle,
+    ));
   }
 
   Duration _seekCheck(Duration pos) {
@@ -484,14 +491,14 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
   }
 
   Future<Duration> getSavedPosition(MediaItem item) async {
-    return item.trackProgress()
+    return item.monitorProgress()
         ? Progress.position(item.key)
         : Future.value(Duration.zero);
   }
 
   void _restorePosition() {
     final item = mediaItem.value;
-    if (item != null && item.trackProgress()) {
+    if (item != null && item.monitorProgress()) {
       Progress.position(item.key).then((pos) {
         seek(pos);
       });
@@ -506,7 +513,7 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
 
     // save progress
     final item = mediaItem.value;
-    if (item != null && item.trackProgress()) {
+    if (item != null && item.monitorProgress()) {
       Progress.update(item.key, pos, _player.duration ?? Duration.zero);
     }
   }

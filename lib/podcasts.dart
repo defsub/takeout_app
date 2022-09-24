@@ -222,8 +222,8 @@ class _EpisodeListWidget extends StatelessWidget {
   Widget _subtitle(
       BuildContext context, CacheSnapshot snapshot, Episode episode) {
     final children = <Widget>[];
-    final duration = snapshot.remaining(episode);
-    if (duration != null) {
+    final remaining = snapshot.remaining(episode);
+    if (remaining != null && remaining.inSeconds > 0) {
       final value = snapshot.value(episode);
       if (value != null) {
         children.add(LinearProgressIndicator(value: value));
