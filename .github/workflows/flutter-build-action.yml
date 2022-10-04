@@ -1,6 +1,6 @@
 name: flutter build
 run-name: ${{ github.actor }} is building flutter apps
-  #on: [push]
+on: [push]
 jobs:
   build-android-app:
     runs-on: ubuntu-latest
