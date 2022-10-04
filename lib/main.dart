@@ -31,6 +31,7 @@ import 'package:rxdart/rxdart.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:logging/logging.dart';
 import 'package:dynamic_color/dynamic_color.dart';
+import 'package:takeout_app/cover.dart';
 
 import 'artists.dart';
 import 'client.dart';
@@ -363,6 +364,8 @@ class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
   }
 
   void _load() async {
+    Artwork.endpoint = await Client().getEndpoint();
+
     audioHandler.playbackState
         .distinct()
         .listen((state) => _onPlaybackState(state));

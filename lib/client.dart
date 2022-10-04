@@ -186,7 +186,7 @@ class Client {
   static final log = Logger('Client');
 
   static final userAgent =
-      'Takeout/${appVersion} (${appHome}; ${Platform.operatingSystem})';
+      'Takeout-App/${appVersion} (${appHome}; ${Platform.operatingSystem})';
   static const settingAccessToken = 'access_token';
   static const settingMediaToken = 'media_token';
   static const settingRefreshToken = 'refresh_token';
@@ -518,7 +518,8 @@ class Client {
             headers: headers, body: jsonEncode(json))
         .then((response) {
       log.fine('response ${response.statusCode}');
-      if (response.statusCode != HttpStatus.ok) {
+      if (response.statusCode != HttpStatus.ok &&
+          response.statusCode != HttpStatus.noContent) {
         throw ClientException(
             statusCode: response.statusCode,
             url: response.request?.url.toString());
@@ -877,9 +878,8 @@ class Client {
         .then((request) async {
           final headers = await headersWithMediaToken();
           headers.forEach((k, v) {
-            request.headers.add(k, v);
+            request.headers.set(k, v);
           });
-          request.headers.add(HttpHeaders.userAgentHeader, userAgent);
           return request.close();
         })
         .then((response) {

@@ -74,7 +74,7 @@ class _MovieWidgetState extends State<MovieWidget> {
                             final cacheSnapshot =
                                 snapshot.data ?? CacheSnapshot.empty();
                             final isCached =
-                                cacheSnapshot.containsAll([_movie]);
+                                cacheSnapshot.containsAll([_view!]);
                             return CustomScrollView(slivers: [
                               SliverAppBar(
                                 // actions: [ ],
@@ -157,7 +157,7 @@ class _MovieWidgetState extends State<MovieWidget> {
   }
 
   Widget _progress(CacheSnapshot snapshot) {
-    final value = snapshot.value(_movie);
+    final value = snapshot.value(_view!);
     return value != null ? LinearProgressIndicator(value: value) : Container();
   }
 
@@ -230,7 +230,7 @@ class _MovieWidgetState extends State<MovieWidget> {
 
   Widget _playButton(
       BuildContext context, CacheSnapshot snapshot, bool isCached) {
-    final pos = snapshot.position(_movie) ?? Duration.zero;
+    final pos = snapshot.position(_view!) ?? Duration.zero;
     return isCached
         ? IconButton(
             color: overlayIconColor(context),
@@ -251,7 +251,7 @@ class _MovieWidgetState extends State<MovieWidget> {
   }
 
   void _onPlay(Duration startOffset) {
-    showMovie(context, _movie, startOffset: startOffset);
+    showMovie(context, _view!, startOffset: startOffset);
   }
 
   void _onDownload(BuildContext context) {

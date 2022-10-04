@@ -303,7 +303,8 @@ class MediaQueue {
     final entry = _trackEntry(track);
     final uri = await client.locate(track);
     final headers = await client.headersWithMediaToken();
-    return _entryMediaItem(entry, uri, headers, MediaType.music);
+    final endpoint = await client.getEndpoint();
+    return _entryMediaItem(entry, uri, headers, MediaType.music, endpoint);
   }
 
   static List<Entry> _trackEntries(List<MediaLocatable> tracks) {
@@ -340,13 +341,17 @@ class MediaQueue {
   // }
 
   static MediaItem _entryMediaItem(
-      Entry entry, Uri uri, Map headers, MediaType mediaType) {
+      Entry entry, Uri uri, Map headers, MediaType mediaType, String endpoint) {
+    var image = entry.image;
+    if (image.startsWith("/img/")) {
+      image = '$endpoint$image';
+    }
     return MediaItem(
       id: uri.toString(),
       album: entry.album,
       title: entry.title,
       artist: entry.creator,
-      artUri: Uri.parse(entry.image),
+      artUri: Uri.parse(image),
       extras: {
         ExtraLocation: entry.location,
         ExtraHeaders: headers,
@@ -364,9 +369,10 @@ class MediaQueue {
     final headers = spiff.isStream()
         ? await client.headers()
         : await client.headersWithMediaToken();
+    final endpoint = await client.getEndpoint();
     for (var t in spiff.playlist.tracks) {
       final uri = await client.locate(t);
-      items.add(_entryMediaItem(t, uri, headers, spiff.mediaType));
+      items.add(_entryMediaItem(t, uri, headers, spiff.mediaType, endpoint));
     }
     return items;
   }

@@ -22,6 +22,7 @@ import 'package:takeout_app/client.dart';
 
 import 'model.dart';
 import 'util.dart';
+import 'global.dart';
 
 part 'schema.g.dart';
 
@@ -266,12 +267,12 @@ class Release implements MediaAlbum {
 
   String _releaseCoverUrl({int size = 250}) {
     final url = groupArtwork
-        ? 'https://coverartarchive.org/release-group/$rgid'
-        : 'https://coverartarchive.org/release/$reid';
+        ? '/img/mb/rg/$rgid'
+        : '/img/mb/re/$reid';
     if (artwork && frontArtwork) {
-      return '$url/front-$size';
+      return '$url/front';
     } else if (artwork && isNotNullOrEmpty(otherArtwork)) {
-      return '$url/$otherArtwork-$size';
+      return url;
     }
     return '';
   }
@@ -365,12 +366,12 @@ class Track extends MediaLocatable {
 
   String _trackCoverUrl({int size = 250}) {
     final url = groupArtwork
-        ? 'https://coverartarchive.org/release-group/$rgid'
-        : 'https://coverartarchive.org/release/$reid';
+        ? '/img/mb/rg/$rgid'
+        : '/img/mb/re/$reid';
     if (artwork && frontArtwork) {
-      return '$url/front-$size';
+      return '$url/front';
     } else if (artwork && isNotNullOrEmpty(otherArtwork)) {
-      return '$url/$otherArtwork-$size';
+      return url;
     }
     return '';
   }
@@ -493,8 +494,9 @@ class GenreView {
 }
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
-class MovieView {
+class MovieView extends Locatable {
   final Movie movie;
+  final String location;
   final Collection? collection;
   final List<Movie>? other;
   final List<Cast>? cast;
@@ -508,6 +510,7 @@ class MovieView {
 
   MovieView(
       {required this.movie,
+      required this.location,
       this.collection,
       this.other = const [],
       this.cast = const [],
@@ -518,6 +521,21 @@ class MovieView {
       this.genres = const [],
       this.vote,
       this.voteCount});
+
+  @override
+  String get key {
+    return movie.etag.replaceAll(new RegExp(r'"'), '');
+  }
+
+  @override
+  String get etag {
+    return movie.etag;
+  }
+
+  @override
+  int get size {
+    return movie.size;
+  }
 
   factory MovieView.fromJson(Map<String, dynamic> json) =>
       _$MovieViewFromJson(json);
@@ -583,7 +601,7 @@ class Person {
   String get image => _profileImageUrl();
 
   String _profileImageUrl({String size = 'w185'}) {
-    return 'http://image.tmdb.org/t/p/$size/$profilePath';
+    return '/img/tm/$size$profilePath';
   }
 }
 
@@ -713,7 +731,7 @@ class Recommend {
 }
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
-class Movie extends Locatable with MediaAlbum, MediaTrack {
+class Movie with MediaAlbum, MediaTrack {
   @JsonKey(name: "ID")
   final int id;
   @JsonKey(name: "TMID")
@@ -761,15 +779,15 @@ class Movie extends Locatable with MediaAlbum, MediaTrack {
 
   Map<String, dynamic> toJson() => _$MovieToJson(this);
 
-  @override
-  String get key {
-    return etag.replaceAll(new RegExp(r'"'), '');
-  }
-
-  @override
-  String get location {
-    return '/api/movies/$id/location';
-  }
+  // @override
+  // String get key {
+  //   return etag.replaceAll(new RegExp(r'"'), '');
+  // }
+  //
+  // @override
+  // String get location {
+  //   return '/api/movies/$id/location';
+  // }
 
   int _year = -1;
 
@@ -797,7 +815,7 @@ class Movie extends Locatable with MediaAlbum, MediaTrack {
   int get number => 0;
 
   String _moviePosterUrl({String size = 'w342'}) {
-    return 'http://image.tmdb.org/t/p/$size/${posterPath}';
+    return '/img/tm/$size$posterPath';
   }
 
   String get titleYear => '$title ($year)';

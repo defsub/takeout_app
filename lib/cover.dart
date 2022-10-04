@@ -38,13 +38,22 @@ const seriesGridWidth = 250.0;
 const seriesGridHeight = 250.0;
 
 class Artwork {
-  final String url;
+  static late String endpoint;
+
+  final String _url;
   final double? width, height, aspectRatio;
   final BoxFit? fit;
   final BorderRadius? borderRadius;
   final Icon? placeholder;
 
-  Artwork(this.url, this.width, this.height, this.fit,
+  String get url {
+    if (_url.startsWith('/img/')) {
+      return '$endpoint$_url';
+    }
+    return _url;
+  }
+
+  Artwork(this._url, this.width, this.height, this.fit,
       {this.aspectRatio = 1.0, this.borderRadius, this.placeholder});
 
   factory Artwork.artist(String url) =>
