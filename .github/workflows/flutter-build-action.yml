@@ -13,10 +13,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.0.5'
-      - run: flutter pub get
-      - run: flutter pub run build_runner build --delete-conflicting-outputs
-      - run: flutter build apk --release
-      - run: flutter build appbundle
+      - run: make release
       - uses: actions/upload-artifact@v3
         with:
           name: app-release.apk
