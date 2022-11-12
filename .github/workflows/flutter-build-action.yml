@@ -1,5 +1,5 @@
 name: flutter build
-run-name: ${{ github.actor }} is building flutter apps
+run-name: flutter build by ${{ github.actor }}
 on: [push]
 jobs:
   build-android-app:

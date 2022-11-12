@@ -252,7 +252,7 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
 
     if (settingsLiveType() == LiveType.none) {
       final source = ConcatenatingAudioSource(children: tracks);
-      final pos = await getSavedPosition(newState.current);
+      final pos = await _getSavedPosition(newState.current);
       await _player.setAudioSource(source,
           preload: false, initialPosition: pos, initialIndex: newState.index);
       if (startPlayback) {
@@ -410,6 +410,8 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
   Future<void> rewind() => _player
       .seek(_seekCheck(_player.position - AudioService.config.rewindInterval));
 
+
+
   @override
   Future<void> stop() async {
     await _player.stop();
@@ -438,8 +440,8 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
   /// Broadcasts the current state to all clients.
   void _broadcastState(PlaybackEvent event) {
     final playing = _player.playing;
-    var controls = <MediaControl>[];
-    var compactControls = <int>[];
+    List<MediaControl> controls;
+    List<int> compactControls;
     final isPodcast = currentItem?.isPodcast() ?? false;
     final isStream = currentItem?.isStream() ?? false;
 
@@ -490,7 +492,7 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
     ));
   }
 
-  Future<Duration> getSavedPosition(MediaItem item) async {
+  Future<Duration> _getSavedPosition(MediaItem item) async {
     return item.monitorProgress()
         ? Progress.position(item.key)
         : Future.value(Duration.zero);

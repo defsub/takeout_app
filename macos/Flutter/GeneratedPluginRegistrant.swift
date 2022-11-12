@@ -7,7 +7,7 @@ import Foundation
 
 import audio_service
 import audio_session
-import connectivity_plus_macos
+import connectivity_plus
 import dynamic_color
 import just_audio
 import path_provider_macos

@@ -177,7 +177,7 @@ class MediaQueue {
           completer.completeError(e);
         });
       } else {
-        var spiff = result.toSpiff();
+        final spiff = result.toSpiff();
         SpiffCache.put(spiff).then((_) {
           audioHandler.customAction('doit', <String, dynamic>{
             'spiff': uri.toString()

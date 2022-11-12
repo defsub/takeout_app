@@ -64,6 +64,7 @@ void main() {
     audioHandler = await AudioService.init(
       builder: () => audioPlayerHandler,
       config: const AudioServiceConfig(
+        androidNotificationIcon: 'drawable/ic_stat_name',
         androidNotificationChannelId: 'com.defsub.takeout.channel.audio',
         androidNotificationChannelName: 'Audio playback',
         androidNotificationOngoing: true,
