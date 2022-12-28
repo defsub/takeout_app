@@ -27,6 +27,7 @@ import 'package:audio_service/audio_service.dart';
 import 'package:logging/logging.dart';
 import 'package:wakelock/wakelock.dart';
 import 'playlist.dart';
+import 'model.dart';
 
 part 'live.g.dart';
 
@@ -98,6 +99,11 @@ class EventTrack implements MediaLocatable {
   int get disc => throw UnimplementedError;
 
   String get date => '1970';
+
+  @override
+  Reference get reference {
+    throw UnimplementedError;
+  }
 }
 
 @JsonSerializable(fieldRename: FieldRename.pascal, includeIfNull: false)

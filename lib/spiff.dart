@@ -18,6 +18,7 @@
 import 'dart:io';
 import 'dart:async';
 import 'dart:convert';
+import 'dart:collection';
 
 import 'package:flutter/foundation.dart';
 import 'package:json_annotation/json_annotation.dart';
@@ -217,6 +218,11 @@ class Entry extends Locatable implements MediaTrack {
     }
     return _year;
   }
+
+  @override
+  Reference get reference {
+    throw UnimplementedError;
+  }
 }
 
 @JsonSerializable()
@@ -238,13 +244,15 @@ class Playlist {
       required this.tracks});
 
   Playlist copyWith({
-    required String location,
+    String? location,
+    String? creator,
+    String? title,
     List<Entry>? tracks,
   }) =>
       Playlist(
-        location: location,
-        creator: this.creator,
-        title: this.title,
+        location: location ?? this.location,
+        creator: creator ?? this.creator,
+        title: title ?? this.title,
         image: this.image,
         tracks: tracks ?? this.tracks,
       );
@@ -269,4 +277,23 @@ String spiffDate(Spiff spiff, {Entry? entry, Playlist? playlist}) {
 
 String playlistDate(Spiff spiff) {
   return spiffDate(spiff, playlist: spiff.playlist);
+}
+
+String playlistCreator(Spiff spiff) {
+  if (spiff.playlist.creator != null) {
+    return spiff.playlist.creator!;
+  }
+  final list = LinkedHashSet<String>();
+  // use track creator(s)
+  list.addAll(spiff.playlist.tracks.map((e) => e.creator));
+  return list.join(', ');
+}
+
+String playlistTitle(Spiff spiff) {
+  if (spiff.playlist.title.isNotEmpty) {
+    return spiff.playlist.title;
+  }
+  final list = LinkedHashSet<String>()
+    ..addAll(spiff.playlist.tracks.map((e) => e.album));
+  return list.join(', ');
 }

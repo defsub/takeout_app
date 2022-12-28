@@ -62,10 +62,18 @@ class _ArtistsState extends State<ArtistsWidget> {
 
   _ArtistsState(this._view, {this.genre, this.area});
 
+
+  @override
+  void dispose() {
+    super.dispose();
+    print('dispose artists');
+  }
+
   @override
   Widget build(BuildContext context) {
+    print('build artists');
     final artistsText = AppLocalizations.of(context)!.artistsLabel;
-    return Scaffold(
+    final builder = (BuildContext) => Scaffold(
         appBar: AppBar(
             title: genre != null
                 ? header('$artistsText \u2013 $genre')
@@ -84,6 +92,13 @@ class _ArtistsState extends State<ArtistsWidget> {
                 : area != null
                     ? _view.artists.where((a) => a.area == area).toList()
                     : _view.artists)));
+    return Navigator(
+        key: artistsKey,
+        initialRoute: '/',
+        observers: [heroController()],
+        onGenerateRoute: (RouteSettings settings) {
+          return MaterialPageRoute(builder: builder, settings: settings);
+        });
   }
 
   Future<void> _onRefresh() async {

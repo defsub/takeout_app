@@ -664,4 +664,9 @@ class SpiffDownloadEntry extends DownloadEntry with MediaAlbum {
 
   @override
   int get year => 0;
+
+  @override
+  Reference get reference {
+    return Reference('file://${file}', spiff.mediaType);
+  }
 }

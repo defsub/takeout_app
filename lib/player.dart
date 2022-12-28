@@ -46,6 +46,7 @@ StreamSubscription<MediaItem?>? _mediaItemSubscription;
 class PlayerWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    print('player build');
     if (_mediaItemSubscription == null) {
       // change background color when mediaItem changes
       _mediaItemSubscription = audioHandler.mediaItem.listen((item) {
@@ -58,7 +59,7 @@ class PlayerWidget extends StatelessWidget {
         }
       });
     }
-    return StreamBuilder<Color>(
+    final builder = (BuildContext) => StreamBuilder<Color>(
         stream: _backgroundColorSubject,
         builder: (context, snapshot) {
           final backgroundColor = snapshot.data ?? null;
@@ -127,6 +128,12 @@ class PlayerWidget extends StatelessWidget {
                             child: _MediaTrackListWidget(_queueStateStream))
                     ]);
                   }));
+        });
+    return Navigator(
+        key: playerKey,
+        initialRoute: '/',
+        onGenerateRoute: (RouteSettings settings) {
+          return MaterialPageRoute(builder: builder, settings: settings);
         });
   }
 

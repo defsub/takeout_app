@@ -795,7 +795,7 @@ class Client {
       final result = await _retry(() =>
           _postJson('/api/progress', offsets.toJson(), requireAuth: true));
       log.fine('updateProgress got $result');
-      return result['_statusCode'];
+      return result['statusCode'];
     } on ClientException {
       return HttpStatus.badRequest;
     }
@@ -818,14 +818,14 @@ class Client {
       final result = await _retry(
           () => _postJson('/api/activity', events.toJson(), requireAuth: true));
       log.fine('updateActivity got $result');
-      return result['_statusCode'];
+      return result['statusCode'];
     } on ClientException {
       return HttpStatus.badRequest;
     }
   }
 
   /// GET /api/activity/tracks/recent/playlist
-  Future<Spiff> recentlyPlayed({Duration? ttl}) async =>
+  Future<Spiff> recentTracks({Duration? ttl}) async =>
       spiff('/api/activity/tracks/recent/playlist', ttl: ttl);
 
   /// GET /api/activity/tracks/popular/playlist

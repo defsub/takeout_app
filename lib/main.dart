@@ -32,6 +32,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:logging/logging.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:takeout_app/cover.dart';
+import 'package:takeout_app/history_widget.dart';
 
 import 'artists.dart';
 import 'client.dart';
@@ -105,17 +106,17 @@ class MyApp extends StatelessWidget {
     });
   }
 
-  // ThemeData _darkTheme() {
-  //   final ThemeData base = ThemeData.dark();
-  //   return base.copyWith(
-  //     colorScheme: ColorScheme.dark().copyWith(
-  //         primary: Colors.orangeAccent,
-  //         primaryContainer: Colors.orangeAccent,
-  //         secondary: Colors.orangeAccent,
-  //         secondaryContainer: Colors.orangeAccent),
-  //     indicatorColor: Colors.orangeAccent,
-  //   );
-  // }
+// ThemeData _darkTheme() {
+//   final ThemeData base = ThemeData.dark();
+//   return base.copyWith(
+//     colorScheme: ColorScheme.dark().copyWith(
+//         primary: Colors.orangeAccent,
+//         primaryContainer: Colors.orangeAccent,
+//         secondary: Colors.orangeAccent,
+//         secondaryContainer: Colors.orangeAccent),
+//     indicatorColor: Colors.orangeAccent,
+//   );
+// }
 }
 
 class _TakeoutWidget extends StatefulWidget {
@@ -152,7 +153,6 @@ class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
   final Connectivity _connectivity = Connectivity();
   StreamSubscription<ConnectivityResult>? _connectivitySubscription;
 
-  PlaybackState? _playbackState;
   int _selectedIndex = 0;
   IndexView? _indexView;
   HomeView? _homeView;
@@ -260,18 +260,6 @@ class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
     });
   }
 
-  void _onItemTapped(int index) {
-    if (_selectedIndex == index) {
-      navigatorKeys[_selectedIndex]
-          .currentState!
-          .popUntil((route) => route.isFirst);
-    } else {
-      setState(() {
-        _selectedIndex = index;
-      });
-    }
-  }
-
   void _onIndexUpdated(IndexView view) {
     if (mounted) {
       setState(() {
@@ -305,17 +293,10 @@ class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
     }
   }
 
-  void _onPlaybackState(PlaybackState playbackState) {
-    if (mounted) {
-      setState(() {
-        _playbackState = playbackState;
-      });
-    }
-  }
-
   // This will auto-pause playback for remote media when streaming is disabled.
   void _onMediaItem(MediaItem? mediaItem) {
-    if (_playbackState?.playing == true) {
+    if (audioHandler.playbackState.hasValue &&
+        audioHandler.playbackState.value == true) {
       final streaming = mediaItem?.isRemote() ?? false;
       if (streaming && allowStreaming(connectivityStream.value) == false) {
         log.finer('mediaItem pause due to loss of wifi');
@@ -367,9 +348,6 @@ class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
   void _load() async {
     Artwork.endpoint = await Client().getEndpoint();
 
-    audioHandler.playbackState
-        .distinct()
-        .listen((state) => _onPlaybackState(state));
     audioHandler.mediaItem
         .distinct()
         .listen((mediaItem) => _onMediaItem(mediaItem));
@@ -399,30 +377,46 @@ class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
     }
   }
 
-  Widget _item(int index) {
+  static final _routes = [
+    '/home',
+    '/artists',
+    '/history',
+    '/radio',
+    '/player',
+  ];
+  final _navIndexStream = BehaviorSubject<int>.seeded(0);
+
+  NavigatorState? _navigatorState(int index) {
+    NavigatorState? navState;
     switch (index) {
       case 0:
-        return _homeView == null || _indexView == null
-            ? Center(child: CircularProgressIndicator())
-            : HomeWidget(
-                _indexView!, _homeView!); // FIXME _indexView was null?!
+        navState = homeKey.currentState;
+        break;
       case 1:
-        return _artistsView == null
-            ? Center(child: CircularProgressIndicator())
-            : ArtistsWidget(_artistsView!);
+        navState = artistsKey.currentState;
+        break;
       case 2:
-        return SearchWidget();
+        navState = historyKey.currentState;
+        break;
       case 3:
-        return _radioView == null
-            ? Center(child: CircularProgressIndicator())
-            : RadioWidget(_radioView!);
+        navState = radioKey.currentState;
+        break;
       case 4:
-        if (_playerWidget == null) {
-          _playerWidget = PlayerWidget();
-        }
-        return _playerWidget!;
-      default:
-        return Text('widget $index');
+        navState = playerKey.currentState;
+        break;
+    }
+    return navState;
+  }
+
+  void _onNavTapped(int index) {
+    if (_selectedIndex == index) {
+      NavigatorState? navState = _navigatorState(index);
+      if (navState != null && navState.canPop()) {
+        navState.popUntil((route) => route.isFirst);
+      }
+    } else {
+      _selectedIndex = index;
+      _navIndexStream.add(index);
     }
   }
 
@@ -435,16 +429,23 @@ class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: e.content));
     });
 
+    final builders = _pageBuilders();
+    final pages = List.generate(
+        _routes.length, (index) => builders[_routes[index]]!(context));
+
     return WillPopScope(
         onWillPop: () async {
-          final isFirstRouteInCurrentTab =
-              !await navigatorKeys[_selectedIndex].currentState!.maybePop();
-
-          log.fine('isFirstRouteInCurrentTab: ' +
-              isFirstRouteInCurrentTab.toString());
-
-          // let system handle back button if we're on the first route
-          return isFirstRouteInCurrentTab;
+          if (_selectedIndex == 0) {
+            NavigatorState? navState = _navigatorState(_selectedIndex);
+            if (navState != null) {
+              final isFirstRouteInCurrentTab = !await navState.maybePop();
+              log.fine('isFirstRouteInCurrentTab: ' +
+                  isFirstRouteInCurrentTab.toString());
+              // let system handle back button if we're on the first route
+              return isFirstRouteInCurrentTab;
+            }
+          }
+          return false;
         },
         child: _loggedIn == null
             ? Center(child: CircularProgressIndicator())
@@ -452,31 +453,13 @@ class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
                 ? LoginWidget(() => login())
                 : Scaffold(
                     key: _scaffoldMessengerKey,
-                    floatingActionButton: (_playbackState?.processingState ==
-                                AudioProcessingState.ready &&
-                            !_showingPlayer())
-                        ? FloatingActionButton(
-                            onPressed: () {
-                              if (_playbackState?.playing == true) {
-                                audioHandler.pause();
-                              } else {
-                                audioHandler.play();
-                              }
-                            },
-                            child: (_playbackState?.playing == true)
-                                ? Icon(Icons.pause)
-                                : Icon(Icons.play_arrow),
-                          )
-                        : null,
-                    body: Stack(
-                      children: [
-                        _buildOffstageNavigator(0),
-                        _buildOffstageNavigator(1),
-                        _buildOffstageNavigator(2),
-                        _buildOffstageNavigator(3),
-                        _buildOffstageNavigator(4),
-                      ],
-                    ),
+                    floatingActionButton: _fab(),
+                    body: StreamBuilder<int>(
+                        stream: _navIndexStream,
+                        builder: (context, snapshot) {
+                          final index = snapshot.data ?? 0;
+                          return IndexedStack(index: index, children: pages);
+                        }),
                     bottomNavigationBar: _bottomNavigation()));
   }
 
@@ -484,38 +467,85 @@ class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
     return _selectedIndex == 4;
   }
 
+  Widget _fab() {
+    final stream =
+        Rx.combineLatest3<PlaybackState?, MediaItem?, int, _FabState>(
+            audioHandler.playbackState.distinct(),
+            audioHandler.mediaItem.distinct(),
+            _navIndexStream,
+            (a, b, c) => _FabState(a, b, c));
+    final builder = StreamBuilder<_FabState>(
+        stream: stream,
+        builder: (context, snapshot) {
+          final fabState = snapshot.data;
+          final playing = fabState?.playbackState?.playing == true;
+          if (fabState?.playbackState?.processingState ==
+                  AudioProcessingState.ready &&
+              fabState?.navIndex != 4) {
+            final cover = fabState?.mediaItem?.artUri;
+            final theme = Theme.of(context);
+            return FloatingActionButton(
+                onPressed: () {
+                  if (playing) {
+                    audioHandler.pause();
+                  } else {
+                    audioHandler.play();
+                  }
+                },
+                child: Stack(alignment: Alignment.center, children: [
+                  if (cover != null)
+                    tileCover(cover.toString()) ?? SizedBox.shrink(),
+                  Material(
+                      color: theme.backgroundColor,
+                      shape: RoundedRectangleBorder(
+                          side: BorderSide(color: theme.backgroundColor)),
+                      child: (playing)
+                          ? Icon(Icons.pause, size: 24)
+                          : Icon(Icons.play_arrow, size: 24))
+                ]));
+          }
+          return SizedBox.shrink();
+        });
+    return builder;
+  }
+
   Widget _bottomNavigation() {
     return Stack(children: [
-      BottomNavigationBar(
-        key: bottomNavKey,
-        showUnselectedLabels: false,
-        showSelectedLabels: false,
-        type: BottomNavigationBarType.fixed,
-        items: <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: AppLocalizations.of(context)!.navHome,
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.people_alt),
-            label: AppLocalizations.of(context)!.navArtists,
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.search),
-            label: AppLocalizations.of(context)!.navSearch,
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.radio),
-            label: AppLocalizations.of(context)!.navRadio,
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.queue_music),
-            label: AppLocalizations.of(context)!.navPlayer,
-          ),
-        ],
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-      ),
+      StreamBuilder<int>(
+          stream: _navIndexStream,
+          builder: (context, snapshot) {
+            final index = snapshot.data ?? 0;
+            return BottomNavigationBar(
+              key: bottomNavKey,
+              showUnselectedLabels: false,
+              showSelectedLabels: false,
+              type: BottomNavigationBarType.fixed,
+              items: <BottomNavigationBarItem>[
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.home),
+                  label: AppLocalizations.of(context)!.navHome,
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.people_alt),
+                  label: AppLocalizations.of(context)!.navArtists,
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.history),
+                  label: AppLocalizations.of(context)!.navHistory,
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.radio),
+                  label: AppLocalizations.of(context)!.navRadio,
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.queue_music),
+                  label: AppLocalizations.of(context)!.navPlayer,
+                ),
+              ],
+              currentIndex: index,
+              onTap: _onNavTapped,
+            );
+          }),
       if (!_showingPlayer())
         StreamBuilder<Duration>(
             stream: audioPlayerHandler.positionStream(),
@@ -531,37 +561,47 @@ class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
     ]);
   }
 
-  Map<String, WidgetBuilder> _routeBuilders(BuildContext context, int index) {
-    return {
-      '/': (context) => [
-            _item(0),
-            _item(1),
-            _item(2),
-            _item(3),
-            _item(4),
-          ].elementAt(index)
+  Map<String, WidgetBuilder> _pageBuilders() {
+    final builders = {
+      '/home': (context) {
+        return _homeView == null || _indexView == null
+            ? Center(child: CircularProgressIndicator())
+            : HomeWidget(
+                _indexView!,
+                _homeView!,
+                (ctx) => Navigator.push(ctx,
+                    MaterialPageRoute(builder: (context) => SearchWidget())));
+      },
+      '/artists': (context) {
+        return _artistsView == null
+            ? Center(child: CircularProgressIndicator())
+            : ArtistsWidget(_artistsView!);
+      },
+      '/history': (context) {
+        return HistoryListWidget();
+      },
+      '/radio': (context) {
+        return _radioView == null
+            ? Center(child: CircularProgressIndicator())
+            : RadioWidget(_radioView!);
+      },
+      '/player': (context) {
+        if (_playerWidget == null) {
+          _playerWidget = PlayerWidget();
+        }
+        return _playerWidget!;
+      },
     };
+    return builders;
   }
+}
 
-  Widget _buildOffstageNavigator(int index) {
-    final routeBuilders = _routeBuilders(context, index);
-    final _heroController = HeroController(createRectTween: _createRectTween);
+class _FabState {
+  final PlaybackState? playbackState;
+  final MediaItem? mediaItem;
+  final int navIndex;
 
-    return Offstage(
-      offstage: _selectedIndex != index,
-      child: Navigator(
-          observers: [_heroController],
-          key: navigatorKeys[index],
-          onGenerateRoute: (routeSettings) => MaterialPageRoute(
-                builder: (context) =>
-                    routeBuilders[routeSettings.name]!(context),
-              )),
-    );
-  }
-
-  RectTween _createRectTween(Rect? begin, Rect? end) {
-    return MaterialRectArcTween(begin: begin, end: end);
-  }
+  _FabState(this.playbackState, this.mediaItem, this.navIndex);
 }
 
 Color overlayIconColor(BuildContext context) {

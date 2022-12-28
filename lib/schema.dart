@@ -22,7 +22,6 @@ import 'package:takeout_app/client.dart';
 
 import 'model.dart';
 import 'util.dart';
-import 'global.dart';
 
 part 'schema.g.dart';
 
@@ -265,16 +264,20 @@ class Release implements MediaAlbum {
 
   int get size => 0;
 
-  String _releaseCoverUrl({int size = 250}) {
-    final url = groupArtwork
-        ? '/img/mb/rg/$rgid'
-        : '/img/mb/re/$reid';
+  String _releaseCoverUrl() {
+    final url = groupArtwork ? '/img/mb/rg/$rgid' : '/img/mb/re/$reid';
     if (artwork && frontArtwork) {
       return '$url/front';
     } else if (artwork && isNotNullOrEmpty(otherArtwork)) {
       return url;
     }
     return '';
+  }
+
+  @override
+  Reference get reference {
+    return Reference(
+        'takeout://music/releases/${reid}/tracks', MediaType.music);
   }
 }
 
@@ -284,6 +287,8 @@ abstract class MediaLocatable extends MediaTrack with Locatable {}
 class Track extends MediaLocatable {
   @JsonKey(name: "ID")
   final int id;
+  @JsonKey(name: "UUID")
+  final String uuid;
   final String artist;
   final String release;
   final String date;
@@ -295,6 +300,8 @@ class Track extends MediaLocatable {
   final String? rgid;
   @JsonKey(name: "REID")
   final String? reid;
+  @JsonKey(name: "RID")
+  final String? rid;
   final String releaseTitle;
   final String trackArtist;
   @JsonKey(name: "ETag")
@@ -307,6 +314,7 @@ class Track extends MediaLocatable {
 
   Track(
       {required this.id,
+      required this.uuid,
       required this.artist,
       required this.release,
       this.date = "",
@@ -316,6 +324,7 @@ class Track extends MediaLocatable {
       required this.size,
       this.rgid,
       this.reid,
+      this.rid,
       required this.releaseTitle,
       this.trackArtist = '',
       required this.etag,
@@ -336,7 +345,7 @@ class Track extends MediaLocatable {
 
   @override
   String get location {
-    return '/api/tracks/$id/location';
+    return '/api/tracks/$uuid/location';
   }
 
   @override
@@ -364,10 +373,8 @@ class Track extends MediaLocatable {
     return _year;
   }
 
-  String _trackCoverUrl({int size = 250}) {
-    final url = groupArtwork
-        ? '/img/mb/rg/$rgid'
-        : '/img/mb/re/$reid';
+  String _trackCoverUrl() {
+    final url = groupArtwork ? '/img/mb/rg/$rgid' : '/img/mb/re/$reid';
     if (artwork && frontArtwork) {
       return '$url/front';
     } else if (artwork && isNotNullOrEmpty(otherArtwork)) {
@@ -380,6 +387,11 @@ class Track extends MediaLocatable {
     return (trackArtist.isNotEmpty && trackArtist != artist)
         ? trackArtist
         : artist;
+  }
+
+  @override
+  Reference get reference {
+    return Reference('takeout://music/tracks/${rid}', MediaType.music);
   }
 }
 
@@ -731,7 +743,7 @@ class Recommend {
 }
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
-class Movie with MediaAlbum, MediaTrack {
+class Movie implements MediaAlbum, MediaTrack {
   @JsonKey(name: "ID")
   final int id;
   @JsonKey(name: "TMID")
@@ -819,6 +831,11 @@ class Movie with MediaAlbum, MediaTrack {
   }
 
   String get titleYear => '$title ($year)';
+
+  @override
+  Reference get reference {
+    return Reference('takeout://movies/${tmid}', MediaType.video);
+  }
 }
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
@@ -872,6 +889,11 @@ class Series with MediaAlbum {
   int get disc => 1;
 
   int get number => 0;
+
+  @override
+  Reference get reference {
+    return Reference('takeout://podcasts/series/${sid}', MediaType.podcast);
+  }
 }
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
@@ -949,6 +971,11 @@ class Episode extends MediaLocatable {
 
   @override
   int get number => 0;
+
+  @override
+  Reference get reference {
+    return Reference('takeout://podcasts/series/${sid}/episodes/${eid}', MediaType.podcast);
+  }
 }
 
 @JsonSerializable(fieldRename: FieldRename.pascal)

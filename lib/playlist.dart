@@ -28,6 +28,7 @@ import 'global.dart';
 import 'cache.dart';
 import 'model.dart';
 import 'util.dart';
+import 'history.dart';
 
 const ExtraHeaders = 'headers';
 const ExtraMediaType = 'mediaType';
@@ -37,13 +38,6 @@ const ExtraLocation = 'location';
 
 class PlaylistException implements Exception {
   const PlaylistException();
-}
-
-class Reference {
-  final String reference;
-  final MediaType type;
-
-  Reference(this.reference, this.type);
 }
 
 class MediaQueue {
@@ -135,6 +129,12 @@ class MediaQueue {
     final uri = Uri.parse(spiff.playlist.location ?? 'location-missing');
     await setCurrentPlaylist(uri);
     await SpiffCache.put(spiff);
+
+    if (spiff.playlist.title.isNotEmpty &&
+        isNotNullOrEmpty(spiff.playlist.location)) {
+      History.instance.then((history) => history.add(spiff: spiff));
+    }
+
     return audioHandler
         .customAction('doit', <String, dynamic>{'spiff': uri.toString()});
   }
@@ -142,14 +142,25 @@ class MediaQueue {
   /// Play a release or station, replacing current playlist.
   static Future play(
       {Release? release,
-      Station? station,
       Series? series,
       int index = 0}) async {
-    return _playRef(_ref(release: release, station: station, series: series),
+
+    // if (release != null) {
+    //   HistoryDatabase.instance.create(
+    //       History.create(release.artist, release.album, release.image, '/api/releases/${release.id}/playlist'));
+    // } else if (series != null) {
+    //   HistoryDatabase.instance.create(
+    //       History.create(series.creator, series.title, series.image, '/api/series/${series.id}/playlist'));
+    // }
+
+    return _playRef(_ref(release: release, series: series),
         index: index);
   }
 
   /// Play remote reference to release, track, station, etc.
+  ///
+  /// have this call playSpiff???
+  ///
   static Future _playRef(Reference ref,
       {int index = 0, double position = 0.0}) async {
     await setCurrentPlaylist(null);
@@ -169,6 +180,7 @@ class MediaQueue {
         SpiffCache.get(uri).then((spiff) {
           spiff = spiff!.copyWith(index: index, position: position);
           SpiffCache.put(spiff).then((_) {
+            // History.instance.then((history) => history.add(spiff: spiff));
             audioHandler.customAction('doit', <String, dynamic>{
               'spiff': uri.toString()
             }).then((_) => completer.complete());
@@ -179,6 +191,7 @@ class MediaQueue {
       } else {
         final spiff = result.toSpiff();
         SpiffCache.put(spiff).then((_) {
+          History.instance.then((history) => history.add(spiff: spiff));
           audioHandler.customAction('doit', <String, dynamic>{
             'spiff': uri.toString()
           }).then((_) => completer.complete());

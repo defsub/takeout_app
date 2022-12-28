@@ -14,6 +14,7 @@
   "navHome": "Home",
   "navArtists": "Artists",
   "navSearch": "Search",
+  "navHistory": "History",
   "navRadio": "Radio",
   "navPlayer": "Player",
   "navMovies": "Movies",
@@ -47,6 +48,7 @@
   "videoSwitchLabel": "Goto Movies",
   "podcastsSwitchLabel": "Goto Podcasts",
   "moviesLabel": "Movies",
+  "historyLabel": "History",
   "searchHelperText": "text or artist:name or guitar:person",
   "homeSettingsTitle": "Home Settings",
   "networkSettingsTitle": "Network Settings",
@@ -69,9 +71,10 @@
   "settingLiveShare": "Share",
   "settingLiveFollow": "Follow",
   "settingLiveNone": "None",
-  "recentlyPlayed": "Recently Played",
+  "recentlyPlayed": "Recent Tracks",
   "recentlyWatched": "Recently Watched",
   "popularTracks": "Popular Tracks",
+  "history": "History",
   "deleteTitle": "Really delete {title}?",
   "@deleteTitle": {
     "placeholders": {

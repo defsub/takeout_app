@@ -30,14 +30,26 @@ class MediaTypes {
   }
 }
 
-abstract class MediaAlbum {
+class Reference {
+  final String reference;
+  final MediaType type;
+
+  Reference(this.reference, this.type);
+}
+
+abstract class Referencable {
+  Reference get reference;
+}
+
+abstract class MediaAlbum implements Referencable {
   String get creator;
   String get album;
   String get image;
   int get year;
+  Reference get reference;
 }
 
-abstract class MediaTrack {
+abstract class MediaTrack implements Referencable {
   String get creator;
   String get album;
   String get image;
@@ -52,4 +64,6 @@ abstract class MediaTrack {
   // 1999-07-27T00:00:00Z
   // 2022-02-03T09:21:26-08:00
   String get date;
+
+  Reference get reference;
 }

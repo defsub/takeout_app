@@ -19,6 +19,8 @@ import 'dart:collection';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:takeout_app/history_widget.dart';
+import 'package:takeout_app/search.dart';
 
 import 'package:url_launcher/url_launcher.dart';
 import 'package:rxdart/rxdart.dart';
@@ -42,14 +44,17 @@ import 'model.dart';
 import 'video.dart';
 import 'widget.dart';
 
+typedef VoidContextCallback = void Function(BuildContext);
+
 class HomeWidget extends StatefulWidget {
   final IndexView _index;
   final HomeView _view;
+  final VoidContextCallback _onSearch;
 
-  HomeWidget(this._index, this._view);
+  HomeWidget(this._index, this._view, this._onSearch);
 
   @override
-  HomeState createState() => HomeState(_index, _view);
+  HomeState createState() => HomeState(_index, _view, _onSearch);
 }
 
 class _GridState {
@@ -64,25 +69,29 @@ class HomeState extends State<HomeWidget> {
 
   IndexView _index;
   HomeView _view;
+  VoidContextCallback _onSearch;
 
-  HomeState(this._index, this._view);
+  HomeState(this._index, this._view, this._onSearch);
 
   _HomeGrid _grid(
       MediaType mediaType, GridType gridType, CacheSnapshot cacheSnapshot) {
     switch (mediaType) {
       case MediaType.video:
-        return _MovieHomeGrid(gridType, cacheSnapshot, _index, _view);
+        return _MovieHomeGrid(
+            gridType, cacheSnapshot, _index, _view, _onSearch);
       case MediaType.music:
       case MediaType.stream: // unused for now
-        return _MusicHomeGrid(gridType, cacheSnapshot, _index, _view);
+        return _MusicHomeGrid(
+            gridType, cacheSnapshot, _index, _view, _onSearch);
       case MediaType.podcast:
-        return _SeriesHomeGrid(gridType, cacheSnapshot, _index, _view);
+        return _SeriesHomeGrid(
+            gridType, cacheSnapshot, _index, _view, _onSearch);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<_GridState>(
+    final builder = (BuildContext) => StreamBuilder<_GridState>(
         stream: Rx.combineLatest2(
             settingsChangeSubject.stream,
             MediaCache.stream(),
@@ -101,6 +110,14 @@ class HomeState extends State<HomeWidget> {
           } else {
             return Container();
           }
+        });
+
+    return Navigator(
+        key: homeKey,
+        initialRoute: '/',
+        observers: [heroController()],
+        onGenerateRoute: (RouteSettings settings) {
+          return MaterialPageRoute(builder: builder, settings: settings);
         });
   }
 
@@ -276,8 +293,12 @@ abstract class _HomeGrid extends StatelessWidget {
   final CacheSnapshot _cacheSnapshot;
   final IndexView _index;
   final HomeView _view;
+  final VoidContextCallback _onSearch;
+  final _buttons =
+      SplayTreeMap<MediaType, IconButton>((a, b) => a.index.compareTo(b.index));
 
-  _HomeGrid(this._type, this._cacheSnapshot, this._index, this._view);
+  _HomeGrid(
+      this._type, this._cacheSnapshot, this._index, this._view, this._onSearch);
 
   Iterable<_HomeItem> _items(List<DownloadEntry> downloads);
 
@@ -302,6 +323,7 @@ abstract class _HomeGrid extends StatelessWidget {
   }
 
   SliverGrid _itemGrid(BuildContext context, Iterable<_HomeItem> items) {
+    int dir = 0;
     return SliverGrid.extent(
         childAspectRatio: _gridAspectRatio(),
         maxCrossAxisExtent: _gridMaxCrossAxisExtent(),
@@ -311,6 +333,16 @@ abstract class _HomeGrid extends StatelessWidget {
           ...items.map((i) => Container(
               child: GestureDetector(
                   onTap: () => _onTap(context, i),
+                  onPanUpdate: (d) {
+                    dir = d.delta.dx < 0 ? -1 : 1;
+                  },
+                  onPanEnd: (_) {
+                    if (dir == -1) {
+                      nextGridType();
+                    } else if (dir == 1) {
+                      prevGridType();
+                    }
+                  },
                   child: GridTile(
                     footer: i.overlay
                         ? Material(
@@ -332,31 +364,44 @@ abstract class _HomeGrid extends StatelessWidget {
         ]);
   }
 
+  void _changeGridType(int Function(int i) change) {
+    final mediaType = settingsMediaType(type: MediaType.music);
+    final types = _buttons.keys.toList();
+    for (int i = 0; i < types.length; i++) {
+      if (types[i] == mediaType) {
+        changeMediaType(types[change(i)]);
+      }
+    }
+  }
+
+  void nextGridType() =>
+      _changeGridType((i) => i + 1 >= _buttons.length ? 0 : i + 1);
+
+  void prevGridType() =>
+      _changeGridType((i) => i - 1 < 0 ? _buttons.length - 1 : i - 1);
+
   @override
   Widget build(BuildContext context) {
     final mediaType = settingsMediaType(type: MediaType.music);
-
-    final buttons = SplayTreeMap<MediaType, IconButton>(
-        (a, b) => a.index.compareTo(b.index));
-
     final iconSize = 22.0;
     final selectedColor = Theme.of(context).indicatorColor;
+    _buttons.clear();
     if (_index.hasMusic) {
-      buttons[MediaType.music] = IconButton(
+      _buttons[MediaType.music] = IconButton(
           iconSize: iconSize,
           color: mediaType == MediaType.music ? selectedColor : null,
           icon: Icon(Icons.audiotrack),
           onPressed: () => _onMusicSelected(context));
     }
     if (_index.hasMovies) {
-      buttons[MediaType.video] = IconButton(
+      _buttons[MediaType.video] = IconButton(
           iconSize: iconSize,
           color: mediaType == MediaType.video ? selectedColor : null,
           icon: Icon(Icons.movie),
           onPressed: () => _onVideoSelected(context));
     }
     if (_index.hasPodcasts) {
-      buttons[MediaType.podcast] = IconButton(
+      _buttons[MediaType.podcast] = IconButton(
           iconSize: iconSize,
           color: mediaType == MediaType.podcast ? selectedColor : null,
           icon: Icon(Icons.podcasts),
@@ -379,18 +424,19 @@ abstract class _HomeGrid extends StatelessWidget {
     //           child:
     //               CircularProgressIndicator(value: downloadProgress.value))));
     // }
-    iconBar.addAll(buttons.values);
+    iconBar.addAll(_buttons.values);
 
     return CustomScrollView(slivers: [
       SliverAppBar(
         pinned: false,
         floating: true,
         snap: true,
-        title: header(AppLocalizations.of(context)!.takeoutTitle),
+        leading: IconButton(icon: Icon(Icons.search), onPressed: () => _onSearch(context)),
+        // title: header(AppLocalizations.of(context)!.takeoutTitle),
         actions: [
           ...iconBar,
           popupMenu(context, [
-            PopupItem.playlist(context, (context) => _onRecentlyPlayed(context)),
+            PopupItem.playlist(context, (context) => _onRecentTracks(context)),
             PopupItem.popular(context, (context) => _onPopularTracks(context)),
             PopupItem.divider(),
             PopupItem.settings(context, (context) => _onSettings(context)),
@@ -400,13 +446,7 @@ abstract class _HomeGrid extends StatelessWidget {
             PopupItem.about(context, (context) => _onAbout(context)),
           ]),
         ],
-        bottom: _cacheSnapshot.downloading.isNotEmpty
-            ? PreferredSize(
-                child:
-                    LinearProgressIndicator(value: _cacheSnapshot.fold().value),
-                preferredSize: Size.fromHeight(4.0),
-              )
-            : null,
+        bottom: _appBarBottom(),
       ),
       StreamBuilder<List<DownloadEntry>>(
           stream: Downloads.downloadsSubject,
@@ -416,6 +456,20 @@ abstract class _HomeGrid extends StatelessWidget {
             return _itemGrid(context, _items(downloads));
           }),
     ]);
+  }
+
+  // void _onSearch(BuildContext context) {
+  //   Navigator.push(
+  //       context, MaterialPageRoute(builder: (context) => SearchWidget()));
+  // }
+
+  PreferredSizeWidget? _appBarBottom() {
+    return _cacheSnapshot.downloading.isNotEmpty
+        ? PreferredSize(
+            child: LinearProgressIndicator(value: _cacheSnapshot.fold().value),
+            preferredSize: Size.fromHeight(4.0),
+          )
+        : null;
   }
 
   Future<void> _onVideoSelected(BuildContext context) async {
@@ -440,13 +494,17 @@ abstract class _HomeGrid extends StatelessWidget {
         context, MaterialPageRoute(builder: (context) => AppSettings()));
   }
 
-  void _onRecentlyPlayed(BuildContext context) {
+  void _onHistory(BuildContext context) {
+    Navigator.push(
+        context, MaterialPageRoute(builder: (context) => HistoryListWidget()));
+  }
+
+  void _onRecentTracks(BuildContext context) {
     Navigator.push(
         context,
         MaterialPageRoute(
             builder: (context) => SpiffWidget(
-                fetch: () =>
-                    Client().recentlyPlayed(ttl: Duration.zero))));
+                fetch: () => Client().recentTracks(ttl: Duration.zero))));
   }
 
   void _onPopularTracks(BuildContext context) {
@@ -454,8 +512,7 @@ abstract class _HomeGrid extends StatelessWidget {
         context,
         MaterialPageRoute(
             builder: (context) => SpiffWidget(
-                fetch: () =>
-                    Client().popularTracks(ttl: Duration.zero))));
+                fetch: () => Client().popularTracks(ttl: Duration.zero))));
   }
 
   void _onAbout(BuildContext context) {
@@ -486,9 +543,9 @@ abstract class _HomeGrid extends StatelessWidget {
 }
 
 class _MusicHomeGrid extends _HomeGrid {
-  _MusicHomeGrid(
-      GridType _type, CacheSnapshot _snapshot, IndexView _index, HomeView _view)
-      : super(_type, _snapshot, _index, _view);
+  _MusicHomeGrid(GridType _type, CacheSnapshot _snapshot, IndexView _index,
+      HomeView _view, VoidContextCallback _onSearch)
+      : super(_type, _snapshot, _index, _view, _onSearch);
 
   @override
   double _gridAspectRatio() => coverAspectRatio;
@@ -516,9 +573,9 @@ class _MusicHomeGrid extends _HomeGrid {
 }
 
 class _MovieHomeGrid extends _HomeGrid {
-  _MovieHomeGrid(
-      GridType _type, CacheSnapshot _snapshot, IndexView _index, HomeView _view)
-      : super(_type, _snapshot, _index, _view);
+  _MovieHomeGrid(GridType _type, CacheSnapshot _snapshot, IndexView _index,
+      HomeView _view, VoidContextCallback _onSearch)
+      : super(_type, _snapshot, _index, _view, _onSearch);
 
   @override
   double _gridAspectRatio() => posterAspectRatio;
@@ -546,9 +603,9 @@ class _MovieHomeGrid extends _HomeGrid {
 }
 
 class _SeriesHomeGrid extends _HomeGrid {
-  _SeriesHomeGrid(
-      GridType _type, CacheSnapshot _snapshot, IndexView _index, HomeView _view)
-      : super(_type, _snapshot, _index, _view);
+  _SeriesHomeGrid(GridType _type, CacheSnapshot _snapshot, IndexView _index,
+      HomeView _view, VoidContextCallback _onSearch)
+      : super(_type, _snapshot, _index, _view, _onSearch);
 
   @override
   double _gridAspectRatio() => seriesAspectRatio;

@@ -42,6 +42,9 @@ apk: ${RELEASE_APK}
 install: apk
 	${ADB} install ${RELEASE_APK}
 
+install-debug: debug
+	${ADB} install ${DEBUG_APK}
+
 update:
 	${FLUTTER} pub get
 

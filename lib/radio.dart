@@ -57,7 +57,9 @@ class RadioState extends State<RadioWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<List<DownloadEntry>>(
+    print('radio build');
+
+    final builder = (BuildContext) => StreamBuilder<List<DownloadEntry>>(
         stream: Downloads.downloadsSubject,
         builder: (context, snapshot) {
           List<DownloadEntry> entries = snapshot.data ?? [];
@@ -70,7 +72,8 @@ class RadioState extends State<RadioWidget> {
                   onRefresh: () => _onRefresh(),
                   child: Scaffold(
                       appBar: AppBar(
-                          title: Text(AppLocalizations.of(context)!.radioLabel),
+                          title:
+                              header(AppLocalizations.of(context)!.radioLabel),
                           actions: [
                             popupMenu(context, [
                               PopupItem.refresh(context, (_) => _onRefresh()),
@@ -109,6 +112,13 @@ class RadioState extends State<RadioWidget> {
                         ],
                       ))));
         });
+    return Navigator(
+        key: radioKey,
+        initialRoute: '/',
+        observers: [heroController()],
+        onGenerateRoute: (RouteSettings settings) {
+          return MaterialPageRoute(builder: builder, settings: settings);
+        });
   }
 
   List<Station> _merge(List<Station> a, List<Station> b) {
@@ -132,7 +142,7 @@ class RadioState extends State<RadioWidget> {
                         isStream ? TakeoutState.allowStreaming(result) : true,
                     onTap: () => isStream
                         ? _onStream(stations[index])
-                        : _onStation(stations[index]),
+                        : _onStation(context, stations[index]),
                     leading: Icon(Icons.radio),
                     title: Text(stations[index].name),
                     trailing: isStream
@@ -154,11 +164,11 @@ class RadioState extends State<RadioWidget> {
     });
   }
 
-  void _onStation(Station station) {
+  void _onStation(BuildContext context, Station station) {
     Navigator.push(
         context,
         MaterialPageRoute(
-            builder: (context) => RefreshSpiffWidget(
+            builder: (_) => RefreshSpiffWidget(
                 () => Client().station(station.id, ttl: Duration.zero))));
   }
 

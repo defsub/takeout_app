@@ -15,6 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
+import 'dart:collection';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:takeout_app/release.dart';
@@ -26,6 +27,8 @@ import 'style.dart';
 import 'playlist.dart';
 import 'downloads.dart';
 import 'video.dart';
+import 'global.dart';
+import 'history.dart';
 
 class SearchWidget extends StatefulWidget {
   @override
@@ -54,77 +57,114 @@ class _SearchState extends State<SearchWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final view = _view;
-    return Scaffold(
-        appBar:
-            AppBar(title: header(AppLocalizations.of(context)!.searchLabel)),
-        body: Column(children: [
-          Container(
-            padding: EdgeInsets.all(10),
-            // TODO figure out how to auto show keyboard
-            child: TextField(
-              onSubmitted: _onSubmit,
-              controller: _searchText,
-              decoration: InputDecoration(
-                border: OutlineInputBorder(),
-                counterText: view == null
-                    ? null
-                    : AppLocalizations.of(context)!.matchCount(view.hits),
-                errorText: view == null
-                    ? null
-                    : view.hits == 0
-                        ? AppLocalizations.of(context)!.matchCount(view.hits)
-                        : null,
-                helperText: AppLocalizations.of(context)!.searchHelperText,
-              ),
-            ),
-          ),
-          if (view != null)
-            Flexible(
-                child: ListView(children: [
-              if (view.artists != null && view.artists!.isNotEmpty)
-                Container(
-                    child: Column(children: [
-                  heading(AppLocalizations.of(context)!.artistsLabel),
-                  _ArtistResultsWidget(view.artists!),
-                ])),
-              if (view.releases != null && view.releases!.isNotEmpty)
-                Container(
-                    child: Column(children: [
-                  heading(AppLocalizations.of(context)!.releasesLabel),
-                  ReleaseListWidget(view.releases!),
-                ])),
-              if (view.tracks != null && view.tracks!.isNotEmpty)
-                Container(
-                    child: Column(children: [
-                  heading(AppLocalizations.of(context)!.tracksLabel),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      OutlinedButton.icon(
-                          label: Text(AppLocalizations.of(context)!.playLabel),
-                          icon: Icon(Icons.play_arrow),
-                          onPressed: () => _onPlay()),
-                      OutlinedButton.icon(
-                          label:
-                              Text(AppLocalizations.of(context)!.downloadLabel),
-                          icon: Icon(Icons.radio),
-                          onPressed: () => _onDownload(context)),
-                    ],
+    History.instance; // TODO start load
+    final builder = (BuildContext) => StreamBuilder<History>(
+        stream: History.stream,
+        builder: (ctx, snapshot) {
+          final history = snapshot.data;
+          final searches =
+              history != null ? history.searches : <SearchHistory>[];
+
+          searches.sort((a, b) => b.dateTime.compareTo(a.dateTime));
+
+          final words = searches.map((e) => e.search);
+          final artists = artistMap.keys.toList();
+
+          return Scaffold(
+              appBar: AppBar(
+                  leading: IconButton(
+                      icon: Icon(Icons.arrow_back),
+                      onPressed: () => Navigator.pop(context)),
+                  title: Autocomplete<String>(
+                    optionsBuilder: (editValue) {
+                      final text = editValue.text;
+                      if (text.isEmpty) {
+                        return words;
+                      } else {
+                        final s = text.toLowerCase();
+                        final options = LinkedHashSet<String>()
+                          ..add(text)
+                          ..addAll(
+                              words.where((e) => e.toLowerCase().startsWith(s)))
+                          ..addAll(artists
+                              .where((e) => e.toLowerCase().contains(s)));
+                        return options.toList();
+                      }
+                    },
+                    onSelected: (value) {
+                      print('selected $value');
+                      _onSubmit(value);
+                    },
+                  )
+                  // TextField(
+                  //   onSubmitted: _onSubmit,
+                  //   controller: _searchText,
+                  //   decoration: InputDecoration(
+                  //     border: InputBorder.none,
+                  //     hintText: AppLocalizations.of(context)!.searchHelperText,
+                  //   ))
+
                   ),
-                  TrackListWidget(view.tracks!),
-                ])),
-              if (view.movies != null && view.movies!.isNotEmpty)
-                Container(
-                    child: Column(children: [
-                  heading(AppLocalizations.of(context)!.moviesLabel),
-                  MovieListWidget(view.movies!),
-                ])),
-            ]))
-        ]));
+              body: Container(
+                  child: Column(children: [
+                if (_view != null)
+                  Flexible(
+                      child: ListView(children: [
+                    if (_view!.artists != null && _view!.artists!.isNotEmpty)
+                      Container(
+                          child: Column(children: [
+                        heading(AppLocalizations.of(context)!.artistsLabel),
+                        _ArtistResultsWidget(_view!.artists!),
+                      ])),
+                    if (_view!.releases != null && _view!.releases!.isNotEmpty)
+                      Container(
+                          child: Column(children: [
+                        heading(AppLocalizations.of(context)!.releasesLabel),
+                        ReleaseListWidget(_view!.releases!),
+                      ])),
+                    if (_view!.tracks != null && _view!.tracks!.isNotEmpty)
+                      Container(
+                          child: Column(children: [
+                        heading(AppLocalizations.of(context)!.tracksLabel),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            OutlinedButton.icon(
+                                label: Text(
+                                    AppLocalizations.of(context)!.playLabel),
+                                icon: Icon(Icons.play_arrow),
+                                onPressed: () => _onPlay()),
+                            OutlinedButton.icon(
+                                label: Text(AppLocalizations.of(context)!
+                                    .downloadLabel),
+                                icon: Icon(Icons.radio),
+                                onPressed: () => _onDownload(context)),
+                          ],
+                        ),
+                        TrackListWidget(_view!.tracks!),
+                      ])),
+                    if (_view!.movies != null && _view!.movies!.isNotEmpty)
+                      Container(
+                          child: Column(children: [
+                        heading(AppLocalizations.of(context)!.moviesLabel),
+                        MovieListWidget(_view!.movies!),
+                      ])),
+                  ]))
+              ])));
+        });
+    return Navigator(
+        key: searchKey,
+        initialRoute: '/',
+        observers: [heroController()],
+        onGenerateRoute: (RouteSettings settings) {
+          return MaterialPageRoute(builder: builder, settings: settings);
+        });
   }
 
   void _onSubmit(String q) {
+    q = q.trim();
+    print('adding $q');
+    History.instance.then((history) => history.add(search: q));
     final client = Client();
     client.search(q).then((result) {
       if (mounted) {

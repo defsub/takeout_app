@@ -23,19 +23,18 @@ import 'package:audio_service/audio_service.dart';
 import 'schema.dart';
 import 'artists.dart'; // TODO remove
 
-const appVersion = '0.9.1';
+const appVersion = '0.9.2';
 const appSource = 'https://github.com/defsub/takeout_app';
 const appHome = 'https://defsub.github.io';
 
 late AudioHandler audioHandler;
 
-List<GlobalKey<NavigatorState>> navigatorKeys = [
-  GlobalKey<NavigatorState>(),
-  GlobalKey<NavigatorState>(),
-  GlobalKey<NavigatorState>(),
-  GlobalKey<NavigatorState>(),
-  GlobalKey<NavigatorState>()
-];
+final homeKey = GlobalKey<NavigatorState>();
+final artistsKey = GlobalKey<NavigatorState>();
+final historyKey = GlobalKey<NavigatorState>();
+final radioKey = GlobalKey<NavigatorState>();
+final playerKey = GlobalKey<NavigatorState>();
+final searchKey = GlobalKey<NavigatorState>();
 
 final bottomNavKey = new GlobalKey();
 
@@ -62,7 +61,7 @@ void showArtist(String name) async {
   Artist? artist = artistMap[name];
   if (artist != null) {
     final route = MaterialPageRoute(builder: (context) => ArtistWidget(artist));
-    Navigator.push(navigatorKeys[1].currentContext!, route);
+    Navigator.push(artistsKey.currentContext!, route);
     await route.didPush();
     navigate(1);
   }
@@ -110,4 +109,10 @@ void showErrorDialog(BuildContext context, String message) {
       );
     },
   );
+}
+
+NavigatorObserver heroController() {
+  return HeroController(
+      createRectTween: (begin, end) =>
+          MaterialRectArcTween(begin: begin, end: end));
 }
