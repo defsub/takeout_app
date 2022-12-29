@@ -18,6 +18,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:takeout_app/widget.dart';
 
 import 'client.dart';
 import 'schema.dart';
@@ -229,7 +230,7 @@ class _EpisodeListWidget extends StatelessWidget {
         children.add(LinearProgressIndicator(value: value));
       }
     }
-    children.add(Text(merge([episode.author, relativeDate(episode.date)])));
+    children.add(RelativeDateWidget.from(episode.date, prefix: episode.author));
     return Column(
         children: children, crossAxisAlignment: CrossAxisAlignment.start);
   }

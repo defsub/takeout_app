@@ -46,7 +46,6 @@ StreamSubscription<MediaItem?>? _mediaItemSubscription;
 class PlayerWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    print('player build');
     if (_mediaItemSubscription == null) {
       // change background color when mediaItem changes
       _mediaItemSubscription = audioHandler.mediaItem.listen((item) {

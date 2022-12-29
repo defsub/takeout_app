@@ -55,7 +55,7 @@ class History {
     final file = File('${dir.path}/history.json');
     if (file.existsSync()) {
       final history = await _load(file);
-      _subject.add(history._copy());
+      history._share();
       return history;
     } else {
       final history = History(spiffs: [], searches: []);
@@ -75,6 +75,10 @@ class History {
     return history;
   }
 
+  void _share() {
+    _subject.add(_copy());
+  }
+
   void _prune() {
     final max = 25;
     if (searches.length > max) {
@@ -83,6 +87,13 @@ class History {
     if (spiffs.length > max) {
       spiffs.removeRange(0, spiffs.length - max);
     }
+  }
+
+  Future delete() async {
+    searches.clear();
+    spiffs.clear();
+    await save();
+    _share();
   }
 
   Future save() async {
@@ -116,7 +127,7 @@ class History {
       spiffs.add(SpiffHistory(spiff, DateTime.now()));
     }
     _prune();
-    _subject.add(_copy());
+    _share();
     Future.delayed(Duration(seconds: 1), () {
       save();
     });

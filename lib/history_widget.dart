@@ -18,16 +18,15 @@
 import 'package:flutter/material.dart';
 import 'package:takeout_app/cover.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:timeago/timeago.dart' as timeago;
 import 'history.dart';
 import 'widget.dart';
 import 'style.dart';
 import 'global.dart';
+import 'menu.dart';
 
 class HistoryListWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    print('history build');
     History.instance; // TODO start load
     final builder = (BuildContext) => StreamBuilder<History>(
         stream: History.stream,
@@ -37,7 +36,16 @@ class HistoryListWidget extends StatelessWidget {
           spiffs.sort((a, b) => b.dateTime.compareTo(a.dateTime));
           return Scaffold(
               appBar: AppBar(
-                  title: header(AppLocalizations.of(context)!.historyLabel)),
+                title: header(AppLocalizations.of(context)!.historyLabel),
+                actions: [
+                  popupMenu(context, [
+                    PopupItem.delete(
+                        context,
+                        AppLocalizations.of(context)!.deleteAll,
+                        (ctx) => _onDelete(ctx)),
+                  ])
+                ],
+              ),
               body: Column(children: [
                 Expanded(
                     child: ListView.builder(
@@ -55,6 +63,36 @@ class HistoryListWidget extends StatelessWidget {
           return MaterialPageRoute(builder: builder, settings: settings);
         });
   }
+
+  void _onDelete(BuildContext context) {
+    showDialog(
+        context: context,
+        builder: (ctx) {
+          return AlertDialog(
+            title: Text(AppLocalizations.of(context)!.confirmDelete),
+            content: Text(AppLocalizations.of(context)!.deleteHistory),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child:
+                    Text(MaterialLocalizations.of(context).cancelButtonLabel),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _onDeleteConfirmed();
+                },
+                child: Text(MaterialLocalizations.of(context).okButtonLabel),
+              ),
+            ],
+          );
+        });
+  }
+
+  void _onDeleteConfirmed() async {
+    final history = await History.instance;
+    history.delete();
+  }
 }
 
 class SpiffHistoryWidget extends StatelessWidget {
@@ -70,8 +108,7 @@ class SpiffHistoryWidget extends StatelessWidget {
         Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
       Text(spiffHistory.spiff.playlist.creator ?? 'no creator',
           overflow: TextOverflow.ellipsis),
-      Text(timeago.format(spiffHistory.dateTime),
-          overflow: TextOverflow.ellipsis)
+      RelativeDateWidget(spiffHistory.dateTime)
     ]);
 
     return ListTile(

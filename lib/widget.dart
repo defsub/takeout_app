@@ -21,6 +21,8 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:audio_service/audio_service.dart';
+import 'package:timeago_flutter/timeago_flutter.dart';
+import 'package:timeago/timeago.dart' as timeago;
 
 import 'menu.dart';
 import 'cover.dart';
@@ -327,13 +329,11 @@ class SpiffTrackListView extends StatelessWidget {
           }
         }
       }
-      children.add(Text(
-          merge([
-            entry.creator,
-            spiffDate(_spiff, entry: entry),
-            if (snapshot.contains(entry)) storage(entry.size)
-          ]),
-          overflow: TextOverflow.ellipsis));
+      children.add(
+        RelativeDateWidget.from(spiffDate(_spiff, entry: entry),
+            prefix: entry.creator,
+            suffix: snapshot.contains(entry) ? storage(entry.size) : ''),
+      );
     }
     return children;
   }
@@ -456,4 +456,48 @@ String pickCover(Spiff spiff) {
     }
   }
   return ''; // TODO what to return?
+}
+
+class RelativeDateWidget extends StatelessWidget {
+  final DateTime dateTime;
+  final String prefix;
+  final String suffix;
+  final String separator;
+
+  RelativeDateWidget(this.dateTime,
+      {String this.prefix = '',
+      String this.suffix = '',
+      String this.separator = ' \u2022'});
+
+  factory RelativeDateWidget.from(String date,
+      {String prefix = '', String suffix = '', String separator = ' \u2022 '}) {
+    final t = DateTime.parse(date);
+    return RelativeDateWidget(t,
+        prefix: prefix, suffix: suffix, separator: separator);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (dateTime.year == 1 && dateTime.month == 1 && dateTime.day == 1) {
+      // don't bother zero dates from the server
+      return Text('');
+    }
+    final now = DateTime.now();
+    final diff = now.difference(dateTime);
+    if (diff.inDays == 0) {
+      // less than 1 day, refresh faster if less than 1 hour
+      final refreshRate =
+          diff.inHours > 0 ? Duration(hours: 1) : Duration(minutes: 1);
+      return Timeago(
+          refreshRate: refreshRate,
+          date: dateTime,
+          builder: (_, v) {
+            return Text(merge([prefix, v, suffix], separator: separator),
+                overflow: TextOverflow.ellipsis);
+          });
+    } else {
+      // more than 1 day so don't bother refreshing
+      return Text(merge([prefix, timeago.format(dateTime), suffix]));
+    }
+  }
 }

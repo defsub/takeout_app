@@ -5,6 +5,7 @@
   "deleteAll": "Delete all?",
   "deleteItem": "Delete?",
   "deleteDownloadedTracks": "This will delete all downloaded tracks.",
+  "deleteHistory": "This will delete all playlist and search history.",
   "downloadsLabel": "Downloads",
   "downloadLabel": "Download",
   "hostLabel": "Host",

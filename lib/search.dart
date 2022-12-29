@@ -64,12 +64,9 @@ class _SearchState extends State<SearchWidget> {
           final history = snapshot.data;
           final searches =
               history != null ? history.searches : <SearchHistory>[];
-
           searches.sort((a, b) => b.dateTime.compareTo(a.dateTime));
-
           final words = searches.map((e) => e.search);
           final artists = artistMap.keys.toList();
-
           return Scaffold(
               appBar: AppBar(
                   leading: IconButton(
@@ -92,19 +89,9 @@ class _SearchState extends State<SearchWidget> {
                       }
                     },
                     onSelected: (value) {
-                      print('selected $value');
                       _onSubmit(value);
                     },
-                  )
-                  // TextField(
-                  //   onSubmitted: _onSubmit,
-                  //   controller: _searchText,
-                  //   decoration: InputDecoration(
-                  //     border: InputBorder.none,
-                  //     hintText: AppLocalizations.of(context)!.searchHelperText,
-                  //   ))
-
-                  ),
+                  )),
               body: Container(
                   child: Column(children: [
                 if (_view != null)
@@ -163,7 +150,6 @@ class _SearchState extends State<SearchWidget> {
 
   void _onSubmit(String q) {
     q = q.trim();
-    print('adding $q');
     History.instance.then((history) => history.add(search: q));
     final client = Client();
     client.search(q).then((result) {

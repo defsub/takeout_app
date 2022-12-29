@@ -20,7 +20,6 @@ import 'dart:collection';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:takeout_app/history_widget.dart';
-import 'package:takeout_app/search.dart';
 
 import 'package:url_launcher/url_launcher.dart';
 import 'package:rxdart/rxdart.dart';
@@ -37,14 +36,11 @@ import 'cover.dart';
 import 'cache.dart';
 import 'podcasts.dart';
 import 'progress.dart';
-import 'util.dart';
 import 'global.dart';
 import 'menu.dart';
 import 'model.dart';
 import 'video.dart';
 import 'widget.dart';
-
-typedef VoidContextCallback = void Function(BuildContext);
 
 class HomeWidget extends StatefulWidget {
   final IndexView _index;
@@ -144,11 +140,11 @@ class HomeState extends State<HomeWidget> {
 abstract class _HomeItem {
   Widget Function() get onTap;
 
-  bool get overlay => isNotNullOrEmpty(title) || isNotNullOrEmpty(subtitle);
+  bool get overlay;
 
-  String get title;
+  Widget? get title;
 
-  String? get subtitle;
+  Widget? get subtitle;
 
   String get key;
 
@@ -183,10 +179,13 @@ class _MediaHomeItem extends _HomeItem {
   }
 
   @override
-  String get title => album.album;
+  bool get overlay => album.album.isNotEmpty || album.creator.isNotEmpty;
 
   @override
-  String? get subtitle => album.creator.isNotEmpty ? album.creator : null;
+  Widget? get title => Text(album.album);
+
+  @override
+  Widget? get subtitle => album.creator.isNotEmpty ? Text(album.creator) : null;
 
   Widget _downloadIcon(BuildContext context, SpiffDownloadEntry download,
       IconData completeIcon, IconData downloadingIcon) {
@@ -210,7 +209,7 @@ class _MediaHomeItem extends _HomeItem {
   @override
   String get key {
     if (_key == null) {
-      _key = "$title/$subtitle";
+      _key = "${album.album}/${album.creator ?? ''}";
     }
     return _key!;
   }
@@ -243,10 +242,10 @@ class _MovieHomeItem extends _MediaHomeItem {
   String get key => (album as Movie).titleYear;
 
   @override
-  String get title => ''; //(album as Movie).rating;
+  Widget? get title => null; //(album as Movie).rating;
 
   @override
-  String? get subtitle => null;
+  Widget? get subtitle => null;
 
   @override
   Widget getTrailing(BuildContext context) => Container();
@@ -270,10 +269,10 @@ class _SeriesHomeItem extends _MediaHomeItem {
   String get key => album.album + "/" + album.creator; // == title/author
 
   @override
-  String get title => '';
+  Widget? get title => null;
 
   @override
-  String? get subtitle => when((album as Series).date);
+  Widget? get subtitle => RelativeDateWidget.from((album as Series).date);
 
   @override
   Widget getTrailing(BuildContext context) => Container();
@@ -281,10 +280,6 @@ class _SeriesHomeItem extends _MediaHomeItem {
   @override
   Widget get image {
     return gridPoster(album.image);
-  }
-
-  String when(String date) {
-    return relativeDate(date);
   }
 }
 
@@ -353,9 +348,8 @@ abstract class _HomeGrid extends StatelessWidget {
                             clipBehavior: Clip.antiAlias,
                             child: GridTileBar(
                               backgroundColor: Colors.black26,
-                              title: Text(i.title),
-                              subtitle:
-                                  i.subtitle != null ? Text(i.subtitle!) : null,
+                              title: i.title,
+                              subtitle: i.subtitle,
                               trailing: i.getTrailing(context),
                             ))
                         : null,

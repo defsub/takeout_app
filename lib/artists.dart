@@ -66,12 +66,10 @@ class _ArtistsState extends State<ArtistsWidget> {
   @override
   void dispose() {
     super.dispose();
-    print('dispose artists');
   }
 
   @override
   Widget build(BuildContext context) {
-    print('build artists');
     final artistsText = AppLocalizations.of(context)!.artistsLabel;
     final builder = (BuildContext) => Scaffold(
         appBar: AppBar(

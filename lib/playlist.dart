@@ -144,15 +144,6 @@ class MediaQueue {
       {Release? release,
       Series? series,
       int index = 0}) async {
-
-    // if (release != null) {
-    //   HistoryDatabase.instance.create(
-    //       History.create(release.artist, release.album, release.image, '/api/releases/${release.id}/playlist'));
-    // } else if (series != null) {
-    //   HistoryDatabase.instance.create(
-    //       History.create(series.creator, series.title, series.image, '/api/series/${series.id}/playlist'));
-    // }
-
     return _playRef(_ref(release: release, series: series),
         index: index);
   }

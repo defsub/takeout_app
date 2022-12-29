@@ -57,8 +57,6 @@ class RadioState extends State<RadioWidget> {
 
   @override
   Widget build(BuildContext context) {
-    print('radio build');
-
     final builder = (BuildContext) => StreamBuilder<List<DownloadEntry>>(
         stream: Downloads.downloadsSubject,
         builder: (context, snapshot) {

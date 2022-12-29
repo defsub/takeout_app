@@ -265,11 +265,11 @@ class Playlist {
 
 String spiffDate(Spiff spiff, {Entry? entry, Playlist? playlist}) {
   if (entry != null) {
-    return spiff.isPodcast() ? relativeDate(entry.date) : entry.year.toString();
+    return spiff.isPodcast() ? entry.date : entry.year.toString();
   }
   if (playlist != null && playlist.date != null) {
     return spiff.isPodcast()
-        ? relativeDate(playlist.date!)
+        ? playlist.date!
         : parseYear(playlist.date!).toString();
   }
   return '';

@@ -17,8 +17,6 @@
 
 import 'dart:collection';
 
-import 'package:timeago/timeago.dart' as timeago;
-
 bool isNullOrEmpty(String? s) => s?.trim().isEmpty ?? true;
 
 bool isNotNullOrEmpty(String? s) => s?.trim().isNotEmpty ?? false;
@@ -52,22 +50,6 @@ String hhmmss(Duration duration) {
   return '$hours:$mins:$secs';
 }
 
-String relativeDate(String date) {
-  // final now = DateTime.now();
-  final d = DateTime.parse(date);
-  return timeago.format(d);
-  // if (now.subtract(Duration(days: 60)).isBefore(d)) {
-  //   return timeago.format(d);
-  // } else if (now.subtract(Duration(days: 365)).isBefore(d)) {
-  //   final year = d.year;
-  //   final month = twoDigits(d.month);
-  //   final day = twoDigits(d.day);
-  //   return '${year}-${month}-${day}';
-  // } else {
-  //   return '${d.year}';
-  // }
-}
-
 int parseYear(String date) {
   var year = -1;
   try {
@@ -81,7 +63,7 @@ int parseYear(String date) {
   return year;
 }
 
-String merge(List<String> args, {String separator = " \u2022 "}) {
+String merge(List<String> args, {String separator = ' \u2022 '}) {
   args.retainWhere((s) => s.toString().isNotEmpty);
   return args.join(separator);
 }

@@ -23,7 +23,7 @@ import 'package:audio_service/audio_service.dart';
 import 'schema.dart';
 import 'artists.dart'; // TODO remove
 
-const appVersion = '0.9.2';
+const appVersion = '0.9.3';
 const appSource = 'https://github.com/defsub/takeout_app';
 const appHome = 'https://defsub.github.io';
 
@@ -116,3 +116,5 @@ NavigatorObserver heroController() {
       createRectTween: (begin, end) =>
           MaterialRectArcTween(begin: begin, end: end));
 }
+
+typedef VoidContextCallback = void Function(BuildContext);
