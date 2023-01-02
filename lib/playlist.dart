@@ -140,12 +140,8 @@ class MediaQueue {
   }
 
   /// Play a release or station, replacing current playlist.
-  static Future play(
-      {Release? release,
-      Series? series,
-      int index = 0}) async {
-    return _playRef(_ref(release: release, series: series),
-        index: index);
+  static Future play({Release? release, Series? series, int index = 0}) async {
+    return _playRef(_ref(release: release, series: series), index: index);
   }
 
   /// Play remote reference to release, track, station, etc.
@@ -171,7 +167,6 @@ class MediaQueue {
         SpiffCache.get(uri).then((spiff) {
           spiff = spiff!.copyWith(index: index, position: position);
           SpiffCache.put(spiff).then((_) {
-            // History.instance.then((history) => history.add(spiff: spiff));
             audioHandler.customAction('doit', <String, dynamic>{
               'spiff': uri.toString()
             }).then((_) => completer.complete());
@@ -182,7 +177,7 @@ class MediaQueue {
       } else {
         final spiff = result.toSpiff();
         SpiffCache.put(spiff).then((_) {
-          History.instance.then((history) => history.add(spiff: spiff));
+          History.instance.then((history) => history.add(spiff: Spiff.cleanup(spiff)));
           audioHandler.customAction('doit', <String, dynamic>{
             'spiff': uri.toString()
           }).then((_) => completer.complete());
@@ -233,29 +228,29 @@ class MediaQueue {
 
   /// Append a release, track or station to current playlist.
   /// TODO append to either remote or local playlist
-  static Future<Spiff> append(
-      {Release? release, Track? track, Station? station}) async {
-    final completer = Completer<Spiff>();
-    Reference ref = _ref(release: release, track: track, station: station);
-    if (isNotNullOrEmpty(ref.reference)) {
-      final client = Client();
-      client.patch(patchAppend(ref.reference)).then((result) {
-        final spiff = result.toSpiff();
-        SpiffCache.put(spiff).then((_) {
-          audioHandler.customAction('test', <String, dynamic>{
-            'fixme': 'test'
-          }).whenComplete(() => completer.complete(spiff));
-        }).catchError((e) {
-          completer.completeError(e);
-        });
-      }).catchError((e) {
-        completer.completeError(e);
-      });
-    } else {
-      completer.completeError(PlaylistException());
-    }
-    return completer.future;
-  }
+  // static Future<Spiff> append(
+  //     {Release? release, Track? track, Station? station}) async {
+  //   final completer = Completer<Spiff>();
+  //   Reference ref = _ref(release: release, track: track, station: station);
+  //   if (isNotNullOrEmpty(ref.reference)) {
+  //     final client = Client();
+  //     client.patch(patchAppend(ref.reference)).then((result) {
+  //       final spiff = result.toSpiff();
+  //       SpiffCache.put(spiff).then((_) {
+  //         audioHandler.customAction('test', <String, dynamic>{
+  //           'fixme': 'test'
+  //         }).whenComplete(() => completer.complete(spiff));
+  //       }).catchError((e) {
+  //         completer.completeError(e);
+  //       });
+  //     }).catchError((e) {
+  //       completer.completeError(e);
+  //     });
+  //   } else {
+  //     completer.completeError(PlaylistException());
+  //   }
+  //   return completer.future;
+  // }
 
   /// Clear current playlist.
   /// TODO
@@ -347,7 +342,7 @@ class MediaQueue {
   static MediaItem _entryMediaItem(
       Entry entry, Uri uri, Map headers, MediaType mediaType, String endpoint) {
     var image = entry.image;
-    if (image.startsWith("/img/")) {
+    if (image.startsWith('/img/')) {
       image = '$endpoint$image';
     }
     return MediaItem(

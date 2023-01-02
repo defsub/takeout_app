@@ -57,7 +57,7 @@ class RadioState extends State<RadioWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final builder = (BuildContext) => StreamBuilder<List<DownloadEntry>>(
+    final builder = (_) => StreamBuilder<List<DownloadEntry>>(
         stream: Downloads.downloadsSubject,
         builder: (context, snapshot) {
           List<DownloadEntry> entries = snapshot.data ?? [];
@@ -134,7 +134,7 @@ class RadioState extends State<RadioWidget> {
               builder: (context, snapshot) {
                 final result = snapshot.data;
                 final isStream =
-                    stations[index].type == "stream"; // enum for station types
+                    stations[index].type == 'stream'; // enum for station types
                 return ListTile(
                     enabled:
                         isStream ? TakeoutState.allowStreaming(result) : true,

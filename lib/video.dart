@@ -260,7 +260,7 @@ class _MovieWidgetState extends State<MovieWidget> {
 
   void _onGenre(BuildContext context, String genre) {
     Navigator.push(
-        context, MaterialPageRoute(builder: (context) => GenreWidget(genre)));
+        context, MaterialPageRoute(builder: (_) => GenreWidget(genre)));
   }
 }
 
@@ -282,7 +282,7 @@ class _CastListWidget extends StatelessWidget {
 
   void _onCast(BuildContext context, Cast cast) {
     Navigator.push(context,
-        MaterialPageRoute(builder: (context) => ProfileWidget(cast.person)));
+        MaterialPageRoute(builder: (_) => ProfileWidget(cast.person)));
   }
 }
 
@@ -304,7 +304,7 @@ class _CrewListWidget extends StatelessWidget {
 
   void _onCrew(BuildContext context, Crew crew) {
     Navigator.push(context,
-        MaterialPageRoute(builder: (context) => ProfileWidget(crew.person)));
+        MaterialPageRoute(builder: (_) => ProfileWidget(crew.person)));
   }
 }
 
@@ -612,7 +612,7 @@ class _MoviePlayerState extends State<MoviePlayer> {
   }
 
   String _pos(Duration pos) {
-    return "${hhmmss(pos)} ~ ${hhmmss(_controller?.value.duration ?? Duration.zero)}";
+    return '${hhmmss(pos)} ~ ${hhmmss(_controller?.value.duration ?? Duration.zero)}';
   }
 
   void _saveState() {
@@ -718,13 +718,13 @@ class MovieListWidget extends StatelessWidget {
 
   void _onTapped(BuildContext context, Movie movie) {
     Navigator.push(
-        context, MaterialPageRoute(builder: (context) => MovieWidget(movie)));
+        context, MaterialPageRoute(builder: (_) => MovieWidget(movie)));
   }
 }
 
 void showMovie(BuildContext context, Locatable movie, {Duration? startOffset}) {
   Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(
-      builder: (context) => MoviePlayer(movie, startOffset: startOffset)));
+      builder: (_) => MoviePlayer(movie, startOffset: startOffset)));
 }
 
 // Note this modifies the original list.

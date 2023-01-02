@@ -43,12 +43,6 @@ class ReleaseWidget extends StatefulWidget {
   State<StatefulWidget> createState() => _ReleaseState(_release);
 }
 
-String _name(Release release) {
-  return isNotNullOrEmpty(release.disambiguation)
-      ? '${release.name} (${release.disambiguation})'
-      : release.name;
-}
-
 class _ReleaseState extends State<ReleaseWidget> {
   final Release release;
   ReleaseView? _view;
@@ -72,7 +66,7 @@ class _ReleaseState extends State<ReleaseWidget> {
 
   void _onArtist() {
     Navigator.push(context,
-        MaterialPageRoute(builder: (context) => ArtistWidget(_view!.artist)));
+        MaterialPageRoute(builder: (_) => ArtistWidget(_view!.artist)));
   }
 
   void _onPlay() {
@@ -371,25 +365,21 @@ class ReleaseListWidget extends StatelessWidget {
       ..._releases.map((e) => Container(
           child: ListTile(
               leading: tileCover(e.image),
-              onTap: () => _onTapped(context, e),
+              onTap: () => _onTap(context, e),
               // trailing: IconButton(
               //     icon: Icon(Icons.playlist_add),
               //     onPressed: () => _onAppend(e)),
               trailing: IconButton(
                   icon: Icon(Icons.play_arrow), onPressed: () => _onPlay(e)),
-              title: Text('${_name(e)}'),
+              title: Text(e.nameWithDisambiguation),
               subtitle: Text(year(e.date ?? '')))))
     ]);
   }
 
-  void _onTapped(BuildContext context, Release release) {
+  void _onTap(BuildContext context, Release release) {
     Navigator.push(context,
-        MaterialPageRoute(builder: (context) => ReleaseWidget(release)));
+        MaterialPageRoute(builder: (_) => ReleaseWidget(release)));
   }
-
-  // void _onAppend(Release release) {
-  //   MediaQueue.append(release: release);
-  // }
 
   void _onPlay(Release release) {
     MediaQueue.play(release: release);

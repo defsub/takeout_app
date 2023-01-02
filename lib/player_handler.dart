@@ -30,7 +30,6 @@ import 'package:takeout_app/settings.dart';
 import 'model.dart';
 import 'playlist.dart';
 import 'progress.dart';
-import 'activity.dart';
 
 extension TakeoutMediaItem on MediaItem {
   Map<String, String>? headers() {
@@ -93,8 +92,9 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
 
   AudioPlayer _player = new AudioPlayer();
 
-  final BehaviorSubject<List<MediaItem>> _recentSubject =
-      BehaviorSubject.seeded(<MediaItem>[]);
+  final _recentSubject = BehaviorSubject.seeded(<MediaItem>[]);
+
+  final _considerPlayedSubject = PublishSubject<MediaItem>();
 
   MediaState? _state;
 
@@ -111,6 +111,8 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
   AudioPlayerHandler() {
     _init();
   }
+
+  Stream<MediaItem> get considerPlayedStream => _considerPlayedSubject.stream;
 
   AudioPlayer get player => _player;
 
@@ -204,7 +206,7 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
 
   void _onConsiderPlayed(MediaItem item) {
     log.fine('_onConsiderPlayed ${item.title}');
-    _sendMediaItemActivity(item);
+    _considerPlayedSubject.add(item);
   }
 
   void _onConsiderEnded(MediaItem item) {
@@ -410,8 +412,6 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
   Future<void> rewind() => _player
       .seek(_seekCheck(_player.position - AudioService.config.rewindInterval));
 
-
-
   @override
   Future<void> stop() async {
     await _player.stop();
@@ -517,14 +517,6 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
     final item = mediaItem.value;
     if (item != null && item.monitorProgress()) {
       Progress.update(item.key, pos, _player.duration ?? Duration.zero);
-    }
-  }
-
-  void _sendMediaItemActivity(MediaItem item) {
-    if (item.isMusic()) {
-      Activity.sendTrackEvent(item.etag);
-    } else if (item.isPodcast()) {
-      // TODO
     }
   }
 }

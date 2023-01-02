@@ -16,7 +16,6 @@
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
 import 'dart:async';
-import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
@@ -37,8 +36,6 @@ import 'global.dart';
 import 'spiff.dart';
 import 'progress.dart';
 import 'schema.dart';
-
-Random _random = Random();
 
 class SpiffWidget extends StatefulWidget {
   final Spiff? spiff;
@@ -63,7 +60,7 @@ class SpiffState extends State<SpiffWidget> with SpiffWidgetBuilder {
   void initState() {
     super.initState();
     if (spiff != null) {
-      coverUrl = pickCover(spiff!);
+      coverUrl = spiff!.cover;
     }
     if (fetch != null) {
       onRefresh();
@@ -78,7 +75,7 @@ class SpiffState extends State<SpiffWidget> with SpiffWidgetBuilder {
         if (mounted) {
           setState(() {
             spiff = result;
-            coverUrl = pickCover(spiff!);
+            coverUrl = spiff!.cover;
           });
         }
       } catch (error) {
@@ -343,8 +340,8 @@ class TrackListTile extends StatelessWidget {
   final String artist;
   final String album;
   final String title;
-  final void Function()? onTap;
-  final void Function()? onLongPress;
+  final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
   final Widget? leading;
   final Widget? trailing;
   final bool selected;
@@ -378,8 +375,8 @@ class TrackListTile extends StatelessWidget {
 
 class NumberedTrackListTile extends StatelessWidget {
   final Track track;
-  final void Function()? onTap;
-  final void Function()? onLongPress;
+  final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
   final Widget? trailing;
   final bool selected;
 
@@ -410,8 +407,8 @@ class CoverTrackListTile extends TrackListTile {
 
   factory CoverTrackListTile.mediaTrack(MediaLocatable track,
       {bool showCover = true,
-      void Function()? onTap,
-      void Function()? onLongPress,
+      VoidCallback? onTap,
+      VoidCallback? onLongPress,
       Widget? trailing,
       bool selected = false}) {
     return CoverTrackListTile(
@@ -428,8 +425,8 @@ class CoverTrackListTile extends TrackListTile {
 
   factory CoverTrackListTile.mediaItem(MediaItem item,
       {bool showCover = true,
-      void Function()? onTap,
-      void Function()? onLongPress,
+      VoidCallback? onTap,
+      VoidCallback? onLongPress,
       Widget? trailing,
       bool selected = false}) {
     return CoverTrackListTile(
@@ -445,19 +442,6 @@ class CoverTrackListTile extends TrackListTile {
   }
 }
 
-String pickCover(Spiff spiff) {
-  if (isNotNullOrEmpty(spiff.playlist.image)) {
-    return spiff.playlist.image!;
-  }
-  for (var i = 0; i < spiff.playlist.tracks.length; i++) {
-    final pick = _random.nextInt(spiff.playlist.tracks.length);
-    if (isNotNullOrEmpty(spiff.playlist.tracks[pick].image)) {
-      return spiff.playlist.tracks[pick].image;
-    }
-  }
-  return ''; // TODO what to return?
-}
-
 class RelativeDateWidget extends StatelessWidget {
   final DateTime dateTime;
   final String prefix;
@@ -467,10 +451,12 @@ class RelativeDateWidget extends StatelessWidget {
   RelativeDateWidget(this.dateTime,
       {String this.prefix = '',
       String this.suffix = '',
-      String this.separator = ' \u2022'});
+      String this.separator = textSeparator});
 
   factory RelativeDateWidget.from(String date,
-      {String prefix = '', String suffix = '', String separator = ' \u2022 '}) {
+      {String prefix = '',
+      String suffix = '',
+      String separator = textSeparator}) {
     final t = DateTime.parse(date);
     return RelativeDateWidget(t,
         prefix: prefix, suffix: suffix, separator: separator);

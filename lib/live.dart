@@ -68,10 +68,10 @@ class EventTrack implements MediaLocatable {
     required this.creator,
     required this.album,
     required this.title,
-    this.image = "",
+    this.image = '',
     required this.location,
     required this.key,
-    this.etag = "",
+    this.etag = '',
   });
 
   factory EventTrack.fromMediaItem(MediaItem item) {

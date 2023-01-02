@@ -87,7 +87,7 @@ class HomeState extends State<HomeWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final builder = (BuildContext) => StreamBuilder<_GridState>(
+    final builder = (_) => StreamBuilder<_GridState>(
         stream: Rx.combineLatest2(
             settingsChangeSubject.stream,
             MediaCache.stream(),
@@ -266,7 +266,7 @@ class _SeriesHomeItem extends _MediaHomeItem {
   }
 
   @override
-  String get key => album.album + "/" + album.creator; // == title/author
+  String get key => album.album + '/' + album.creator; // == title/author
 
   @override
   Widget? get title => null;
@@ -303,7 +303,7 @@ abstract class _HomeGrid extends StatelessWidget {
 
   void _onTap(BuildContext context, _HomeItem item) {
     Navigator.of(context)
-        .push(MaterialPageRoute(builder: (context) => item.onTap()));
+        .push(MaterialPageRoute(builder: (_) => item.onTap()));
   }
 
   List<_MediaHomeItem> _downloadedItems(
@@ -480,24 +480,19 @@ abstract class _HomeGrid extends StatelessWidget {
 
   void _onDownloads(BuildContext context) {
     Navigator.push(
-        context, MaterialPageRoute(builder: (context) => DownloadsWidget()));
+        context, MaterialPageRoute(builder: (_) => DownloadsWidget()));
   }
 
   void _onSettings(BuildContext context) {
     Navigator.push(
-        context, MaterialPageRoute(builder: (context) => AppSettings()));
-  }
-
-  void _onHistory(BuildContext context) {
-    Navigator.push(
-        context, MaterialPageRoute(builder: (context) => HistoryListWidget()));
+        context, MaterialPageRoute(builder: (_) => AppSettings()));
   }
 
   void _onRecentTracks(BuildContext context) {
     Navigator.push(
         context,
         MaterialPageRoute(
-            builder: (context) => SpiffWidget(
+            builder: (_) => SpiffWidget(
                 fetch: () => Client().recentTracks(ttl: Duration.zero))));
   }
 
@@ -505,7 +500,7 @@ abstract class _HomeGrid extends StatelessWidget {
     Navigator.push(
         context,
         MaterialPageRoute(
-            builder: (context) => SpiffWidget(
+            builder: (_) => SpiffWidget(
                 fetch: () => Client().popularTracks(ttl: Duration.zero))));
   }
 

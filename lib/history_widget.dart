@@ -28,7 +28,7 @@ class HistoryListWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     History.instance; // TODO start load
-    final builder = (BuildContext) => StreamBuilder<History>(
+    final builder = (_) => StreamBuilder<History>(
         stream: History.stream,
         builder: (context, snapshot) {
           final history = snapshot.data;
@@ -99,8 +99,7 @@ class SpiffHistoryWidget extends StatelessWidget {
   final SpiffHistory spiffHistory;
   final String _cover;
 
-  SpiffHistoryWidget(this.spiffHistory)
-      : _cover = pickCover(spiffHistory.spiff);
+  SpiffHistoryWidget(this.spiffHistory) : _cover = spiffHistory.spiff.cover;
 
   @override
   Widget build(BuildContext context) {
@@ -114,9 +113,7 @@ class SpiffHistoryWidget extends StatelessWidget {
     return ListTile(
         selected: false,
         isThreeLine: true,
-        onTap: () {
-          _onTap(context, spiffHistory);
-        },
+        onTap: () => _onTap(context, spiffHistory),
         onLongPress: null,
         leading: tileCover(_cover),
         trailing: null,
@@ -129,7 +126,7 @@ class SpiffHistoryWidget extends StatelessWidget {
     Navigator.push(
         context,
         MaterialPageRoute(
-            builder: (context) =>
-                SpiffWidget(fetch: () => Future.value(spiffHistory.spiff))));
+            // TODO consider making spiff refreshable. Need original reference or uri.
+            builder: (_) => SpiffWidget(spiff: spiffHistory.spiff)));
   }
 }

@@ -62,7 +62,6 @@ class _ArtistsState extends State<ArtistsWidget> {
 
   _ArtistsState(this._view, {this.genre, this.area});
 
-
   @override
   void dispose() {
     super.dispose();
@@ -71,7 +70,7 @@ class _ArtistsState extends State<ArtistsWidget> {
   @override
   Widget build(BuildContext context) {
     final artistsText = AppLocalizations.of(context)!.artistsLabel;
-    final builder = (BuildContext) => Scaffold(
+    final builder = (_) => Scaffold(
         appBar: AppBar(
             title: genre != null
                 ? header('$artistsText \u2013 $genre')
@@ -161,7 +160,7 @@ class ArtistListWidget extends StatelessWidget {
 
   void _onArtist(BuildContext context, Artist artist) {
     Navigator.push(
-        context, MaterialPageRoute(builder: (context) => ArtistWidget(artist)));
+        context, MaterialPageRoute(builder: (_) => ArtistWidget(artist)));
   }
 }
 
@@ -201,7 +200,7 @@ class _ArtistState extends State<ArtistWidget> with ArtistBuilder {
     Navigator.push(
         context,
         MaterialPageRoute(
-            builder: (context) => SpiffWidget(
+            builder: (_) => SpiffWidget(
                 fetch: () =>
                     Client().artistRadio(_artist.id, ttl: Duration.zero))));
   }
@@ -210,7 +209,7 @@ class _ArtistState extends State<ArtistWidget> with ArtistBuilder {
     Navigator.push(
         context,
         MaterialPageRoute(
-            builder: (context) => SpiffWidget(
+            builder: (_) => SpiffWidget(
                 fetch: () =>
                     Client().artistPlaylist(_artist.id, ttl: Duration.zero))));
   }
@@ -222,7 +221,7 @@ class _ArtistState extends State<ArtistWidget> with ArtistBuilder {
     Navigator.push(
         context,
         MaterialPageRoute(
-            builder: (context) => ArtistTrackListWidget(
+            builder: (_) => ArtistTrackListWidget(
                 _view!, _artist, ArtistTrackType.singles)));
   }
 
@@ -233,7 +232,7 @@ class _ArtistState extends State<ArtistWidget> with ArtistBuilder {
     Navigator.push(
         context,
         MaterialPageRoute(
-            builder: (context) => ArtistTrackListWidget(
+            builder: (_) => ArtistTrackListWidget(
                 _view!, _artist, ArtistTrackType.popular)));
   }
 
@@ -251,7 +250,7 @@ class _ArtistState extends State<ArtistWidget> with ArtistBuilder {
       Navigator.push(
           context,
           MaterialPageRoute(
-              builder: (context) => ArtistsWidget(result, genre: genre)));
+              builder: (_) => ArtistsWidget(result, genre: genre)));
     } catch (error) {
       log.warning(error);
     }
@@ -264,7 +263,7 @@ class _ArtistState extends State<ArtistWidget> with ArtistBuilder {
       Navigator.push(
           context,
           MaterialPageRoute(
-              builder: (context) => ArtistsWidget(result, area: area)));
+              builder: (_) => ArtistsWidget(result, area: area)));
     } catch (error) {
       log.warning(error);
     }
@@ -351,7 +350,7 @@ class SimilarArtistListWidget extends StatelessWidget {
 
   void _onArtist(BuildContext context, Artist artist) {
     Navigator.push(
-        context, MaterialPageRoute(builder: (context) => ArtistWidget(artist)));
+        context, MaterialPageRoute(builder: (_) => ArtistWidget(artist)));
   }
 }
 
@@ -557,18 +556,17 @@ mixin ArtistBuilder {
     if (artistView == null) {
       return null;
     }
-    for (var i = 0; i < artistView.releases.length; i++) {
+    for (var i = 0; i < 3; i++) {
       final pick = _random.nextInt(artistView.releases.length);
       if (isNotNullOrEmpty(artistView.releases[pick].image)) {
         return artistView.releases[pick].image;
       }
     }
-    for (var i = 0; i < artistView.releases.length; i++) {
-      if (isNotNullOrEmpty(artistView.releases[i].image)) {
-        return artistView.releases[i].image;
-      }
+    try {
+      return artistView.releases.firstWhere((r) => isNotNullOrEmpty(r.image)).image;
+    } on StateError {
+      return null;
     }
-    return null;
   }
 
   Widget build(BuildContext context) {

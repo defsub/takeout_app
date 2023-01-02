@@ -33,6 +33,7 @@ import 'package:logging/logging.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:takeout_app/cover.dart';
 import 'package:takeout_app/history_widget.dart';
+import 'package:takeout_app/model.dart';
 
 import 'artists.dart';
 import 'client.dart';
@@ -50,6 +51,8 @@ import 'cache.dart';
 import 'settings.dart';
 import 'progress.dart';
 import 'live.dart';
+import 'activity.dart';
+import 'history.dart';
 
 late AudioPlayerHandler audioPlayerHandler;
 
@@ -172,6 +175,24 @@ class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
     _connectivitySubscription = _connectivity.onConnectivityChanged
         .distinct()
         .listen(_updateConnectionStatus);
+
+    audioPlayerHandler.considerPlayedStream.listen((mediaItem) {
+      // add to history
+      log.info('consider played: ${mediaItem.artist}/${mediaItem.album}/${mediaItem.title}');
+      History.instance.then((history) => history.add(
+          track: MediaAdapter(
+              creator: mediaItem.artist ?? '',
+              album: mediaItem.album ?? '',
+              title: mediaItem.title,
+              image: mediaItem.artUri.toString() ?? '',
+              etag: mediaItem.etag)));
+      // send activity event
+      if (mediaItem.isMusic()) {
+        Activity.sendTrackEvent(mediaItem.etag);
+      } else if (mediaItem.isPodcast()) {
+        // TODO
+      }
+    });
 
     Client().loggedIn().then((success) => success ? login() : logout());
   }
@@ -569,8 +590,8 @@ class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
             : HomeWidget(
                 _indexView!,
                 _homeView!,
-                (ctx) => Navigator.push(ctx,
-                    MaterialPageRoute(builder: (context) => SearchWidget())));
+                (ctx) => Navigator.push(
+                    ctx, MaterialPageRoute(builder: (_) => SearchWidget())));
       },
       '/artists': (context) {
         return _artistsView == null
@@ -610,7 +631,7 @@ Color overlayIconColor(BuildContext context) {
 }
 
 Widget allowStreamingIconButton(
-    BuildContext context, Icon icon, void Function() onPressed) {
+    BuildContext context, Icon icon, VoidCallback onPressed) {
   return StreamBuilder<ConnectivityResult>(
       stream: TakeoutState.connectivityStream.distinct(),
       builder: (context, snapshot) {
@@ -624,7 +645,7 @@ Widget allowStreamingIconButton(
 }
 
 Widget allowDownloadIconButton(
-    BuildContext context, Icon icon, void Function() onPressed) {
+    BuildContext context, Icon icon, VoidCallback onPressed) {
   return StreamBuilder<ConnectivityResult>(
       stream: TakeoutState.connectivityStream.distinct(),
       builder: (context, snapshot) {

@@ -54,9 +54,9 @@ class ClientError extends Error {
 
   String toString() {
     if (message != null) {
-      return "Client error: ${Error.safeToString(message)}";
+      return 'Client error: ${Error.safeToString(message)}';
     }
-    return "Client error";
+    return 'Client error';
   }
 }
 
@@ -801,9 +801,9 @@ class Client {
     }
   }
 
-  Future deleteProgress(Offset offset) async {
-    return _retry(() => _delete('/api/progress/${offset.id}'));
-  }
+  // Future deleteProgress(Offset offset) async {
+  //   return _retry(() => _delete('/api/progress/${offset.id}'));
+  // }
 
   /// GET /api/activity
   Future<ActivityView> activity({Duration? ttl}) async =>
@@ -926,7 +926,7 @@ class Client {
   /// Obtain the Uri to playback/stream a resource. This will either be a local
   /// file from the cache or a url indirectly pointing to s3 bucket item.
   Future<Uri> locate(Locatable d) async {
-    if (d.location.startsWith("http")) {
+    if (d.location.startsWith('http')) {
       // already located or internet radio
       return Uri.parse(d.location);
     }

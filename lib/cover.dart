@@ -136,7 +136,7 @@ class ArtworkBuilder {
         width: artwork.width,
         height: artwork.height,
         fit: artwork.fit,
-        placeholderBuilder: (context) => artwork.placeholder ?? placeholder,
+        placeholderBuilder: (_) => artwork.placeholder ?? placeholder,
         errorBuilder: (context, error, stack) {
           log.warning(error);
           ARTWORK_ERRORS.add(imageProvider.url);

@@ -106,10 +106,6 @@ class PopupItem {
   PopupItem.playlist(BuildContext context, MenuCallback onSelected)
       : this(Icon(Icons.playlist_play_sharp),
       AppLocalizations.of(context)!.recentlyPlayed, onSelected);
-
-  PopupItem.history(BuildContext context, MenuCallback onSelected)
-      : this(Icon(Icons.history),
-      AppLocalizations.of(context)!.history, onSelected);
 }
 
 Widget popupMenu(BuildContext context, List<PopupItem> items) {

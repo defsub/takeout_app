@@ -58,7 +58,7 @@ class PlayerWidget extends StatelessWidget {
         }
       });
     }
-    final builder = (BuildContext) => StreamBuilder<Color>(
+    final builder = (_) => StreamBuilder<Color>(
         stream: _backgroundColorSubject,
         builder: (context, snapshot) {
           final backgroundColor = snapshot.data ?? null;

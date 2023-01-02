@@ -175,7 +175,7 @@ class DownloadListState extends State<DownloadListWidget> {
   void _onTap(BuildContext context, DownloadEntry entry) {
     if (entry is SpiffDownloadEntry) {
       Navigator.push(context,
-          MaterialPageRoute(builder: (context) => DownloadWidget(entry)));
+          MaterialPageRoute(builder: (_) => DownloadWidget(entry)));
     }
   }
 
@@ -211,7 +211,7 @@ class DownloadState extends State<DownloadWidget> with SpiffWidgetBuilder {
   @override
   void initState() {
     super.initState();
-    _cover = pickCover(entry.spiff);
+    _cover = entry.spiff.cover;
   }
 
   Spiff? get spiff => entry.spiff;
@@ -233,7 +233,7 @@ class DownloadState extends State<DownloadWidget> with SpiffWidgetBuilder {
       }).whenComplete(() {
         if (mounted) {
           setState(() {
-            _cover = pickCover(entry.spiff);
+            _cover = entry.spiff.cover;
           });
         }
       });
@@ -612,7 +612,7 @@ class SpiffDownloadEntry extends DownloadEntry with MediaAlbum {
 
   static SpiffDownloadEntry create(File file, Spiff spiff) {
     FileStat stat = file.statSync();
-    return SpiffDownloadEntry(file, spiff, stat.modified, pickCover(spiff));
+    return SpiffDownloadEntry(file, spiff, stat.modified, spiff.cover);
   }
 
   SpiffDownloadEntry copyWith({

@@ -19,6 +19,7 @@ import 'dart:io';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:collection';
+import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:json_annotation/json_annotation.dart';
@@ -28,6 +29,8 @@ import 'model.dart';
 import 'util.dart';
 
 part 'spiff.g.dart';
+
+Random _random = Random();
 
 @JsonSerializable()
 class Spiff {
@@ -44,6 +47,29 @@ class Spiff {
 
   int get size {
     return playlist.tracks.fold(0, (sum, t) => sum + t.size);
+  }
+
+  String? get creator => playlist.creator;
+
+  String get title => playlist.title;
+
+  String? get location => playlist.location;
+
+  String get cover {
+    if (isNotNullOrEmpty(playlist.image)) {
+      return playlist.image!;
+    }
+    for (var i = 0; i < 3; i++) {
+      final pick = _random.nextInt(playlist.tracks.length);
+      if (isNotNullOrEmpty(playlist.tracks[pick].image)) {
+        return playlist.tracks[pick].image;
+      }
+    }
+    try {
+      return playlist.tracks.firstWhere((t) => isNotNullOrEmpty(t.image)).image;
+    } on StateError {
+      return '';
+    }
   }
 
   @override
@@ -95,7 +121,7 @@ class Spiff {
   }
 
   MediaType get mediaType {
-    if (type == "") {
+    if (type.isEmpty) {
       // FIXME remove after transition to require type is done
       return MediaType.music;
     }
@@ -118,6 +144,16 @@ class Spiff {
         playlist: playlist ?? this.playlist,
         type: type ?? this.type,
       );
+
+  static Spiff cleanup(Spiff spiff) {
+    final creator = _playlistCreator(spiff);
+    final title = _playlistTitle(spiff);
+    if (creator != spiff.playlist.creator || title != spiff.playlist.title) {
+      final playlist = spiff.playlist.copyWith(creator: creator, title: title);
+      spiff = spiff.copyWith(playlist: playlist);
+    }
+    return spiff;
+  }
 
   static Spiff empty() => Spiff(
       index: -1,
@@ -161,7 +197,7 @@ class Entry extends Locatable implements MediaTrack {
       required this.album,
       required this.title,
       required this.image,
-      this.date = "",
+      this.date = '',
       required this.locations,
       this.identifiers,
       this.sizes});
@@ -279,7 +315,7 @@ String playlistDate(Spiff spiff) {
   return spiffDate(spiff, playlist: spiff.playlist);
 }
 
-String playlistCreator(Spiff spiff) {
+String _playlistCreator(Spiff spiff) {
   if (spiff.playlist.creator != null) {
     return spiff.playlist.creator!;
   }
@@ -289,7 +325,7 @@ String playlistCreator(Spiff spiff) {
   return list.join(', ');
 }
 
-String playlistTitle(Spiff spiff) {
+String _playlistTitle(Spiff spiff) {
   if (spiff.playlist.title.isNotEmpty) {
     return spiff.playlist.title;
   }

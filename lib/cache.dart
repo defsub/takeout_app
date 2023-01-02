@@ -459,7 +459,7 @@ class OffsetCache {
           final expired = DateTime.now().isAfter(expirationTime);
           completer.complete(expired ? null : _decode(file));
           if (expired) {
-            log.fine("deleting $file");
+            log.fine('deleting $file');
             remove(etag);
           }
         } else {

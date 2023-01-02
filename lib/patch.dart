@@ -51,7 +51,7 @@ List<Map<String, dynamic>> patchClear() {
 
 List<Map<String, dynamic>> patchPosition(int index, double position) {
   return [
-    { 'op': "replace", 'path': "/index", 'value': index },
-    { 'op': "replace", 'path': "/position", 'value': position }
+    { 'op': 'replace', 'path': '/index', 'value': index },
+    { 'op': 'replace', 'path': '/position', 'value': position }
   ];
 }

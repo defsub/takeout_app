@@ -58,7 +58,7 @@ class _SearchState extends State<SearchWidget> {
   @override
   Widget build(BuildContext context) {
     History.instance; // TODO start load
-    final builder = (BuildContext) => StreamBuilder<History>(
+    final builder = (_) => StreamBuilder<History>(
         stream: History.stream,
         builder: (ctx, snapshot) {
           final history = snapshot.data;
@@ -178,6 +178,6 @@ class _ArtistResultsWidget extends StatelessWidget {
 
   void _onTapped(BuildContext context, Artist artist) {
     Navigator.push(
-        context, MaterialPageRoute(builder: (context) => ArtistWidget(artist)));
+        context, MaterialPageRoute(builder: (_) => ArtistWidget(artist)));
   }
 }

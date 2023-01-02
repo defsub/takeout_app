@@ -1,3 +1,4 @@
+
 // Copyright (C) 2020 The Takeout Authors.
 //
 // This file is part of Takeout.
@@ -39,7 +40,7 @@ Widget heading(String text) {
           padding: EdgeInsets.fromLTRB(11, 22, 0, 11)));
 }
 
-Widget headingButton(String text, void Function() onPressed) {
+Widget headingButton(String text, VoidCallback onPressed) {
   return SizedBox(
       width: double.infinity,
       child: TextButton(

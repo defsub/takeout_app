@@ -41,7 +41,7 @@ String storage(int size) {
   return '${f.toStringAsFixed(2)} B';
 }
 
-String twoDigits(int n) => n.toString().padLeft(2, "0");
+String twoDigits(int n) => n.toString().padLeft(2, '0');
 
 String hhmmss(Duration duration) {
   final hours = twoDigits(duration.inHours);

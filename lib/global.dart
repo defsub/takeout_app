@@ -27,6 +27,8 @@ const appVersion = '0.9.3';
 const appSource = 'https://github.com/defsub/takeout_app';
 const appHome = 'https://defsub.github.io';
 
+const textSeparator = ' \u2022 ';
+
 late AudioHandler audioHandler;
 
 final homeKey = GlobalKey<NavigatorState>();
@@ -60,7 +62,7 @@ void showPlayer() {
 void showArtist(String name) async {
   Artist? artist = artistMap[name];
   if (artist != null) {
-    final route = MaterialPageRoute(builder: (context) => ArtistWidget(artist));
+    final route = MaterialPageRoute(builder: (_) => ArtistWidget(artist));
     Navigator.push(artistsKey.currentContext!, route);
     await route.didPush();
     navigate(1);

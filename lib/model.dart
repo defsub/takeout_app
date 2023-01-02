@@ -41,29 +41,53 @@ abstract class Referencable {
   Reference get reference;
 }
 
-abstract class MediaAlbum implements Referencable {
+abstract class Media {
   String get creator;
-  String get album;
-  String get image;
-  int get year;
-  Reference get reference;
-}
 
-abstract class MediaTrack implements Referencable {
-  String get creator;
   String get album;
-  String get image;
-  int get year;
 
   String get title;
+
+  String get image;
+
+  String get etag;
+}
+
+class MediaAdapter implements Media {
+  final String creator;
+  final String album;
+  final String title;
+  final String image;
+  final String etag;
+
+  MediaAdapter(
+      {required this.creator,
+      required this.album,
+      required this.title,
+      required this.image,
+      required this.etag});
+}
+
+abstract class MediaAlbum {
+  String get creator;
+
+  String get album;
+
+  String get image;
+
+  int get year;
+}
+
+abstract class MediaTrack implements Media {
+  int get year;
+
   int get size;
 
   int get number;
+
   int get disc;
 
   // 1999-07-27T00:00:00Z
   // 2022-02-03T09:21:26-08:00
   String get date;
-
-  Reference get reference;
 }
