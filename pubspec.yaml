@@ -37,6 +37,8 @@ dependencies:
 
   cupertino_icons: ^1.0.3
 
+  webview_flutter: ^4.0.1
+
   dynamic_color: ^1.1.2
   jwt_decoder: ^2.0.1
 

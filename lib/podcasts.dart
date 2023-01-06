@@ -18,7 +18,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:takeout_app/util.dart';
 import 'package:takeout_app/widget.dart';
+import 'package:webview_flutter/webview_flutter.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import 'client.dart';
 import 'schema.dart';
@@ -29,7 +32,7 @@ import 'downloads.dart';
 import 'cache.dart';
 import 'playlist.dart';
 import 'global.dart';
-import 'util.dart';
+import 'menu.dart';
 
 class SeriesWidget extends StatefulWidget {
   final Series _series;
@@ -134,7 +137,8 @@ class _SeriesWidgetState extends State<SeriesWidget> {
                                       ]))),
                               if (_view != null)
                                 SliverToBoxAdapter(
-                                    child: _EpisodeListWidget(_view!)),
+                                    child: _EpisodeListWidget(
+                                        _view!, backgroundColor)),
                             ]);
                           })));
         });
@@ -179,8 +183,9 @@ class _SeriesWidgetState extends State<SeriesWidget> {
 
 class _EpisodeListWidget extends StatelessWidget {
   final SeriesView _view;
+  final Color? backgroundColor;
 
-  _EpisodeListWidget(this._view);
+  _EpisodeListWidget(this._view, this.backgroundColor);
 
   @override
   Widget build(BuildContext context) {
@@ -199,25 +204,11 @@ class _EpisodeListWidget extends StatelessWidget {
                 isThreeLine: true,
                 trailing: _trailing(context, cacheSnapshot, episodes[index]),
                 onTap: () => _onPlay(context, episodes[index], index),
+                onLongPress: () => _onEpisode(context, episodes[index], index),
                 title: Text(episodes[index].title),
                 subtitle: _subtitle(context, cacheSnapshot, episodes[index])))
           ]);
         });
-  }
-
-  Widget _trailing(
-      BuildContext context, CacheSnapshot snapshot, Episode episode) {
-    final downloading = snapshot.downloadSnapshot(episode);
-    if (downloading != null) {
-      final value = downloading.value;
-      return value > 1.0
-          ? CircularProgressIndicator()
-          : CircularProgressIndicator(value: value);
-    }
-    return IconButton(
-        icon: Icon(snapshot.contains(episode) ? IconsCached : IconsDownload),
-        onPressed: () =>
-            _onCache(context, snapshot.contains(episode), episode));
   }
 
   Widget _subtitle(
@@ -235,16 +226,220 @@ class _EpisodeListWidget extends StatelessWidget {
         children: children, crossAxisAlignment: CrossAxisAlignment.start);
   }
 
-  void _onCache(BuildContext context, bool isCached, Episode episode) {
-    if (isCached) {
-      Downloads.deleteEpisode(episode);
-    } else {
-      Downloads.downloadSeriesEpisode(_view.series, episode);
+  Widget? _trailing(
+      BuildContext context, CacheSnapshot snapshot, Episode episode) {
+    final downloading = snapshot.downloadSnapshot(episode);
+    if (downloading != null) {
+      final value = downloading.value;
+      return value > 1.0
+          ? CircularProgressIndicator()
+          : CircularProgressIndicator(value: value);
     }
+    return snapshot.contains(episode) ? Icon(IconsCached) : null;
+  }
+
+  // void _onCache(BuildContext context, bool isCached, Episode episode) {
+  //   if (isCached) {
+  //     Downloads.deleteEpisode(episode);
+  //   } else {
+  //     Downloads.downloadSeriesEpisode(_view.series, episode);
+  //   }
+  // }
+
+  void _onEpisode(BuildContext context, Episode episode, int index) {
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (_) =>
+                _EpisodeWidget(_view.series, episode, index, backgroundColor)));
   }
 
   void _onPlay(BuildContext context, Episode episode, int index) {
     MediaQueue.play(series: _view.series, index: index);
     showPlayer();
+  }
+}
+
+class _EpisodeWidget extends StatelessWidget {
+  final Series series;
+  final Episode episode;
+  final int episodeIndex;
+  final Color? backgroundColor;
+
+  _EpisodeWidget(
+      this.series, this.episode, this.episodeIndex, this.backgroundColor);
+
+  @override
+  Widget build(BuildContext context) {
+    final padding = const EdgeInsets.all(16);
+    return Scaffold(
+        backgroundColor: backgroundColor,
+        appBar: AppBar(
+          title: Text(series.title),
+          actions: [
+            popupMenu(context, [
+              // TODO this shows delete when there's nothing to delete
+              PopupItem.delete(
+                  context,
+                  AppLocalizations.of(context)!.deleteItem,
+                      (ctx) => _onDelete(ctx)),
+            ])
+          ],
+        ),
+        body: StreamBuilder<CacheSnapshot>(
+            stream: MediaCache.stream(),
+            builder: (context, snapshot) {
+              final cacheSnapshot = snapshot.data ?? CacheSnapshot.empty();
+              final when = cacheSnapshot.when(episode);
+              final duration = cacheSnapshot.duration(episode);
+              final remaining = cacheSnapshot.remaining(episode);
+              final isCached = cacheSnapshot.contains(episode);
+              var title = episode.creator;
+              var subtitle = merge([
+                ymd(episode.date),
+                if (duration != null) duration.inHoursMinutes
+              ]);
+              return Container(
+                child: Column(
+                  children: [
+                    Container(
+                        padding: padding,
+                        alignment: Alignment.centerLeft,
+                        child: Text(episode.title,
+                            style: Theme.of(context).textTheme.titleLarge)),
+                    ListTile(
+                      title: Text(title, overflow: TextOverflow.ellipsis),
+                      subtitle: Text(subtitle, overflow: TextOverflow.ellipsis),
+                      trailing: _downloadButton(context, cacheSnapshot),
+                    ),
+                    _progress(cacheSnapshot) ?? SizedBox(),
+                    Expanded(child: _episodeDetail()),
+                    ListTile(
+                      title: remaining != null ? Text('${remaining.inHoursMinutes} remaining') : SizedBox(),
+                      subtitle: remaining != null ? RelativeDateWidget(when!) : SizedBox(),
+                      leading: _playButton(context, isCached),
+                    ),
+                  ],
+                ),
+              );
+            }));
+  }
+
+  Widget? _progress(CacheSnapshot snapshot) {
+    final remaining = snapshot.remaining(episode);
+    if (remaining != null && remaining.inSeconds > 0) {
+      final value = snapshot.value(episode);
+      if (value != null) {
+        return LinearProgressIndicator(value: value);
+      }
+    }
+    return null;
+  }
+
+  Widget _episodeDetail() {
+    final controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.disabled)
+      ..setBackgroundColor(Colors.white)
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onProgress: (int progress) {
+            print('progress $progress');
+          },
+          onPageStarted: (String url) {
+            print('started $url');
+          },
+          onPageFinished: (String url) {
+            print('finished $url');
+          },
+          onWebResourceError: (WebResourceError error) {
+            print(error);
+          },
+          onNavigationRequest: (NavigationRequest request) {
+            return NavigationDecision.navigate;
+          },
+        ),
+      );
+
+    final view = WebViewWidget(controller: controller);
+    // TODO consider changing CSS font colors based on theme
+    controller.loadHtmlString("""<!DOCTYPE html>
+    <html>
+      <head><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+      <body style='"margin: 0; padding: 0;'>
+        <div>
+          ${episode.description}
+        </div>
+      </body>
+    </html>""");
+
+    return view;
+  }
+
+  Widget _downloadButton(BuildContext context, CacheSnapshot cacheSnapshot) {
+    final downloading = cacheSnapshot.downloadSnapshot(episode);
+    if (downloading != null) {
+      final value = downloading.value;
+      return value > 1.0
+          ? CircularProgressIndicator()
+          : CircularProgressIndicator(value: value);
+    }
+    final isCached = cacheSnapshot.contains(episode);
+    return isCached
+        ? IconButton(
+            color: overlayIconColor(context),
+            icon: Icon(IconsDownloadDone),
+            onPressed: () => {})
+        : allowDownloadIconButton(
+            context, Icon(IconsDownload), () => _onDownload(context));
+  }
+
+  void _onDownload(BuildContext context) {
+    Downloads.downloadSeriesEpisode(series, episode);
+  }
+
+  Widget _playButton(BuildContext context, bool isCached) {
+    return isCached
+        ? IconButton(
+            color: overlayIconColor(context),
+            icon: Icon(Icons.play_arrow, size: 36),
+            onPressed: () => _onPlay(context, series, episodeIndex))
+        : allowStreamingIconButton(context, Icon(Icons.play_arrow, size: 36),
+            () => _onPlay(context, series, episodeIndex));
+  }
+
+  void _onPlay(BuildContext context, Series series, int index) {
+    print('play $series $index');
+    MediaQueue.play(series: series, index: index);
+    showPlayer();
+  }
+
+
+  void _onDelete(BuildContext context) {
+    showDialog(
+        context: context,
+        builder: (ctx) {
+          return AlertDialog(
+            title: Text(AppLocalizations.of(context)!.confirmDelete),
+            content: Text(AppLocalizations.of(context)!.deleteEpisode),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child:
+                Text(MaterialLocalizations.of(context).cancelButtonLabel),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _onDeleteConfirmed();
+                },
+                child: Text(MaterialLocalizations.of(context).okButtonLabel),
+              ),
+            ],
+          );
+        });
+  }
+
+  void _onDeleteConfirmed() async {
+    Downloads.deleteEpisode(episode);
   }
 }

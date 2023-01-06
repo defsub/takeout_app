@@ -612,7 +612,7 @@ class _MoviePlayerState extends State<MoviePlayer> {
   }
 
   String _pos(Duration pos) {
-    return '${hhmmss(pos)} ~ ${hhmmss(_controller?.value.duration ?? Duration.zero)}';
+    return '${pos.hhmmss} ~ ${(_controller?.value.duration ?? Duration.zero).hhmmss}';
   }
 
   void _saveState() {

@@ -301,11 +301,11 @@ class Playlist {
 
 String spiffDate(Spiff spiff, {Entry? entry, Playlist? playlist}) {
   if (entry != null) {
-    return spiff.isPodcast() ? entry.date : entry.year.toString();
+    return spiff.isPodcast() ? ymd(entry.date): entry.year.toString();
   }
   if (playlist != null && playlist.date != null) {
     return spiff.isPodcast()
-        ? playlist.date!
+        ? ymd(playlist.date!)
         : parseYear(playlist.date!).toString();
   }
   return '';

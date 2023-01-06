@@ -19,7 +19,6 @@ import 'dart:collection';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:takeout_app/history_widget.dart';
 
 import 'package:url_launcher/url_launcher.dart';
 import 'package:rxdart/rxdart.dart';
@@ -302,8 +301,7 @@ abstract class _HomeGrid extends StatelessWidget {
   double _gridMaxCrossAxisExtent();
 
   void _onTap(BuildContext context, _HomeItem item) {
-    Navigator.of(context)
-        .push(MaterialPageRoute(builder: (_) => item.onTap()));
+    Navigator.of(context).push(MaterialPageRoute(builder: (_) => item.onTap()));
   }
 
   List<_MediaHomeItem> _downloadedItems(
@@ -425,7 +423,8 @@ abstract class _HomeGrid extends StatelessWidget {
         pinned: false,
         floating: true,
         snap: true,
-        leading: IconButton(icon: Icon(Icons.search), onPressed: () => _onSearch(context)),
+        leading: IconButton(
+            icon: Icon(Icons.search), onPressed: () => _onSearch(context)),
         // title: header(AppLocalizations.of(context)!.takeoutTitle),
         actions: [
           ...iconBar,
@@ -484,8 +483,7 @@ abstract class _HomeGrid extends StatelessWidget {
   }
 
   void _onSettings(BuildContext context) {
-    Navigator.push(
-        context, MaterialPageRoute(builder: (_) => AppSettings()));
+    Navigator.push(context, MaterialPageRoute(builder: (_) => AppSettings()));
   }
 
   void _onRecentTracks(BuildContext context) {
@@ -609,12 +607,24 @@ class _SeriesHomeGrid extends _HomeGrid {
       case GridType.added:
         return _view.newSeries!.map((v) => _SeriesHomeItem(_cacheSnapshot, v));
       case GridType.downloads:
-        return _downloadedItems(MediaType.podcast, downloads);
+        final items = <_HomeItem>[];
+        final downloadedItems = _downloadedItems(MediaType.podcast, downloads);
+        _view.newSeries!.forEach((v) {
+          // use series items with downloads over download items
+          final seriesItem = _SeriesHomeItem(_cacheSnapshot, v);
+          if (downloadedItems.any((e) => e.key == seriesItem.key)) {
+            items.add(seriesItem);
+          }
+        });
+        return items;
       case GridType.mix:
-        final LinkedHashSet<_HomeItem> items = LinkedHashSet();
-        items.addAll(_downloadedItems(MediaType.podcast, downloads));
-        _view.newSeries!
-            .forEach((v) => items.add(_SeriesHomeItem(_cacheSnapshot, v)));
+        // final LinkedHashSet<_HomeItem> items = LinkedHashSet();
+        // items.addAll(_downloadedItems(MediaType.podcast, downloads));
+        // _view.newSeries!
+        //     .forEach((v) => items.add(_SeriesHomeItem(_cacheSnapshot, v)));
+        // prefer series items over downloads
+        final items =
+            _view.newSeries!.map((v) => _SeriesHomeItem(_cacheSnapshot, v));
         return items;
     }
   }

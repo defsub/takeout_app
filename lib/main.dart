@@ -456,17 +456,15 @@ class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
 
     return WillPopScope(
         onWillPop: () async {
-          if (_selectedIndex == 0) {
             NavigatorState? navState = _navigatorState(_selectedIndex);
             if (navState != null) {
-              final isFirstRouteInCurrentTab = !await navState.maybePop();
-              log.fine('isFirstRouteInCurrentTab: ' +
-                  isFirstRouteInCurrentTab.toString());
-              // let system handle back button if we're on the first route
-              return isFirstRouteInCurrentTab;
+              final handled = await navState.maybePop();
+              if (!handled && _selectedIndex == 0) {
+                // allow pop and app to exit
+                return true;
+              }
             }
-          }
-          return false;
+            return false;
         },
         child: _loggedIn == null
             ? Center(child: CircularProgressIndicator())

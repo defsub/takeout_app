@@ -70,6 +70,11 @@ class CacheSnapshot {
         : null;
   }
 
+  DateTime? when(Locatable l) {
+    final offset = offsets[l.key];
+    return offset != null ? offset.dateTime : null;
+  }
+
   double? value(Locatable l) {
     final offset = offsets[l.key];
     final pos = offset?.offset ?? null;
@@ -386,7 +391,8 @@ class OffsetCache {
     try {
       return Offset.fromJson(jsonDecode(file.readAsStringSync()));
     } on FormatException {
-      log.warning('_decode failed to parse $file with "${file.readAsStringSync()}"');
+      log.warning(
+          '_decode failed to parse $file with "${file.readAsStringSync()}"');
       return null;
     }
   }

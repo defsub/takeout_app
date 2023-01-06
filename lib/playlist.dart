@@ -67,7 +67,7 @@ class MediaQueue {
   }
 
   static Reference _ref(
-      {Release? release, Track? track, Station? station, Series? series}) {
+      {Release? release, Track? track, Station? station, Series? series, Episode? episode}) {
     String ref = '';
     MediaType type = MediaType.music;
     if (release != null) {
@@ -81,6 +81,9 @@ class MediaQueue {
       type = MediaType.music;
     } else if (series != null) {
       ref = '/podcasts/series/${series.id}';
+      type = MediaType.podcast;
+    } else if (episode != null) {
+      ref = '/podcasts/series/'; // TODO
       type = MediaType.podcast;
     }
     return Reference(ref, type);
@@ -140,8 +143,8 @@ class MediaQueue {
   }
 
   /// Play a release or station, replacing current playlist.
-  static Future play({Release? release, Series? series, int index = 0}) async {
-    return _playRef(_ref(release: release, series: series), index: index);
+  static Future play({Release? release, Series? series, Episode? episode, int index = 0}) async {
+    return _playRef(_ref(release: release, series: series, episode: episode), index: index);
   }
 
   /// Play remote reference to release, track, station, etc.

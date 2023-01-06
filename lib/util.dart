@@ -17,6 +17,36 @@
 
 import 'dart:collection';
 
+extension TakeoutDuration on Duration {
+  String get inHoursMinutes {
+    var mins = inMinutes.remainder(60);
+    return inHours > 0 ? '${inHours}h ${mins}m' : '${mins}m';
+  }
+
+  String get hhmmss {
+    final hours = twoDigits(inHours);
+    final mins = twoDigits(inMinutes.remainder(60));
+    final secs = twoDigits(inSeconds.remainder(60));
+    return '$hours:$mins:$secs';
+  }
+}
+
+String twoDigits(int n) {
+  return n >= 10 ? '${n}' : '0${n}';
+}
+
+String ymd(dynamic date) {
+  final t = (date is String)
+      ? DateTime.parse(date)
+      : (date is DateTime)
+          ? date
+          : DateTime.parse(date.toString());
+  final y = twoDigits(t.year);
+  final m = twoDigits(t.month);
+  final d = twoDigits(t.day);
+  return '${y}-${m}-${d}';
+}
+
 bool isNullOrEmpty(String? s) => s?.trim().isEmpty ?? true;
 
 bool isNotNullOrEmpty(String? s) => s?.trim().isNotEmpty ?? false;
@@ -39,15 +69,6 @@ String storage(int size) {
     return '${f.toStringAsFixed(2)} KB';
   }
   return '${f.toStringAsFixed(2)} B';
-}
-
-String twoDigits(int n) => n.toString().padLeft(2, '0');
-
-String hhmmss(Duration duration) {
-  final hours = twoDigits(duration.inHours);
-  final mins = twoDigits(duration.inMinutes.remainder(60));
-  final secs = twoDigits(duration.inSeconds.remainder(60));
-  return '$hours:$mins:$secs';
 }
 
 int parseYear(String date) {
