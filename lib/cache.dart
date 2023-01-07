@@ -47,6 +47,12 @@ class CacheSnapshot {
     return downloaded.containsAll(entryKeys);
   }
 
+  bool containsAny(Iterable<Locatable> entries) {
+    final entryKeys = Set<String>();
+    entries.forEach((e) => entryKeys.add(e.key));
+    return entryKeys.intersection(downloaded).isNotEmpty;
+  }
+
   bool contains(Locatable l) {
     return downloaded.contains(l.key);
   }

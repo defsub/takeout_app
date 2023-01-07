@@ -282,7 +282,7 @@ class _EpisodeWidget extends StatelessWidget {
               PopupItem.delete(
                   context,
                   AppLocalizations.of(context)!.deleteItem,
-                      (ctx) => _onDelete(ctx)),
+                  (ctx) => _onDelete(ctx)),
             ])
           ],
         ),
@@ -315,8 +315,12 @@ class _EpisodeWidget extends StatelessWidget {
                     _progress(cacheSnapshot) ?? SizedBox(),
                     Expanded(child: _episodeDetail()),
                     ListTile(
-                      title: remaining != null ? Text('${remaining.inHoursMinutes} remaining') : SizedBox(),
-                      subtitle: remaining != null ? RelativeDateWidget(when!) : SizedBox(),
+                      title: remaining != null
+                          ? Text('${remaining.inHoursMinutes} remaining')
+                          : SizedBox(),
+                      subtitle: remaining != null
+                          ? RelativeDateWidget(when!)
+                          : SizedBox(),
                       leading: _playButton(context, isCached),
                     ),
                   ],
@@ -413,7 +417,6 @@ class _EpisodeWidget extends StatelessWidget {
     showPlayer();
   }
 
-
   void _onDelete(BuildContext context) {
     showDialog(
         context: context,
@@ -425,7 +428,7 @@ class _EpisodeWidget extends StatelessWidget {
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
                 child:
-                Text(MaterialLocalizations.of(context).cancelButtonLabel),
+                    Text(MaterialLocalizations.of(context).cancelButtonLabel),
               ),
               TextButton(
                 onPressed: () {
