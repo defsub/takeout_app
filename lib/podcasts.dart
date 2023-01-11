@@ -137,7 +137,7 @@ class _SeriesWidgetState extends State<SeriesWidget> {
                                       ]))),
                               if (_view != null)
                                 SliverToBoxAdapter(
-                                    child: _EpisodeListWidget(
+                                    child: _SeriesEpisodeListWidget(
                                         _view!, backgroundColor)),
                             ]);
                           })));
@@ -181,11 +181,11 @@ class _SeriesWidgetState extends State<SeriesWidget> {
   }
 }
 
-class _EpisodeListWidget extends StatelessWidget {
+class _SeriesEpisodeListWidget extends StatelessWidget {
   final SeriesView _view;
   final Color? backgroundColor;
 
-  _EpisodeListWidget(this._view, this.backgroundColor);
+  _SeriesEpisodeListWidget(this._view, this.backgroundColor);
 
   @override
   Widget build(BuildContext context) {
@@ -203,7 +203,7 @@ class _EpisodeListWidget extends StatelessWidget {
             ...episodes.asMap().keys.toList().map((index) => ListTile(
                 isThreeLine: true,
                 trailing: _trailing(context, cacheSnapshot, episodes[index]),
-                onTap: () => _onPlay(context, episodes[index], index),
+                onTap: () => _onPlay(context, episodes[index]),
                 onLongPress: () => _onEpisode(context, episodes[index], index),
                 title: Text(episodes[index].title),
                 subtitle: _subtitle(context, cacheSnapshot, episodes[index])))
@@ -250,24 +250,22 @@ class _EpisodeListWidget extends StatelessWidget {
     Navigator.push(
         context,
         MaterialPageRoute(
-            builder: (_) =>
-                _EpisodeWidget(_view.series, episode, index, backgroundColor)));
+            builder: (_) => _EpisodeWidget(episode, _view.series.title,
+                backgroundColor: backgroundColor)));
   }
 
-  void _onPlay(BuildContext context, Episode episode, int index) {
-    MediaQueue.play(series: _view.series, index: index);
+  void _onPlay(BuildContext context, Episode episode) {
+    MediaQueue.play(episode: episode);
     showPlayer();
   }
 }
 
 class _EpisodeWidget extends StatelessWidget {
-  final Series series;
   final Episode episode;
-  final int episodeIndex;
+  final String title;
   final Color? backgroundColor;
 
-  _EpisodeWidget(
-      this.series, this.episode, this.episodeIndex, this.backgroundColor);
+  _EpisodeWidget(this.episode, this.title, {this.backgroundColor});
 
   @override
   Widget build(BuildContext context) {
@@ -275,7 +273,7 @@ class _EpisodeWidget extends StatelessWidget {
     return Scaffold(
         backgroundColor: backgroundColor,
         appBar: AppBar(
-          title: Text(series.title),
+          title: Text(title),
           actions: [
             popupMenu(context, [
               // TODO this shows delete when there's nothing to delete
@@ -316,7 +314,8 @@ class _EpisodeWidget extends StatelessWidget {
                     Expanded(child: _episodeDetail()),
                     ListTile(
                       title: remaining != null
-                          ? Text('${remaining.inHoursMinutes} remaining')
+                          ? Text(
+                              '${remaining.inHoursMinutes} remaining') // TODO intl
                           : SizedBox(),
                       subtitle: remaining != null
                           ? RelativeDateWidget(when!)
@@ -398,7 +397,7 @@ class _EpisodeWidget extends StatelessWidget {
   }
 
   void _onDownload(BuildContext context) {
-    Downloads.downloadSeriesEpisode(series, episode);
+    Downloads.downloadEpisode(episode);
   }
 
   Widget _playButton(BuildContext context, bool isCached) {
@@ -406,14 +405,14 @@ class _EpisodeWidget extends StatelessWidget {
         ? IconButton(
             color: overlayIconColor(context),
             icon: Icon(Icons.play_arrow, size: 36),
-            onPressed: () => _onPlay(context, series, episodeIndex))
-        : allowStreamingIconButton(context, Icon(Icons.play_arrow, size: 36),
-            () => _onPlay(context, series, episodeIndex));
+            onPressed: () => _onPlay(context))
+        : allowStreamingIconButton(
+            context, Icon(Icons.play_arrow, size: 36), () => _onPlay(context));
   }
 
-  void _onPlay(BuildContext context, Series series, int index) {
-    print('play $series $index');
-    MediaQueue.play(series: series, index: index);
+  void _onPlay(BuildContext context) {
+    print('play $episode');
+    MediaQueue.play(episode: episode);
     showPlayer();
   }
 
@@ -444,5 +443,61 @@ class _EpisodeWidget extends StatelessWidget {
 
   void _onDeleteConfirmed() async {
     Downloads.deleteEpisode(episode);
+  }
+}
+
+class SeriesListWidget extends StatelessWidget {
+  final List<Series> _list;
+
+  SeriesListWidget(this._list);
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(children: [
+      ..._list.asMap().keys.toList().map((index) => ListTile(
+          onTap: () => _onTapped(context, _list[index]),
+          leading: tileCover(_list[index].image),
+          subtitle: Text(
+              merge([
+                ymd(_list[index].date),
+                _list[index].author,
+              ]),
+              overflow: TextOverflow.ellipsis),
+          title: Text(_list[index].title)))
+    ]);
+  }
+
+  void _onTapped(BuildContext context, Series series) {
+    Navigator.push(
+        context, MaterialPageRoute(builder: (_) => SeriesWidget(series)));
+  }
+}
+
+class EpisodeListWidget extends StatelessWidget {
+  final List<Episode> _list;
+
+  EpisodeListWidget(this._list);
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(children: [
+      ..._list.asMap().keys.toList().map((index) => ListTile(
+          onTap: () => _onTapped(context, _list[index]),
+          leading: tilePodcast(_list[index].image),
+          subtitle: Text(
+              merge([
+                ymd(_list[index].date),
+                _list[index].author,
+              ]),
+              overflow: TextOverflow.ellipsis),
+          title: Text(_list[index].title)))
+    ]);
+  }
+
+  void _onTapped(BuildContext context, Episode episode) {
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (_) => _EpisodeWidget(episode, ""))); // TODO need title
   }
 }

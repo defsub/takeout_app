@@ -208,7 +208,7 @@ class _MediaHomeItem extends _HomeItem {
   @override
   String get key {
     if (_key == null) {
-      _key = "${album.album}/${album.creator ?? ''}";
+      _key = "${album.album}/${album.creator}";
     }
     return _key!;
   }

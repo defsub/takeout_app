@@ -83,7 +83,7 @@ class MediaQueue {
       ref = '/podcasts/series/${series.id}';
       type = MediaType.podcast;
     } else if (episode != null) {
-      ref = '/podcasts/series/'; // TODO
+      ref = '/podcasts/episodes/${episode.id}';
       type = MediaType.podcast;
     }
     return Reference(ref, type);

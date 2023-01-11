@@ -18,6 +18,7 @@
 import 'dart:collection';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:takeout_app/podcasts.dart';
 import 'package:takeout_app/release.dart';
 
 import 'schema.dart';
@@ -58,7 +59,7 @@ class _SearchState extends State<SearchWidget> {
   @override
   Widget build(BuildContext context) {
     History.instance; // TODO start load
-    final builder = (_) => StreamBuilder<History>(
+    final WidgetBuilder builder = (_) => StreamBuilder<History>(
         stream: History.stream,
         builder: (ctx, snapshot) {
           final history = snapshot.data;
@@ -136,16 +137,22 @@ class _SearchState extends State<SearchWidget> {
                         heading(AppLocalizations.of(context)!.moviesLabel),
                         MovieListWidget(_view!.movies!),
                       ])),
+                    if (_view!.series != null && _view!.series!.isNotEmpty)
+                      Container(
+                          child: Column(children: [
+                        heading(AppLocalizations.of(context)!.seriesLabel),
+                        SeriesListWidget(_view!.series!),
+                      ])),
+                    if (_view!.episodes != null && _view!.episodes!.isNotEmpty)
+                      Container(
+                          child: Column(children: [
+                        heading(AppLocalizations.of(context)!.episodesLabel),
+                        EpisodeListWidget(_view!.episodes!),
+                      ])),
                   ]))
               ])));
         });
-    return Navigator(
-        key: searchKey,
-        initialRoute: '/',
-        observers: [heroController()],
-        onGenerateRoute: (RouteSettings settings) {
-          return MaterialPageRoute(builder: builder, settings: settings);
-        });
+    return builder(context);
   }
 
   void _onSubmit(String q) {

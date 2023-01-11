@@ -77,6 +77,8 @@
   "recentlyWatched": "Recently Watched",
   "popularTracks": "Popular Tracks",
   "history": "History",
+  "seriesLabel": "Series",
+  "episodesLabel": "Episodes",
   "deleteTitle": "Really delete {title}?",
   "@deleteTitle": {
     "placeholders": {

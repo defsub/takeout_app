@@ -135,6 +135,8 @@ class SearchView {
   final List<Release>? releases;
   final List<Track>? tracks;
   final List<Movie>? movies;
+  final List<Series>? series;
+  final List<Episode>? episodes;
   final String query;
   final int hits;
 
@@ -142,6 +144,8 @@ class SearchView {
     this.releases = const [],
     this.tracks = const [],
     this.movies = const [],
+    this.series = const [],
+    this.episodes = const [],
     required this.query,
     required this.hits});
 

@@ -68,6 +68,10 @@ class Artwork {
       borderRadius: BorderRadius.circular(4),
       placeholder: const Icon(Icons.album));
 
+  factory Artwork.tilePodcast(String url) => Artwork(url, null, null, null,
+      borderRadius: BorderRadius.circular(4),
+      placeholder: const Icon(Icons.podcasts));
+
   factory Artwork.tilePoster(String url) => Artwork(url, null, null, null,
       borderRadius: BorderRadius.circular(4),
       placeholder: const Icon(Icons.movie));
@@ -194,6 +198,10 @@ class ArtworkBuilder {
 
 Widget? tileCover(String url) {
   return ArtworkBuilder(Artwork.tileCover(url)).build();
+}
+
+Widget? tilePodcast(String url) {
+  return ArtworkBuilder(Artwork.tilePodcast(url)).build();
 }
 
 Widget? tilePoster(String url) {

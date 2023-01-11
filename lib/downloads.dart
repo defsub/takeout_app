@@ -174,8 +174,8 @@ class DownloadListState extends State<DownloadListWidget> {
 
   void _onTap(BuildContext context, DownloadEntry entry) {
     if (entry is SpiffDownloadEntry) {
-      Navigator.push(context,
-          MaterialPageRoute(builder: (_) => DownloadWidget(entry)));
+      Navigator.push(
+          context, MaterialPageRoute(builder: (_) => DownloadWidget(entry)));
     }
   }
 
@@ -481,19 +481,23 @@ class Downloads {
         () => Client().seriesPlaylist(series.id, ttl: Duration.zero));
   }
 
-  static Future downloadSeriesEpisode(Series series, Episode episode) async {
+  static Future downloadEpisode(Episode episode) async {
     final client = _downloadClient();
     showSnackBar('Downloading ${episode.title}');
-    final success = await _download(
-        client, () => client.seriesPlaylist(series.id, ttl: Duration.zero),
-        includeTracks: false); // just one track
-    if (success) {
-      return client
-          .download(episode)
-          .whenComplete(() => showSnackBar('Finished ${episode.title}'));
-    } else {
-      showSnackBar('Failed ${episode.title}');
-    }
+    return client
+        .download(episode)
+        .whenComplete(() => showSnackBar('Finished ${episode.title}'));
+
+    // final success = await _download(
+    //     client, () => client.episodePlaylist(episode.id, ttl: Duration.zero),
+    //     includeTracks: false); // just one track
+    // if (success) {
+    //   return client
+    //       .download(episode)
+    //       .whenComplete(() => showSnackBar('Finished ${episode.title}'));
+    // } else {
+    //   showSnackBar('Failed ${episode.title}');
+    // }
   }
 
   static Future deleteEpisode(Episode episode) async {

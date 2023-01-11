@@ -765,22 +765,25 @@ class Client {
           .then((j) => PodcastsView.fromJson(j))
           .catchError((e) => Future<PodcastsView>.error(e)));
 
-  /// GET /api/podcasts/series/1
+  /// GET /api/series/1
   Future<SeriesView> series(int id, {Duration? ttl}) async =>
-      _retry<SeriesView>(() => _getJson('/api/podcasts/series/$id', ttl: ttl)
+      _retry<SeriesView>(() => _getJson('/api/series/$id', ttl: ttl)
           .then((j) => SeriesView.fromJson(j))
           .catchError((e) => Future<SeriesView>.error(e)));
 
-  /// GET /api/podcasts/series/1/playlist
+  /// GET /api/series/1/playlist
   Future<Spiff> seriesPlaylist(int id, {Duration? ttl}) async =>
-      spiff('/api/podcasts/series/$id/playlist', ttl: ttl);
+      spiff('/api/series/$id/playlist', ttl: ttl);
 
   /// GET /api/episodes/1
-  /// TODO change to /api/podcasts/series/id/episodes/eid
-  // Future<EpisodeView> episode(int id, {Duration? ttl}) async =>
-  //     _getJson('/api/episodes/$id', ttl: ttl)
-  //         .then((j) => EpisodeView.fromJson(j))
-  //         .catchError((e) => Future<EpisodeView>.error(e));
+  Future<EpisodeView> episode(int id, {Duration? ttl}) async =>
+      _getJson('/api/episodes/$id', ttl: ttl)
+          .then((j) => EpisodeView.fromJson(j))
+          .catchError((e) => Future<EpisodeView>.error(e));
+
+  /// GET /api/episodes/1/playlist
+  Future<Spiff> episodePlaylist(int id, {Duration? ttl}) async =>
+      spiff('/api/episode/$id/playlist', ttl: ttl);
 
   /// GET /api/progress
   Future<ProgressView> progress({Duration? ttl}) async =>
