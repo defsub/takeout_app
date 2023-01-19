@@ -38,12 +38,13 @@ class Spiff {
   final double position;
   final Playlist playlist;
   final String type;
+  final String cover;
 
   Spiff(
       {required this.index,
       required this.position,
       required this.playlist,
-      required this.type});
+      required this.type}) : cover = playlist._cover;
 
   int get size {
     return playlist.tracks.fold(0, (sum, t) => sum + t.size);
@@ -54,23 +55,6 @@ class Spiff {
   String get title => playlist.title;
 
   String? get location => playlist.location;
-
-  String get cover {
-    if (isNotNullOrEmpty(playlist.image)) {
-      return playlist.image!;
-    }
-    for (var i = 0; i < 3; i++) {
-      final pick = _random.nextInt(playlist.tracks.length);
-      if (isNotNullOrEmpty(playlist.tracks[pick].image)) {
-        return playlist.tracks[pick].image;
-      }
-    }
-    try {
-      return playlist.tracks.firstWhere((t) => isNotNullOrEmpty(t.image)).image;
-    } on StateError {
-      return '';
-    }
-  }
 
   @override
   bool operator ==(other) {
@@ -270,6 +254,7 @@ class Playlist {
   final String? date;
   @JsonKey(name: 'track')
   final List<Entry> tracks;
+  final String _cover;
 
   Playlist(
       {this.location,
@@ -277,7 +262,7 @@ class Playlist {
       required this.title,
       this.image,
       this.date,
-      required this.tracks});
+      required this.tracks}) : _cover = _pickCover(image, tracks);
 
   Playlist copyWith({
     String? location,
@@ -297,6 +282,23 @@ class Playlist {
       _$PlaylistFromJson(json);
 
   Map<String, dynamic> toJson() => _$PlaylistToJson(this);
+
+  static String _pickCover(String? image, List<Entry> tracks) {
+    if (isNotNullOrEmpty(image)) {
+      return image!;
+    }
+    for (var i = 0; i < 3; i++) {
+      final pick = _random.nextInt(tracks.length);
+      if (isNotNullOrEmpty(tracks[pick].image)) {
+        return tracks[pick].image;
+      }
+    }
+    try {
+      return tracks.firstWhere((t) => isNotNullOrEmpty(t.image)).image;
+    } on StateError {
+      return '';
+    }
+  }
 }
 
 String spiffDate(Spiff spiff, {Entry? entry, Playlist? playlist}) {

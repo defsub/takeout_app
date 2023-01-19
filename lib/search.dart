@@ -172,7 +172,7 @@ class _SearchState extends State<SearchWidget> {
 class _ArtistResultsWidget extends StatelessWidget {
   final List<Artist> _artists;
 
-  _ArtistResultsWidget(this._artists);
+  const _ArtistResultsWidget(this._artists);
 
   @override
   Widget build(BuildContext context) {

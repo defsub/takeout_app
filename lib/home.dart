@@ -103,7 +103,7 @@ class HomeState extends State<HomeWidget> {
               child: _grid(mediaType, type, gridState.cacheSnapshot),
             ));
           } else {
-            return SizedBox();
+            return SizedBox.shrink();
           }
         });
 
@@ -202,7 +202,7 @@ class _MediaHomeItem extends _HomeItem {
     } else if (year > 1) {
       return Text('$year');
     }
-    return SizedBox();
+    return SizedBox.shrink();
   }
 
   @override
@@ -247,7 +247,7 @@ class _MovieHomeItem extends _MediaHomeItem {
   Widget? get subtitle => null;
 
   @override
-  Widget getTrailing(BuildContext context) => SizedBox();
+  Widget getTrailing(BuildContext context) => SizedBox.shrink();
 
   @override
   Widget get image {
@@ -274,7 +274,7 @@ class _SeriesHomeItem extends _MediaHomeItem {
   Widget? get subtitle => RelativeDateWidget.from((album as Series).date);
 
   @override
-  Widget getTrailing(BuildContext context) => SizedBox(); // no trailer (year)
+  Widget getTrailing(BuildContext context) => SizedBox.shrink(); // no trailer (year)
 
   @override
   Widget get image {

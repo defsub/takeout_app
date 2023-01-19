@@ -178,13 +178,14 @@ class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
 
     audioPlayerHandler.considerPlayedStream.listen((mediaItem) {
       // add to history
-      log.info('consider played: ${mediaItem.artist}/${mediaItem.album}/${mediaItem.title}');
+      log.info(
+          'consider played: ${mediaItem.artist}/${mediaItem.album}/${mediaItem.title}');
       History.instance.then((history) => history.add(
           track: MediaAdapter(
               creator: mediaItem.artist ?? '',
               album: mediaItem.album ?? '',
               title: mediaItem.title,
-              image: mediaItem.artUri.toString() ?? '',
+              image: mediaItem.artUri.toString(),
               etag: mediaItem.etag)));
       // send activity event
       if (mediaItem.isMusic()) {
@@ -456,15 +457,15 @@ class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
 
     return WillPopScope(
         onWillPop: () async {
-            NavigatorState? navState = _navigatorState(_selectedIndex);
-            if (navState != null) {
-              final handled = await navState.maybePop();
-              if (!handled && _selectedIndex == 0) {
-                // allow pop and app to exit
-                return true;
-              }
+          NavigatorState? navState = _navigatorState(_selectedIndex);
+          if (navState != null) {
+            final handled = await navState.maybePop();
+            if (!handled && _selectedIndex == 0) {
+              // allow pop and app to exit
+              return true;
             }
-            return false;
+          }
+          return false;
         },
         child: _loggedIn == null
             ? Center(child: CircularProgressIndicator())
@@ -482,46 +483,37 @@ class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
                     bottomNavigationBar: _bottomNavigation()));
   }
 
-  bool _showingPlayer() {
-    return _selectedIndex == 4;
-  }
+  // bool _showingPlayer() {
+  //   return _selectedIndex == 4;
+  // }
 
   Widget _fab() {
-    final stream =
-        Rx.combineLatest3<PlaybackState?, MediaItem?, int, _FabState>(
-            audioHandler.playbackState.distinct(),
-            audioHandler.mediaItem.distinct(),
-            _navIndexStream,
-            (a, b, c) => _FabState(a, b, c));
+    final stream = Rx.combineLatest4<PlaybackState?, MediaItem?, Duration?, int,
+            _FabState>(
+        audioHandler.playbackState.distinct(),
+        audioHandler.mediaItem,
+        audioPlayerHandler.periodicPositionStream,
+        _navIndexStream,
+        (a, b, c, d) => _FabState(a, b, c, d));
     final builder = StreamBuilder<_FabState>(
         stream: stream,
         builder: (context, snapshot) {
-          final fabState = snapshot.data;
-          final playing = fabState?.playbackState?.playing == true;
-          if (fabState?.playbackState?.processingState ==
-                  AudioProcessingState.ready &&
-              fabState?.navIndex != 4) {
-            final cover = fabState?.mediaItem?.artUri;
-            final theme = Theme.of(context);
-            return FloatingActionButton(
-                onPressed: () {
-                  if (playing) {
-                    audioHandler.pause();
-                  } else {
-                    audioHandler.play();
-                  }
-                },
+          final fabState = snapshot.data ?? _FabState.empty();
+          if (fabState.showFab) {
+            final playing = fabState.playing == true;
+            return Container(
                 child: Stack(alignment: Alignment.center, children: [
-                  if (cover != null)
-                    tileCover(cover.toString()) ?? SizedBox.shrink(),
-                  Material(
-                      color: theme.backgroundColor,
-                      shape: RoundedRectangleBorder(
-                          side: BorderSide(color: theme.backgroundColor)),
-                      child: (playing)
-                          ? Icon(Icons.pause, size: 24)
-                          : Icon(Icons.play_arrow, size: 24))
-                ]));
+              FloatingActionButton(
+                  onPressed: () =>
+                      playing ? audioHandler.pause() : audioHandler.play(),
+                  shape: const CircleBorder(),
+                  child: playing ? Icon(Icons.pause) : Icon(Icons.play_arrow)),
+              IgnorePointer(
+                  child: SizedBox(
+                      width: 52, // non-mini FAB is 56, progress is 4
+                      height: 52,
+                      child: CircularProgressIndicator(value: fabState.progress))),
+            ]));
           }
           return SizedBox.shrink();
         });
@@ -565,18 +557,18 @@ class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
               onTap: _onNavTapped,
             );
           }),
-      if (!_showingPlayer())
-        StreamBuilder<Duration>(
-            stream: audioPlayerHandler.positionStream(),
-            builder: (context, snapshot) {
-              final position = snapshot.data?.inSeconds.toDouble() ?? 0;
-              final mediaItem = audioPlayerHandler.currentItem;
-              final duration = mediaItem?.duration?.inSeconds.toDouble() ?? 0;
-              if (duration > 0 && position > 0) {
-                return LinearProgressIndicator(value: position / duration);
-              }
-              return SizedBox();
-            })
+      // if (!_showingPlayer())
+      //   StreamBuilder<Duration>(
+      //       stream: audioPlayerHandler.positionStream(),
+      //       builder: (context, snapshot) {
+      //         final position = snapshot.data?.inSeconds.toDouble() ?? 0;
+      //         final mediaItem = audioPlayerHandler.currentItem;
+      //         final duration = mediaItem?.duration?.inSeconds.toDouble() ?? 0;
+      //         if (duration > 0 && position > 0) {
+      //           return LinearProgressIndicator(value: position / duration);
+      //         }
+      //         return SizedBox.shrink();
+      //       })
     ]);
   }
 
@@ -618,9 +610,28 @@ class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
 class _FabState {
   final PlaybackState? playbackState;
   final MediaItem? mediaItem;
+  final Duration? position;
   final int navIndex;
 
-  _FabState(this.playbackState, this.mediaItem, this.navIndex);
+  _FabState(this.playbackState, this.mediaItem, this.position, this.navIndex);
+
+  factory _FabState.empty() {
+    return _FabState(
+        PlaybackState(), MediaItem(id: "", title: ""), Duration.zero, -1);
+  }
+
+  bool get playing => playbackState?.playing == true;
+
+  double get duration => mediaItem?.duration?.inSeconds.toDouble() ?? 0.0;
+
+  double get progress {
+    final pos = position?.inSeconds.toDouble() ?? 0.0;
+    return duration > 0 ? pos / duration : 0.0;
+  }
+
+  bool get showFab =>
+      navIndex != 4 &&
+      playbackState?.processingState == AudioProcessingState.ready;
 }
 
 Color overlayIconColor(BuildContext context) {

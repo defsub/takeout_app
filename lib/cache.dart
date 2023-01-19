@@ -31,15 +31,19 @@ import 'client.dart';
 import 'spiff.dart';
 import 'schema.dart';
 
+final _emptyDownloaded = Set<String>.unmodifiable([]);
+final _emptyOffsets = Map<String, Offset>.unmodifiable({});
+final _emptyDownloading = Map<String, DownloadSnapshot>.unmodifiable({});
+
 class CacheSnapshot {
   final Set<String> downloaded;
   final Map<String, Offset> offsets;
   final Map<String, DownloadSnapshot> downloading;
 
-  CacheSnapshot(this.downloaded, this.offsets, this.downloading);
+  const CacheSnapshot(this.downloaded, this.offsets, this.downloading);
 
-  factory CacheSnapshot.empty() => CacheSnapshot(
-      Set<String>(), <String, Offset>{}, Map<String, DownloadSnapshot>());
+  factory CacheSnapshot.empty() =>
+      CacheSnapshot(_emptyDownloaded, _emptyOffsets, _emptyDownloading);
 
   bool containsAll(Iterable<Locatable> entries) {
     final entryKeys = Set<String>();
@@ -110,9 +114,9 @@ class CacheSnapshot {
 
 class MediaCache {
   static final _cachedMediaStream =
-      BehaviorSubject<Set<String>>.seeded(Set<String>());
+      BehaviorSubject<Set<String>>.seeded(_emptyDownloaded);
   static final _cachedOffsetsStream =
-      BehaviorSubject<Map<String, Offset>>.seeded(<String, Offset>{});
+      BehaviorSubject<Map<String, Offset>>.seeded(_emptyOffsets);
 
   static void _updateMedia(Set<String> media) {
     _cachedMediaStream.add(media);
@@ -129,8 +133,8 @@ class MediaCache {
         Client.downloadStream.stream,
         (Set<String>? media, Map<String, Offset>? offsets,
                 Map<String, DownloadSnapshot>? downloading) =>
-            CacheSnapshot(media ?? Set<String>(), offsets ?? <String, Offset>{},
-                downloading ?? Map<String, DownloadSnapshot>()));
+            CacheSnapshot(media ?? _emptyDownloaded, offsets ?? _emptyOffsets,
+                downloading ?? _emptyDownloading));
   }
 }
 

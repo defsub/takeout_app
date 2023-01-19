@@ -227,7 +227,7 @@ class _ReleaseState extends State<ReleaseWidget> {
 class _ReleaseTracksWidget extends StatelessWidget {
   final ReleaseView _view;
 
-  _ReleaseTracksWidget(this._view);
+  const _ReleaseTracksWidget(this._view);
 
   void _onTap(int index) {
     MediaQueue.play(index: index, release: _view.release);
@@ -272,7 +272,7 @@ class AlbumGridWidget extends StatelessWidget {
   final List<MediaAlbum> _albums;
   final bool subtitle;
 
-  AlbumGridWidget(this._albums, {this.subtitle = true});
+  const AlbumGridWidget(this._albums, {this.subtitle = true});
 
   @override
   Widget build(BuildContext context) {
@@ -357,7 +357,7 @@ class AlbumGridWidget extends StatelessWidget {
 class ReleaseListWidget extends StatelessWidget {
   final List<Release> _releases;
 
-  ReleaseListWidget(this._releases);
+  const ReleaseListWidget(this._releases);
 
   @override
   Widget build(BuildContext context) {

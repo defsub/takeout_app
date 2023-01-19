@@ -96,6 +96,8 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
 
   final _considerPlayedSubject = PublishSubject<MediaItem>();
 
+  late Stream<Duration> _periodicPositionStream;
+
   MediaState? _state;
 
   int? get index => _player.currentIndex;
@@ -113,6 +115,8 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
   }
 
   Stream<MediaItem> get considerPlayedStream => _considerPlayedSubject.stream;
+
+  Stream<Duration> get periodicPositionStream => _periodicPositionStream;
 
   AudioPlayer get player => _player;
 
@@ -178,6 +182,12 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
         _savePosition();
       }
     });
+
+    // create a position stream that fires about every second.
+    _periodicPositionStream = _player.createPositionStream(
+        steps: 100,
+        minPeriod: Duration(seconds: 1),
+        maxPeriod: Duration(seconds: 2));
 
     // create a position stream that fires about every 10 seconds
     // to monitor progress and call functions.

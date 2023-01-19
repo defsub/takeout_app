@@ -158,7 +158,7 @@ class _MovieWidgetState extends State<MovieWidget> {
 
   Widget _progress(CacheSnapshot snapshot) {
     final value = snapshot.value(_view!);
-    return value != null ? LinearProgressIndicator(value: value) : Container();
+    return value != null ? LinearProgressIndicator(value: value) : SizedBox.shrink();
   }
 
   Widget _title() {
@@ -267,7 +267,7 @@ class _MovieWidgetState extends State<MovieWidget> {
 class _CastListWidget extends StatelessWidget {
   final MovieView _view;
 
-  _CastListWidget(this._view);
+  const _CastListWidget(this._view);
 
   @override
   Widget build(BuildContext context) {
@@ -289,7 +289,7 @@ class _CastListWidget extends StatelessWidget {
 class _CrewListWidget extends StatelessWidget {
   final MovieView _view;
 
-  _CrewListWidget(this._view);
+  const _CrewListWidget(this._view);
 
   @override
   Widget build(BuildContext context) {
@@ -473,7 +473,7 @@ class MovieGridWidget extends StatelessWidget {
   final List<Movie> _movies;
   final bool subtitle;
 
-  MovieGridWidget(this._movies, {this.subtitle = true});
+  const MovieGridWidget(this._movies, {this.subtitle = true});
 
   @override
   Widget build(BuildContext context) {
@@ -631,7 +631,7 @@ class _MoviePlayerState extends State<MoviePlayer> {
             }
           },
           child: _controller == null
-              ? Container()
+              ? SizedBox.shrink()
               : Center(
                   child: _controller!.value.isInitialized
                       ? AspectRatio(
@@ -661,7 +661,7 @@ class _MoviePlayerState extends State<MoviePlayer> {
                                       final state =
                                           snapshot.data ?? MovieState.none;
                                       return state == MovieState.none
-                                          ? Container()
+                                          ? SizedBox.shrink()
                                           : Center(
                                               child: IconButton(
                                                   padding: EdgeInsets.all(0),
@@ -683,7 +683,7 @@ class _MoviePlayerState extends State<MoviePlayer> {
                                     })
                             ],
                           ))
-                      : Container(),
+                      : SizedBox.shrink(),
                 )),
     );
   }
@@ -702,7 +702,7 @@ class _MoviePlayerState extends State<MoviePlayer> {
 class MovieListWidget extends StatelessWidget {
   final List<Movie> _movies;
 
-  MovieListWidget(this._movies);
+  const MovieListWidget(this._movies);
 
   @override
   Widget build(BuildContext context) {

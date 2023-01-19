@@ -209,7 +209,7 @@ class SpiffHistory implements Comparable<SpiffHistory> {
   final Spiff spiff;
   final DateTime dateTime;
 
-  SpiffHistory(this.spiff, this.dateTime);
+  const SpiffHistory(this.spiff, this.dateTime);
 
   factory SpiffHistory.fromJson(Map<String, dynamic> json) =>
       _$SpiffHistoryFromJson(json);
@@ -232,7 +232,7 @@ class TrackHistory {
   final int count;
   final DateTime dateTime;
 
-  TrackHistory(this.creator, this.album, this.title, this.image, this.etag,
+  const TrackHistory(this.creator, this.album, this.title, this.image, this.etag,
       this.count, this.dateTime);
 
   factory TrackHistory.fromJson(Map<String, dynamic> json) =>

@@ -140,7 +140,7 @@ String _subtitle(Artist artist) {
 class ArtistListWidget extends StatelessWidget {
   final List<Artist> _artists;
 
-  ArtistListWidget(this._artists);
+  const ArtistListWidget(this._artists);
 
   @override
   Widget build(BuildContext context) {
@@ -336,7 +336,7 @@ class _ArtistState extends State<ArtistWidget> with ArtistBuilder {
 class SimilarArtistListWidget extends StatelessWidget {
   final ArtistView _view;
 
-  SimilarArtistListWidget(this._view);
+  const SimilarArtistListWidget(this._view);
 
   @override
   Widget build(BuildContext context) {
@@ -357,7 +357,7 @@ class SimilarArtistListWidget extends StatelessWidget {
 class TrackListWidget extends StatelessWidget {
   final List<MediaLocatable> _tracks;
 
-  TrackListWidget(this._tracks);
+  const TrackListWidget(this._tracks);
 
   void _onPlay(int index) {
     MediaQueue.playTracks(_tracks, index: index);

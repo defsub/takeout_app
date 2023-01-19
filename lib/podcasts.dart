@@ -185,7 +185,7 @@ class _SeriesEpisodeListWidget extends StatelessWidget {
   final SeriesView _view;
   final Color? backgroundColor;
 
-  _SeriesEpisodeListWidget(this._view, this.backgroundColor);
+  const _SeriesEpisodeListWidget(this._view, this.backgroundColor);
 
   @override
   Widget build(BuildContext context) {
@@ -265,7 +265,7 @@ class _EpisodeWidget extends StatelessWidget {
   final String title;
   final Color? backgroundColor;
 
-  _EpisodeWidget(this.episode, this.title, {this.backgroundColor});
+  const _EpisodeWidget(this.episode, this.title, {this.backgroundColor});
 
   @override
   Widget build(BuildContext context) {
@@ -310,16 +310,16 @@ class _EpisodeWidget extends StatelessWidget {
                       subtitle: Text(subtitle, overflow: TextOverflow.ellipsis),
                       trailing: _downloadButton(context, cacheSnapshot),
                     ),
-                    _progress(cacheSnapshot) ?? SizedBox(),
+                    _progress(cacheSnapshot) ?? SizedBox.shrink(),
                     Expanded(child: _episodeDetail()),
                     ListTile(
                       title: remaining != null
                           ? Text(
                               '${remaining.inHoursMinutes} remaining') // TODO intl
-                          : SizedBox(),
+                          : SizedBox.shrink(),
                       subtitle: remaining != null
                           ? RelativeDateWidget(when!)
-                          : SizedBox(),
+                          : SizedBox.shrink(),
                       leading: _playButton(context, isCached),
                     ),
                   ],
@@ -449,7 +449,7 @@ class _EpisodeWidget extends StatelessWidget {
 class SeriesListWidget extends StatelessWidget {
   final List<Series> _list;
 
-  SeriesListWidget(this._list);
+  const SeriesListWidget(this._list);
 
   @override
   Widget build(BuildContext context) {
@@ -476,7 +476,7 @@ class SeriesListWidget extends StatelessWidget {
 class EpisodeListWidget extends StatelessWidget {
   final List<Episode> _list;
 
-  EpisodeListWidget(this._list);
+  const EpisodeListWidget(this._list);
 
   @override
   Widget build(BuildContext context) {

@@ -104,7 +104,7 @@ class SpiffState extends State<SpiffWidget> with SpiffWidgetBuilder {
   Widget subtitle(BuildContext context) {
     final text = spiff!.playlist.creator;
     return text == null
-        ? Container()
+        ? SizedBox.shrink()
         : Text(text, style: Theme.of(context).textTheme.subtitle1!);
   }
 
@@ -240,7 +240,7 @@ mixin SpiffWidgetBuilder {
 class SpiffTrackListView extends StatelessWidget {
   final Spiff _spiff;
 
-  SpiffTrackListView(this._spiff);
+  const SpiffTrackListView(this._spiff);
 
   void _onTrack(BuildContext context, CacheSnapshot snapshot, int index) {
     if (_spiff.isMusic() || _spiff.isPodcast()) {
@@ -346,7 +346,7 @@ class TrackListTile extends StatelessWidget {
   final Widget? trailing;
   final bool selected;
 
-  TrackListTile(this.artist, this.album, this.title,
+  const TrackListTile(this.artist, this.album, this.title,
       {this.leading,
       this.onTap,
       this.onLongPress,
@@ -380,7 +380,7 @@ class NumberedTrackListTile extends StatelessWidget {
   final Widget? trailing;
   final bool selected;
 
-  NumberedTrackListTile(this.track,
+  const NumberedTrackListTile(this.track,
       {this.onTap, this.onLongPress, this.trailing, this.selected = false});
 
   @override
@@ -448,7 +448,7 @@ class RelativeDateWidget extends StatelessWidget {
   final String suffix;
   final String separator;
 
-  RelativeDateWidget(this.dateTime,
+  const RelativeDateWidget(this.dateTime,
       {String this.prefix = '',
       String this.suffix = '',
       String this.separator = textSeparator});

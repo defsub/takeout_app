@@ -37,6 +37,8 @@ const seriesAspectRatio = 1.0;
 const seriesGridWidth = 250.0;
 const seriesGridHeight = 250.0;
 
+const listTileIconHeight = 56.0;
+
 class Artwork {
   static late String endpoint;
 
@@ -66,15 +68,15 @@ class Artwork {
 
   factory Artwork.tileCover(String url) => Artwork(url, null, null, null,
       borderRadius: BorderRadius.circular(4),
-      placeholder: const Icon(Icons.album));
+      placeholder: const Icon(Icons.album, size: listTileIconHeight));
 
   factory Artwork.tilePodcast(String url) => Artwork(url, null, null, null,
       borderRadius: BorderRadius.circular(4),
-      placeholder: const Icon(Icons.podcasts));
+      placeholder: const Icon(Icons.podcasts, size: listTileIconHeight));
 
   factory Artwork.tilePoster(String url) => Artwork(url, null, null, null,
       borderRadius: BorderRadius.circular(4),
-      placeholder: const Icon(Icons.movie));
+      placeholder: const Icon(Icons.movie, size: listTileIconHeight));
 
   factory Artwork.background(String url) =>
       Artwork(url, 1920, 1080, BoxFit.cover);
@@ -231,6 +233,9 @@ Widget playerCover(String url) {
 final _colorCache = Map<String, Color>();
 
 Future<Color> getImageBackgroundColor(BuildContext context, String url) async {
+  // need full url
+  final artwork = Artwork.background(url);
+  url = artwork.url;
   var color = _colorCache[url];
   if (color != null) {
     return color;

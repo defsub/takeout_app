@@ -22,18 +22,16 @@ import 'style.dart';
 typedef MenuCallback = void Function(BuildContext);
 
 class PopupItem {
-  Icon? icon;
-  String? title;
-  MenuCallback? onSelected;
-  bool _divider = false;
+  final Icon? icon;
+  final String? title;
+  final MenuCallback? onSelected;
+  final bool divider;
 
-  bool get isDivider => _divider;
+  bool get isDivider => divider;
 
-  PopupItem.divider() {
-    _divider = true;
-  }
+  factory PopupItem.divider() => PopupItem(null, '', null, divider: true);
 
-  PopupItem(this.icon, this.title, this.onSelected);
+  const PopupItem(this.icon, this.title, this.onSelected, {this.divider = false});
 
   PopupItem.music(BuildContext context, MenuCallback onSelected) :
       this(Icon(Icons.music_note), AppLocalizations.of(context)!.musicSwitchLabel, onSelected);

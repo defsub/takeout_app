@@ -134,7 +134,7 @@ class DownloadSnapshot {
   final int offset;
   final Object? err;
 
-  DownloadSnapshot(this.size, this.offset, {this.err});
+  const DownloadSnapshot(this.size, this.offset, {this.err});
 
   bool hasError() {
     return err != null;

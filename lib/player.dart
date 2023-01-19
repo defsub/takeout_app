@@ -37,7 +37,7 @@ class _PlayState {
   final QueueState queueState;
   final bool playing;
 
-  _PlayState(this.queueState, this.playing);
+  const _PlayState(this.queueState, this.playing);
 }
 
 final _backgroundColorSubject = BehaviorSubject<Color>();
@@ -122,7 +122,7 @@ class PlayerWidget extends StatelessWidget {
                                   _controls(queue, mediaItem, playing),
                                   _seekBar(),
                                 ]))),
-                      if (queue.isNotEmpty && !isStream)
+                      if (queue.length > 1 && !isStream)
                         SliverToBoxAdapter(
                             child: _MediaTrackListWidget(_queueStateStream))
                     ]);
@@ -248,7 +248,7 @@ class PlayerWidget extends StatelessWidget {
 class _MediaTrackListWidget extends StatelessWidget {
   final Stream<QueueState> _queueStateStream;
 
-  _MediaTrackListWidget(this._queueStateStream);
+  const _MediaTrackListWidget(this._queueStateStream);
 
   @override
   Widget build(BuildContext context) {
@@ -283,7 +283,7 @@ class _MediaTrackListWidget extends StatelessWidget {
     if (mediaItem.isLocalFile()) {
       return IconButton(icon: Icon(IconsCached), onPressed: () => {});
     }
-    return SizedBox();
+    return SizedBox.shrink();
   }
 }
 
@@ -291,14 +291,14 @@ class QueueState {
   final List<MediaItem>? queue;
   final MediaItem? mediaItem;
 
-  QueueState(this.queue, this.mediaItem);
+  const QueueState(this.queue, this.mediaItem);
 }
 
 class MediaState {
   final MediaItem? mediaItem;
   final Duration? position;
 
-  MediaState(this.mediaItem, this.position);
+  const MediaState(this.mediaItem, this.position);
 }
 
 class SeekBar extends StatefulWidget {
