@@ -195,16 +195,13 @@ class RefreshSpiffWidget extends StatefulWidget {
   RefreshSpiffWidget(this._fetchSpiff);
 
   @override
-  _RefreshSpiffState createState() => _RefreshSpiffState(_fetchSpiff);
+  _RefreshSpiffState createState() => _RefreshSpiffState();
 }
 
 class _RefreshSpiffState extends State<RefreshSpiffWidget> {
   static final log = Logger('RefreshSpiffState');
 
-  final Future<Spiff> Function()? _fetchSpiff;
   Spiff? _spiff;
-
-  _RefreshSpiffState(this._fetchSpiff);
 
   @override
   void initState() {
@@ -287,7 +284,7 @@ class _RefreshSpiffState extends State<RefreshSpiffWidget> {
 
   Future<void> _onRefresh() async {
     try {
-      final result = await _fetchSpiff!();
+      final result = await widget._fetchSpiff!();
       if (mounted) {
         setState(() {
           _spiff = result;

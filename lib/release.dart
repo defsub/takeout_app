@@ -40,20 +40,17 @@ class ReleaseWidget extends StatefulWidget {
   ReleaseWidget(this._release);
 
   @override
-  State<StatefulWidget> createState() => _ReleaseState(_release);
+  State<StatefulWidget> createState() => _ReleaseState();
 }
 
 class _ReleaseState extends State<ReleaseWidget> {
-  final Release release;
   ReleaseView? _view;
-
-  _ReleaseState(this.release);
 
   @override
   void initState() {
     super.initState();
     final client = Client();
-    client.release(release.id).then((v) => _onReleaseUpdated(v));
+    client.release(widget._release.id).then((v) => _onReleaseUpdated(v));
   }
 
   void _onReleaseUpdated(ReleaseView view) {
@@ -70,28 +67,28 @@ class _ReleaseState extends State<ReleaseWidget> {
   }
 
   void _onPlay() {
-    MediaQueue.play(release: release);
+    MediaQueue.play(release: widget._release);
     showPlayer();
   }
 
   void _onDownload(BuildContext context) {
-    Downloads.downloadRelease(context, release);
+    Downloads.downloadRelease(context, widget._release);
   }
 
   Future<void> _onRefresh() async {
     final client = Client();
     await client
-        .release(release.id, ttl: Duration.zero)
+        .release(widget._release.id, ttl: Duration.zero)
         .then((v) => _onReleaseUpdated(v));
   }
 
   @override
   Widget build(BuildContext context) {
-    final releaseUrl = 'https://musicbrainz.org/release/${release.reid}';
+    final releaseUrl = 'https://musicbrainz.org/release/${widget._release.reid}';
     final releaseGroupUrl =
-        'https://musicbrainz.org/release-group/${release.rgid}';
+        'https://musicbrainz.org/release-group/${widget._release.rgid}';
     return FutureBuilder<Color?>(
-        future: getImageBackgroundColor(context, release.image),
+        future: getImageBackgroundColor(context, widget._release.image),
         builder: (context, snapshot) {
           final backgroundColor = snapshot.data;
           return Scaffold(
@@ -143,7 +140,7 @@ class _ReleaseState extends State<ReleaseWidget> {
                                 ],
                                 background:
                                     Stack(fit: StackFit.expand, children: [
-                                  releaseSmallCover(release.image),
+                                  releaseSmallCover(widget._release.image),
                                   const DecoratedBox(
                                     decoration: BoxDecoration(
                                       gradient: LinearGradient(
@@ -192,13 +189,13 @@ class _ReleaseState extends State<ReleaseWidget> {
   }
 
   Widget _title() {
-    return Text(release.name, style: Theme.of(context).textTheme.headline5);
+    return Text(widget._release.name, style: Theme.of(context).textTheme.headline5);
   }
 
   Widget _artist() {
-    var artist = release.artist;
-    if (isNotNullOrEmpty(release.date)) {
-      artist = merge([artist, year(release.date ?? '')]);
+    var artist = widget._release.artist;
+    if (isNotNullOrEmpty(widget._release.date)) {
+      artist = merge([artist, year(widget._release.date ?? '')]);
     }
     return Text(artist, style: Theme.of(context).textTheme.subtitle1!);
   }

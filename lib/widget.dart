@@ -44,14 +44,14 @@ class SpiffWidget extends StatefulWidget {
   SpiffWidget({this.spiff, this.fetch});
 
   @override
-  SpiffState createState() => SpiffState(spiff: spiff, fetch: fetch);
+  SpiffState createState() => SpiffState(spiff: spiff);
 }
 
 class SpiffState extends State<SpiffWidget> with SpiffWidgetBuilder {
   static final log = Logger('SpiffState');
 
+  final Future<Spiff> Function()? fetch;
   Spiff? spiff;
-  Future<Spiff> Function()? fetch;
   String? coverUrl;
 
   SpiffState({this.spiff, this.fetch});

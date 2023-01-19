@@ -49,18 +49,15 @@ class ArtistsWidget extends StatefulWidget {
   ArtistsView get view => _view;
 
   @override
-  State<StatefulWidget> createState() =>
-      _ArtistsState(_view, genre: genre, area: area);
+  State<StatefulWidget> createState() => _ArtistsState(_view);
 }
 
 class _ArtistsState extends State<ArtistsWidget> {
   static final log = Logger('ArtistsState');
 
   ArtistsView _view;
-  String? genre;
-  String? area;
 
-  _ArtistsState(this._view, {this.genre, this.area});
+  _ArtistsState(this._view);
 
   @override
   void dispose() {
@@ -72,10 +69,10 @@ class _ArtistsState extends State<ArtistsWidget> {
     final artistsText = AppLocalizations.of(context)!.artistsLabel;
     final builder = (_) => Scaffold(
         appBar: AppBar(
-            title: genre != null
-                ? header('$artistsText \u2013 $genre')
-                : area != null
-                    ? header('$artistsText \u2013 $area')
+            title: widget.genre != null
+                ? header('$artistsText \u2013 ${widget.genre}')
+                : widget.area != null
+                    ? header('$artistsText \u2013 ${widget.area}')
                     : header(artistsText),
             actions: [
               popupMenu(context, [
@@ -84,10 +81,10 @@ class _ArtistsState extends State<ArtistsWidget> {
             ]),
         body: RefreshIndicator(
             onRefresh: () => _onRefresh(),
-            child: ArtistListWidget(genre != null
-                ? _view.artists.where((a) => a.genre == genre).toList()
-                : area != null
-                    ? _view.artists.where((a) => a.area == area).toList()
+            child: ArtistListWidget(widget.genre != null
+                ? _view.artists.where((a) => a.genre == widget.genre).toList()
+                : widget.area != null
+                    ? _view.artists.where((a) => a.area == widget.area).toList()
                     : _view.artists)));
     return Navigator(
         key: artistsKey,
@@ -170,22 +167,19 @@ class ArtistWidget extends StatefulWidget {
   ArtistWidget(this._artist);
 
   @override
-  State<StatefulWidget> createState() => _ArtistState(_artist);
+  State<StatefulWidget> createState() => _ArtistState();
 }
 
 class _ArtistState extends State<ArtistWidget> with ArtistBuilder {
   static final log = Logger('ArtistState');
 
-  final Artist _artist;
   ArtistView? _view;
-
-  _ArtistState(this._artist);
 
   @override
   void initState() {
     super.initState();
     final client = Client();
-    client.artist(_artist.id).then((v) => _onArtistUpdated(v));
+    client.artist(widget._artist.id).then((v) => _onArtistUpdated(v));
   }
 
   void _onArtistUpdated(ArtistView view) {
@@ -202,7 +196,7 @@ class _ArtistState extends State<ArtistWidget> with ArtistBuilder {
         MaterialPageRoute(
             builder: (_) => SpiffWidget(
                 fetch: () =>
-                    Client().artistRadio(_artist.id, ttl: Duration.zero))));
+                    Client().artistRadio(widget._artist.id, ttl: Duration.zero))));
   }
 
   void _onShuffle() {
@@ -211,7 +205,7 @@ class _ArtistState extends State<ArtistWidget> with ArtistBuilder {
         MaterialPageRoute(
             builder: (_) => SpiffWidget(
                 fetch: () =>
-                    Client().artistPlaylist(_artist.id, ttl: Duration.zero))));
+                    Client().artistPlaylist(widget._artist.id, ttl: Duration.zero))));
   }
 
   void _onSingles(BuildContext context) {
@@ -222,7 +216,7 @@ class _ArtistState extends State<ArtistWidget> with ArtistBuilder {
         context,
         MaterialPageRoute(
             builder: (_) => ArtistTrackListWidget(
-                _view!, _artist, ArtistTrackType.singles)));
+                _view!, widget._artist, ArtistTrackType.singles)));
   }
 
   void _onPopular(BuildContext context) {
@@ -233,13 +227,13 @@ class _ArtistState extends State<ArtistWidget> with ArtistBuilder {
         context,
         MaterialPageRoute(
             builder: (_) => ArtistTrackListWidget(
-                _view!, _artist, ArtistTrackType.popular)));
+                _view!, widget._artist, ArtistTrackType.popular)));
   }
 
   Future<void> _onRefresh() async {
     final client = Client();
     await client
-        .artist(_artist.id, ttl: Duration.zero)
+        .artist(widget._artist.id, ttl: Duration.zero)
         .then((v) => _onArtistUpdated(v));
   }
 
@@ -274,8 +268,8 @@ class _ArtistState extends State<ArtistWidget> with ArtistBuilder {
   Future<void> onRefresh() => _onRefresh();
 
   List<Widget> actions() {
-    final artistUrl = 'https://musicbrainz.org/artist/${_artist.arid}';
-    final genre = ReCase(_artist.genre ?? '').titleCase;
+    final artistUrl = 'https://musicbrainz.org/artist/${widget._artist.arid}';
+    final genre = ReCase(widget._artist.genre ?? '').titleCase;
     return <Widget>[
       popupMenu(context, [
         PopupItem.shuffle(context, (_) => _onShuffle()),
@@ -284,12 +278,12 @@ class _ArtistState extends State<ArtistWidget> with ArtistBuilder {
         PopupItem.singles(context, (_) => _onSingles(context)),
         PopupItem.popular(context, (_) => _onPopular(context)),
         PopupItem.divider(),
-        if (_artist.genre != null)
+        if (widget._artist.genre != null)
           PopupItem.genre(
-              context, genre, (_) => _onGenre(context, _artist.genre!)),
-        if (_artist.area != null)
+              context, genre, (_) => _onGenre(context, widget._artist.genre!)),
+        if (widget._artist.area != null)
           PopupItem.area(
-              context, _artist.area!, (_) => _onArea(context, _artist.area!)),
+              context, widget._artist.area!, (_) => _onArea(context, widget._artist.area!)),
         PopupItem.divider(),
         PopupItem.link(context, 'MusicBrainz Artist',
             (_) => launchUrl(Uri.parse(artistUrl))),
@@ -385,17 +379,15 @@ class ArtistTrackListWidget extends StatefulWidget {
 
   @override
   State<StatefulWidget> createState() =>
-      _ArtistTrackListState(_view, _artist, _type);
+      _ArtistTrackListState(_type);
 }
 
 class _ArtistTrackListState extends State<ArtistTrackListWidget>
     with ArtistBuilder {
-  final ArtistView _view;
-  final Artist _artist;
   ArtistTrackType _type;
   List<Track> _tracks = const [];
 
-  _ArtistTrackListState(this._view, this._artist, this._type);
+  _ArtistTrackListState(this._type);
 
   @override
   void initState() {
@@ -406,9 +398,9 @@ class _ArtistTrackListState extends State<ArtistTrackListWidget>
   void _loadState() {
     final client = Client();
     if (_type == ArtistTrackType.popular) {
-      client.artistPopular(_artist.id).then((v) => _onPopularUpdated(v));
+      client.artistPopular(widget._artist.id).then((v) => _onPopularUpdated(v));
     } else if (_type == ArtistTrackType.singles) {
-      client.artistSingles(_artist.id).then((v) => _onSinglesUpdated(v));
+      client.artistSingles(widget._artist.id).then((v) => _onSinglesUpdated(v));
     }
   }
 
@@ -423,11 +415,11 @@ class _ArtistTrackListState extends State<ArtistTrackListWidget>
     final client = Client();
     if (_type == ArtistTrackType.popular) {
       await client
-          .artistPopular(_artist.id, ttl: Duration.zero)
+          .artistPopular(widget._artist.id, ttl: Duration.zero)
           .then((v) => _onPopularUpdated(v));
     } else if (_type == ArtistTrackType.singles) {
       await client
-          .artistSingles(_artist.id, ttl: Duration.zero)
+          .artistSingles(widget._artist.id, ttl: Duration.zero)
           .then((v) => _onSinglesUpdated(v));
     }
   }
@@ -451,10 +443,10 @@ class _ArtistTrackListState extends State<ArtistTrackListWidget>
   Future<Spiff> _playlist() {
     final client = Client();
     Future<Spiff> result = _type == ArtistTrackType.popular
-        ? client.artistPopularPlaylist(_artist.id, ttl: Duration.zero)
+        ? client.artistPopularPlaylist(widget._artist.id, ttl: Duration.zero)
         : _type == ArtistTrackType.singles
-            ? client.artistSinglesPlaylist(_artist.id, ttl: Duration.zero)
-            : client.artistSinglesPlaylist(_artist.id, ttl: Duration.zero);
+            ? client.artistSinglesPlaylist(widget._artist.id, ttl: Duration.zero)
+            : client.artistSinglesPlaylist(widget._artist.id, ttl: Duration.zero);
     return result;
   }
 
@@ -473,7 +465,7 @@ class _ArtistTrackListState extends State<ArtistTrackListWidget>
     result.then((spiff) => MediaQueue.playSpiff(spiff, index: index));
   }
 
-  ArtistView get view => _view;
+  ArtistView get view => widget._view;
 
   Future<void> onRefresh() => _onRefresh();
 

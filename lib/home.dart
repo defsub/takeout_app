@@ -49,7 +49,7 @@ class HomeWidget extends StatefulWidget {
   HomeWidget(this._index, this._view, this._onSearch);
 
   @override
-  HomeState createState() => HomeState(_index, _view, _onSearch);
+  HomeState createState() => HomeState(_index, _view);
 }
 
 class _GridState {
@@ -64,23 +64,22 @@ class HomeState extends State<HomeWidget> {
 
   IndexView _index;
   HomeView _view;
-  VoidContextCallback _onSearch;
 
-  HomeState(this._index, this._view, this._onSearch);
+  HomeState(this._index, this._view);
 
   _HomeGrid _grid(
       MediaType mediaType, GridType gridType, CacheSnapshot cacheSnapshot) {
     switch (mediaType) {
       case MediaType.video:
         return _MovieHomeGrid(
-            gridType, cacheSnapshot, _index, _view, _onSearch);
+            gridType, cacheSnapshot, _index, _view, widget._onSearch);
       case MediaType.music:
       case MediaType.stream: // unused for now
         return _MusicHomeGrid(
-            gridType, cacheSnapshot, _index, _view, _onSearch);
+            gridType, cacheSnapshot, _index, _view, widget._onSearch);
       case MediaType.podcast:
         return _SeriesHomeGrid(
-            gridType, cacheSnapshot, _index, _view, _onSearch);
+            gridType, cacheSnapshot, _index, _view, widget._onSearch);
     }
   }
 

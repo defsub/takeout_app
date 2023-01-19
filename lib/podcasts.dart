@@ -40,20 +40,19 @@ class SeriesWidget extends StatefulWidget {
   SeriesWidget(this._series);
 
   @override
-  _SeriesWidgetState createState() => _SeriesWidgetState(_series);
+  _SeriesWidgetState createState() => _SeriesWidgetState();
 }
 
 class _SeriesWidgetState extends State<SeriesWidget> {
-  final Series _series;
   SeriesView? _view;
 
-  _SeriesWidgetState(this._series);
+  _SeriesWidgetState();
 
   @override
   void initState() {
     super.initState();
     final client = Client();
-    client.series(_series.id).then((v) => _onSeriesUpdated(v));
+    client.series(widget._series.id).then((v) => _onSeriesUpdated(v));
   }
 
   void _onSeriesUpdated(SeriesView view) {
@@ -67,14 +66,14 @@ class _SeriesWidgetState extends State<SeriesWidget> {
   Future<void> _onRefresh() async {
     final client = Client();
     await client
-        .series(_series.id, ttl: Duration.zero)
+        .series(widget._series.id, ttl: Duration.zero)
         .then((v) => _onSeriesUpdated(v));
   }
 
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<Color?>(
-        future: getImageBackgroundColor(context, _series.image),
+        future: getImageBackgroundColor(context, widget._series.image),
         builder: (context, snapshot) {
           final backgroundColor = snapshot.data;
           final screen = MediaQuery.of(context).size;
@@ -106,7 +105,7 @@ class _SeriesWidgetState extends State<SeriesWidget> {
                                     ],
                                     background:
                                         Stack(fit: StackFit.expand, children: [
-                                      releaseSmallCover(_series.image),
+                                      releaseSmallCover(widget._series.image),
                                       const DecoratedBox(
                                         decoration: BoxDecoration(
                                           gradient: LinearGradient(
@@ -148,7 +147,7 @@ class _SeriesWidgetState extends State<SeriesWidget> {
     return Container(
         padding: EdgeInsets.fromLTRB(10, 0, 10, 0),
         child:
-            Text(_series.title, style: Theme.of(context).textTheme.headline5));
+            Text(widget._series.title, style: Theme.of(context).textTheme.headline5));
   }
 
   Widget _playButton(BuildContext context, bool isCached) {
@@ -172,12 +171,12 @@ class _SeriesWidgetState extends State<SeriesWidget> {
   }
 
   void _onPlay() {
-    MediaQueue.play(series: _series);
+    MediaQueue.play(series: widget._series);
     showPlayer();
   }
 
   void _onDownload(BuildContext context) {
-    Downloads.downloadSeries(context, _series);
+    Downloads.downloadSeries(context, widget._series);
   }
 }
 

@@ -27,13 +27,10 @@ class LoginWidget extends StatefulWidget {
   LoginWidget(this._onSuccess);
 
   @override
-  State<StatefulWidget> createState() => new _LoginState(_onSuccess);
+  State<StatefulWidget> createState() => _LoginState();
 }
 
 class _LoginState extends State<LoginWidget> {
-  final Function _onSuccess;
-
-  _LoginState(this._onSuccess);
 
   TextEditingController _hostText = TextEditingController();
   TextEditingController _userText = TextEditingController();
@@ -130,7 +127,7 @@ class _LoginState extends State<LoginWidget> {
                               p.setString(settingHost, _hostText.text);
                               p.setString(settingUser, _userText.text);
                             });
-                            _onSuccess();
+                            widget._onSuccess();
                           }
                         });
                       },

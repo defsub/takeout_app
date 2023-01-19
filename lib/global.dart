@@ -23,7 +23,7 @@ import 'package:audio_service/audio_service.dart';
 import 'schema.dart';
 import 'artists.dart'; // TODO remove
 
-const appVersion = '0.9.5';
+const appVersion = '0.9.6';
 const appSource = 'https://github.com/defsub/takeout_app';
 const appHome = 'https://defsub.github.io';
 

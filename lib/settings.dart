@@ -61,12 +61,7 @@ LiveType settingsLiveType([LiveType def = LiveType.none]) {
 final settingsChangeSubject =
     BehaviorSubject<String>.seeded(settingMediaType); // TODO seems ok
 
-class AppSettings extends StatefulWidget {
-  @override
-  _AppSettingsState createState() => _AppSettingsState();
-}
-
-class _AppSettingsState extends State<AppSettings> {
+class AppSettings extends StatelessWidget {
   static final log = Logger('AppSettingsState');
 
   @override

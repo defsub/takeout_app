@@ -23,20 +23,17 @@ class MovieWidget extends StatefulWidget {
   MovieWidget(this._movie);
 
   @override
-  _MovieWidgetState createState() => _MovieWidgetState(_movie);
+  _MovieWidgetState createState() => _MovieWidgetState();
 }
 
 class _MovieWidgetState extends State<MovieWidget> {
-  final Movie _movie;
   MovieView? _view;
-
-  _MovieWidgetState(this._movie);
 
   @override
   void initState() {
     super.initState();
     final client = Client();
-    client.movie(_movie.id).then((v) => _onMovieUpdated(v));
+    client.movie(widget._movie.id).then((v) => _onMovieUpdated(v));
   }
 
   void _onMovieUpdated(MovieView view) {
@@ -50,14 +47,14 @@ class _MovieWidgetState extends State<MovieWidget> {
   Future<void> _onRefresh() async {
     final client = Client();
     await client
-        .movie(_movie.id, ttl: Duration.zero)
+        .movie(widget._movie.id, ttl: Duration.zero)
         .then((v) => _onMovieUpdated(v));
   }
 
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<Color?>(
-        future: getImageBackgroundColor(context, _movie.image),
+        future: getImageBackgroundColor(context, widget._movie.image),
         builder: (context, snapshot) {
           final backgroundColor = snapshot.data;
           final screen = MediaQuery.of(context).size;
@@ -90,7 +87,7 @@ class _MovieWidgetState extends State<MovieWidget> {
                                     ],
                                     background:
                                         Stack(fit: StackFit.expand, children: [
-                                      releaseSmallCover(_movie.image),
+                                      releaseSmallCover(widget._movie.image),
                                       const DecoratedBox(
                                         decoration: BoxDecoration(
                                           gradient: LinearGradient(
@@ -165,7 +162,7 @@ class _MovieWidgetState extends State<MovieWidget> {
     return Container(
         padding: EdgeInsets.fromLTRB(10, 0, 10, 0),
         child:
-            Text(_movie.title, style: Theme.of(context).textTheme.headline5));
+            Text(widget._movie.title, style: Theme.of(context).textTheme.headline5));
   }
 
   Widget _rating(BuildContext context) {
@@ -175,38 +172,38 @@ class _MovieWidgetState extends State<MovieWidget> {
       margin: const EdgeInsets.all(15.0),
       padding: const EdgeInsets.all(3.0),
       decoration: BoxDecoration(border: Border.all(color: boxColor)),
-      child: Text(_movie.rating),
+      child: Text(widget._movie.rating),
     );
   }
 
   Widget _details(BuildContext context, CacheSnapshot snapshot) {
     var list = <Widget>[];
-    if (_movie.rating.isNotEmpty) {
+    if (widget._movie.rating.isNotEmpty) {
       list.add(_rating(context));
     }
 
     final fields = <String>[];
 
     // runtime
-    if (_movie.runtime > 0) {
-      var hours = (_movie.runtime / 60).floor();
-      var min = (_movie.runtime % 60).floor();
+    if (widget._movie.runtime > 0) {
+      var hours = (widget._movie.runtime / 60).floor();
+      var min = (widget._movie.runtime % 60).floor();
       fields.add('${hours}h ${min}m');
     }
 
     // year
-    if (_movie.year > 1) {
-      fields.add(_movie.year.toString());
+    if (widget._movie.year > 1) {
+      fields.add(widget._movie.year.toString());
     }
 
     // vote%
-    int vote = (10 * (_movie.voteAverage ?? 0)).round();
+    int vote = (10 * (widget._movie.voteAverage ?? 0)).round();
     if (vote > 0) {
       fields.add('${vote}%');
     }
 
     // storage
-    fields.add(storage(_movie.size));
+    fields.add(storage(widget._movie.size));
 
     list.add(Text(merge(fields), style: Theme.of(context).textTheme.subtitle2));
 
@@ -216,7 +213,7 @@ class _MovieWidgetState extends State<MovieWidget> {
   Widget _tagline() {
     return Container(
         padding: EdgeInsets.fromLTRB(5, 5, 5, 5),
-        child: Text(_movie.tagline,
+        child: Text(widget._movie.tagline,
             style: Theme.of(context).textTheme.subtitle1!));
   }
 
@@ -255,7 +252,7 @@ class _MovieWidgetState extends State<MovieWidget> {
   }
 
   void _onDownload(BuildContext context) {
-    Downloads.downloadMovie(context, _movie);
+    Downloads.downloadMovie(context, widget._movie);
   }
 
   void _onGenre(BuildContext context, String genre) {
@@ -314,20 +311,17 @@ class ProfileWidget extends StatefulWidget {
   ProfileWidget(this._person);
 
   @override
-  _ProfileWidgetState createState() => _ProfileWidgetState(_person);
+  _ProfileWidgetState createState() => _ProfileWidgetState();
 }
 
 class _ProfileWidgetState extends State<ProfileWidget> {
-  final Person _person;
   ProfileView? _view;
-
-  _ProfileWidgetState(this._person);
 
   @override
   void initState() {
     super.initState();
     final client = Client();
-    client.profile(_person.id).then((v) => _onProfileUpdated(v));
+    client.profile(widget._person.id).then((v) => _onProfileUpdated(v));
   }
 
   void _onProfileUpdated(ProfileView view) {
@@ -341,14 +335,14 @@ class _ProfileWidgetState extends State<ProfileWidget> {
   Future<void> _onRefresh() async {
     final client = Client();
     await client
-        .profile(_person.id, ttl: Duration.zero)
+        .profile(widget._person.id, ttl: Duration.zero)
         .then((v) => _onProfileUpdated(v));
   }
 
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<Color?>(
-        future: getImageBackgroundColor(context, _person.image),
+        future: getImageBackgroundColor(context, widget._person.image),
         builder: (context, snapshot) {
           final backgroundColor = snapshot.data;
           final screen = MediaQuery.of(context).size;
@@ -370,7 +364,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                             StretchMode.fadeTitle
                           ],
                           background: Stack(fit: StackFit.expand, children: [
-                            releaseSmallCover(_person.image),
+                            releaseSmallCover(widget._person.image),
                             const DecoratedBox(
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
@@ -415,7 +409,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
   }
 
   Widget _title() {
-    return Text(_person.name, style: Theme.of(context).textTheme.headline5);
+    return Text(widget._person.name, style: Theme.of(context).textTheme.headline5);
   }
 }
 
@@ -425,20 +419,17 @@ class GenreWidget extends StatefulWidget {
   GenreWidget(this._genre);
 
   @override
-  _GenreWidgetState createState() => _GenreWidgetState(_genre);
+  _GenreWidgetState createState() => _GenreWidgetState();
 }
 
 class _GenreWidgetState extends State<GenreWidget> {
-  final String _genre;
   GenreView? _view;
-
-  _GenreWidgetState(this._genre);
 
   @override
   void initState() {
     super.initState();
     final client = Client();
-    client.moviesGenre(_genre).then((v) => _onViewUpdated(v));
+    client.moviesGenre(widget._genre).then((v) => _onViewUpdated(v));
   }
 
   void _onViewUpdated(GenreView view) {
@@ -452,7 +443,7 @@ class _GenreWidgetState extends State<GenreWidget> {
   Future<void> _onRefresh() async {
     final client = Client();
     await client
-        .moviesGenre(_genre, ttl: Duration.zero)
+        .moviesGenre(widget._genre, ttl: Duration.zero)
         .then((v) => _onViewUpdated(v));
   }
 
@@ -462,7 +453,7 @@ class _GenreWidgetState extends State<GenreWidget> {
         body: RefreshIndicator(
             onRefresh: () => _onRefresh(),
             child: CustomScrollView(slivers: [
-              SliverAppBar(title: Text(_genre)),
+              SliverAppBar(title: Text(widget._genre)),
               if (_view != null && _view!.movies.isNotEmpty)
                 MovieGridWidget(_sortByTitle(_view!.movies)),
             ])));
@@ -520,7 +511,7 @@ class MoviePlayer extends StatefulWidget {
 
   @override
   _MoviePlayerState createState() =>
-      _MoviePlayerState(_movie, startOffset ?? Duration.zero);
+      _MoviePlayerState();
 }
 
 class _MoviePlayerState extends State<MoviePlayer> {
@@ -529,13 +520,9 @@ class _MoviePlayerState extends State<MoviePlayer> {
   late final VideoPlayerController? _controller;
   late final VideoProgressIndicator? _progress;
   late final StreamSubscription<MovieState> _stateSubscription;
-  final Locatable _movie;
-  final Duration _startOffset;
   var _showControls = false;
   var _videoInitialized = false;
   Timer? _controlsTimer = null;
-
-  _MoviePlayerState(this._movie, this._startOffset);
 
   @override
   void initState() {
@@ -547,7 +534,7 @@ class _MoviePlayerState extends State<MoviePlayer> {
   void prepareController() async {
     // controller
     final client = Client();
-    final uri = await client.locate(_movie);
+    final uri = await client.locate(widget._movie);
     final headers = await client.headersWithMediaToken();
     final controller =
         VideoPlayerController.network(uri.toString(), httpHeaders: headers)
@@ -565,7 +552,9 @@ class _MoviePlayerState extends State<MoviePlayer> {
       final value = controller.value;
       if (_videoInitialized == false && value.isInitialized) {
         _videoInitialized = true;
-        controller.seekTo(_startOffset);
+        if (widget.startOffset != null) {
+          controller.seekTo(widget.startOffset!);
+        }
         controller.play(); // autoplay
       }
       if (value.isPlaying) {
@@ -616,7 +605,7 @@ class _MoviePlayerState extends State<MoviePlayer> {
   }
 
   void _saveState() {
-    Progress.update(_movie.key, _controller?.value.position ?? Duration.zero,
+    Progress.update(widget._movie.key, _controller?.value.position ?? Duration.zero,
         _controller?.value.duration ?? Duration.zero);
   }
 
