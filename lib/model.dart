@@ -15,71 +15,48 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
-enum MediaType { music, video, podcast, stream }
+import 'media_type/media_type.dart';
 
-class MediaTypes {
-  static final _types = {
-    MediaType.music.name: MediaType.music,
-    MediaType.video.name: MediaType.video,
-    MediaType.podcast.name: MediaType.podcast,
-    MediaType.stream.name: MediaType.stream,
-  };
+// abstract class Locatable {
+//   /// Cache key.
+//   String get key;
+//
+//   /// Etag
+//   String get etag;
+//
+//   /// Location URL to get location.
+//   String get location;
+//
+//   int get size;
+// }
 
-  static MediaType from(String name) {
-    return _types[name]!;
-  }
-}
+// class Reference {
+//   final String reference;
+//   final MediaType type;
+//
+//   Reference(this.reference, this.type);
+// }
+//
+// abstract class Referencable {
+//   Reference get reference;
+// }
 
-class Reference {
-  final String reference;
-  final MediaType type;
-
-  Reference(this.reference, this.type);
-}
-
-abstract class Referencable {
-  Reference get reference;
-}
-
-abstract class Media {
+abstract class MediaEntry {
   String get creator;
 
   String get album;
 
+  String get image;
+
+  int get year;
+}
+
+abstract class MediaAlbum implements MediaEntry { }
+
+abstract class MediaTrack implements MediaEntry {
   String get title;
 
-  String get image;
-
   String get etag;
-}
-
-class MediaAdapter implements Media {
-  final String creator;
-  final String album;
-  final String title;
-  final String image;
-  final String etag;
-
-  MediaAdapter(
-      {required this.creator,
-      required this.album,
-      required this.title,
-      required this.image,
-      required this.etag});
-}
-
-abstract class MediaAlbum {
-  String get creator;
-
-  String get album;
-
-  String get image;
-
-  int get year;
-}
-
-abstract class MediaTrack implements Media {
-  int get year;
 
   int get size;
 
@@ -90,4 +67,6 @@ abstract class MediaTrack implements Media {
   // 1999-07-27T00:00:00Z
   // 2022-02-03T09:21:26-08:00
   String get date;
+
+  String get location;
 }

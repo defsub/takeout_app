@@ -349,10 +349,10 @@ class LiveFollow {
             audioHandler.skipToQueueItem(index);
           } else {
             // start with a new queue
-            MediaQueue.playTracks(<MediaLocatable>[
-              event.track!,
-              if (event.hasNextTrack()) event.nextTrack!
-            ]);
+            // MediaQueue.playTracks(<MediaLocatable>[
+            //   event.track!,
+            //   if (event.hasNextTrack()) event.nextTrack!
+            // ]);
           }
         }
         if (event.hasNextTrack()) {

@@ -18,96 +18,68 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:recase/recase.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:takeout_app/cache/track.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:logging/logging.dart';
 
-import 'client.dart';
-import 'cover.dart';
-import 'downloads.dart';
-import 'main.dart';
-import 'schema.dart';
-import 'playlist.dart';
+import 'package:takeout_app/api/model.dart';
+import 'package:takeout_app/app/context.dart';
+import 'package:takeout_app/art/builder.dart';
+import 'package:takeout_app/client/download.dart';
+import 'package:takeout_app/page/page.dart';
+import 'package:takeout_app/connectivity/connectivity.dart';
+
 import 'release.dart';
 import 'style.dart';
-import 'spiff.dart';
-import 'widget.dart';
+import 'package:takeout_app/spiff/model.dart';
+import 'package:takeout_app/spiff/widget.dart';
 import 'menu.dart';
 import 'util.dart';
 import 'global.dart';
-import 'cache.dart';
+import 'tiles.dart';
+import 'model.dart';
 
-class ArtistsWidget extends StatefulWidget {
-  final ArtistsView _view;
+class ArtistsWidget extends NavigatorClientPage<ArtistsView> {
   final String? genre;
   final String? area;
 
-  ArtistsWidget(this._view, {this.genre, this.area});
-
-  ArtistsView get view => _view;
+  ArtistsWidget({this.genre, this.area}) : super(artistsKey);
 
   @override
-  State<StatefulWidget> createState() => _ArtistsState(_view);
-}
-
-class _ArtistsState extends State<ArtistsWidget> {
-  static final log = Logger('ArtistsState');
-
-  ArtistsView _view;
-
-  _ArtistsState(this._view);
-
-  @override
-  void dispose() {
-    super.dispose();
+  void load(BuildContext context, {Duration? ttl}) {
+    context.client.artists(ttl: ttl);
   }
 
   @override
-  Widget build(BuildContext context) {
-    final artistsText = AppLocalizations.of(context)!.artistsLabel;
-    final builder = (_) => Scaffold(
-        appBar: AppBar(
-            title: widget.genre != null
-                ? header('$artistsText \u2013 ${widget.genre}')
-                : widget.area != null
-                    ? header('$artistsText \u2013 ${widget.area}')
-                    : header(artistsText),
-            actions: [
-              popupMenu(context, [
-                PopupItem.refresh(context, (_) => _onRefresh()),
-              ])
-            ]),
+  Widget page(BuildContext context, ArtistsView view) {
+    return Scaffold(
+        appBar: AppBar(title: _title(context), actions: [
+          popupMenu(context, [
+            PopupItem.refresh(context, (_) => refreshPage(context)),
+          ])
+        ]),
         body: RefreshIndicator(
-            onRefresh: () => _onRefresh(),
-            child: ArtistListWidget(widget.genre != null
-                ? _view.artists.where((a) => a.genre == widget.genre).toList()
-                : widget.area != null
-                    ? _view.artists.where((a) => a.area == widget.area).toList()
-                    : _view.artists)));
-    return Navigator(
-        key: artistsKey,
-        initialRoute: '/',
-        observers: [heroController()],
-        onGenerateRoute: (RouteSettings settings) {
-          return MaterialPageRoute(builder: builder, settings: settings);
-        });
+            onRefresh: () => refreshPage(context),
+            child: ArtistListWidget(_artists(view))));
   }
 
-  Future<void> _onRefresh() async {
-    try {
-      final client = Client();
-      final result = await client.artists(ttl: Duration.zero);
-      if (mounted) {
-        setState(() {
-          loadArtistMap(_view.artists);
-          _view = result;
-        });
-      }
-    } catch (error) {
-      log.warning(error);
-    }
+  Widget _title(BuildContext context) {
+    final artistsText = AppLocalizations.of(context)!.artistsLabel;
+    return genre != null
+        ? header('$artistsText \u2013 ${genre}')
+        : area != null
+            ? header('$artistsText \u2013 ${area}')
+            : header(artistsText);
+  }
+
+  List<Artist> _artists(ArtistsView view) {
+    return genre != null
+        ? view.artists.where((a) => a.genre == genre).toList()
+        : area != null
+            ? view.artists.where((a) => a.area == area).toList()
+            : view.artists;
   }
 }
 
@@ -161,134 +133,87 @@ class ArtistListWidget extends StatelessWidget {
   }
 }
 
-class ArtistWidget extends StatefulWidget {
+class ArtistWidget extends ClientPage<ArtistView> with ArtistPage {
   final Artist _artist;
 
   ArtistWidget(this._artist);
 
   @override
-  State<StatefulWidget> createState() => _ArtistState();
-}
-
-class _ArtistState extends State<ArtistWidget> with ArtistBuilder {
-  static final log = Logger('ArtistState');
-
-  ArtistView? _view;
+  void load(BuildContext context, {Duration? ttl}) {
+    context.client.artist(_artist.id, ttl: ttl);
+  }
 
   @override
-  void initState() {
-    super.initState();
-    final client = Client();
-    client.artist(widget._artist.id).then((v) => _onArtistUpdated(v));
+  Widget page(BuildContext context, ArtistView view) {
+    return artistPage(context, view);
   }
 
-  void _onArtistUpdated(ArtistView view) {
-    if (mounted) {
-      setState(() {
-        _view = view;
-      });
-    }
-  }
-
-  void _onRadio() {
+  void _onRadio(BuildContext context) {
     Navigator.push(
         context,
         MaterialPageRoute(
             builder: (_) => SpiffWidget(
-                fetch: () =>
-                    Client().artistRadio(widget._artist.id, ttl: Duration.zero))));
+                fetch: (client, {Duration? ttl}) =>
+                    client.artistRadio(_artist.id, ttl: Duration.zero))));
   }
 
-  void _onShuffle() {
+  void _onShuffle(BuildContext context) {
     Navigator.push(
         context,
         MaterialPageRoute(
             builder: (_) => SpiffWidget(
-                fetch: () =>
-                    Client().artistPlaylist(widget._artist.id, ttl: Duration.zero))));
+                fetch: (client, {Duration? ttl}) =>
+                    client.artistPlaylist(_artist.id, ttl: Duration.zero))));
   }
 
-  void _onSingles(BuildContext context) {
-    if (_view == null) {
-      return;
-    }
+  void _onSingles(BuildContext context, ArtistView view) {
     Navigator.push(
         context,
         MaterialPageRoute(
-            builder: (_) => ArtistTrackListWidget(
-                _view!, widget._artist, ArtistTrackType.singles)));
+            builder: (_) =>
+                ArtistTrackListWidget(view, _artist, ArtistTrackType.singles)));
   }
 
-  void _onPopular(BuildContext context) {
-    if (_view == null) {
-      return;
-    }
+  void _onPopular(BuildContext context, ArtistView view) {
     Navigator.push(
         context,
         MaterialPageRoute(
-            builder: (_) => ArtistTrackListWidget(
-                _view!, widget._artist, ArtistTrackType.popular)));
-  }
-
-  Future<void> _onRefresh() async {
-    final client = Client();
-    await client
-        .artist(widget._artist.id, ttl: Duration.zero)
-        .then((v) => _onArtistUpdated(v));
+            builder: (_) =>
+                ArtistTrackListWidget(view, _artist, ArtistTrackType.popular)));
   }
 
   void _onGenre(BuildContext context, String genre) async {
-    try {
-      final client = Client();
-      final result = await client.artists();
-      Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (_) => ArtistsWidget(result, genre: genre)));
-    } catch (error) {
-      log.warning(error);
-    }
+    Navigator.push(context,
+        MaterialPageRoute(builder: (_) => ArtistsWidget(genre: genre)));
   }
 
   void _onArea(BuildContext context, String area) async {
-    try {
-      final client = Client();
-      final result = await client.artists();
-      Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (_) => ArtistsWidget(result, area: area)));
-    } catch (error) {
-      log.warning(error);
-    }
+    Navigator.push(
+        context, MaterialPageRoute(builder: (_) => ArtistsWidget(area: area)));
   }
 
-  ArtistView? get view => _view;
-
-  Future<void> onRefresh() => _onRefresh();
-
-  List<Widget> actions() {
-    final artistUrl = 'https://musicbrainz.org/artist/${widget._artist.arid}';
-    final genre = ReCase(widget._artist.genre ?? '').titleCase;
+  List<Widget> actions(BuildContext context, ArtistView view) {
+    final artistUrl = 'https://musicbrainz.org/artist/${_artist.arid}';
+    final genre = ReCase(_artist.genre ?? '').titleCase;
     return <Widget>[
       popupMenu(context, [
-        PopupItem.shuffle(context, (_) => _onShuffle()),
-        PopupItem.radio(context, (_) => _onRadio()),
+        PopupItem.shuffle(context, (_) => _onShuffle(context)),
+        PopupItem.radio(context, (_) => _onRadio(context)),
         PopupItem.divider(),
-        PopupItem.singles(context, (_) => _onSingles(context)),
-        PopupItem.popular(context, (_) => _onPopular(context)),
+        PopupItem.singles(context, (_) => _onSingles(context, view)),
+        PopupItem.popular(context, (_) => _onPopular(context, view)),
         PopupItem.divider(),
-        if (widget._artist.genre != null)
+        if (_artist.genre != null)
           PopupItem.genre(
-              context, genre, (_) => _onGenre(context, widget._artist.genre!)),
-        if (widget._artist.area != null)
+              context, genre, (_) => _onGenre(context, _artist.genre!)),
+        if (_artist.area != null)
           PopupItem.area(
-              context, widget._artist.area!, (_) => _onArea(context, widget._artist.area!)),
+              context, _artist.area!, (_) => _onArea(context, _artist.area!)),
         PopupItem.divider(),
         PopupItem.link(context, 'MusicBrainz Artist',
             (_) => launchUrl(Uri.parse(artistUrl))),
         PopupItem.divider(),
-        PopupItem.refresh(context, (_) => _onRefresh()),
+        PopupItem.refresh(context, (_) => refreshPage(context)),
       ])
     ];
   }
@@ -297,32 +222,29 @@ class _ArtistState extends State<ArtistWidget> with ArtistBuilder {
     return IconButton(
         color: overlayIconColor(context),
         icon: Icon(Icons.shuffle_sharp),
-        onPressed: _onShuffle);
+        onPressed: () => _onShuffle(context));
   }
 
   Widget rightButton(BuildContext context) {
     return IconButton(
         color: overlayIconColor(context),
         icon: Icon(Icons.radio),
-        onPressed: _onRadio);
+        onPressed: () => _onRadio(context));
   }
 
-  List<Widget> slivers(CacheSnapshot snapshot) {
-    if (_view == null) {
-      return [];
-    }
+  List<Widget> slivers(BuildContext context, ArtistView view) {
     return [
       SliverToBoxAdapter(
           child: heading(AppLocalizations.of(context)!.releasesLabel)),
       AlbumGridWidget(
-        _view!.releases,
+        view.releases,
         subtitle: false,
       ),
-      if (_view!.similar.isNotEmpty)
+      if (view.similar.isNotEmpty)
         SliverToBoxAdapter(
             child: heading(AppLocalizations.of(context)!.similarArtists)),
-      if (_view!.similar.isNotEmpty)
-        SliverToBoxAdapter(child: SimilarArtistListWidget(_view!))
+      if (view.similar.isNotEmpty)
+        SliverToBoxAdapter(child: SimilarArtistListWidget(view))
     ];
   }
 }
@@ -349,21 +271,22 @@ class SimilarArtistListWidget extends StatelessWidget {
 }
 
 class TrackListWidget extends StatelessWidget {
-  final List<MediaLocatable> _tracks;
+  final List<MediaTrack> _tracks;
 
   const TrackListWidget(this._tracks);
 
-  void _onPlay(int index) {
-    MediaQueue.playTracks(_tracks, index: index);
-    showPlayer();
+  void _onPlay(BuildContext context, int index) {
+    // MediaQueue.playTracks(context, _tracks, index: index);
+    // showPlayer();
   }
 
   @override
   Widget build(BuildContext context) {
     return Column(children: [
       ..._tracks.asMap().keys.toList().map((index) =>
-          CoverTrackListTile.mediaTrack(_tracks[index],
-              onTap: () => _onPlay(index), trailing: Icon(Icons.play_arrow)))
+          CoverTrackListTile.mediaTrack(context, _tracks[index],
+              onTap: () => _onPlay(context, index),
+              trailing: Icon(Icons.play_arrow)))
     ]);
   }
 }
@@ -378,98 +301,69 @@ class ArtistTrackListWidget extends StatefulWidget {
   ArtistTrackListWidget(this._view, this._artist, this._type);
 
   @override
-  State<StatefulWidget> createState() =>
-      _ArtistTrackListState(_type);
+  State<StatefulWidget> createState() => _ArtistTrackListState(_type);
 }
 
 class _ArtistTrackListState extends State<ArtistTrackListWidget>
-    with ArtistBuilder {
+    with ClientPageBuilder<ArtistTracksView>, ArtistPage {
   ArtistTrackType _type;
-  List<Track> _tracks = const [];
 
   _ArtistTrackListState(this._type);
 
   @override
-  void initState() {
-    super.initState();
-    _loadState();
+  Widget page(BuildContext context, ArtistTracksView view) {
+    return artistPage(context, widget._view);
   }
 
-  void _loadState() {
-    final client = Client();
+  @override
+  void load(BuildContext context, {Duration? ttl}) {
     if (_type == ArtistTrackType.popular) {
-      client.artistPopular(widget._artist.id).then((v) => _onPopularUpdated(v));
+      context.client.artistPopular(widget._artist.id, ttl: ttl);
     } else if (_type == ArtistTrackType.singles) {
-      client.artistSingles(widget._artist.id).then((v) => _onSinglesUpdated(v));
+      context.client.artistSingles(widget._artist.id, ttl: ttl);
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return builder(context)(context);
   }
 
   void _onChangeType(ArtistTrackType type) {
-    setState(() {
-      _type = type;
-      _loadState();
-    });
-  }
-
-  Future<void> _onRefresh() async {
-    final client = Client();
-    if (_type == ArtistTrackType.popular) {
-      await client
-          .artistPopular(widget._artist.id, ttl: Duration.zero)
-          .then((v) => _onPopularUpdated(v));
-    } else if (_type == ArtistTrackType.singles) {
-      await client
-          .artistSingles(widget._artist.id, ttl: Duration.zero)
-          .then((v) => _onSinglesUpdated(v));
-    }
-  }
-
-  void _onPopularUpdated(PopularView v) {
-    if (mounted) {
-      setState(() {
-        _tracks = v.popular;
-      });
-    }
-  }
-
-  void _onSinglesUpdated(SinglesView v) {
-    if (mounted) {
-      setState(() {
-        _tracks = v.singles;
-      });
-    }
+    _type = type;
+    load(context);
   }
 
   Future<Spiff> _playlist() {
-    final client = Client();
+    final client = context.clientRepository;
     Future<Spiff> result = _type == ArtistTrackType.popular
         ? client.artistPopularPlaylist(widget._artist.id, ttl: Duration.zero)
         : _type == ArtistTrackType.singles
-            ? client.artistSinglesPlaylist(widget._artist.id, ttl: Duration.zero)
-            : client.artistSinglesPlaylist(widget._artist.id, ttl: Duration.zero);
+            ? client.artistSinglesPlaylist(widget._artist.id,
+                ttl: Duration.zero)
+            : client.artistSinglesPlaylist(widget._artist.id,
+                ttl: Duration.zero);
     return result;
   }
 
-  void _onPlay() async {
-    Future<Spiff> result = _playlist();
-    result.then((spiff) => MediaQueue.playSpiff(spiff));
+  void _onPlay(BuildContext context) async {
+    // Future<Spiff> result = _playlist();
+    // result.then((spiff) => MediaQueue.playSpiff(context, spiff));
   }
 
   void _onDownload(BuildContext context) async {
     Future<Spiff> result = _playlist();
-    result.then((spiff) => Downloads.downloadSpiff(context, spiff));
+    context.download.addSpiff(await result);
+    // result.then((spiff) => Downloads.downloadSpiff(context, spiff));
   }
 
-  void _onTrack(int index) {
+  void _onTrack(BuildContext context, int index) async {
     Future<Spiff> result = _playlist();
-    result.then((spiff) => MediaQueue.playSpiff(spiff, index: index));
+    final spiff = await result;
+    context.play(spiff.copyWith(index: index));
   }
 
-  ArtistView get view => widget._view;
-
-  Future<void> onRefresh() => _onRefresh();
-
-  List<Widget> actions() => [
+  List<Widget> actions(BuildContext context, ArtistView view) => [
         popupMenu(context, [
           if (_type == ArtistTrackType.singles)
             PopupItem.popular(
@@ -477,7 +371,7 @@ class _ArtistTrackListState extends State<ArtistTrackListWidget>
           if (_type == ArtistTrackType.popular)
             PopupItem.singles(
                 context, (_) => _onChangeType(ArtistTrackType.singles)),
-          PopupItem.refresh(context, (_) => _onRefresh()),
+          PopupItem.refresh(context, (_) => refreshPage(context)),
         ])
       ];
 
@@ -485,7 +379,7 @@ class _ArtistTrackListState extends State<ArtistTrackListWidget>
     return IconButton(
         color: overlayIconColor(context),
         icon: Icon(Icons.play_arrow, size: 32),
-        onPressed: _onPlay);
+        onPressed: () => _onPlay(context));
   }
 
   Widget rightButton(BuildContext context) {
@@ -495,96 +389,90 @@ class _ArtistTrackListState extends State<ArtistTrackListWidget>
         onPressed: () => _onDownload(context));
   }
 
-  List<Widget> slivers(CacheSnapshot snapshot) {
+  List<Widget> slivers(BuildContext context, ArtistView view) {
     return [
       SliverToBoxAdapter(
           child: heading(_type == ArtistTrackType.singles
               ? AppLocalizations.of(context)!.singlesLabel
               : AppLocalizations.of(context)!.popularLabel)),
-      SliverToBoxAdapter(child: Column(children: _trackList(snapshot))),
+      SliverToBoxAdapter(child: Column(children: _trackList(context))),
     ];
   }
 
-  List<CoverTrackListTile> _trackList(CacheSnapshot snapshot) {
+  List<CoverTrackListTile> _trackList(BuildContext context) {
+    final view = context.client.state as ArtistTracksView;
     final list = <CoverTrackListTile>[];
     int index = 0;
-    _tracks.forEach((t) {
-      list.add(CoverTrackListTile.mediaTrack(t,
-          onTap: () => _onTrack(index), trailing: _trailing(snapshot, t)));
+    view.tracks.forEach((t) {
+      list.add(CoverTrackListTile.mediaTrack(context, t,
+          onTap: () => _onTrack(context, index), trailing: _trailing(t)));
       index++;
     });
     return list;
   }
 
-  Widget _trailing(CacheSnapshot snapshot, Locatable locatable) {
-    final downloading = snapshot.downloadSnapshot(locatable);
-    if (downloading != null) {
-      final value = downloading.value;
-      return value > 1.0
-          ? CircularProgressIndicator()
-          : CircularProgressIndicator(value: value);
-    }
-    return Icon(snapshot.contains(locatable) ? IconsCached : null);
+  Widget _trailing(Track track) {
+    return Builder(builder: (context) {
+      final download = context.watch<DownloadCubit>();
+      final trackCache = context.watch<TrackCacheCubit>();
+      final cached = trackCache.state.contains(track);
+      if (download.state.contains(track)) {
+        final value = download.state.progress(track)?.value ?? 0.0;
+        return value > 1.0
+            ? CircularProgressIndicator()
+            : CircularProgressIndicator(value: value);
+      }
+      return Icon(cached ? IconsCached : null);
+    });
   }
 }
 
-mixin ArtistBuilder {
-  ArtistView? get view;
-
-  Future<void> onRefresh();
-
-  List<Widget> actions();
+mixin ArtistPage {
+  List<Widget> actions(BuildContext context, ArtistView view);
 
   Widget leftButton(BuildContext context);
 
   Widget rightButton(BuildContext context);
 
-  List<Widget> slivers(CacheSnapshot snapshot);
+  List<Widget> slivers(BuildContext context, ArtistView view);
 
   static Random _random = Random();
 
-  String? _randomCover() {
-    final artistView = view;
-    if (artistView == null) {
-      return null;
-    }
+  String? _randomCover(ArtistView view) {
     for (var i = 0; i < 3; i++) {
-      final pick = _random.nextInt(artistView.releases.length);
-      if (isNotNullOrEmpty(artistView.releases[pick].image)) {
-        return artistView.releases[pick].image;
+      final pick = _random.nextInt(view.releases.length);
+      if (isNotNullOrEmpty(view.releases[pick].image)) {
+        return view.releases[pick].image;
       }
     }
     try {
-      return artistView.releases.firstWhere((r) => isNotNullOrEmpty(r.image)).image;
+      return view.releases.firstWhere((r) => isNotNullOrEmpty(r.image)).image;
     } on StateError {
       return null;
     }
   }
 
-  Widget build(BuildContext context) {
-    return StreamBuilder<ConnectivityResult>(
-        stream: TakeoutState.connectivityStream.distinct(),
-        builder: (context, snapshot) {
-          final connectivity = snapshot.data;
-          final artistView = view;
-          final artwork = ArtworkBuilder.artist(
-              TakeoutState.allowArtistArtwork(connectivity)
-                  ? view?.image ?? null
-                  : null,
-              _randomCover());
-          final artistImage = artwork.build();
+  Widget artistPage(BuildContext context, ArtistView view) {
+    // artist backgrounds are 1920x1080, expand keeping aspect ratio
+    // artist images are 1000x1000
+    // artist banners are 1000x185
+    // final screen = MediaQuery.of(context).size;
+    // final expandedHeight = useBackground
+    //     ? 1080.0 / 1920.0 * screen.width
+    //     : screen.height / 2;
+    final screen = MediaQuery.of(context).size;
+    final expandedHeight = screen.height / 2;
 
-          // artist backgrounds are 1920x1080, expand keeping aspect ratio
-          // artist images are 1000x1000
-          // artist banners are 1000x185
-          // final screen = MediaQuery.of(context).size;
-          // final expandedHeight = useBackground
-          //     ? 1080.0 / 1920.0 * screen.width
-          //     : screen.height / 2;
-
-          final screen = MediaQuery.of(context).size;
-          final expandedHeight = screen.height / 2;
-
+    return BlocBuilder<ConnectivityCubit, ConnectivityState>(
+        builder: (context, state) {
+          final settings = context.settings.state;
+          final allow = settings.allowMobileArtistArtwork;
+          String? image;
+          if (state.mobile ? allow : true) {
+            image = view.image;
+          }
+          final artwork = ArtworkBuilder.artist(image, _randomCover(view));
+          final artistImage = artwork.build(context);
           return StreamBuilder<String?>(
               stream: artwork.urlStream.stream.distinct(),
               builder: (context, snapshot) {
@@ -595,71 +483,49 @@ mixin ArtistBuilder {
                         : Future.value(),
                     builder: (context, snapshot) => Scaffold(
                         backgroundColor: snapshot.data,
-                        body: RefreshIndicator(
-                            onRefresh: () => onRefresh(),
-                            child: view == null
-                                ? Center(child: CircularProgressIndicator())
-                                : StreamBuilder<CacheSnapshot>(
-                                    stream: MediaCache.stream(),
-                                    builder: (context, snapshot) {
-                                      final cacheSnapshot = snapshot.data ??
-                                          CacheSnapshot.empty();
-                                      return CustomScrollView(slivers: [
-                                        SliverAppBar(
-                                            foregroundColor:
-                                                overlayIconColor(context),
-                                            expandedHeight: expandedHeight,
-                                            actions: actions(),
-                                            flexibleSpace: FlexibleSpaceBar(
-                                                stretchModes: [
-                                                  StretchMode.zoomBackground,
-                                                  StretchMode.fadeTitle
-                                                ],
-                                                background: Stack(
-                                                    fit: StackFit.expand,
-                                                    children: [
-                                                      artistImage,
-                                                      const DecoratedBox(
-                                                        decoration:
-                                                            BoxDecoration(
-                                                          gradient:
-                                                              LinearGradient(
-                                                            begin: Alignment(
-                                                                0.0, 0.75),
-                                                            end: Alignment(
-                                                                0.0, 0.0),
-                                                            colors: <Color>[
-                                                              Color(0x60000000),
-                                                              Color(0x00000000),
-                                                            ],
-                                                          ),
-                                                        ),
-                                                      ),
-                                                      Align(
-                                                          alignment: Alignment
-                                                              .bottomLeft,
-                                                          child: leftButton(
-                                                              context)),
-                                                      Align(
-                                                          alignment: Alignment
-                                                              .bottomRight,
-                                                          child: rightButton(
-                                                              context)),
-                                                    ]))),
-                                        SliverToBoxAdapter(
-                                            child: Container(
-                                                padding: EdgeInsets.fromLTRB(
-                                                    0, 16, 0, 0),
-                                                child: Column(children: [
-                                                  if (artistView != null)
-                                                    Text(artistView.artist.name,
-                                                        style: Theme.of(context)
-                                                            .textTheme
-                                                            .headline5)
-                                                ]))),
-                                        ...slivers(cacheSnapshot)
-                                      ]);
-                                    }))));
+                        body: CustomScrollView(slivers: [
+                          SliverAppBar(
+                              foregroundColor: overlayIconColor(context),
+                              expandedHeight: expandedHeight,
+                              actions: actions(context, view),
+                              flexibleSpace: FlexibleSpaceBar(
+                                  stretchModes: [
+                                    StretchMode.zoomBackground,
+                                    StretchMode.fadeTitle
+                                  ],
+                                  background:
+                                      Stack(fit: StackFit.expand, children: [
+                                    artistImage,
+                                    const DecoratedBox(
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          begin: Alignment(0.0, 0.75),
+                                          end: Alignment(0.0, 0.0),
+                                          colors: <Color>[
+                                            Color(0x60000000),
+                                            Color(0x00000000),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                    Align(
+                                        alignment: Alignment.bottomLeft,
+                                        child: leftButton(context)),
+                                    Align(
+                                        alignment: Alignment.bottomRight,
+                                        child: rightButton(context)),
+                                  ]))),
+                          SliverToBoxAdapter(
+                              child: Container(
+                                  padding: EdgeInsets.fromLTRB(0, 16, 0, 0),
+                                  child: Column(children: [
+                                    Text(view.artist.name,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .headlineSmall)
+                                  ]))),
+                          ...slivers(context, view)
+                        ])));
               });
         });
   }

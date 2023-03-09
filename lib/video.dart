@@ -6,55 +6,35 @@ import 'package:video_player/video_player.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:wakelock/wakelock.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'client.dart';
-import 'schema.dart';
-import 'cover.dart';
+import 'package:takeout_app/api/model.dart';
+import 'package:takeout_app/app/context.dart';
+import 'package:takeout_app/art/artwork.dart';
+import 'package:takeout_app/art/cover.dart';
+import 'package:takeout_app/art/builder.dart';
+import 'package:takeout_app/page/page.dart';
+import 'package:takeout_app/cache/track.dart';
+
 import 'style.dart';
-import 'main.dart';
-import 'downloads.dart';
-import 'cache.dart';
-import 'progress.dart';
 import 'util.dart';
+import 'buttons.dart';
+import 'model.dart';
 
-class MovieWidget extends StatefulWidget {
+class MovieWidget extends ClientPage<MovieView> {
   final Movie _movie;
 
   MovieWidget(this._movie);
 
   @override
-  _MovieWidgetState createState() => _MovieWidgetState();
-}
-
-class _MovieWidgetState extends State<MovieWidget> {
-  MovieView? _view;
-
-  @override
-  void initState() {
-    super.initState();
-    final client = Client();
-    client.movie(widget._movie.id).then((v) => _onMovieUpdated(v));
-  }
-
-  void _onMovieUpdated(MovieView view) {
-    if (mounted) {
-      setState(() {
-        _view = view;
-      });
-    }
-  }
-
-  Future<void> _onRefresh() async {
-    final client = Client();
-    await client
-        .movie(widget._movie.id, ttl: Duration.zero)
-        .then((v) => _onMovieUpdated(v));
+  void load(BuildContext context, {Duration? ttl}) {
+    context.client.movie(_movie.id, ttl: ttl);
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget page(BuildContext context, MovieView view) {
     return FutureBuilder<Color?>(
-        future: getImageBackgroundColor(context, widget._movie.image),
+        future: getImageBackgroundColor(context, _movie.image),
         builder: (context, snapshot) {
           final backgroundColor = snapshot.data;
           final screen = MediaQuery.of(context).size;
@@ -62,179 +42,168 @@ class _MovieWidgetState extends State<MovieWidget> {
           return Scaffold(
               backgroundColor: backgroundColor,
               body: RefreshIndicator(
-                  onRefresh: () => _onRefresh(),
-                  child: _view == null
-                      ? Center(child: CircularProgressIndicator())
-                      : StreamBuilder<CacheSnapshot>(
-                          stream: MediaCache.stream(),
-                          builder: (context, snapshot) {
-                            final cacheSnapshot =
-                                snapshot.data ?? CacheSnapshot.empty();
-                            final isCached =
-                                cacheSnapshot.containsAll([_view!]);
-                            return CustomScrollView(slivers: [
-                              SliverAppBar(
-                                // actions: [ ],
-                                foregroundColor: overlayIconColor(context),
-                                backgroundColor: Colors.black,
-                                expandedHeight: expandedHeight,
-                                flexibleSpace: FlexibleSpaceBar(
-                                    // centerTitle: true,
-                                    // title: Text(release.name, style: TextStyle(fontSize: 15)),
-                                    stretchModes: [
-                                      StretchMode.zoomBackground,
-                                      StretchMode.fadeTitle
+                  onRefresh: () => refreshPage(context),
+                  child: BlocBuilder<TrackCacheCubit, TrackCacheState>(
+                      builder: (context, state) {
+                    final isCached = state.contains(_movie);
+                    return CustomScrollView(slivers: [
+                      SliverAppBar(
+                        // actions: [ ],
+                        foregroundColor: overlayIconColor(context),
+                        backgroundColor: Colors.black,
+                        expandedHeight: expandedHeight,
+                        flexibleSpace: FlexibleSpaceBar(
+                            // centerTitle: true,
+                            // title: Text(release.name, style: TextStyle(fontSize: 15)),
+                            stretchModes: [
+                              StretchMode.zoomBackground,
+                              StretchMode.fadeTitle
+                            ],
+                            background: Stack(fit: StackFit.expand, children: [
+                              releaseSmallCover(context, _movie.image),
+                              const DecoratedBox(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment(0.0, 0.75),
+                                    end: Alignment(0.0, 0.0),
+                                    colors: <Color>[
+                                      Color(0x60000000),
+                                      Color(0x00000000),
                                     ],
-                                    background:
-                                        Stack(fit: StackFit.expand, children: [
-                                      releaseSmallCover(widget._movie.image),
-                                      const DecoratedBox(
-                                        decoration: BoxDecoration(
-                                          gradient: LinearGradient(
-                                            begin: Alignment(0.0, 0.75),
-                                            end: Alignment(0.0, 0.0),
-                                            colors: <Color>[
-                                              Color(0x60000000),
-                                              Color(0x00000000),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                      Align(
-                                          alignment: Alignment.bottomLeft,
-                                          child: _playButton(context,
-                                              cacheSnapshot, isCached)),
-                                      Align(
-                                          alignment: Alignment.bottomCenter,
-                                          child: _progress(cacheSnapshot)),
-                                      Align(
-                                          alignment: Alignment.bottomRight,
-                                          child: _downloadButton(
-                                              context, isCached)),
-                                    ])),
-                              ),
-                              SliverToBoxAdapter(
-                                  child: Container(
-                                      padding: EdgeInsets.fromLTRB(4, 16, 4, 4),
-                                      child: Column(children: [
-                                        _title(),
-                                        _tagline(),
-                                        _details(context, cacheSnapshot),
-                                        if (_view != null && _view!.hasGenres())
-                                          _genres(),
-                                        // GestureDetector(
-                                        //     onTap: () => _onArtist(), child: _title()),
-                                        // GestureDetector(
-                                        //     onTap: () => _onArtist(), child: _artist()),
-                                      ]))),
-                              if (_view != null && _view!.hasCast())
-                                SliverToBoxAdapter(
-                                    child: heading(AppLocalizations.of(context)!
-                                        .castLabel)),
-                              if (_view != null && _view!.hasCast())
-                                SliverToBoxAdapter(
-                                    child: _CastListWidget(_view!)),
-                              if (_view != null && _view!.hasCrew())
-                                SliverToBoxAdapter(
-                                    child: heading(AppLocalizations.of(context)!
-                                        .crewLabel)),
-                              if (_view != null && _view!.hasCrew())
-                                SliverToBoxAdapter(
-                                    child: _CrewListWidget(_view!)),
-                              if (_view != null && _view!.hasRelated())
-                                SliverToBoxAdapter(
-                                  child: heading(AppLocalizations.of(context)!
-                                      .relatedLabel),
+                                  ),
                                 ),
-                              if (_view != null && _view!.hasRelated())
-                                MovieGridWidget(_view!.other!),
-                            ]);
-                          })));
+                              ),
+                              Align(
+                                  alignment: Alignment.bottomLeft,
+                                  child: _playButton(context, isCached)),
+                              Align(
+                                  alignment: Alignment.bottomCenter,
+                                  child: _progress(context)),
+                              Align(
+                                  alignment: Alignment.bottomRight,
+                                  child: _downloadButton(context, isCached)),
+                            ])),
+                      ),
+                      SliverToBoxAdapter(
+                          child: Container(
+                              padding: EdgeInsets.fromLTRB(4, 16, 4, 4),
+                              child: Column(children: [
+                                _title(context),
+                                _tagline(context),
+                                _details(context),
+                                if (view.hasGenres()) _genres(context, view),
+                                // GestureDetector(
+                                //     onTap: () => _onArtist(), child: _title()),
+                                // GestureDetector(
+                                //     onTap: () => _onArtist(), child: _artist()),
+                              ]))),
+                      if (view.hasCast())
+                        SliverToBoxAdapter(
+                            child: heading(
+                                AppLocalizations.of(context)!.castLabel)),
+                      if (view.hasCast())
+                        SliverToBoxAdapter(child: _CastListWidget(view)),
+                      if (view.hasCrew())
+                        SliverToBoxAdapter(
+                            child: heading(
+                                AppLocalizations.of(context)!.crewLabel)),
+                      if (view.hasCrew())
+                        SliverToBoxAdapter(child: _CrewListWidget(view)),
+                      if (view.hasRelated())
+                        SliverToBoxAdapter(
+                          child: heading(
+                              AppLocalizations.of(context)!.relatedLabel),
+                        ),
+                      if (view.hasRelated()) MovieGridWidget(view.other!),
+                    ]);
+                  })));
         });
   }
 
-  Widget _progress(CacheSnapshot snapshot) {
-    final value = snapshot.value(_view!);
-    return value != null ? LinearProgressIndicator(value: value) : SizedBox.shrink();
+  Widget _progress(BuildContext context) {
+    final value = context.offsetCache.state.value(_movie);
+    return value != null
+        ? LinearProgressIndicator(value: value)
+        : SizedBox.shrink();
   }
 
-  Widget _title() {
+  Widget _title(BuildContext context) {
     return Container(
         padding: EdgeInsets.fromLTRB(10, 0, 10, 0),
-        child:
-            Text(widget._movie.title, style: Theme.of(context).textTheme.headline5));
+        child: Text(_movie.title,
+            style: Theme.of(context).textTheme.headlineSmall));
   }
 
   Widget _rating(BuildContext context) {
-    final boxColor = Theme.of(context).textTheme.bodyText1?.color ??
+    final boxColor = Theme.of(context).textTheme.bodyLarge?.color ??
         Theme.of(context).colorScheme.outline;
     return Container(
       margin: const EdgeInsets.all(15.0),
       padding: const EdgeInsets.all(3.0),
       decoration: BoxDecoration(border: Border.all(color: boxColor)),
-      child: Text(widget._movie.rating),
+      child: Text(_movie.rating),
     );
   }
 
-  Widget _details(BuildContext context, CacheSnapshot snapshot) {
+  Widget _details(BuildContext context) {
     var list = <Widget>[];
-    if (widget._movie.rating.isNotEmpty) {
+    if (_movie.rating.isNotEmpty) {
       list.add(_rating(context));
     }
 
     final fields = <String>[];
 
     // runtime
-    if (widget._movie.runtime > 0) {
-      var hours = (widget._movie.runtime / 60).floor();
-      var min = (widget._movie.runtime % 60).floor();
+    if (_movie.runtime > 0) {
+      var hours = (_movie.runtime / 60).floor();
+      var min = (_movie.runtime % 60).floor();
       fields.add('${hours}h ${min}m');
     }
 
     // year
-    if (widget._movie.year > 1) {
-      fields.add(widget._movie.year.toString());
+    if (_movie.year > 1) {
+      fields.add(_movie.year.toString());
     }
 
     // vote%
-    int vote = (10 * (widget._movie.voteAverage ?? 0)).round();
+    int vote = (10 * (_movie.voteAverage ?? 0)).round();
     if (vote > 0) {
       fields.add('${vote}%');
     }
 
     // storage
-    fields.add(storage(widget._movie.size));
+    fields.add(storage(_movie.size));
 
-    list.add(Text(merge(fields), style: Theme.of(context).textTheme.subtitle2));
+    list.add(
+        Text(merge(fields), style: Theme.of(context).textTheme.titleSmall));
 
     return Row(mainAxisAlignment: MainAxisAlignment.center, children: list);
   }
 
-  Widget _tagline() {
+  Widget _tagline(BuildContext context) {
     return Container(
         padding: EdgeInsets.fromLTRB(5, 5, 5, 5),
-        child: Text(widget._movie.tagline,
-            style: Theme.of(context).textTheme.subtitle1!));
+        child: Text(_movie.tagline,
+            style: Theme.of(context).textTheme.titleMedium!));
   }
 
-  Widget _genres() {
+  Widget _genres(BuildContext context, MovieView view) {
     return Center(
         child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-      ..._view!.genres!.map((g) =>
+      ...view.genres!.map((g) =>
           OutlinedButton(onPressed: () => _onGenre(context, g), child: Text(g)))
     ]));
   }
 
-  Widget _playButton(
-      BuildContext context, CacheSnapshot snapshot, bool isCached) {
-    final pos = snapshot.position(_view!) ?? Duration.zero;
+  Widget _playButton(BuildContext context, bool isCached) {
+    final offsetCache = context.offsetCache;
+    final pos = offsetCache.state.position(_movie) ?? Duration.zero;
     return isCached
         ? IconButton(
             color: overlayIconColor(context),
             icon: Icon(Icons.play_arrow, size: 32),
-            onPressed: () => _onPlay(pos))
-        : allowStreamingIconButton(
-            context, Icon(Icons.play_arrow, size: 32), () => _onPlay(pos));
+            onPressed: () => _onPlay(context, pos))
+        : StreamingButton(onPressed: () => _onPlay(context, pos));
   }
 
   Widget _downloadButton(BuildContext context, bool isCached) {
@@ -243,16 +212,15 @@ class _MovieWidgetState extends State<MovieWidget> {
             color: overlayIconColor(context),
             icon: Icon(IconsDownloadDone),
             onPressed: () => {})
-        : allowDownloadIconButton(
-            context, Icon(IconsDownload), () => _onDownload(context));
+        : DownloadButton(onPressed: () => _onDownload(context));
   }
 
-  void _onPlay(Duration startOffset) {
-    showMovie(context, _view!, startOffset: startOffset);
+  void _onPlay(BuildContext context, Duration startOffset) {
+    // showMovie(context, _view!, startOffset: startOffset);
   }
 
   void _onDownload(BuildContext context) {
-    Downloads.downloadMovie(context, widget._movie);
+    // Downloads.downloadMovie(context, _movie);
   }
 
   void _onGenre(BuildContext context, String genre) {
@@ -278,8 +246,8 @@ class _CastListWidget extends StatelessWidget {
   }
 
   void _onCast(BuildContext context, Cast cast) {
-    Navigator.push(context,
-        MaterialPageRoute(builder: (_) => ProfileWidget(cast.person)));
+    Navigator.push(
+        context, MaterialPageRoute(builder: (_) => ProfileWidget(cast.person)));
   }
 }
 
@@ -300,49 +268,25 @@ class _CrewListWidget extends StatelessWidget {
   }
 
   void _onCrew(BuildContext context, Crew crew) {
-    Navigator.push(context,
-        MaterialPageRoute(builder: (_) => ProfileWidget(crew.person)));
+    Navigator.push(
+        context, MaterialPageRoute(builder: (_) => ProfileWidget(crew.person)));
   }
 }
 
-class ProfileWidget extends StatefulWidget {
+class ProfileWidget extends ClientPage<ProfileView> {
   final Person _person;
 
   ProfileWidget(this._person);
 
   @override
-  _ProfileWidgetState createState() => _ProfileWidgetState();
-}
-
-class _ProfileWidgetState extends State<ProfileWidget> {
-  ProfileView? _view;
-
-  @override
-  void initState() {
-    super.initState();
-    final client = Client();
-    client.profile(widget._person.id).then((v) => _onProfileUpdated(v));
-  }
-
-  void _onProfileUpdated(ProfileView view) {
-    if (mounted) {
-      setState(() {
-        _view = view;
-      });
-    }
-  }
-
-  Future<void> _onRefresh() async {
-    final client = Client();
-    await client
-        .profile(widget._person.id, ttl: Duration.zero)
-        .then((v) => _onProfileUpdated(v));
+  void load(BuildContext context, {Duration? ttl}) {
+    context.client.profile(_person.id, ttl: ttl);
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget page(BuildContext context, ProfileView view) {
     return FutureBuilder<Color?>(
-        future: getImageBackgroundColor(context, widget._person.image),
+        future: getImageBackgroundColor(context, _person.image),
         builder: (context, snapshot) {
           final backgroundColor = snapshot.data;
           final screen = MediaQuery.of(context).size;
@@ -350,7 +294,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
           return Scaffold(
               backgroundColor: backgroundColor,
               body: RefreshIndicator(
-                  onRefresh: () => _onRefresh(),
+                  onRefresh: () => refreshPage(context),
                   child: CustomScrollView(slivers: [
                     SliverAppBar(
                       // actions: [ ],
@@ -364,7 +308,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                             StretchMode.fadeTitle
                           ],
                           background: Stack(fit: StackFit.expand, children: [
-                            releaseSmallCover(widget._person.image),
+                            releaseSmallCover(context, _person.image),
                             const DecoratedBox(
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
@@ -383,79 +327,55 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                         child: Container(
                             padding: EdgeInsets.fromLTRB(0, 16, 0, 4),
                             child: Column(children: [
-                              _title(),
+                              _title(context),
                             ]))),
-                    if (_view != null && _view!.hasStarring())
+                    if (view.hasStarring())
                       SliverToBoxAdapter(
                           child: heading(
                               AppLocalizations.of(context)!.starringLabel)),
-                    if (_view != null && _view!.hasStarring())
-                      MovieGridWidget(_view!.starringMovies()),
-                    if (_view != null && _view!.hasDirecting())
+                    if (view.hasStarring())
+                      MovieGridWidget(view.starringMovies()),
+                    if (view.hasDirecting())
                       SliverToBoxAdapter(
                           child: heading(
                               AppLocalizations.of(context)!.directingLabel)),
-                    if (_view != null && _view!.hasDirecting())
-                      MovieGridWidget(_view!.directingMovies()),
-                    if (_view != null && _view!.hasWriting())
+                    if (view.hasDirecting())
+                      MovieGridWidget(view.directingMovies()),
+                    if (view.hasWriting())
                       SliverToBoxAdapter(
                         child:
                             heading(AppLocalizations.of(context)!.writingLabel),
                       ),
-                    if (_view != null && _view!.hasWriting())
-                      MovieGridWidget(_view!.writingMovies()),
+                    if (view.hasWriting())
+                      MovieGridWidget(view.writingMovies()),
                   ])));
         });
   }
 
-  Widget _title() {
-    return Text(widget._person.name, style: Theme.of(context).textTheme.headline5);
+  Widget _title(BuildContext context) {
+    return Text(_person.name, style: Theme.of(context).textTheme.headlineSmall);
   }
 }
 
-class GenreWidget extends StatefulWidget {
+class GenreWidget extends ClientPage<GenreView> {
   final String _genre;
 
   GenreWidget(this._genre);
 
   @override
-  _GenreWidgetState createState() => _GenreWidgetState();
-}
-
-class _GenreWidgetState extends State<GenreWidget> {
-  GenreView? _view;
-
-  @override
-  void initState() {
-    super.initState();
-    final client = Client();
-    client.moviesGenre(widget._genre).then((v) => _onViewUpdated(v));
-  }
-
-  void _onViewUpdated(GenreView view) {
-    if (mounted) {
-      setState(() {
-        _view = view;
-      });
-    }
-  }
-
-  Future<void> _onRefresh() async {
-    final client = Client();
-    await client
-        .moviesGenre(widget._genre, ttl: Duration.zero)
-        .then((v) => _onViewUpdated(v));
+  void load(BuildContext context, {Duration? ttl}) {
+    context.client.moviesGenre(_genre, ttl: ttl);
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget page(BuildContext context, GenreView view) {
     return Scaffold(
         body: RefreshIndicator(
-            onRefresh: () => _onRefresh(),
+            onRefresh: () => refreshPage(context),
             child: CustomScrollView(slivers: [
-              SliverAppBar(title: Text(widget._genre)),
-              if (_view != null && _view!.movies.isNotEmpty)
-                MovieGridWidget(_sortByTitle(_view!.movies)),
+              SliverAppBar(title: Text(_genre)),
+              if (view.movies.isNotEmpty)
+                MovieGridWidget(_sortByTitle(view.movies)),
             ])));
   }
 }
@@ -489,7 +409,7 @@ class MovieGridWidget extends StatelessWidget {
                           // title: Text('${m.rating}'),
                           // trailing: Text('${m.year}'),
                         )),
-                    child: gridPoster(m.image),
+                    child: gridPoster(context, m.image),
                   ))))
         ]);
   }
@@ -504,14 +424,13 @@ class MovieGridWidget extends StatelessWidget {
 enum MovieState { buffering, playing, paused, none }
 
 class MoviePlayer extends StatefulWidget {
-  final Locatable _movie;
+  final MediaTrack _movie;
   final Duration? startOffset;
 
   MoviePlayer(this._movie, {this.startOffset = Duration.zero});
 
   @override
-  _MoviePlayerState createState() =>
-      _MoviePlayerState();
+  _MoviePlayerState createState() => _MoviePlayerState();
 }
 
 class _MoviePlayerState extends State<MoviePlayer> {
@@ -533,9 +452,8 @@ class _MoviePlayerState extends State<MoviePlayer> {
 
   void prepareController() async {
     // controller
-    final client = Client();
-    final uri = await client.locate(widget._movie);
-    final headers = await client.headersWithMediaToken();
+    final uri = await context.resolver.resolve(widget._movie);
+    final headers = context.tokenRepository.addMediaToken(<String, String>{});
     final controller =
         VideoPlayerController.network(uri.toString(), httpHeaders: headers)
           ..initialize().then((_) {
@@ -604,9 +522,9 @@ class _MoviePlayerState extends State<MoviePlayer> {
     return '${pos.hhmmss} ~ ${(_controller?.value.duration ?? Duration.zero).hhmmss}';
   }
 
-  void _saveState() {
-    Progress.update(widget._movie.key, _controller?.value.position ?? Duration.zero,
-        _controller?.value.duration ?? Duration.zero);
+  void _saveState(BuildContext context) {
+    // Progress.update(_movie.key, _controller?.value.position ?? Duration.zero,
+    //     _controller?.value.duration ?? Duration.zero);
   }
 
   @override
@@ -658,7 +576,7 @@ class _MoviePlayerState extends State<MoviePlayer> {
                                                     if (state ==
                                                         MovieState.playing) {
                                                       _controller!.pause();
-                                                      _saveState();
+                                                      _saveState(context);
                                                     } else {
                                                       _controller!.play();
                                                     }
@@ -698,7 +616,7 @@ class MovieListWidget extends StatelessWidget {
     return Column(children: [
       ..._movies.asMap().keys.toList().map((index) => ListTile(
           onTap: () => _onTapped(context, _movies[index]),
-          leading: tilePoster(_movies[index].image),
+          leading: tilePoster(context, _movies[index].image),
           subtitle: Text(
               merge([_movies[index].year.toString(), _movies[index].rating])),
           title: Text(_movies[index].title)))
@@ -711,7 +629,8 @@ class MovieListWidget extends StatelessWidget {
   }
 }
 
-void showMovie(BuildContext context, Locatable movie, {Duration? startOffset}) {
+void showMovie(BuildContext context, MediaTrack movie,
+    {Duration? startOffset}) {
   Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(
       builder: (_) => MoviePlayer(movie, startOffset: startOffset)));
 }

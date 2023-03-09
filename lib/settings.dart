@@ -28,20 +28,7 @@ const settingAllowStreaming = 'allow_streaming';
 const settingAllowDownload = 'allow_download';
 const settingAllowArtistArtwork = 'allow_artist_artwork';
 const settingHomeGridType = 'home_grid_type';
-const settingMediaType = 'home_media_type';
 const settingLiveMode = 'live_mode';
-
-MediaType settingsMediaType({MediaType type = MediaType.music}) {
-  final v =
-      Settings.getValue<int>(settingMediaType, defaultValue: type.index) ??
-          type.index;
-  return MediaType.values[v];
-}
-
-Future<void> changeMediaType(MediaType mediaType) async {
-  settingsChangeSubject.add(settingMediaType);
-  return Settings.setValue(settingMediaType, mediaType.index);
-}
 
 enum LiveType { none, share, follow }
 
@@ -59,7 +46,7 @@ LiveType settingsLiveType([LiveType def = LiveType.none]) {
 }
 
 final settingsChangeSubject =
-    BehaviorSubject<String>.seeded(settingMediaType); // TODO seems ok
+    BehaviorSubject<String>.seeded(''); // TODO seems ok
 
 class AppSettings extends StatelessWidget {
   static final log = Logger('AppSettingsState');

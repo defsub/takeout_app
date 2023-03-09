@@ -40,34 +40,34 @@ final searchKey = GlobalKey<NavigatorState>();
 
 final bottomNavKey = new GlobalKey();
 
-void navigate(int index) {
-  BottomNavigationBar navBar =
-      bottomNavKey.currentWidget as BottomNavigationBar;
-  navBar.onTap!(index);
-}
+// void navigate(int index) {
+//   BottomNavigationBar navBar =
+//       bottomNavKey.currentWidget as BottomNavigationBar;
+//   navBar.onTap!(index);
+// }
 
-Map<String, Artist> artistMap = {};
+// Map<String, Artist> artistMap = {};
+//
+// void loadArtistMap(List<Artist> artists) {
+//   artistMap.clear();
+//   artists.forEach((a) {
+//     artistMap[a.name] = a;
+//   });
+// }
 
-void loadArtistMap(List<Artist> artists) {
-  artistMap.clear();
-  artists.forEach((a) {
-    artistMap[a.name] = a;
-  });
-}
+// void showPlayer() {
+//   navigate(4);
+// }
 
-void showPlayer() {
-  navigate(4);
-}
-
-void showArtist(String name) async {
-  Artist? artist = artistMap[name];
-  if (artist != null) {
-    final route = MaterialPageRoute(builder: (_) => ArtistWidget(artist));
-    Navigator.push(artistsKey.currentContext!, route);
-    await route.didPush();
-    navigate(1);
-  }
-}
+// void showArtist(String name) async {
+//   Artist? artist = artistMap[name];
+//   if (artist != null) {
+//     final route = MaterialPageRoute(builder: (_) => ArtistWidget(artist));
+//     Navigator.push(artistsKey.currentContext!, route);
+//     await route.didPush();
+//     navigate(1);
+//   }
+// }
 
 class SnackBarState {
   final Widget content;

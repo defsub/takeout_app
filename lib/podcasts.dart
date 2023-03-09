@@ -15,65 +15,42 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:takeout_app/util.dart';
-import 'package:takeout_app/widget.dart';
+import 'package:takeout_app/buttons.dart';
+import 'package:takeout_app/cache/offset.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'client.dart';
-import 'schema.dart';
-import 'cover.dart';
+import 'package:takeout_app/app/context.dart';
+import 'package:takeout_app/art/builder.dart';
+import 'package:takeout_app/art/cover.dart';
+import 'package:takeout_app/api/model.dart';
+import 'package:takeout_app/client/download.dart';
+import 'package:takeout_app/cache/track.dart';
+import 'package:takeout_app/page/page.dart';
+import 'package:takeout_app/util.dart';
+
 import 'style.dart';
-import 'main.dart';
-import 'downloads.dart';
-import 'cache.dart';
 import 'playlist.dart';
 import 'global.dart';
 import 'menu.dart';
+import 'tiles.dart';
 
-class SeriesWidget extends StatefulWidget {
+class SeriesWidget extends ClientPage<SeriesView> {
   final Series _series;
 
   SeriesWidget(this._series);
 
   @override
-  _SeriesWidgetState createState() => _SeriesWidgetState();
-}
-
-class _SeriesWidgetState extends State<SeriesWidget> {
-  SeriesView? _view;
-
-  _SeriesWidgetState();
-
-  @override
-  void initState() {
-    super.initState();
-    final client = Client();
-    client.series(widget._series.id).then((v) => _onSeriesUpdated(v));
-  }
-
-  void _onSeriesUpdated(SeriesView view) {
-    if (mounted) {
-      setState(() {
-        _view = view;
-      });
-    }
-  }
-
-  Future<void> _onRefresh() async {
-    final client = Client();
-    await client
-        .series(widget._series.id, ttl: Duration.zero)
-        .then((v) => _onSeriesUpdated(v));
+  void load(BuildContext context, {Duration? ttl}) {
+    context.client.series(_series.id, ttl: ttl);
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget page(BuildContext context, SeriesView view) {
     return FutureBuilder<Color?>(
-        future: getImageBackgroundColor(context, widget._series.image),
+        future: getImageBackgroundColor(context, _series.image),
         builder: (context, snapshot) {
           final backgroundColor = snapshot.data;
           final screen = MediaQuery.of(context).size;
@@ -81,73 +58,63 @@ class _SeriesWidgetState extends State<SeriesWidget> {
           return Scaffold(
               backgroundColor: backgroundColor,
               body: RefreshIndicator(
-                  onRefresh: () => _onRefresh(),
-                  child: _view == null
-                      ? Center(child: CircularProgressIndicator())
-                      : StreamBuilder<CacheSnapshot>(
-                          stream: MediaCache.stream(),
-                          builder: (context, snapshot) {
-                            final cacheSnapshot =
-                                snapshot.data ?? CacheSnapshot.empty();
-                            final isCached =
-                                cacheSnapshot.containsAll(_view!.episodes);
-                            return CustomScrollView(slivers: [
-                              SliverAppBar(
-                                // actions: [ ],
-                                foregroundColor: overlayIconColor(context),
-                                expandedHeight: expandedHeight,
-                                flexibleSpace: FlexibleSpaceBar(
-                                    // centerTitle: true,
-                                    // title: Text(release.name, style: TextStyle(fontSize: 15)),
-                                    stretchModes: [
-                                      StretchMode.zoomBackground,
-                                      StretchMode.fadeTitle
+                  onRefresh: () => refreshPage(context),
+                  child: BlocBuilder<TrackCacheCubit, TrackCacheState>(
+                      builder: (context, state) {
+                    final isCached = state.containsAll(view.episodes);
+                    return CustomScrollView(slivers: [
+                      SliverAppBar(
+                        // actions: [ ],
+                        foregroundColor: overlayIconColor(context),
+                        expandedHeight: expandedHeight,
+                        flexibleSpace: FlexibleSpaceBar(
+                            // centerTitle: true,
+                            // title: Text(release.name, style: TextStyle(fontSize: 15)),
+                            stretchModes: [
+                              StretchMode.zoomBackground,
+                              StretchMode.fadeTitle
+                            ],
+                            background: Stack(fit: StackFit.expand, children: [
+                              releaseSmallCover(context, _series.image),
+                              const DecoratedBox(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment(0.0, 0.75),
+                                    end: Alignment(0.0, 0.0),
+                                    colors: <Color>[
+                                      Color(0x60000000),
+                                      Color(0x00000000),
                                     ],
-                                    background:
-                                        Stack(fit: StackFit.expand, children: [
-                                      releaseSmallCover(widget._series.image),
-                                      const DecoratedBox(
-                                        decoration: BoxDecoration(
-                                          gradient: LinearGradient(
-                                            begin: Alignment(0.0, 0.75),
-                                            end: Alignment(0.0, 0.0),
-                                            colors: <Color>[
-                                              Color(0x60000000),
-                                              Color(0x00000000),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                      Align(
-                                          alignment: Alignment.bottomLeft,
-                                          child:
-                                              _playButton(context, isCached)),
-                                      Align(
-                                          alignment: Alignment.bottomRight,
-                                          child: _downloadButton(
-                                              context, isCached)),
-                                    ])),
+                                  ),
+                                ),
                               ),
-                              SliverToBoxAdapter(
-                                  child: Container(
-                                      padding: EdgeInsets.fromLTRB(4, 16, 4, 4),
-                                      child: Column(children: [
-                                        _title(),
-                                      ]))),
-                              if (_view != null)
-                                SliverToBoxAdapter(
-                                    child: _SeriesEpisodeListWidget(
-                                        _view!, backgroundColor)),
-                            ]);
-                          })));
+                              Align(
+                                  alignment: Alignment.bottomLeft,
+                                  child: _playButton(context, isCached)),
+                              Align(
+                                  alignment: Alignment.bottomRight,
+                                  child: _downloadButton(context, isCached)),
+                            ])),
+                      ),
+                      SliverToBoxAdapter(
+                          child: Container(
+                              padding: EdgeInsets.fromLTRB(4, 16, 4, 4),
+                              child: Column(children: [
+                                _title(context),
+                              ]))),
+                      SliverToBoxAdapter(
+                          child:
+                              _SeriesEpisodeListWidget(view, backgroundColor)),
+                    ]);
+                  })));
         });
   }
 
-  Widget _title() {
+  Widget _title(BuildContext context) {
     return Container(
         padding: EdgeInsets.fromLTRB(10, 0, 10, 0),
-        child:
-            Text(widget._series.title, style: Theme.of(context).textTheme.headline5));
+        child: Text(_series.title,
+            style: Theme.of(context).textTheme.headlineSmall));
   }
 
   Widget _playButton(BuildContext context, bool isCached) {
@@ -155,9 +122,8 @@ class _SeriesWidgetState extends State<SeriesWidget> {
         ? IconButton(
             color: overlayIconColor(context),
             icon: Icon(Icons.play_arrow, size: 32),
-            onPressed: () => _onPlay())
-        : allowStreamingIconButton(
-            context, Icon(Icons.play_arrow, size: 32), _onPlay);
+            onPressed: () => _onPlay(context))
+        : StreamingButton(onPressed: () => _onPlay(context));
   }
 
   Widget _downloadButton(BuildContext context, bool isCached) {
@@ -166,17 +132,16 @@ class _SeriesWidgetState extends State<SeriesWidget> {
             color: overlayIconColor(context),
             icon: Icon(IconsDownloadDone),
             onPressed: () => {})
-        : allowDownloadIconButton(
-            context, Icon(IconsDownload), () => _onDownload(context));
+        : DownloadButton(onPressed: () => _onDownload(context));
   }
 
-  void _onPlay() {
-    MediaQueue.play(series: widget._series);
-    showPlayer();
+  void _onPlay(BuildContext context) {
+    // MediaQueue.play(context, series: _series);
+    // showPlayer();
   }
 
   void _onDownload(BuildContext context) {
-    Downloads.downloadSeries(context, widget._series);
+    // Downloads.downloadSeries(context, _series);
   }
 }
 
@@ -188,53 +153,45 @@ class _SeriesEpisodeListWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    _view.episodes.forEach((e) {
-      e.image = _view.series.image;
-      e.album = _view.series.title;
+    final episodes = List<Episode>.from(_view.episodes.map((e) =>
+        e.copyWith(album: _view.series.title, image: _view.series.image)));
+    return BlocBuilder<DownloadCubit, DownloadState>(builder: (context, state) {
+      return Column(children: [
+        ...episodes.asMap().keys.toList().map((index) => ListTile(
+            isThreeLine: true,
+            trailing: _trailing(context, state, episodes[index]),
+            onTap: () => _onPlay(context, episodes[index]),
+            onLongPress: () => _onEpisode(context, episodes[index], index),
+            title: Text(episodes[index].title),
+            subtitle: _subtitle(context, episodes[index])))
+      ]);
     });
-
-    return StreamBuilder<CacheSnapshot>(
-        stream: MediaCache.stream(),
-        builder: (context, snapshot) {
-          final cacheSnapshot = snapshot.data ?? CacheSnapshot.empty();
-          final episodes = _view.episodes;
-          return Column(children: [
-            ...episodes.asMap().keys.toList().map((index) => ListTile(
-                isThreeLine: true,
-                trailing: _trailing(context, cacheSnapshot, episodes[index]),
-                onTap: () => _onPlay(context, episodes[index]),
-                onLongPress: () => _onEpisode(context, episodes[index], index),
-                title: Text(episodes[index].title),
-                subtitle: _subtitle(context, cacheSnapshot, episodes[index])))
-          ]);
-        });
   }
 
-  Widget _subtitle(
-      BuildContext context, CacheSnapshot snapshot, Episode episode) {
-    final children = <Widget>[];
-    final remaining = snapshot.remaining(episode);
-    if (remaining != null && remaining.inSeconds > 0) {
-      final value = snapshot.value(episode);
-      if (value != null) {
-        children.add(LinearProgressIndicator(value: value));
+  Widget _subtitle(BuildContext context, Episode episode) {
+    return Builder(builder: (context) {
+      final offsets = context.watch<OffsetCacheCubit>();
+      final children = <Widget>[];
+      final remaining = offsets.state.remaining(episode);
+      if (remaining != null && remaining.inSeconds > 0) {
+        final value = offsets.state.value(episode);
+        if (value != null) {
+          children.add(LinearProgressIndicator(value: value));
+        }
       }
-    }
-    children.add(RelativeDateWidget.from(episode.date, prefix: episode.author));
-    return Column(
-        children: children, crossAxisAlignment: CrossAxisAlignment.start);
+      children
+          .add(RelativeDateWidget.from(episode.date, prefix: episode.author));
+      return Column(
+          children: children, crossAxisAlignment: CrossAxisAlignment.start);
+    });
   }
 
   Widget? _trailing(
-      BuildContext context, CacheSnapshot snapshot, Episode episode) {
-    final downloading = snapshot.downloadSnapshot(episode);
-    if (downloading != null) {
-      final value = downloading.value;
-      return value > 1.0
-          ? CircularProgressIndicator()
-          : CircularProgressIndicator(value: value);
-    }
-    return snapshot.contains(episode) ? Icon(IconsCached) : null;
+      BuildContext context, DownloadState state, Episode episode) {
+    final progress = state.progress(episode);
+    return (progress != null)
+        ? CircularProgressIndicator(value: progress.value)
+        : Icon(context.trackCache.state.contains(episode) ? IconsCached : null);
   }
 
   // void _onCache(BuildContext context, bool isCached, Episode episode) {
@@ -254,8 +211,8 @@ class _SeriesEpisodeListWidget extends StatelessWidget {
   }
 
   void _onPlay(BuildContext context, Episode episode) {
-    MediaQueue.play(episode: episode);
-    showPlayer();
+    // MediaQueue.play(context, episode: episode);
+    // showPlayer();
   }
 }
 
@@ -283,54 +240,52 @@ class _EpisodeWidget extends StatelessWidget {
             ])
           ],
         ),
-        body: StreamBuilder<CacheSnapshot>(
-            stream: MediaCache.stream(),
-            builder: (context, snapshot) {
-              final cacheSnapshot = snapshot.data ?? CacheSnapshot.empty();
-              final when = cacheSnapshot.when(episode);
-              final duration = cacheSnapshot.duration(episode);
-              final remaining = cacheSnapshot.remaining(episode);
-              final isCached = cacheSnapshot.contains(episode);
-              var title = episode.creator;
-              var subtitle = merge([
-                ymd(episode.date),
-                if (duration != null) duration.inHoursMinutes
-              ]);
-              return Container(
-                child: Column(
-                  children: [
-                    Container(
-                        padding: padding,
-                        alignment: Alignment.centerLeft,
-                        child: Text(episode.title,
-                            style: Theme.of(context).textTheme.titleLarge)),
-                    ListTile(
-                      title: Text(title, overflow: TextOverflow.ellipsis),
-                      subtitle: Text(subtitle, overflow: TextOverflow.ellipsis),
-                      trailing: _downloadButton(context, cacheSnapshot),
-                    ),
-                    _progress(cacheSnapshot) ?? SizedBox.shrink(),
-                    Expanded(child: _episodeDetail()),
-                    ListTile(
-                      title: remaining != null
-                          ? Text(
-                              '${remaining.inHoursMinutes} remaining') // TODO intl
-                          : SizedBox.shrink(),
-                      subtitle: remaining != null
-                          ? RelativeDateWidget(when!)
-                          : SizedBox.shrink(),
-                      leading: _playButton(context, isCached),
-                    ),
-                  ],
+        body: BlocBuilder<OffsetCacheCubit, OffsetCacheState>(
+            builder: (context, state) {
+          final when = state.when(episode);
+          final duration = state.duration(episode);
+          final remaining = state.remaining(episode);
+          final isCached = state.contains(episode);
+          var title = episode.creator;
+          var subtitle = merge([
+            ymd(episode.date),
+            if (duration != null) duration.inHoursMinutes
+          ]);
+          return Container(
+            child: Column(
+              children: [
+                Container(
+                    padding: padding,
+                    alignment: Alignment.centerLeft,
+                    child: Text(episode.title,
+                        style: Theme.of(context).textTheme.titleLarge)),
+                ListTile(
+                  title: Text(title, overflow: TextOverflow.ellipsis),
+                  subtitle: Text(subtitle, overflow: TextOverflow.ellipsis),
+                  trailing: _downloadButton(context),
                 ),
-              );
-            }));
+                _progress(state) ?? SizedBox.shrink(),
+                Expanded(child: _episodeDetail()),
+                ListTile(
+                  title: remaining != null
+                      ? Text(
+                          '${remaining.inHoursMinutes} remaining') // TODO intl
+                      : SizedBox.shrink(),
+                  subtitle: remaining != null
+                      ? RelativeDateWidget(when!)
+                      : SizedBox.shrink(),
+                  leading: _playButton(context, isCached),
+                ),
+              ],
+            ),
+          );
+        }));
   }
 
-  Widget? _progress(CacheSnapshot snapshot) {
-    final remaining = snapshot.remaining(episode);
+  Widget? _progress(OffsetCacheState state) {
+    final remaining = state.remaining(episode);
     if (remaining != null && remaining.inSeconds > 0) {
-      final value = snapshot.value(episode);
+      final value = state.value(episode);
       if (value != null) {
         return LinearProgressIndicator(value: value);
       }
@@ -377,42 +332,42 @@ class _EpisodeWidget extends StatelessWidget {
     return view;
   }
 
-  Widget _downloadButton(BuildContext context, CacheSnapshot cacheSnapshot) {
-    final downloading = cacheSnapshot.downloadSnapshot(episode);
-    if (downloading != null) {
-      final value = downloading.value;
-      return value > 1.0
-          ? CircularProgressIndicator()
-          : CircularProgressIndicator(value: value);
-    }
-    final isCached = cacheSnapshot.contains(episode);
-    return isCached
-        ? IconButton(
-            color: overlayIconColor(context),
-            icon: Icon(IconsDownloadDone),
-            onPressed: () => {})
-        : allowDownloadIconButton(
-            context, Icon(IconsDownload), () => _onDownload(context));
+  Widget _downloadButton(BuildContext context) {
+    return Builder(builder: (context) {
+      final downloads = context.watch<DownloadCubit>();
+      final cache = context.watch<TrackCacheCubit>();
+
+      final download = downloads.state.get(episode);
+      if (download != null) {
+        final value = download.progress?.value ?? 0.0;
+        return value > 1.0
+            ? CircularProgressIndicator()
+            : CircularProgressIndicator(value: value);
+      }
+      final isCached = cache.state.contains(episode);
+      return isCached
+          ? IconButton(
+              color: overlayIconColor(context),
+              icon: Icon(IconsDownloadDone),
+              onPressed: () => {})
+          : DownloadButton(onPressed: () => _onDownload(context));
+    });
   }
 
   void _onDownload(BuildContext context) {
-    Downloads.downloadEpisode(episode);
+    // Downloads.downloadEpisode(episode);
   }
 
   Widget _playButton(BuildContext context, bool isCached) {
     return isCached
-        ? IconButton(
-            color: overlayIconColor(context),
-            icon: Icon(Icons.play_arrow, size: 36),
-            onPressed: () => _onPlay(context))
-        : allowStreamingIconButton(
-            context, Icon(Icons.play_arrow, size: 36), () => _onPlay(context));
+        ? PlayButton(onPressed: () => _onPlay(context))
+        : StreamingButton(onPressed: () => _onPlay(context));
   }
 
   void _onPlay(BuildContext context) {
     print('play $episode');
-    MediaQueue.play(episode: episode);
-    showPlayer();
+    // MediaQueue.play(context, episode: episode);
+    // showPlayer();
   }
 
   void _onDelete(BuildContext context) {
@@ -441,7 +396,7 @@ class _EpisodeWidget extends StatelessWidget {
   }
 
   void _onDeleteConfirmed() async {
-    Downloads.deleteEpisode(episode);
+    // Downloads.deleteEpisode(episode);
   }
 }
 
@@ -455,7 +410,7 @@ class SeriesListWidget extends StatelessWidget {
     return Column(children: [
       ..._list.asMap().keys.toList().map((index) => ListTile(
           onTap: () => _onTapped(context, _list[index]),
-          leading: tileCover(_list[index].image),
+          leading: tileCover(context, _list[index].image),
           subtitle: Text(
               merge([
                 ymd(_list[index].date),
@@ -482,7 +437,7 @@ class EpisodeListWidget extends StatelessWidget {
     return Column(children: [
       ..._list.asMap().keys.toList().map((index) => ListTile(
           onTap: () => _onTapped(context, _list[index]),
-          leading: tilePodcast(_list[index].image),
+          leading: tilePodcast(context, _list[index].image),
           subtitle: Text(
               merge([
                 ymd(_list[index].date),

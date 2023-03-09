@@ -1,0 +1,71 @@
+// Copyright (C) 2023 The Takeout Authors.
+//
+// This file is part of Takeout.
+//
+// Takeout is free software: you can redistribute it and/or modify it under the
+// terms of the GNU Affero General Public License as published by the Free
+// Software Foundation, either version 3 of the License, or (at your option)
+// any later version.
+//
+// Takeout is distributed in the hope that it will be useful, but WITHOUT ANY
+// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+// FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public License for
+// more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
+
+import 'dart:io';
+
+import 'package:bloc/bloc.dart';
+
+import 'file_provider.dart';
+import 'file_repository.dart';
+
+class FileCacheState {
+  final Set<String> keys;
+
+  FileCacheState(this.keys);
+
+  factory FileCacheState.empty() {
+    return FileCacheState(<String>{});
+  }
+
+  FileCacheState copyWith({Set<String>? keys}) =>
+      FileCacheState(keys ?? this.keys);
+
+  bool contains(FileIdentifier id) {
+    return keys.contains(id.key);
+  }
+
+  bool containsAll(Iterable<FileIdentifier> ids) {
+    final set = Set<String>();
+    ids.forEach((e) => set.add(e.key));
+    return keys.containsAll(set);
+  }
+}
+
+class FileCacheCubit extends Cubit<FileCacheState> {
+  final FileCacheRepository repository;
+
+  FileCacheCubit(this.repository) : super(FileCacheState.empty()) {
+    _emitState();
+  }
+
+  void _emitState() async {
+    final keys = await repository.keys();
+    emit(FileCacheState(Set<String>.from(keys)));
+  }
+
+  void add(FileIdentifier id, File file) async {
+    repository.put(id, file).whenComplete(() => _emitState());
+  }
+
+  void remove(FileIdentifier id) async {
+    repository.remove(id).whenComplete(() => _emitState());
+  }
+
+  void retain(Iterable<FileIdentifier> ids) async {
+    repository.retain(ids).whenComplete(() => _emitState());
+  }
+}

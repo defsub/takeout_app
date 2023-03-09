@@ -15,20 +15,20 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
-import 'dart:io';
-import 'dart:async';
-import 'dart:convert';
 import 'dart:collection';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:json_annotation/json_annotation.dart';
-import 'package:takeout_app/client.dart';
+import 'package:takeout_app/cache/offset_repository.dart';
+import 'package:takeout_app/client/download.dart';
+import 'package:takeout_app/client/etag.dart';
 
-import 'model.dart';
-import 'util.dart';
+import 'package:takeout_app/model.dart';
+import 'package:takeout_app/util.dart';
+import 'package:takeout_app/media_type/media_type.dart';
 
-part 'spiff.g.dart';
+part 'model.g.dart';
 
 Random _random = Random();
 
@@ -39,22 +39,25 @@ class Spiff {
   final Playlist playlist;
   final String type;
   final String cover;
+  @JsonKey(ignore: true)
+  final DateTime? lastModified;
 
   Spiff(
       {required this.index,
       required this.position,
       required this.playlist,
-      required this.type}) : cover = playlist._cover;
+      required this.type, this.lastModified})
+      : cover = playlist._cover;
 
-  int get size {
-    return playlist.tracks.fold(0, (sum, t) => sum + t.size);
-  }
+  int get size => playlist.tracks.fold(0, (sum, t) => sum + t.size);
 
   String? get creator => playlist.creator;
 
   String get title => playlist.title;
 
   String? get location => playlist.location;
+
+  String? get date => playlist.date;
 
   @override
   bool operator ==(other) {
@@ -89,19 +92,19 @@ class Spiff {
   }
 
   bool isMusic() {
-    return MediaTypes.from(type) == MediaType.music;
+    return MediaType.of(type) == MediaType.music;
   }
 
   bool isVideo() {
-    return MediaTypes.from(type) == MediaType.video;
+    return MediaType.of(type) == MediaType.video;
   }
 
   bool isPodcast() {
-    return MediaTypes.from(type) == MediaType.podcast;
+    return MediaType.of(type) == MediaType.podcast;
   }
 
   bool isStream() {
-    return MediaTypes.from(type) == MediaType.stream;
+    return MediaType.of(type) == MediaType.stream;
   }
 
   MediaType get mediaType {
@@ -109,7 +112,7 @@ class Spiff {
       // FIXME remove after transition to require type is done
       return MediaType.music;
     }
-    return MediaTypes.from(type);
+    return MediaType.of(type);
   }
 
   factory Spiff.fromJson(Map<String, dynamic> json) => _$SpiffFromJson(json);
@@ -121,12 +124,14 @@ class Spiff {
     double? position,
     Playlist? playlist,
     String? type,
+    DateTime? lastModified,
   }) =>
       Spiff(
         index: index ?? this.index,
         position: position ?? this.position,
         playlist: playlist ?? this.playlist,
         type: type ?? this.type,
+        lastModified: lastModified ?? this.lastModified
       );
 
   static Spiff cleanup(Spiff spiff) {
@@ -139,31 +144,31 @@ class Spiff {
     return spiff;
   }
 
-  static Spiff empty() => Spiff(
+  factory Spiff.empty() => Spiff(
       index: -1,
       position: 0,
       playlist: Playlist(title: '', tracks: []),
       type: MediaType.music.name);
 
-  static Future<Spiff> fromFile(File file) async {
-    final completer = Completer<Spiff>();
-    file.exists().then((exists) {
-      if (exists) {
-        file.readAsBytes().then((body) {
-          completer.complete(Spiff.fromJson(jsonDecode(utf8.decode(body))));
-        }).catchError((e) {
-          completer.completeError(e);
-        });
-      } else {
-        completer.complete(Spiff.empty());
-      }
-    });
-    return completer.future;
-  }
+  // static Future<Spiff> fromFile(File file) async {
+  //   final completer = Completer<Spiff>();
+  //   file.exists().then((exists) {
+  //     if (exists) {
+  //       file.readAsBytes().then((body) {
+  //         completer.complete(Spiff.fromJson(jsonDecode(utf8.decode(body))));
+  //       }).catchError((e) {
+  //         completer.completeError(e);
+  //       });
+  //     } else {
+  //       completer.complete(Spiff.empty());
+  //     }
+  //   });
+  //   return completer.future;
+  // }
 }
 
 @JsonSerializable()
-class Entry extends Locatable implements MediaTrack {
+class Entry extends DownloadIdentifier implements MediaTrack, OffsetIdentifier {
   final String creator;
   final String album;
   final String title;
@@ -175,6 +180,7 @@ class Entry extends Locatable implements MediaTrack {
   final List<String>? identifiers;
   @JsonKey(name: 'size')
   final List<int>? sizes;
+  final int _year;
 
   Entry(
       {required this.creator,
@@ -184,7 +190,8 @@ class Entry extends Locatable implements MediaTrack {
       this.date = '',
       required this.locations,
       this.identifiers,
-      this.sizes});
+      this.sizes})
+      : _year = parseYear(date);
 
   Entry copyWith({
     required List<String> locations,
@@ -205,8 +212,7 @@ class Entry extends Locatable implements MediaTrack {
 
   @override
   String get key {
-    final etag = identifiers?[0] ?? '';
-    return etag.replaceAll(new RegExp(r'"'), '');
+    return ETag(etag).value;
   }
 
   @override
@@ -229,20 +235,8 @@ class Entry extends Locatable implements MediaTrack {
   @override
   int get number => 0;
 
-  int _year = -1;
-
   @override
-  int get year {
-    if (_year == -1) {
-      _year = parseYear(date);
-    }
-    return _year;
-  }
-
-  @override
-  Reference get reference {
-    throw UnimplementedError;
-  }
+  int get year => _year;
 }
 
 @JsonSerializable()
@@ -262,7 +256,8 @@ class Playlist {
       required this.title,
       this.image,
       this.date,
-      required this.tracks}) : _cover = _pickCover(image, tracks);
+      required this.tracks})
+      : _cover = _pickCover(image, tracks);
 
   Playlist copyWith({
     String? location,
@@ -303,7 +298,7 @@ class Playlist {
 
 String spiffDate(Spiff spiff, {Entry? entry, Playlist? playlist}) {
   if (entry != null) {
-    return spiff.isPodcast() ? ymd(entry.date): entry.year.toString();
+    return spiff.isPodcast() ? ymd(entry.date) : entry.year.toString();
   }
   if (playlist != null && playlist.date != null) {
     return spiff.isPodcast()

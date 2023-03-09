@@ -16,156 +16,151 @@
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
 import 'dart:collection';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
+import 'package:takeout_app/app/context.dart';
+import 'package:takeout_app/api/model.dart';
+import 'package:takeout_app/history/history.dart';
+import 'package:takeout_app/history/model.dart';
+import 'package:takeout_app/page/page.dart';
 import 'package:takeout_app/podcasts.dart';
 import 'package:takeout_app/release.dart';
 
-import 'schema.dart';
-import 'client.dart';
 import 'artists.dart';
 import 'style.dart';
-import 'playlist.dart';
-import 'downloads.dart';
 import 'video.dart';
-import 'global.dart';
-import 'history.dart';
 
-class SearchWidget extends StatefulWidget {
-  @override
-  _SearchState createState() => _SearchState();
-}
+class SearchWidget extends ClientPage<SearchView?> {
+  // final TextEditingController _searchText = TextEditingController();
+  final _query = StringBuffer();
 
-class _SearchState extends State<SearchWidget> {
-  SearchView? _view;
-  TextEditingController _searchText = TextEditingController();
-
-  void _onPlay() {
-    final List<Track>? tracks = _view!.tracks;
+  void _onPlay(BuildContext context, SearchView view) {
+    final List<Track>? tracks = view.tracks;
     if (tracks != null && tracks.length > 0) {
-      MediaQueue.playTracks(tracks);
+      // MediaQueue.playTracks(context, tracks);
     }
   }
 
-  void _onDownload(BuildContext context) {
-    final List<Track>? tracks = _view!.tracks;
-    if (tracks != null && tracks.length > 0) {
-      final spiff = MediaQueue.fromTracks(tracks,
-          creator: 'Search', title: _searchText.text);
-      Downloads.downloadSpiff(context, spiff);
+  void _onDownload(BuildContext context, SearchView view) {
+    // final List<Track>? tracks = view.tracks;
+    // if (tracks != null && tracks.length > 0) {
+    //   final spiff = MediaQueue.fromTracks(tracks,
+    //       creator: 'Search', title: 'TODO');
+    //   context.download.addSpiff(spiff);
+    // }
+  }
+
+  @override
+  void load(BuildContext context, {Duration? ttl}) {
+    if (_query.isNotEmpty) {
+      context.client.search(_query.toString(), ttl: ttl);
     }
   }
 
   @override
-  Widget build(BuildContext context) {
-    History.instance; // TODO start load
-    final WidgetBuilder builder = (_) => StreamBuilder<History>(
-        stream: History.stream,
-        builder: (ctx, snapshot) {
-          final history = snapshot.data;
-          final searches =
-              history != null ? history.searches : <SearchHistory>[];
-          searches.sort((a, b) => b.dateTime.compareTo(a.dateTime));
-          final words = searches.map((e) => e.search);
-          final artists = artistMap.keys.toList();
-          return Scaffold(
-              appBar: AppBar(
-                  leading: IconButton(
-                      icon: Icon(Icons.arrow_back),
-                      onPressed: () => Navigator.pop(context)),
-                  title: Autocomplete<String>(
-                    optionsBuilder: (editValue) {
-                      final text = editValue.text;
-                      if (text.isEmpty) {
-                        return words;
-                      } else {
-                        final s = text.toLowerCase();
-                        final options = LinkedHashSet<String>()
-                          ..add(text)
-                          ..addAll(
-                              words.where((e) => e.toLowerCase().startsWith(s)))
-                          ..addAll(artists
-                              .where((e) => e.toLowerCase().contains(s)));
-                        return options.toList();
-                      }
-                    },
-                    onSelected: (value) {
-                      _onSubmit(value);
-                    },
-                  )),
-              body: Container(
-                  child: Column(children: [
-                if (_view != null)
-                  Flexible(
-                      child: ListView(children: [
-                    if (_view!.artists != null && _view!.artists!.isNotEmpty)
-                      Container(
-                          child: Column(children: [
-                        heading(AppLocalizations.of(context)!.artistsLabel),
-                        _ArtistResultsWidget(_view!.artists!),
-                      ])),
-                    if (_view!.releases != null && _view!.releases!.isNotEmpty)
-                      Container(
-                          child: Column(children: [
-                        heading(AppLocalizations.of(context)!.releasesLabel),
-                        ReleaseListWidget(_view!.releases!),
-                      ])),
-                    if (_view!.tracks != null && _view!.tracks!.isNotEmpty)
-                      Container(
-                          child: Column(children: [
-                        heading(AppLocalizations.of(context)!.tracksLabel),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            OutlinedButton.icon(
-                                label: Text(
-                                    AppLocalizations.of(context)!.playLabel),
-                                icon: Icon(Icons.play_arrow),
-                                onPressed: () => _onPlay()),
-                            OutlinedButton.icon(
-                                label: Text(AppLocalizations.of(context)!
-                                    .downloadLabel),
-                                icon: Icon(Icons.radio),
-                                onPressed: () => _onDownload(context)),
-                          ],
-                        ),
-                        TrackListWidget(_view!.tracks!),
-                      ])),
-                    if (_view!.movies != null && _view!.movies!.isNotEmpty)
-                      Container(
-                          child: Column(children: [
-                        heading(AppLocalizations.of(context)!.moviesLabel),
-                        MovieListWidget(_view!.movies!),
-                      ])),
-                    if (_view!.series != null && _view!.series!.isNotEmpty)
-                      Container(
-                          child: Column(children: [
-                        heading(AppLocalizations.of(context)!.seriesLabel),
-                        SeriesListWidget(_view!.series!),
-                      ])),
-                    if (_view!.episodes != null && _view!.episodes!.isNotEmpty)
-                      Container(
-                          child: Column(children: [
-                        heading(AppLocalizations.of(context)!.episodesLabel),
-                        EpisodeListWidget(_view!.episodes!),
-                      ])),
-                  ]))
-              ])));
-        });
+  Widget page(BuildContext context, SearchView? view) {
+    final cubit = context.watch<HistoryCubit>();
+    final WidgetBuilder builder = (_) {
+      final history = cubit.state;
+      final searches = List<SearchHistory>.from(history.searches);
+      searches.sort((a, b) => b.dateTime.compareTo(a.dateTime));
+      final words = searches.map((e) => e.search);
+      return Scaffold(
+          appBar: AppBar(
+              leading: IconButton(
+                  icon: Icon(Icons.arrow_back),
+                  onPressed: () => Navigator.pop(context)),
+              title: Autocomplete<String>(
+                optionsBuilder: (editValue) {
+                  final text = editValue.text;
+                  if (text.isEmpty) {
+                    return words;
+                  } else {
+                    final s = text.toLowerCase();
+                    final options = LinkedHashSet<String>()
+                      ..add(text)
+                      ..addAll(
+                          words.where((e) => e.toLowerCase().startsWith(s)))
+                      ..addAll(context.search.findArtistsByName(s));
+                    return options.toList();
+                  }
+                },
+                onSelected: (value) {
+                  _onSubmit(context, value);
+                },
+              )),
+          body: Container(
+              child: Column(children: [
+            if (view != null)
+              Flexible(
+                  child: ListView(children: [
+                if (view.artists != null && view.artists!.isNotEmpty)
+                  Container(
+                      child: Column(children: [
+                    heading(AppLocalizations.of(context)!.artistsLabel),
+                    _ArtistResultsWidget(view.artists!),
+                  ])),
+                if (view.releases != null && view.releases!.isNotEmpty)
+                  Container(
+                      child: Column(children: [
+                    heading(AppLocalizations.of(context)!.releasesLabel),
+                    ReleaseListWidget(view.releases!),
+                  ])),
+                if (view.tracks != null && view.tracks!.isNotEmpty)
+                  Container(
+                      child: Column(children: [
+                    heading(AppLocalizations.of(context)!.tracksLabel),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        OutlinedButton.icon(
+                            label:
+                                Text(AppLocalizations.of(context)!.playLabel),
+                            icon: Icon(Icons.play_arrow),
+                            onPressed: () => _onPlay(context, view)),
+                        OutlinedButton.icon(
+                            label: Text(
+                                AppLocalizations.of(context)!.downloadLabel),
+                            icon: Icon(Icons.radio),
+                            onPressed: () => _onDownload(context, view)),
+                      ],
+                    ),
+                    TrackListWidget(view.tracks!),
+                  ])),
+                if (view.movies != null && view.movies!.isNotEmpty)
+                  Container(
+                      child: Column(children: [
+                    heading(AppLocalizations.of(context)!.moviesLabel),
+                    MovieListWidget(view.movies!),
+                  ])),
+                if (view.series != null && view.series!.isNotEmpty)
+                  Container(
+                      child: Column(children: [
+                    heading(AppLocalizations.of(context)!.seriesLabel),
+                    SeriesListWidget(view.series!),
+                  ])),
+                if (view.episodes != null && view.episodes!.isNotEmpty)
+                  Container(
+                      child: Column(children: [
+                    heading(AppLocalizations.of(context)!.episodesLabel),
+                    EpisodeListWidget(view.episodes!),
+                  ])),
+              ]))
+          ])));
+    };
     return builder(context);
   }
 
-  void _onSubmit(String q) {
-    q = q.trim();
-    History.instance.then((history) => history.add(search: q));
-    final client = Client();
-    client.search(q).then((result) {
-      if (mounted) {
-        setState(() {
-          _view = result;
-        });
-      }
-    });
+  void _onSubmit(BuildContext context, String q) {
+    _query.clear();
+    _query.write(q.trim());
+    if (_query.isNotEmpty) {
+      context.history.add(search: _query.toString());
+      load(context);
+    }
   }
 }
 

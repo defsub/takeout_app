@@ -17,6 +17,8 @@
 
 import 'dart:collection';
 
+import 'package:takeout_app/global.dart';
+
 extension TakeoutDuration on Duration {
   String get inHoursMinutes {
     var mins = inMinutes.remainder(60);
@@ -84,7 +86,7 @@ int parseYear(String date) {
   return year;
 }
 
-String merge(List<String> args, {String separator = ' \u2022 '}) {
+String merge(List<String> args, {String separator = textSeparator}) {
   args.retainWhere((s) => s.toString().isNotEmpty);
   return args.join(separator);
 }
