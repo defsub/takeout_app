@@ -22,24 +22,24 @@ import 'client.dart';
 import 'schema.dart';
 
 class Progress {
-  static Future sync({Client? client}) async {
-    client = client ?? Client();
-    return OffsetCache.merge(client);
-  }
-
-  static Future<Duration> position(String etag) async {
-    final offset = await OffsetCache.get(etag);
-    return offset?.position() ?? Duration.zero;
-  }
-
-  static void update(String etag, Duration position, Duration duration) {
-    final client = Client();
-    final offset = Offset.now(etag: etag, duration: duration, offset: position);
-    // async update for local & remote
-    OffsetCache.put(offset).then((_) => client.updateProgress(Offsets.fromOffset(offset)));
-  }
-
-  static void remove(String etag) {
-    OffsetCache.remove(etag);
-  }
+  // static Future sync({Client? client}) async {
+  //   client = client ?? Client();
+  //   return OffsetCache.merge(client);
+  // }
+  //
+  // static Future<Duration> position(String etag) async {
+  //   final offset = await OffsetCache.get(etag);
+  //   return offset?.position() ?? Duration.zero;
+  // }
+  //
+  // static void update(String etag, Duration position, Duration duration) {
+  //   final client = Client();
+  //   final offset = Offset.now(etag: etag, duration: duration, offset: position);
+  //   // async update for local & remote
+  //   OffsetCache.put(offset).then((_) => client.updateProgress(Offsets.fromOffset(offset)));
+  // }
+  //
+  // static void remove(String etag) {
+  //   OffsetCache.remove(etag);
+  // }
 }

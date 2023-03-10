@@ -78,7 +78,7 @@ void main() async {
   final appDir = await getApplicationDocumentsDirectory();
   final storageDir = Directory('${appDir.path}/state');
   HydratedBloc.storage =
-  await HydratedStorage.build(storageDirectory: storageDir);
+      await HydratedStorage.build(storageDirectory: storageDir);
 
   runApp(TakeoutApp(appDir));
 }
@@ -93,30 +93,28 @@ class TakeoutApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return repositories(directory,
-        child: blocs(context,
+        child: blocs(
             child: listeners(context, child: DynamicColorBuilder(
                 builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
-                  return MaterialApp(
-                      onGenerateTitle: (context) {
-                        return AppLocalizations.of(context)!.takeoutTitle;
-                      },
-                      localizationsDelegates: [
-                        AppLocalizations.delegate,
-                        GlobalMaterialLocalizations.delegate,
-                        GlobalWidgetsLocalizations.delegate,
-                        GlobalCupertinoLocalizations.delegate,
-                      ],
-                      supportedLocales: [
-                        const Locale('en', ''),
-                      ],
-                      home: _TakeoutWidget(),
-                      theme: ThemeData.light()
-                          .copyWith(
-                          useMaterial3: true, colorScheme: lightDynamic),
-                      darkTheme: ThemeData.dark()
-                          .copyWith(
-                          useMaterial3: true, colorScheme: darkDynamic));
-                }))));
+          return MaterialApp(
+              onGenerateTitle: (context) {
+                return AppLocalizations.of(context)!.takeoutTitle;
+              },
+              localizationsDelegates: [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              supportedLocales: [
+                const Locale('en', ''),
+              ],
+              home: _TakeoutWidget(),
+              theme: ThemeData.light()
+                  .copyWith(useMaterial3: true, colorScheme: lightDynamic),
+              darkTheme: ThemeData.dark()
+                  .copyWith(useMaterial3: true, colorScheme: darkDynamic));
+        }))));
   }
 
   Widget repositories(Directory directory, {required Widget child}) {
@@ -125,15 +123,15 @@ class TakeoutApp extends StatelessWidget {
     final settingsRepository = SettingsRepository();
 
     final trackCacheRepository =
-    TrackCacheRepository(directory: d('track_cache'));
+        TrackCacheRepository(directory: d('track_cache'));
 
     final jsonCacheRepository = JsonCacheRepository(directory: d('json_cache'));
 
     final offsetCacheRepository =
-    OffsetCacheRepository(directory: d('offset_cache'));
+        OffsetCacheRepository(directory: d('offset_cache'));
 
     final spiffCacheRepository =
-    SpiffCacheRepository(directory: d('spiff_cache'));
+        SpiffCacheRepository(directory: d('spiff_cache'));
 
     final historyRepository = HistoryRepository(directory: directory);
 
@@ -158,55 +156,59 @@ class TakeoutApp extends StatelessWidget {
       RepositoryProvider(create: (_) => historyRepository),
       RepositoryProvider(create: (_) => clientRepository),
       RepositoryProvider(create: (_) => connectivityRepository),
+      RepositoryProvider(create: (_) => tokenRepository),
     ], child: child);
   }
 
-  Widget blocs(BuildContext context, {required Widget child}) {
+  Widget blocs({required Widget child}) {
+    // print(context);
+    // print(context.read<ConnectivityRepository>());
+    // print(context.tokenRepository);
+    // print(context.read<TokenRepository>());
     return MultiBlocProvider(providers: [
-      BlocProvider(create: (_) {
-        final settings = SettingsCubit();
-        context.read<SettingsRepository>().init(settings.stream);
-        return settings;
-      }),
+      BlocProvider(
+          lazy: false,
+          create: (context) {
+            final settings = SettingsCubit();
+            context.read<SettingsRepository>().init(settings);
+            return settings;
+          }),
       BlocProvider(create: (_) => AppCubit()),
       BlocProvider(create: (_) => SelectedMediaType()),
       BlocProvider(create: (_) => NowPlaying()),
       BlocProvider(
-          create: (_) =>
+          create: (context) =>
               ConnectivityCubit(context.read<ConnectivityRepository>())),
-      BlocProvider(create: (_) {
+      BlocProvider(create: (context) {
         final tokens = TokensCubit();
         context.read<TokenRepository>().init(tokens);
         return tokens;
       }),
       BlocProvider(
-          create: (_) =>
-              Player(
-                  offsetRepository: context.read<OffsetCacheRepository>(),
-                  settingsRepository: context.read<SettingsRepository>(),
-                  tokenRepository: context.read<TokenRepository>(),
-                  trackResolver: MediaTrackResolver(
-                      trackCacheRepository: context.read<
-                          TrackCacheRepository>()))),
+          create: (context) => Player(
+              offsetRepository: context.read<OffsetCacheRepository>(),
+              settingsRepository: context.read<SettingsRepository>(),
+              tokenRepository: context.read<TokenRepository>(),
+              trackResolver: MediaTrackResolver(
+                  trackCacheRepository: context.read<TrackCacheRepository>()))),
       BlocProvider(
-          create: (_) => SpiffCacheCubit(context.read<SpiffCacheRepository>())),
+          create: (context) =>
+              SpiffCacheCubit(context.read<SpiffCacheRepository>())),
       BlocProvider(
-          create: (_) =>
-              OffsetCacheCubit(context.read<OffsetCacheRepository>(),
-                  context.read<ClientRepository>())),
+          create: (context) => OffsetCacheCubit(
+              context.read<OffsetCacheRepository>(),
+              context.read<ClientRepository>())),
       BlocProvider(
-          create: (_) =>
-              DownloadCubit(
+          create: (context) => DownloadCubit(
                 trackCacheRepository: context.read<TrackCacheRepository>(),
                 clientRepository: context.read<ClientRepository>(),
               )),
       BlocProvider(
-          create: (_) =>
-              TrackCacheCubit(
+          create: (context) => TrackCacheCubit(
                 context.read<TrackCacheRepository>(),
               )),
       BlocProvider(
-          create: (_) => HistoryCubit(context.read<HistoryRepository>()))
+          create: (context) => HistoryCubit(context.read<HistoryRepository>()))
     ], child: child);
   }
 
@@ -219,18 +221,6 @@ class TakeoutApp extends StatelessWidget {
         },
         child: child);
   }
-
-// ThemeData _darkTheme() {
-//   final ThemeData base = ThemeData.dark();
-//   return base.copyWith(
-//     colorScheme: ColorScheme.dark().copyWith(
-//         primary: Colors.orangeAccent,
-//         primaryContainer: Colors.orangeAccent,
-//         secondary: Colors.orangeAccent,
-//         secondaryContainer: Colors.orangeAccent),
-//     indicatorColor: Colors.orangeAccent,
-//   );
-// }
 }
 
 class _TakeoutWidget extends StatefulWidget {
@@ -414,29 +404,28 @@ class _TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
     final pages = List.generate(
         _routes.length, (index) => builders[_routes[index]]!(context));
 
-    return WillPopScope(
-        onWillPop: () async {
-          NavigatorState? navState = _navigatorState(context.app.state.index);
-          if (navState != null) {
-            final handled = await navState.maybePop();
-            if (!handled && context.app.state.index == NavigationIndex.home) {
-              // allow pop and app to exit
-              return true;
-            }
-          }
-          return false;
-        },
-        child: BlocBuilder<AppCubit, AppState>(builder: (context, state) {
-          if (state.authenticated == false) {
-            return LoginWidget();
-          } else {
-            return Scaffold(key: _scaffoldMessengerKey,
-                floatingActionButton: _fab(context),
-                body: IndexedStack(
-                    index: state.navigationBarIndex, children: pages),
-                bottomNavigationBar: _bottomNavigation());
-          }
-        }));
+    return WillPopScope(onWillPop: () async {
+      NavigatorState? navState = _navigatorState(context.app.state.index);
+      if (navState != null) {
+        final handled = await navState.maybePop();
+        if (!handled && context.app.state.index == NavigationIndex.home) {
+          // allow pop and app to exit
+          return true;
+        }
+      }
+      return false;
+    }, child: BlocBuilder<AppCubit, AppState>(builder: (context, state) {
+      if (state.authenticated == false) {
+        return LoginWidget();
+      } else {
+        return Scaffold(
+            key: _scaffoldMessengerKey,
+            floatingActionButton: _fab(context),
+            body:
+                IndexedStack(index: state.navigationBarIndex, children: pages),
+            bottomNavigationBar: _bottomNavigation());
+      }
+    }));
     //
     // _loggedIn == null
     //     ? Center(child: CircularProgressIndicator())
@@ -482,17 +471,17 @@ class _TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
 
       return Container(
           child: Stack(alignment: Alignment.center, children: [
-            FloatingActionButton(
-                onPressed: () =>
+        FloatingActionButton(
+            onPressed: () =>
                 playing ? context.player.pause() : context.player.play(),
-                shape: const CircleBorder(),
-                child: playing ? Icon(Icons.pause) : Icon(Icons.play_arrow)),
-            IgnorePointer(
-                child: SizedBox(
-                    width: 52, // non-mini FAB is 56, progress is 4
-                    height: 52,
-                    child: CircularProgressIndicator(value: progress))),
-          ]));
+            shape: const CircleBorder(),
+            child: playing ? Icon(Icons.pause) : Icon(Icons.play_arrow)),
+        IgnorePointer(
+            child: SizedBox(
+                width: 52, // non-mini FAB is 56, progress is 4
+                height: 52,
+                child: CircularProgressIndicator(value: progress))),
+      ]));
     });
   }
 
@@ -549,9 +538,8 @@ class _TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
   Map<String, WidgetBuilder> _pageBuilders() {
     final builders = {
       '/home': (context) {
-        return HomeWidget((ctx) =>
-            Navigator.push(
-                ctx, MaterialPageRoute(builder: (_) => SearchWidget())));
+        return HomeWidget((ctx) => Navigator.push(
+            ctx, MaterialPageRoute(builder: (_) => SearchWidget())));
       },
       '/artists': (_) => ArtistsWidget(),
       '/history': (_) => HistoryListWidget(),

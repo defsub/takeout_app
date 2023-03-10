@@ -7,12 +7,9 @@ import 'package:takeout_app/global.dart';
 
 abstract class ClientPageBuilder<T> {
   WidgetBuilder builder(BuildContext context, {T? value}) {
-    final builder = (_) => BlocConsumer<ClientCubit, ClientState>(
-        bloc: ClientCubit(context.clientRepository),
-        listenWhen: (context, state) => false,
-        listener: (context, state) {},
-        buildWhen: (context, state) => true,
-        builder: (context, state) {
+    final builder = (context) => BlocProvider(
+        create: (context) => ClientCubit(context.clientRepository),
+        child: BlocBuilder<ClientCubit, ClientState>(builder: (context, state) {
           print('got state $state');
           if (state is ClientReady) {
             if (value != null) {
@@ -28,7 +25,7 @@ abstract class ClientPageBuilder<T> {
             return errorPage(context, state);
           }
           return SizedBox.shrink();
-        });
+        }));
     return builder;
   }
 

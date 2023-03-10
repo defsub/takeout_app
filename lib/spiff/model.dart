@@ -282,6 +282,9 @@ class Playlist {
     if (isNotNullOrEmpty(image)) {
       return image!;
     }
+    if (tracks.length == 0) {
+      return '';
+    }
     for (var i = 0; i < 3; i++) {
       final pick = _random.nextInt(tracks.length);
       if (isNotNullOrEmpty(tracks[pick].image)) {

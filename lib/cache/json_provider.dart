@@ -55,7 +55,15 @@ class DirectoryJsonCache implements JsonCacheProvider {
 
   final Directory directory;
 
-  DirectoryJsonCache(this.directory);
+  DirectoryJsonCache(this.directory) {
+    try {
+      if (directory.existsSync() == false) {
+        directory.createSync(recursive: true);
+      }
+    } catch (e, stack) {
+      log.warning(directory, e, stack);
+    }
+  }
 
   String _md5(String input) {
     return md5.convert(utf8.encode(input)).toString();

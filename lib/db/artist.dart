@@ -1,5 +1,3 @@
-import 'dart:html';
-
 import 'package:takeout_app/api/model.dart';
 import 'package:takeout_app/client/repository.dart';
 

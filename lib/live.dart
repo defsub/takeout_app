@@ -55,7 +55,7 @@ class EventPlaybackState {
 }
 
 @JsonSerializable(fieldRename: FieldRename.pascal, includeIfNull: false)
-class EventTrack implements MediaLocatable {
+class EventTrack implements MediaTrack {
   final String creator;
   final String album;
   final String title;
@@ -80,9 +80,9 @@ class EventTrack implements MediaLocatable {
         album: item.album ?? '',
         title: item.title,
         image: item.artUri.toString(),
-        location: item.extras?[ExtraLocation],
-        key: item.extras?[ExtraKey],
-        etag: item.extras?[ExtraETag]);
+        location: item.extras?['TODO'],
+        key: item.extras?['TODO'],
+        etag: item.extras?['TODO']);
   }
 
   factory EventTrack.fromJson(Map<String, dynamic> json) =>
@@ -99,11 +99,6 @@ class EventTrack implements MediaLocatable {
   int get disc => throw UnimplementedError;
 
   String get date => '1970';
-
-  @override
-  Reference get reference {
-    throw UnimplementedError;
-  }
 }
 
 @JsonSerializable(fieldRename: FieldRename.pascal, includeIfNull: false)
@@ -315,19 +310,19 @@ class LiveFollow {
   void _enqueueNextTrack(EventTrack track) async {
     final index = _trackQueueIndex(track);
     if (index == -1) {
-      final mediaItem = await MediaQueue.trackMediaItem(track);
-      audioHandler.addQueueItem(mediaItem);
+      // final mediaItem = await MediaQueue.trackMediaItem(track);
+      // audioHandler.addQueueItem(mediaItem);
     }
   }
 
   bool _isTrackCurrentItem(EventTrack track) {
     final currentItem = audioHandler.mediaItem.value;
-    return currentItem?.extras?[ExtraKey] == track.key;
+    return currentItem?.extras?['TODO'] == track.key;
   }
 
   int _trackQueueIndex(EventTrack track) {
     final queue = audioHandler.queue.value;
-    return queue.indexWhere((item) => item.extras?[ExtraKey] == track.key);
+    return queue.indexWhere((item) => item.extras?['TODO'] == track.key);
   }
 
   void stop() {

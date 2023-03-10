@@ -27,7 +27,6 @@ import 'package:logging/logging.dart';
 
 import 'package:takeout_app/client/resolver.dart';
 import 'package:takeout_app/tokens/repository.dart';
-import 'package:takeout_app/media_type/media_type.dart';
 import 'package:takeout_app/settings/repository.dart';
 import 'package:takeout_app/spiff/model.dart';
 import 'package:takeout_app/cache/offset_repository.dart';
@@ -36,28 +35,18 @@ import 'package:takeout_app/model.dart';
 import 'provider.dart';
 
 const ExtraHeaders = 'headers';
-const ExtraMediaType = 'mediaType';
 const ExtraMediaTrack = 'mediaTrack';
 
 extension TakeoutMediaItem on MediaItem {
   Map<String, String>? headers() =>
-      isLocalFile() ? null : extras?[ExtraHeaders];
+      _isLocalFile() ? null : extras?[ExtraHeaders];
 
   IndexedAudioSource toAudioSource() =>
       AudioSource.uri(Uri.parse(id), headers: headers());
 
-  bool isLocalFile() => id.startsWith(RegExp(r'^file'));
+  bool _isLocalFile() => id.startsWith(RegExp(r'^file'));
 
-  bool isRemote() => id.startsWith(RegExp(r'^http'));
-
-  bool isPodcast() => _isMediaType(MediaType.podcast);
-
-  bool isStream() => _isMediaType(MediaType.stream);
-
-  bool isMusic() => _isMediaType(MediaType.music);
-
-  bool _isMediaType(MediaType type) =>
-      (extras?[ExtraMediaType] ?? '') == type.name;
+  bool _isRemote() => id.startsWith(RegExp(r'^http'));
 
   MediaTrack? _mediaTrack() => extras?[ExtraMediaTrack];
 
@@ -254,17 +243,20 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
       image = '${settingsRepository.settings?.endpoint}$image';
     }
     final uri = await trackResolver.resolve(entry);
+    String id = uri.toString();
+    if (id.startsWith('/api/')) {
+      id = '${settingsRepository.settings?.endpoint}$id';
+    }
     final headers = tokenRepository.addMediaToken(<String, String>{});
     return MediaItem(
-      id: uri.toString(),
+      id: id,
       album: entry.album,
       title: entry.title,
       artist: entry.creator,
       artUri: Uri.parse(image),
       extras: {
         ExtraHeaders: headers,
-        ExtraMediaType: _spiff.mediaType,
-        ExtraMediaTrack: entry,
+        // ExtraMediaTrack: entry,
       },
     );
   }
@@ -287,9 +279,10 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
     queue.add(_queue);
 
     // build audio sources from the queue
-    final tracks = _queue.map((item) => item.toAudioSource()).toList();
+    final sources = _queue.map((item) => item.toAudioSource()).toList();
     _source.clear();
-    _source.addAll(tracks);
+    _source.addAll(sources);
+    _player.setAudioSource(_source);
 
     skipToQueueItem(_spiff.index >= 0 ? _spiff.index : 0);
   }
@@ -382,8 +375,8 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
     List<MediaControl> controls;
     List<int> compactControls;
 
-    final isPodcast = item?.isPodcast() ?? false;
-    final isStream = item?.isStream() ?? false;
+    final isPodcast = _spiff.isPodcast();
+    final isStream = _spiff.isStream();
 
     if (isPodcast) {
       controls = [

@@ -19,21 +19,21 @@ import 'client.dart';
 import 'package:takeout_app/api/model.dart';
 
 class Activity {
-  static Future<int> sendTrackEvent(String etag) async {
-    final client = Client();
-    final events = Events(trackEvents: [TrackEvent.now(etag)]);
-    return client.updateActivity(events);
-  }
+  // static Future<int> sendTrackEvent(String etag) async {
+    // final client = Client();
+    // final events = Events(trackEvents: [TrackEvent.now(etag)]);
+    // return client.updateActivity(events);
+  // }
 
-  static Future<int> sendMovieEvent(String etag) async {
-    final client = Client();
-    final events = Events(movieEvents: [MovieEvent.now(etag)]);
-    return client.updateActivity(events);
-  }
+  // static Future<int> sendMovieEvent(String etag) async {
+    // final client = Client();
+    // final events = Events(movieEvents: [MovieEvent.now(etag)]);
+    // return client.updateActivity(events);
+  // }
 
-  static Future<int> sendReleaseEvent(Release release) async {
-    final client = Client();
-    final events = Events(releaseEvents: [ReleaseEvent.now(release)]);
-    return client.updateActivity(events);
-  }
+  // static Future<int> sendReleaseEvent(Release release) async {
+    // final client = Client();
+    // final events = Events(releaseEvents: [ReleaseEvent.now(release)]);
+    // return client.updateActivity(events);
+  // }
 }

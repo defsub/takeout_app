@@ -16,6 +16,8 @@
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
 import 'dart:io';
+
+import 'package:logging/logging.dart';
 import 'package:path/path.dart';
 
 abstract class FileIdentifier {
@@ -39,11 +41,21 @@ abstract class FileCacheProvider {
 }
 
 class DirectoryFileCache implements FileCacheProvider {
+  static final log = Logger('JsonCache');
+
   final Directory directory;
   final Map<String, File> _entries = {};
   bool _initialized = false;
 
-  DirectoryFileCache({required this.directory});
+  DirectoryFileCache({required this.directory}) {
+    try {
+      if (directory.existsSync() == false) {
+        directory.createSync(recursive: true);
+      }
+    } catch (e, stack) {
+      log.warning(directory, e, stack);
+    }
+  }
 
   Future _checkInitialized() async {
     if (_initialized) {
