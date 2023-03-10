@@ -118,4 +118,11 @@ class ClientRepository {
     return _provider.updateActivity(events);
   }
 
+  Future<PatchResult> patch(List<Map<String, dynamic>> body) {
+    return _provider.patch(body);
+  }
+
+  Future<Spiff> playlist({Duration? ttl}) async {
+    return _provider.playlist(ttl: ttl);
+  }
 }

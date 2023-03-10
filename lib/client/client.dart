@@ -59,7 +59,8 @@ class ClientCubit extends Cubit<ClientState> {
         super(ClientReady());
 
   void login(String user, String password) async =>
-      _doit<bool>(({Duration? ttl}) => repository.login(user, password), ttl: Duration.zero);
+      _doit<bool>(({Duration? ttl}) => repository.login(user, password),
+          ttl: Duration.zero);
 
   void artists({Duration? ttl}) async =>
       _doit<ArtistsView>(({Duration? ttl}) => repository.artists(ttl: ttl),
@@ -142,6 +143,13 @@ class ClientCubit extends Cubit<ClientState> {
 
   void updateActivity(Events events) async =>
       _doit<int>(({Duration? ttl}) => repository.updateActivity(events));
+
+  void patch(List<Map<String, dynamic>> body) async =>
+      _doit<PatchResult>(({Duration? ttl}) => repository.patch(body));
+
+  void playlist({Duration? ttl}) async =>
+      _doit<Spiff>(({Duration? ttl}) => repository.playlist(ttl: ttl),
+          ttl: ttl);
 
   void _doit<T>(ClientRequest<T> call, {Duration? ttl}) async {
     emit(ClientLoading());

@@ -16,6 +16,7 @@
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
 import 'dart:core';
+import 'dart:io';
 
 import 'package:json_annotation/json_annotation.dart';
 
@@ -26,6 +27,35 @@ import 'package:takeout_app/model.dart';
 import 'package:takeout_app/util.dart';
 
 part 'model.g.dart';
+
+class PostResult {
+  final int statusCode;
+
+  PostResult(this.statusCode);
+
+  bool get noContent => statusCode == HttpStatus.noContent;
+
+  bool get resetContent => statusCode == HttpStatus.resetContent;
+
+  bool get clientError => statusCode == HttpStatus.badRequest;
+
+  bool get serverError => statusCode == HttpStatus.internalServerError;
+
+}
+
+class PatchResult extends PostResult {
+  final Map<String, dynamic> body;
+
+  PatchResult(statusCode, this.body) : super(statusCode);
+
+  bool get isModified => statusCode == HttpStatus.ok;
+
+  bool get notModified => noContent;
+
+// Spiff toSpiff() {
+//   return Spiff.fromJson(body);
+// }
+}
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
 class IndexView {
@@ -276,6 +306,8 @@ class Release implements MediaAlbum {
   String get nameWithDisambiguation {
     return isNotNullOrEmpty(disambiguation) ? '$name ($disambiguation)' : name;
   }
+
+  String get reference => '/music/releases/${id}/tracks';
 }
 
 // abstract class MediaLocatable extends MediaTrack with Locatable {}

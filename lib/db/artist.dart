@@ -11,10 +11,16 @@ class ArtistRepository {
   Iterable<String> findByName(String query) {
     return _provider.findByName(query);
   }
+
+  void reload() {
+    _provider.reload();
+  }
 }
 
 abstract class ArtistProvider {
   Iterable<String> findByName(String query);
+
+  void reload();
 }
 
 class DefaultArtistProvider extends ArtistProvider {

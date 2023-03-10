@@ -19,8 +19,6 @@ class AppState {
 class AppCubit extends Cubit<AppState> {
   AppCubit() : super(AppState.initial());
 
-  // void ready() => emit(AppReady());
-
   void authenticated() => emit(state.copyWith(authenticated: true));
 
   void logout() => emit(state.copyWith(authenticated: false));

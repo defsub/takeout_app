@@ -24,8 +24,10 @@ import 'dart:io';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:path_provider/path_provider.dart';
+
 import 'package:takeout_app/connectivity/connectivity.dart';
 import 'package:takeout_app/connectivity/repository.dart';
+import 'package:takeout_app/index/index.dart';
 
 import 'media_type/media_type.dart';
 
@@ -51,6 +53,7 @@ import 'package:takeout_app/settings/settings.dart';
 import 'package:takeout_app/settings/repository.dart';
 import 'package:takeout_app/spiff/model.dart';
 import 'package:takeout_app/player/playing.dart';
+import 'package:takeout_app/player/playlist.dart';
 
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -161,10 +164,6 @@ class TakeoutApp extends StatelessWidget {
   }
 
   Widget blocs({required Widget child}) {
-    // print(context);
-    // print(context.read<ConnectivityRepository>());
-    // print(context.tokenRepository);
-    // print(context.read<TokenRepository>());
     return MultiBlocProvider(providers: [
       BlocProvider(
           lazy: false,
@@ -176,6 +175,8 @@ class TakeoutApp extends StatelessWidget {
       BlocProvider(create: (_) => AppCubit()),
       BlocProvider(create: (_) => SelectedMediaType()),
       BlocProvider(create: (_) => NowPlaying()),
+      BlocProvider(
+          create: (context) => PlaylistCubit(context.read<ClientRepository>())),
       BlocProvider(
           create: (context) =>
               ConnectivityCubit(context.read<ConnectivityRepository>())),
@@ -208,7 +209,9 @@ class TakeoutApp extends StatelessWidget {
                 context.read<TrackCacheRepository>(),
               )),
       BlocProvider(
-          create: (context) => HistoryCubit(context.read<HistoryRepository>()))
+          create: (context) => HistoryCubit(context.read<HistoryRepository>())),
+      BlocProvider(
+          create: (context) => IndexCubit(context.read<ClientRepository>()))
     ], child: child);
   }
 
@@ -219,7 +222,25 @@ class TakeoutApp extends StatelessWidget {
             context.player.load(spiff);
           }
         },
-        child: child);
+        child: BlocListener<Player, PlayerState>(
+            listenWhen: (_, state) => state is PlayerReady,
+            listener: (context, state) {
+              if (state is PlayerReady) {
+                final spiff = context.nowPlaying.state;
+                if (spiff != null) {
+                  context.player.load(spiff);
+                }
+              }
+            },
+            child: BlocListener<PlaylistCubit, PlaylistState>(
+                listenWhen: (_, state) => state is PlaylistChanged,
+                listener: (context, state) {
+                  print('playlist got $state');
+                  if (state is PlaylistChanged) {
+                    context.nowPlaying.add(state.spiff);
+                  }
+                },
+                child: child)));
   }
 }
 
@@ -462,10 +483,8 @@ class _TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
         return SizedBox.shrink();
       }
 
-      if (state is PlayerPlaying || state is PlayerPositionChanged) {
-        playing = true;
-      }
       if (state is PlayerPositionState) {
+        playing = state.playing;
         progress = state.progress;
       }
 
@@ -538,6 +557,7 @@ class _TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
   Map<String, WidgetBuilder> _pageBuilders() {
     final builders = {
       '/home': (context) {
+        // return SizedBox.shrink();
         return HomeWidget((ctx) => Navigator.push(
             ctx, MaterialPageRoute(builder: (_) => SearchWidget())));
       },

@@ -23,9 +23,10 @@ abstract class PlayerState {
 abstract class PlayerPositionState extends PlayerState {
   final Duration duration;
   final Duration position;
+  final bool playing;
 
   PlayerPositionState(super.spiff,
-      {required this.duration, required this.position});
+      {required this.duration, required this.position, required this.playing});
 
   bool get considerPlayed {
     final d = duration * 0.5;
@@ -57,11 +58,14 @@ class PlayerReady extends PlayerState {
 
 class PlayerPlaying extends PlayerPositionState {
   PlayerPlaying(super.spiff,
-      {required super.duration, required super.position});
+      {required super.duration, required super.position, super.playing = true});
 }
 
 class PlayerPaused extends PlayerPositionState {
-  PlayerPaused(super.spiff, {required super.duration, required super.position});
+  PlayerPaused(super.spiff,
+      {required super.duration,
+      required super.position,
+      super.playing = false});
 }
 
 class PlayerStopped extends PlayerState {
@@ -76,18 +80,23 @@ class PlayerIndexChanged extends PlayerState {
 
 class PlayerPositionChanged extends PlayerPositionState {
   PlayerPositionChanged(super.spiff,
-      {required super.duration, required super.position});
+      {required super.duration,
+      required super.position,
+      required super.playing});
 }
 
 class PlayerDurationChanged extends PlayerPositionState {
   PlayerDurationChanged(super.spiff,
-      {required super.duration, required super.position});
+      {required super.duration,
+      required super.position,
+      required super.playing});
 }
 
-class PlayerMediaTrackChanged extends PlayerState {
-  final MediaTrack track;
+class PlayerTrackChanged extends PlayerState {
+  final int index;
+  final String? title;
 
-  PlayerMediaTrackChanged(super.spiff, this.track);
+  PlayerTrackChanged(super.spiff, this.index, {this.title});
 }
 
 class Player extends Cubit<PlayerState> {
@@ -118,14 +127,14 @@ class Player extends Cubit<PlayerState> {
             onStop: (spiff) => emit(PlayerStopped(spiff)),
             onIndexChange: (spiff, playing) =>
                 emit(PlayerIndexChanged(spiff, playing)),
-            onPositionChange: (spiff, duration, position) => emit(
+            onPositionChange: (spiff, duration, position, playing) => emit(
                 PlayerPositionChanged(spiff,
-                    duration: duration, position: position)),
-            onDurationChange: (spiff, duration, position) => emit(
+                    duration: duration, position: position, playing: playing)),
+            onDurationChange: (spiff, duration, position, playing) => emit(
                 PlayerDurationChanged(spiff,
-                    duration: duration, position: position)),
-            onMediaTrackChange: (spiff, track) =>
-                emit(PlayerMediaTrackChanged(spiff, track)))
+                    duration: duration, position: position, playing: playing)),
+            onTrackChange: (spiff, index, {String? title}) =>
+                emit(PlayerTrackChanged(spiff, index, title: title)))
         .whenComplete(() => emit(PlayerReady()));
   }
 

@@ -69,14 +69,6 @@ class PlayerWidget extends StatelessWidget {
         });
   }
 
-  Widget scaffold(BuildContext context, {Widget? body}) {
-    return FutureBuilder<Color?>(
-        future: null,
-        builder: (context, snapshot) {
-          return Scaffold(backgroundColor: snapshot.data, body: body);
-        });
-  }
-
   Widget playerImage(BuildContext context) {
     return BlocBuilder<Player, PlayerState>(buildWhen: (_, state) {
       return state is PlayerLoaded || state is PlayerIndexChanged;
@@ -90,9 +82,13 @@ class PlayerWidget extends StatelessWidget {
 
   Widget playerTitle(BuildContext context) {
     return BlocBuilder<Player, PlayerState>(buildWhen: (_, state) {
-      return state is PlayerLoaded || state is PlayerIndexChanged;
+      return state is PlayerLoaded ||
+          state is PlayerIndexChanged ||
+          state is PlayerTrackChanged;
     }, builder: (context, state) {
-      if (state is PlayerLoaded || state is PlayerIndexChanged) {
+      if (state is PlayerLoaded ||
+          state is PlayerIndexChanged ||
+          state is PlayerTrackChanged) {
         return GestureDetector(
             onTap: () => _onArtist(context, state.currentTrack.creator),
             child: Text(state.currentTrack.title,

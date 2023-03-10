@@ -46,7 +46,8 @@ class Spiff {
       {required this.index,
       required this.position,
       required this.playlist,
-      required this.type, this.lastModified})
+      required this.type,
+      this.lastModified})
       : cover = playlist._cover;
 
   int get size => playlist.tracks.fold(0, (sum, t) => sum + t.size);
@@ -127,12 +128,11 @@ class Spiff {
     DateTime? lastModified,
   }) =>
       Spiff(
-        index: index ?? this.index,
-        position: position ?? this.position,
-        playlist: playlist ?? this.playlist,
-        type: type ?? this.type,
-        lastModified: lastModified ?? this.lastModified
-      );
+          index: index ?? this.index,
+          position: position ?? this.position,
+          playlist: playlist ?? this.playlist,
+          type: type ?? this.type,
+          lastModified: lastModified ?? this.lastModified);
 
   static Spiff cleanup(Spiff spiff) {
     final creator = _playlistCreator(spiff);
@@ -150,21 +150,21 @@ class Spiff {
       playlist: Playlist(title: '', tracks: []),
       type: MediaType.music.name);
 
-  // static Future<Spiff> fromFile(File file) async {
-  //   final completer = Completer<Spiff>();
-  //   file.exists().then((exists) {
-  //     if (exists) {
-  //       file.readAsBytes().then((body) {
-  //         completer.complete(Spiff.fromJson(jsonDecode(utf8.decode(body))));
-  //       }).catchError((e) {
-  //         completer.completeError(e);
-  //       });
-  //     } else {
-  //       completer.complete(Spiff.empty());
-  //     }
-  //   });
-  //   return completer.future;
-  // }
+// static Future<Spiff> fromFile(File file) async {
+//   final completer = Completer<Spiff>();
+//   file.exists().then((exists) {
+//     if (exists) {
+//       file.readAsBytes().then((body) {
+//         completer.complete(Spiff.fromJson(jsonDecode(utf8.decode(body))));
+//       }).catchError((e) {
+//         completer.completeError(e);
+//       });
+//     } else {
+//       completer.complete(Spiff.empty());
+//     }
+//   });
+//   return completer.future;
+// }
 }
 
 @JsonSerializable()
@@ -194,15 +194,16 @@ class Entry extends DownloadIdentifier implements MediaTrack, OffsetIdentifier {
       : _year = parseYear(date);
 
   Entry copyWith({
-    required List<String> locations,
+    String? title,
+    // List<String>? locations,
   }) =>
       Entry(
           creator: this.creator,
           album: this.album,
-          title: this.title,
+          title: title ?? this.title,
           image: this.image,
           date: this.date,
-          locations: locations,
+          locations: this.locations,
           identifiers: this.identifiers,
           sizes: this.sizes);
 

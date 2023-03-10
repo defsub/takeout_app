@@ -30,7 +30,6 @@ import 'package:takeout_app/tokens/repository.dart';
 import 'package:takeout_app/settings/repository.dart';
 import 'package:takeout_app/spiff/model.dart';
 import 'package:takeout_app/cache/offset_repository.dart';
-import 'package:takeout_app/model.dart';
 
 import 'provider.dart';
 
@@ -47,44 +46,6 @@ extension TakeoutMediaItem on MediaItem {
   bool _isLocalFile() => id.startsWith(RegExp(r'^file'));
 
   bool _isRemote() => id.startsWith(RegExp(r'^http'));
-
-  MediaTrack? _mediaTrack() => extras?[ExtraMediaTrack];
-
-//
-// bool monitorProgress() => isPodcast();
-//
-// String get etag => _mediaTrack()?.etag ?? '';
-//
-// // FIXME progress is using key not etag!
-// String get key => etag;
-}
-
-class _MediaTrack implements MediaTrack {
-  final MediaItem item;
-
-  _MediaTrack(this.item);
-
-  String get creator => item.artist ?? '';
-
-  String get album => item.album ?? '';
-
-  String get image => item.artUri?.toString() ?? '';
-
-  int get year => item._mediaTrack()?.year ?? 0;
-
-  String get title => item.title;
-
-  String get etag => item._mediaTrack()?.etag ?? '';
-
-  int get size => item._mediaTrack()?.size ?? 0;
-
-  int get number => item._mediaTrack()?.number ?? 0;
-
-  int get disc => item._mediaTrack()?.disc ?? 0;
-
-  String get date => item._mediaTrack()?.date ?? '';
-
-  String get location => item._mediaTrack()?.location ?? '';
 }
 
 class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
@@ -102,7 +63,7 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
   final IndexCallback onIndexChange;
   final PositionCallback onPositionChange;
   final PositionCallback onDurationChange;
-  final TrackCallback onMediaTrackChange;
+  final TrackChangeCallback onTrackChange;
 
   final List<StreamSubscription> _subscriptions = [];
 
@@ -119,7 +80,7 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
       required this.onIndexChange,
       required this.onPositionChange,
       required this.onDurationChange,
-      required this.onMediaTrackChange,
+      required this.onTrackChange,
       required this.trackResolver,
       required this.tokenRepository,
       required this.settingsRepository,
@@ -141,7 +102,7 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
       required IndexCallback onIndexChange,
       required PositionCallback onPositionChange,
       required PositionCallback onDurationChange,
-      required TrackCallback onMediaTrackChange,
+      required TrackChangeCallback onTrackChange,
       Duration? skipBeginningInterval,
       Duration? fastForwardInterval,
       Duration? rewindInterval}) async {
@@ -153,7 +114,7 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
             onIndexChange: onIndexChange,
             onPositionChange: onPositionChange,
             onDurationChange: onDurationChange,
-            onMediaTrackChange: onMediaTrackChange,
+            onTrackChange: onTrackChange,
             trackResolver: trackResolver,
             tokenRepository: tokenRepository,
             settingsRepository: settingsRepository,
@@ -169,8 +130,6 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
           rewindInterval: rewindInterval ?? const Duration(seconds: 10),
         ));
   }
-
-  AudioPlayer get player => _player;
 
   Future<void> _init() async {
     final session = await AudioSession.instance;
@@ -189,15 +148,15 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
       final item = mediaItem.valueOrNull;
       if (item != null && duration != null) {
         mediaItem.add(item.copyWith(duration: duration));
-        onDurationChange(
-            _spiff, _player.duration ?? Duration.zero, _player.position);
+        onDurationChange(_spiff, _player.duration ?? Duration.zero,
+            _player.position, _player.playing);
       }
     }));
 
     // player position changes
     _subscriptions.add(_player.positionStream.listen((position) {
-      onPositionChange(
-          _spiff, _player.duration ?? Duration.zero, _player.position);
+      onPositionChange(_spiff, _player.duration ?? Duration.zero,
+          _player.position, _player.playing);
     }));
 
     // icy metadata changes
@@ -206,7 +165,11 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
       if (item != null && event != null) {
         final title = event.info?.title ?? item.title;
         mediaItem.add(item.copyWith(title: title));
-        onMediaTrackChange(_spiff, _MediaTrack(item));
+
+        _spiff.playlist.tracks[_spiff.index] =
+            _spiff.playlist.tracks[_spiff.index].copyWith(title: title);
+
+        onTrackChange(_spiff, _spiff.index, title: event.info?.title);
       }
     }));
 
@@ -289,6 +252,7 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
 
   @override
   Future<void> skipToQueueItem(int index) async {
+    print('skipToQueueItem $index, ${_player.currentIndex}');
     if (index < 0) {
       return;
     }
@@ -305,8 +269,9 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
     // TODO remove this?
     _spiff = _spiff.copyWith(index: index);
 
-    final offset = await offsetRepository.get(_spiff.playlist.tracks[index]);
-    return _player.seek(offset?.position() ?? Duration.zero, index: index);
+    // final offset = await offsetRepository.get(_spiff.playlist.tracks[index]);
+    // return _player.seek(offset?.position() ?? Duration.zero, index: index);
+    return _player.seek(Duration.zero, index: index);
   }
 
   @override

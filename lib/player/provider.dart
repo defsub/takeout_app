@@ -9,15 +9,15 @@ import 'handler.dart';
 
 final DummyPlayerCallback = (_, __, ___) {};
 final DummyStoppedCallback = (_) {};
-final DummyTrackCallback = (_, __) {};
-final DummyPositionCallback = (_, __, ___) {};
+final DummyTrackChangeCallback = (_, __, {String? title}) {};
+final DummyPositionCallback = (_, __, ___, ____) {};
 final DummyIndexCallback = (_, __) {};
 
 typedef PlayerCallback = void Function(Spiff, Duration, Duration);
 typedef IndexCallback = void Function(Spiff, bool);
-typedef PositionCallback = void Function(Spiff, Duration, Duration);
+typedef PositionCallback = void Function(Spiff, Duration, Duration, bool);
 typedef StoppedCallback = void Function(Spiff);
-typedef TrackCallback = void Function(Spiff, MediaTrack);
+typedef TrackChangeCallback = void Function(Spiff, int index, {String? title});
 
 abstract class PlayerProvider {
   Future init(
@@ -31,7 +31,7 @@ abstract class PlayerProvider {
       IndexCallback? onIndexChange,
       PositionCallback? onPositionChange,
       PositionCallback? onDurationChange,
-      TrackCallback? onMediaTrackChange});
+      TrackChangeCallback? onTrackChange});
 
   void load(Spiff spiff);
 
@@ -70,7 +70,7 @@ class DefaultPlayerProvider implements PlayerProvider {
       IndexCallback? onIndexChange,
       PositionCallback? onPositionChange,
       PositionCallback? onDurationChange,
-      TrackCallback? onMediaTrackChange}) async {
+      TrackChangeCallback? onTrackChange}) async {
     handler = await TakeoutPlayerHandler.create(
         trackResolver: trackResolver,
         tokenRepository: tokenRepository,
@@ -82,7 +82,7 @@ class DefaultPlayerProvider implements PlayerProvider {
         onIndexChange: onIndexChange ?? DummyIndexCallback,
         onPositionChange: onPositionChange ?? DummyPositionCallback,
         onDurationChange: onDurationChange ?? DummyPositionCallback,
-        onMediaTrackChange: onMediaTrackChange ?? DummyTrackCallback);
+        onTrackChange: onTrackChange ?? DummyTrackChangeCallback);
   }
 
   void load(Spiff spiff) => handler.load(spiff);

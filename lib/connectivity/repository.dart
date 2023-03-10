@@ -33,6 +33,8 @@ class ConnectivityRepository {
     _subscription = stream.listen((event) {
       _connectivityType = event;
     });
+    // TODO is this needed?
+    // _provider.check().then((value) => _connectivityType = value);
   }
 
   void dispose() {

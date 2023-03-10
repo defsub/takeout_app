@@ -58,45 +58,6 @@ class _ClientError extends Error {
     return 'Client error';
   }
 }
-
-class PostResult {
-  final int statusCode;
-
-  PostResult(this.statusCode);
-
-  bool noContent() {
-    return statusCode == HttpStatus.noContent;
-  }
-
-  bool resetContent() {
-    return statusCode == HttpStatus.resetContent;
-  }
-
-  bool clientError() {
-    return statusCode == HttpStatus.badRequest;
-  }
-
-  bool serverError() {
-    return statusCode == HttpStatus.internalServerError;
-  }
-}
-
-class PatchResult extends PostResult {
-  final Map<String, dynamic> body;
-
-  PatchResult(statusCode, this.body) : super(statusCode);
-
-  bool isModified() {
-    return statusCode == HttpStatus.ok;
-  }
-
-  bool notModified() => noContent();
-
-  Spiff toSpiff() {
-    return Spiff.fromJson(body);
-  }
-}
-
 // class DownloadSnapshot {
 //   final int size;
 //   final int offset;
@@ -654,7 +615,8 @@ class TakeoutClient implements ClientProvider {
       spiff('/api/releases/$id/playlist', ttl: ttl);
 
   /// GET /api/playlist
-  Future<Spiff> playlist() async => spiff('/api/playlist', ttl: playlistTTL);
+  Future<Spiff> playlist({Duration? ttl = playlistTTL}) async =>
+      spiff('/api/playlist', ttl: ttl);
 
   /// GET /api/radio
   Future<RadioView> radio({Duration? ttl}) async =>
@@ -856,16 +818,16 @@ class TakeoutClient implements ClientProvider {
 
   /// Obtain the Uri to playback/stream a resource. This will either be a local
   /// file from the cache or a url indirectly pointing to s3 bucket item.
-  // Future<Uri> locate(Locatable d) async {
-  //   if (d.location.startsWith('http')) {
-  //     // already located or internet radio
-  //     return Uri.parse(d.location);
-  //   }
-  //   final result = null; //await trackCacheRepository.get(d);
-  //   if (result is File) {
-  //     return result.uri;
-  //   } else {
-  //     return Uri.parse('$endpoint${d.location}');
-  //   }
-  // }
+// Future<Uri> locate(Locatable d) async {
+//   if (d.location.startsWith('http')) {
+//     // already located or internet radio
+//     return Uri.parse(d.location);
+//   }
+//   final result = null; //await trackCacheRepository.get(d);
+//   if (result is File) {
+//     return result.uri;
+//   } else {
+//     return Uri.parse('$endpoint${d.location}');
+//   }
+// }
 }

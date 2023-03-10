@@ -12,4 +12,8 @@ class Search {
   Iterable<String> findArtistsByName(String query) {
     return _artistRepository.findByName(query);
   }
+
+  void reload() {
+    _artistRepository.reload();
+  }
 }

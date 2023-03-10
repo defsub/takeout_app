@@ -52,8 +52,7 @@ class ReleaseWidget extends ClientPage<ReleaseView> {
   }
 
   void _onPlay(BuildContext context) {
-    // MediaQueue.play(context, release: _release);
-    // showPlayer();
+    context.playlist.replace(_release.reference);
   }
 
   void _onDownload(BuildContext context) {

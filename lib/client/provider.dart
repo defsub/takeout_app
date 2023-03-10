@@ -71,4 +71,7 @@ abstract class ClientProvider {
 
   Future<int> updateActivity(Events events);
 
+  Future<PatchResult> patch(List<Map<String, dynamic>> body);
+
+  Future<Spiff> playlist({Duration? ttl});
 }

@@ -22,9 +22,7 @@ import 'package:takeout_app/spiff/model.dart';
 class NowPlaying extends HydratedCubit<Spiff?> {
   NowPlaying() : super(null);
 
-  void add(Spiff spiff) async {
-    emit(spiff);
-  }
+  void add(Spiff spiff) => emit(spiff);
 
   @override
   Spiff? fromJson(Map<String, dynamic> json) => Spiff.fromJson(json['spiff']);
