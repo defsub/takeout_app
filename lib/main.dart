@@ -149,6 +149,9 @@ class TakeoutApp extends StatelessWidget {
 
     final search = Search(clientRepository: clientRepository);
 
+    final trackResolver =
+        MediaTrackResolver(trackCacheRepository: trackCacheRepository);
+
     return MultiRepositoryProvider(providers: [
       RepositoryProvider(create: (_) => search),
       RepositoryProvider(create: (_) => settingsRepository),
@@ -160,6 +163,7 @@ class TakeoutApp extends StatelessWidget {
       RepositoryProvider(create: (_) => clientRepository),
       RepositoryProvider(create: (_) => connectivityRepository),
       RepositoryProvider(create: (_) => tokenRepository),
+      RepositoryProvider(create: (_) => trackResolver),
     ], child: child);
   }
 
@@ -190,8 +194,7 @@ class TakeoutApp extends StatelessWidget {
               offsetRepository: context.read<OffsetCacheRepository>(),
               settingsRepository: context.read<SettingsRepository>(),
               tokenRepository: context.read<TokenRepository>(),
-              trackResolver: MediaTrackResolver(
-                  trackCacheRepository: context.read<TrackCacheRepository>()))),
+              trackResolver: context.read<MediaTrackResolver>())),
       BlocProvider(
           create: (context) =>
               SpiffCacheCubit(context.read<SpiffCacheRepository>())),
@@ -360,7 +363,6 @@ class _TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
   //     }
   //   });
   // }
-
 
   static final _routes = [
     '/home',

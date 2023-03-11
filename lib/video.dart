@@ -15,6 +15,9 @@ import 'package:takeout_app/art/cover.dart';
 import 'package:takeout_app/art/builder.dart';
 import 'package:takeout_app/page/page.dart';
 import 'package:takeout_app/cache/track.dart';
+import 'package:takeout_app/client/resolver.dart';
+import 'package:takeout_app/settings/repository.dart';
+import 'package:takeout_app/tokens/repository.dart';
 
 import 'style.dart';
 import 'util.dart';
@@ -75,7 +78,7 @@ class MovieWidget extends ClientPage<MovieView> {
                               ),
                               Align(
                                   alignment: Alignment.bottomLeft,
-                                  child: _playButton(context, isCached)),
+                                  child: _playButton(context, view, isCached)),
                               Align(
                                   alignment: Alignment.bottomCenter,
                                   child: _progress(context)),
@@ -195,15 +198,15 @@ class MovieWidget extends ClientPage<MovieView> {
     ]));
   }
 
-  Widget _playButton(BuildContext context, bool isCached) {
+  Widget _playButton(BuildContext context, MovieView view, bool isCached) {
     final offsetCache = context.offsetCache;
     final pos = offsetCache.state.position(_movie) ?? Duration.zero;
     return isCached
         ? IconButton(
             color: overlayIconColor(context),
             icon: Icon(Icons.play_arrow, size: 32),
-            onPressed: () => _onPlay(context, pos))
-        : StreamingButton(onPressed: () => _onPlay(context, pos));
+            onPressed: () => _onPlay(context, view, pos))
+        : StreamingButton(onPressed: () => _onPlay(context, view, pos));
   }
 
   Widget _downloadButton(BuildContext context, bool isCached) {
@@ -215,8 +218,8 @@ class MovieWidget extends ClientPage<MovieView> {
         : DownloadButton(onPressed: () => _onDownload(context));
   }
 
-  void _onPlay(BuildContext context, Duration startOffset) {
-    // showMovie(context, _view!, startOffset: startOffset);
+  void _onPlay(BuildContext context, MovieView view, Duration startOffset) {
+    showMovie(context, view, startOffset: startOffset);
   }
 
   void _onDownload(BuildContext context) {
@@ -424,21 +427,57 @@ class MovieGridWidget extends StatelessWidget {
 enum MovieState { buffering, playing, paused, none }
 
 class MoviePlayer extends StatefulWidget {
-  final MediaTrack _movie;
+  final MovieView _view;
   final Duration? startOffset;
+  final MediaTrackResolver mediaTrackResolver;
+  final SettingsRepository settingsRepository;
+  final TokenRepository tokenRepository;
 
-  MoviePlayer(this._movie, {this.startOffset = Duration.zero});
+  MoviePlayer(this._view,
+      {required this.mediaTrackResolver,
+      required this.settingsRepository,
+      required this.tokenRepository,
+      this.startOffset = Duration.zero});
 
   @override
   _MoviePlayerState createState() => _MoviePlayerState();
 }
 
+// TODO add location back to movie to avoid this hassle?
+class _MovieMediaTrack implements MediaTrack {
+  MovieView view;
+  
+  _MovieMediaTrack(this.view);
+
+  String get creator => '';
+
+  String get album => '';
+
+  String get image => view.movie.image;
+
+  int get year => 0;
+  
+  String get title => view.movie.title;
+
+  String get etag => view.movie.etag;
+
+  int get size => view.movie.size;
+
+  int get number => 0;
+
+  int get disc => 0;
+
+  String get date => view.movie.date;
+
+  String get location => view.location;
+}
+
 class _MoviePlayerState extends State<MoviePlayer> {
   late final _stateStream = BehaviorSubject<MovieState>();
   late final _positionStream = BehaviorSubject<Duration>();
-  late final VideoPlayerController? _controller;
-  late final VideoProgressIndicator? _progress;
-  late final StreamSubscription<MovieState> _stateSubscription;
+  VideoPlayerController? _controller;
+  VideoProgressIndicator? _progress;
+  StreamSubscription<MovieState>? _stateSubscription;
   var _showControls = false;
   var _videoInitialized = false;
   Timer? _controlsTimer = null;
@@ -452,13 +491,16 @@ class _MoviePlayerState extends State<MoviePlayer> {
 
   void prepareController() async {
     // controller
-    final uri = await context.resolver.resolve(widget._movie);
-    final headers = context.tokenRepository.addMediaToken(<String, String>{});
-    final controller =
-        VideoPlayerController.network(uri.toString(), httpHeaders: headers)
-          ..initialize().then((_) {
-            setState(() {}); // see example
-          });
+    final uri = await widget.mediaTrackResolver.resolve(_MovieMediaTrack(widget._view));
+    String url = uri.toString();
+    if (url.startsWith('/api/')) {
+      url = '${widget.settingsRepository.settings?.endpoint}$url';
+    }
+    final headers = widget.tokenRepository.addMediaToken(<String, String>{});
+    final controller = VideoPlayerController.network(url, httpHeaders: headers)
+      ..initialize().then((_) {
+        setState(() {}); // see example
+      });
     // progress
     _progress = VideoProgressIndicator(controller,
         colors: VideoProgressColors(
@@ -602,7 +644,7 @@ class _MoviePlayerState extends State<MoviePlayer> {
         overlays: [SystemUiOverlay.top, SystemUiOverlay.bottom]);
     super.dispose();
     _controller?.dispose();
-    _stateSubscription.cancel();
+    _stateSubscription?.cancel();
   }
 }
 
@@ -629,10 +671,14 @@ class MovieListWidget extends StatelessWidget {
   }
 }
 
-void showMovie(BuildContext context, MediaTrack movie,
+void showMovie(BuildContext context, MovieView view,
     {Duration? startOffset}) {
   Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(
-      builder: (_) => MoviePlayer(movie, startOffset: startOffset)));
+      builder: (_) => MoviePlayer(view,
+          settingsRepository: context.read<SettingsRepository>(),
+          tokenRepository: context.read<TokenRepository>(),
+          mediaTrackResolver: context.read<MediaTrackResolver>(),
+          startOffset: startOffset)));
 }
 
 // Note this modifies the original list.
