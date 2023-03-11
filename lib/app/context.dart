@@ -21,12 +21,19 @@ import 'package:takeout_app/tokens/repository.dart';
 import 'package:takeout_app/db/search.dart';
 import 'package:takeout_app/index/index.dart';
 import 'package:takeout_app/model.dart';
+
 import 'app.dart';
 
 extension AppContext on BuildContext {
+
   void play(Spiff spiff) {
     nowPlaying.add(spiff);
+    history.add(spiff: Spiff.cleanup(spiff));
     app.showPlayer();
+  }
+
+  void download(Spiff spiff) {
+
   }
 
   void showMovie(MediaTrack movie) {
@@ -45,7 +52,7 @@ extension AppContext on BuildContext {
 
   ConnectivityCubit get connectivity => read<ConnectivityCubit>();
 
-  DownloadCubit get download => read<DownloadCubit>();
+  DownloadCubit get downloads => read<DownloadCubit>();
 
   HistoryCubit get history => read<HistoryCubit>();
 

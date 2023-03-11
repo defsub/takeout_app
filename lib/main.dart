@@ -216,31 +216,33 @@ class TakeoutApp extends StatelessWidget {
   }
 
   Widget listeners(BuildContext context, {required Widget child}) {
-    return BlocListener<NowPlaying, Spiff?>(
-        listener: (context, spiff) {
-          if (spiff != null) {
-            context.player.load(spiff);
-          }
-        },
-        child: BlocListener<Player, PlayerState>(
-            listenWhen: (_, state) => state is PlayerReady,
-            listener: (context, state) {
-              if (state is PlayerReady) {
-                final spiff = context.nowPlaying.state;
-                if (spiff != null) {
-                  context.player.load(spiff);
-                }
+    return MultiBlocListener(listeners: [
+      BlocListener<NowPlaying, Spiff?>(listener: (context, spiff) {
+        if (spiff != null) {
+          // load now playing playlist into player
+          context.player.load(spiff);
+        }
+      }),
+      BlocListener<Player, PlayerState>(
+          listenWhen: (_, state) =>
+              state is PlayerReady || state is PlayerLoaded,
+          listener: (context, state) {
+            if (state is PlayerReady) {
+              // restore playlist at startup
+              final spiff = context.nowPlaying.state;
+              if (spiff != null) {
+                context.player.load(spiff);
               }
-            },
-            child: BlocListener<PlaylistCubit, PlaylistState>(
-                listenWhen: (_, state) => state is PlaylistChanged,
-                listener: (context, state) {
-                  print('playlist got $state');
-                  if (state is PlaylistChanged) {
-                    context.nowPlaying.add(state.spiff);
-                  }
-                },
-                child: child)));
+            }
+          }),
+      BlocListener<PlaylistCubit, PlaylistState>(
+          listenWhen: (_, state) => state is PlaylistChanged,
+          listener: (context, state) {
+            if (state is PlaylistChanged) {
+              context.play(state.spiff);
+            }
+          }),
+    ], child: child);
   }
 }
 
@@ -252,6 +254,8 @@ class _TakeoutWidget extends StatefulWidget {
 }
 
 class _TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
+  StreamSubscription<PlayerPositionChanged>? _considerPlayedSubscription;
+
   @override
   void initState() {
     super.initState();
@@ -259,8 +263,24 @@ class _TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
 
     if (context.tokens.state.authenticated) {
+      // restore authenticated state
       context.app.authenticated();
     }
+
+    // keep track of position changes and update history once a track is considered played
+    _considerPlayedSubscription = context.player.stream
+        .where((state) => state is PlayerPositionChanged)
+        .cast<PlayerPositionChanged>()
+        .distinct((a, b) =>
+            a.currentTrack.etag == b.currentTrack.etag &&
+            a.considerPlayed == b.considerPlayed)
+        .listen((state) {
+      if (state.considerPlayed) {
+        print(
+            'consider played ${state.position} ${state.duration} ${state.currentTrack.title}');
+        context.history.add(track: state.currentTrack);
+      }
+    });
 
     // TODO prune cache
   }
@@ -269,6 +289,7 @@ class _TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     snackBarStateSubject.close();
+    _considerPlayedSubscription?.cancel();
     super.dispose();
   }
 
@@ -340,35 +361,6 @@ class _TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
   //   });
   // }
 
-  void _load() async {
-    // Artwork.endpoint = await Client().getEndpoint();
-
-    // audioHandler.mediaItem
-    //     .distinct()
-    //     .listen((mediaItem) => _onMediaItem(mediaItem));
-
-    // await TrackCache.init();
-    // await OffsetCache.init();
-    // await Downloads.prune().whenComplete(() => Downloads.load());
-    // try {
-    //   final client = Client();
-    //   client.index().then((view) => _onIndexUpdated(view));
-    //   client.home().then((view) => _onHomeUpdated(view));
-    //   await Progress.sync();
-    //   await MediaQueue.sync();
-    //   if (audioHandler.playbackState.hasValue == false ||
-    //       (audioHandler.playbackState.hasValue &&
-    //           audioHandler.playbackState.value.playing == false)) {
-    //     MediaQueue.restore();
-    //   }
-    // } on ClientException catch (e) {
-    //   if (e.authenticationFailed) {
-    //     logout();
-    //   }
-    // } on TlsException catch (e) {
-    //   showErrorDialog(context, e.message);
-    // }
-  }
 
   static final _routes = [
     '/home',
@@ -447,34 +439,16 @@ class _TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
             bottomNavigationBar: _bottomNavigation());
       }
     }));
-    //
-    // _loggedIn == null
-    //     ? Center(child: CircularProgressIndicator())
-    //     : _loggedIn == false
-    //     ? LoginWidget(() => login())
-    //     : Scaffold(
-    //     key: _scaffoldMessengerKey,
-    //     floatingActionButton: _fab(context),
-    //     body: StreamBuilder<int>(
-    //         stream: _navIndexStream,
-    //         builder: (context, snapshot) {
-    //           final index = snapshot.data ?? 0;
-    //           return IndexedStack(index: index, children: pages);
-    //         }),
-    //     bottomNavigationBar: _bottomNavigation())
-    // );
   }
-
-  // bool _showingPlayer() {
-  //   return _selectedIndex == 4;
-  // }
 
   Widget _fab(BuildContext context) {
     return BlocBuilder<Player, PlayerState>(builder: (context, state) {
       bool playing = false;
       double? progress;
 
-      // navIndex == 4 don't snow
+      if (context.app.state.index == NavigationIndex.player) {
+        return SizedBox.shrink();
+      }
 
       if (state is PlayerInit ||
           state is PlayerReady ||

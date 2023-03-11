@@ -20,9 +20,6 @@ import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:audio_service/audio_service.dart';
 
-import 'schema.dart';
-import 'artists.dart'; // TODO remove
-
 const appVersion = '0.9.6';
 const appSource = 'https://github.com/defsub/takeout_app';
 const appHome = 'https://defsub.github.io';

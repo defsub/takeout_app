@@ -137,7 +137,7 @@ class RadioWidget extends NavigatorClientPage<RadioView> {
   void _onDownload(BuildContext context, Station station) {
     final client = context.clientRepository;
     client.station(station.id, ttl: Duration.zero).then((spiff) {
-      context.download.addSpiff(spiff);
+      context.download(spiff);
     });
   }
 }

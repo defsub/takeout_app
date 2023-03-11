@@ -20,13 +20,11 @@ import 'dart:async';
 import 'dart:collection';
 import 'package:collection/collection.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:takeout_app/schema.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:logging/logging.dart';
 import 'package:wakelock/wakelock.dart';
-import 'playlist.dart';
 import 'model.dart';
 
 part 'live.g.dart';

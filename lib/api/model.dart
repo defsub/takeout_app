@@ -904,6 +904,8 @@ class Series with MediaAlbum {
   int get disc => 1;
 
   int get number => 0;
+
+  String get reference => '/podcasts/series/${id}';
 }
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
@@ -993,6 +995,8 @@ class Episode extends DownloadIdentifier
 
   @override
   int get number => 0;
+
+  String get reference => '/podcasts/episodes/${id}';
 }
 
 @JsonSerializable(fieldRename: FieldRename.pascal)

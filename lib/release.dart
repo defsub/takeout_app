@@ -342,6 +342,6 @@ class ReleaseListWidget extends StatelessWidget {
   }
 
   void _onPlay(BuildContext context, Release release) {
-    // MediaQueue.play(context, release: release);
+    context.playlist.replace(release.reference);
   }
 }

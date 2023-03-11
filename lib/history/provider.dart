@@ -46,15 +46,15 @@ class JsonHistoryProvider implements HistoryProvider {
       final entry = history.tracks[track.etag];
       history.tracks[track.etag] = entry == null
           ? history.tracks[track.etag] = TrackHistory(
-          track.creator,
-          track.album,
-          track.title,
-          track.image,
-          track.etag,
-          1,
-          DateTime.now())
+              track.creator,
+              track.album,
+              track.title,
+              track.image,
+              track.etag,
+              1,
+              DateTime.now())
           : history.tracks[track.etag] =
-          entry.copyWith(count: entry.count + 1, dateTime: DateTime.now());
+              entry.copyWith(count: entry.count + 1, dateTime: DateTime.now());
     }
     _prune(history);
     _save(_file, history);
@@ -78,7 +78,7 @@ class JsonHistoryProvider implements HistoryProvider {
     }
 
     final json =
-    await file.readAsBytes().then((body) => jsonDecode(utf8.decode(body)));
+        await file.readAsBytes().then((body) => jsonDecode(utf8.decode(body)));
     if (json is Map<String, dynamic>) {
       // Allow for older version w/o tracks
       if (json.containsKey('Tracks') == false) {

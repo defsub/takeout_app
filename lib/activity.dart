@@ -15,7 +15,6 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
-import 'client.dart';
 import 'package:takeout_app/api/model.dart';
 
 class Activity {

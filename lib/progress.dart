@@ -15,12 +15,6 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
-import 'package:takeout_app/cache.dart';
-
-import 'cache.dart';
-import 'client.dart';
-import 'schema.dart';
-
 class Progress {
   // static Future sync({Client? client}) async {
   //   client = client ?? Client();

@@ -154,6 +154,7 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
     }));
 
     // player position changes
+    // TODO consider reducing position update frequency
     _subscriptions.add(_player.positionStream.listen((position) {
       onPositionChange(_spiff, _player.duration ?? Duration.zero,
           _player.position, _player.playing);

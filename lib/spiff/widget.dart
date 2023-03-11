@@ -76,7 +76,7 @@ class SpiffWidget extends ClientPage<Spiff> {
             icon: Icon(IconsDownload),
             onPressed: () => {})
         : DownloadButton(
-            onPressed: () => context.download.addSpiff(spiff));
+            onPressed: () => context.download(spiff));
   }
 
   @override

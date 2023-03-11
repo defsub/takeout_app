@@ -32,8 +32,6 @@ import 'package:takeout_app/page/page.dart';
 import 'package:takeout_app/util.dart';
 
 import 'style.dart';
-import 'playlist.dart';
-import 'global.dart';
 import 'menu.dart';
 import 'tiles.dart';
 
@@ -136,8 +134,7 @@ class SeriesWidget extends ClientPage<SeriesView> {
   }
 
   void _onPlay(BuildContext context) {
-    // MediaQueue.play(context, series: _series);
-    // showPlayer();
+    context.playlist.replace(_series.reference);
   }
 
   void _onDownload(BuildContext context) {
@@ -211,8 +208,7 @@ class _SeriesEpisodeListWidget extends StatelessWidget {
   }
 
   void _onPlay(BuildContext context, Episode episode) {
-    // MediaQueue.play(context, episode: episode);
-    // showPlayer();
+    context.playlist.replace(episode.reference);
   }
 }
 
@@ -366,8 +362,7 @@ class _EpisodeWidget extends StatelessWidget {
 
   void _onPlay(BuildContext context) {
     print('play $episode');
-    // MediaQueue.play(context, episode: episode);
-    // showPlayer();
+    context.playlist.replace(episode.reference);
   }
 
   void _onDelete(BuildContext context) {

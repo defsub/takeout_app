@@ -49,16 +49,23 @@ class PlaylistCubit extends Cubit<PlaylistState> {
     final body =
         patchReplace(ref, mediaType.name) + patchPosition(index, position);
     clientRepository.patch(body).then((result) {
-      final spiff = Spiff.fromJson(result.body);
-      emit(PlaylistChanged(spiff));
-    }).onError((error, stackTrace) {});
+      if (result.isModified) {
+        final spiff = Spiff.fromJson(result.body);
+        emit(PlaylistChanged(spiff));
+      } else {
+        // TODO
+      }
+    }).onError((error, stackTrace) {
+      // TODO
+    });
   }
 
   void update({int index = 0, double position = 0.0}) {
     final body = patchPosition(index, position);
     clientRepository.patch(body).then((result) {
-      final spiff = Spiff.fromJson(result.body);
-      emit(PlaylistUpdated(spiff));
-    }).onError((error, stackTrace) {});
+      // TODO
+    }).onError((error, stackTrace) {
+      // TODO
+    });
   }
 }

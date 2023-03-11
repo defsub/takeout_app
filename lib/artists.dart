@@ -353,7 +353,7 @@ class _ArtistTrackListState extends State<ArtistTrackListWidget>
 
   void _onDownload(BuildContext context) async {
     Future<Spiff> result = _playlist();
-    context.download.addSpiff(await result);
+    context.download(await result);
     // result.then((spiff) => Downloads.downloadSpiff(context, spiff));
   }
 
