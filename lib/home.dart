@@ -17,34 +17,34 @@
 
 import 'dart:collection';
 
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:takeout_app/cache/spiff.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:logging/logging.dart';
-
 import 'package:takeout_app/api/model.dart';
 import 'package:takeout_app/app/context.dart';
 import 'package:takeout_app/art/artwork.dart';
 import 'package:takeout_app/art/cover.dart';
+import 'package:takeout_app/cache/spiff.dart';
+import 'package:takeout_app/cache/track.dart';
+import 'package:takeout_app/client/client.dart';
+import 'package:takeout_app/downloads.dart';
+import 'package:takeout_app/index/index.dart';
 import 'package:takeout_app/media_type/media_type.dart';
 import 'package:takeout_app/page/page.dart';
-import 'package:takeout_app/client/download.dart';
+import 'package:takeout_app/settings/widget.dart';
 import 'package:takeout_app/spiff/model.dart';
 import 'package:takeout_app/spiff/widget.dart';
-import 'package:takeout_app/client/client.dart';
-import 'package:takeout_app/index/index.dart';
 import 'package:takeout_app/tiles.dart';
-import 'package:takeout_app/downloads.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-import 'release.dart';
-import 'settings.dart';
-import 'style.dart';
-import 'podcasts.dart';
 import 'global.dart';
 import 'menu.dart';
 import 'model.dart';
+import 'nav.dart';
+import 'podcasts.dart';
+import 'release.dart';
+import 'settings.dart';
+import 'style.dart';
 import 'video.dart';
 
 class HomeWidget extends NavigatorClientPage<HomeView> {
@@ -54,15 +54,15 @@ class HomeWidget extends NavigatorClientPage<HomeView> {
   HomeWidget(this._onSearch) : super(homeKey);
 
   _HomeGrid _grid(HomeView view, MediaType mediaType, GridType gridType,
-      DownloadState downloadState) {
+      TrackCacheState cacheState) {
     switch (mediaType) {
       case MediaType.video:
-        return _MovieHomeGrid(view, gridType, downloadState, _onSearch);
+        return _MovieHomeGrid(view, gridType, cacheState, _onSearch);
       case MediaType.music:
       case MediaType.stream: // unused for now
-        return _MusicHomeGrid(view, gridType, downloadState, _onSearch);
+        return _MusicHomeGrid(view, gridType, cacheState, _onSearch);
       case MediaType.podcast:
-        return _SeriesHomeGrid(view, gridType, downloadState, _onSearch);
+        return _SeriesHomeGrid(view, gridType, cacheState, _onSearch);
     }
   }
 
@@ -80,16 +80,18 @@ class HomeWidget extends NavigatorClientPage<HomeView> {
 
   @override
   Widget page(BuildContext context, HomeView view) {
-    final mediaType = context.watch<SelectedMediaType>();
-    final downloads = context.watch<DownloadCubit>();
-    // TODO remove old settings
-    // final type = settingsGridType(settingHomeGridType, GridType.mix);
-    final type = GridType.mix;
-    return Scaffold(
-        body: RefreshIndicator(
-      onRefresh: () => refreshPage(context),
-      child: _grid(view, mediaType.state, type, downloads.state),
-    ));
+    return Builder(builder: (context) {
+      final mediaType = context.watch<SelectedMediaType>();
+      final trackCache = context.watch<TrackCacheCubit>();
+      // TODO remove old settings
+      // final type = settingsGridType(settingHomeGridType, GridType.mix);
+      final type = GridType.mix;
+      return Scaffold(
+          body: RefreshIndicator(
+        onRefresh: () => refreshPage(context),
+        child: _grid(view, mediaType.state, type, trackCache.state),
+      ));
+    });
   }
 }
 
@@ -120,18 +122,24 @@ abstract class _HomeItem {
 }
 
 class _MediaHomeItem extends _HomeItem {
-  MediaAlbum album;
-  DownloadState downloadState;
+  final MediaAlbum album;
+  final TrackCacheState trackCache;
   String? _key;
 
   _MediaHomeItem(
-    this.downloadState,
+    this.trackCache,
     this.album,
   );
 
   @override
   Widget Function() get onTap {
-    return () => SpiffWidget(value: album as Spiff);
+    return () {
+      if (album is _SpiffAlbum) {
+        return SpiffWidget(value: (album as _SpiffAlbum).spiff);
+      }
+      print('not supported ${album}');
+      return SizedBox.shrink();
+    };
   }
 
   @override
@@ -145,7 +153,7 @@ class _MediaHomeItem extends _HomeItem {
 
   Widget _downloadIcon(BuildContext context, Spiff download,
       IconData completeIcon, IconData downloadingIcon) {
-    final isCached = downloadState.containsAll(download.playlist.tracks);
+    final isCached = trackCache.containsAll(download.playlist.tracks);
     return Icon(isCached ? completeIcon : downloadingIcon,
         color: overlayIconColor(context));
   }
@@ -153,9 +161,9 @@ class _MediaHomeItem extends _HomeItem {
   @override
   Widget getTrailing(BuildContext context) {
     var year = album.year;
-    if (album is Spiff) {
-      return _downloadIcon(
-          context, album as Spiff, IconsDownloadDone, IconsDownload);
+    if (album is _SpiffAlbum) {
+      return _downloadIcon(context, (album as _SpiffAlbum).spiff,
+          IconsDownloadDone, IconsDownload);
     } else if (year > 1) {
       return Text('$year');
     }
@@ -165,7 +173,11 @@ class _MediaHomeItem extends _HomeItem {
   @override
   String get key {
     if (_key == null) {
-      _key = "${album.album}/${album.creator}";
+      if (album.creator == 'Radio') {
+        _key = '${album.album}/${album.creator}/${album.date}';
+      } else {
+        _key = '${album.album}/${album.creator}';
+      }
     }
     return _key!;
   }
@@ -177,7 +189,7 @@ class _MediaHomeItem extends _HomeItem {
 }
 
 class _ReleaseHomeItem extends _MediaHomeItem {
-  _ReleaseHomeItem(super.downloadState, super.release);
+  _ReleaseHomeItem(super.trackCache, super.release);
 
   @override
   Widget Function() get onTap {
@@ -186,7 +198,7 @@ class _ReleaseHomeItem extends _MediaHomeItem {
 }
 
 class _MovieHomeItem extends _MediaHomeItem {
-  _MovieHomeItem(super.downloadState, super.movie);
+  _MovieHomeItem(super.trackCache, super.movie);
 
   @override
   Widget Function() get onTap {
@@ -212,7 +224,7 @@ class _MovieHomeItem extends _MediaHomeItem {
 }
 
 class _SeriesHomeItem extends _MediaHomeItem {
-  _SeriesHomeItem(super.downloadState, super.series);
+  _SeriesHomeItem(super.trackCache, super.series);
 
   @override
   Widget Function() get onTap {
@@ -249,6 +261,8 @@ class _SpiffAlbum implements MediaAlbum {
 
   String get image => spiff.cover;
 
+  String get date => spiff.date ?? '';
+
   int get year {
     return -1;
   }
@@ -257,12 +271,12 @@ class _SpiffAlbum implements MediaAlbum {
 abstract class _HomeGrid extends StatelessWidget {
   final HomeView _view;
   final GridType _type;
-  final DownloadState _downloadState;
+  final TrackCacheState _cacheState;
   final VoidContextCallback _onSearch;
   final _buttons =
       SplayTreeMap<MediaType, IconButton>((a, b) => a.index.compareTo(b.index));
 
-  _HomeGrid(this._view, this._type, this._downloadState, this._onSearch);
+  _HomeGrid(this._view, this._type, this._cacheState, this._onSearch);
 
   Iterable<_HomeItem> _items(List<Spiff> downloads);
 
@@ -279,7 +293,7 @@ abstract class _HomeGrid extends StatelessWidget {
     List<_MediaHomeItem> items = [];
     downloads.forEach((d) {
       if (d.mediaType == mediaType) {
-        items.add(_MediaHomeItem(_downloadState, _SpiffAlbum(d)));
+        items.add(_MediaHomeItem(_cacheState, _SpiffAlbum(d)));
       }
     });
     return items;
@@ -385,7 +399,7 @@ abstract class _HomeGrid extends StatelessWidget {
           snap: true,
           leading: IconButton(
               icon: Icon(Icons.search), onPressed: () => _onSearch(context)),
-          // title: header(AppLocalizations.of(context)!.takeoutTitle),
+          // title: header(context.strings.takeoutTitle),
           actions: [
             ...iconBar,
             popupMenu(context, [
@@ -420,7 +434,7 @@ abstract class _HomeGrid extends StatelessWidget {
 
   PreferredSizeWidget? _appBarBottom() {
     return null;
-    // return _downloadState.downloading.isNotEmpty
+    // return _cacheState.downloading.isNotEmpty
     //     ? PreferredSize(
     //         child: LinearProgressIndicator(value: _cacheSnapshot.fold().value),
     //         preferredSize: Size.fromHeight(4.0),
@@ -441,30 +455,25 @@ abstract class _HomeGrid extends StatelessWidget {
   }
 
   void _onDownloads(BuildContext context) {
-    Navigator.push(
-        context, MaterialPageRoute(builder: (_) => DownloadsWidget()));
+    push(context, builder: (_) => DownloadsWidget());
   }
 
   void _onSettings(BuildContext context) {
-    Navigator.push(context, MaterialPageRoute(builder: (_) => AppSettings()));
+    push(context, builder: (_) => SettingsWidget());
   }
 
   void _onRecentTracks(BuildContext context) {
-    Navigator.push(
+    pushSpiff(
         context,
-        MaterialPageRoute(
-            builder: (_) => SpiffWidget(
-                fetch: (ClientCubit client, {Duration? ttl}) =>
-                    client.recentTracks(ttl: Duration.zero))));
+        (ClientCubit client, {Duration? ttl}) =>
+            client.recentTracks(ttl: Duration.zero));
   }
 
   void _onPopularTracks(BuildContext context) {
-    Navigator.push(
+    pushSpiff(
         context,
-        MaterialPageRoute(
-            builder: (_) => SpiffWidget(
-                fetch: (ClientCubit client, {Duration? ttl}) =>
-                    client.popularTracks(ttl: Duration.zero))));
+        (ClientCubit client, {Duration? ttl}) =>
+            client.popularTracks(ttl: Duration.zero));
   }
 
   void _onLogout(BuildContext context) {
@@ -474,7 +483,7 @@ abstract class _HomeGrid extends StatelessWidget {
   void _onAbout(BuildContext context) {
     showAboutDialog(
         context: context,
-        applicationName: AppLocalizations.of(context)!.takeoutTitle,
+        applicationName: context.strings.takeoutTitle,
         applicationVersion: appVersion,
         applicationLegalese: 'Copyleft \u00a9 2020-2023 The Takeout Authors',
         children: <Widget>[
@@ -499,8 +508,7 @@ abstract class _HomeGrid extends StatelessWidget {
 }
 
 class _MusicHomeGrid extends _HomeGrid {
-  _MusicHomeGrid(
-      super.view, super._type, super._downloadState, super._onSearch);
+  _MusicHomeGrid(super.view, super._type, super._cacheState, super._onSearch);
 
   @override
   double _gridAspectRatio() => coverAspectRatio;
@@ -512,24 +520,22 @@ class _MusicHomeGrid extends _HomeGrid {
   Iterable<_HomeItem> _items(List<Spiff> downloads) {
     switch (_type) {
       case GridType.released:
-        return _view.released.map((r) => _ReleaseHomeItem(_downloadState, r));
+        return _view.released.map((r) => _ReleaseHomeItem(_cacheState, r));
       case GridType.added:
-        return _view.added.map((r) => _ReleaseHomeItem(_downloadState, r));
+        return _view.added.map((r) => _ReleaseHomeItem(_cacheState, r));
       case GridType.downloads:
         return _downloadedItems(MediaType.music, downloads);
       case GridType.mix:
         final LinkedHashSet<_HomeItem> items = LinkedHashSet();
         items.addAll(_downloadedItems(MediaType.music, downloads));
-        _view.added
-            .forEach((r) => items.add(_ReleaseHomeItem(_downloadState, r)));
+        _view.added.forEach((r) => items.add(_ReleaseHomeItem(_cacheState, r)));
         return items;
     }
   }
 }
 
 class _MovieHomeGrid extends _HomeGrid {
-  _MovieHomeGrid(
-      super.view, super._type, super._downloadState, super._onSearch);
+  _MovieHomeGrid(super.view, super._type, super._cacheState, super._onSearch);
 
   @override
   double _gridAspectRatio() => posterAspectRatio;
@@ -541,24 +547,23 @@ class _MovieHomeGrid extends _HomeGrid {
   Iterable<_HomeItem> _items(List<Spiff> downloads) {
     switch (_type) {
       case GridType.released:
-        return _view.newMovies.map((v) => _MovieHomeItem(_downloadState, v));
+        return _view.newMovies.map((v) => _MovieHomeItem(_cacheState, v));
       case GridType.added:
-        return _view.addedMovies.map((v) => _MovieHomeItem(_downloadState, v));
+        return _view.addedMovies.map((v) => _MovieHomeItem(_cacheState, v));
       case GridType.downloads:
         return _downloadedItems(MediaType.video, downloads);
       case GridType.mix:
         final LinkedHashSet<_HomeItem> items = LinkedHashSet();
         items.addAll(_downloadedItems(MediaType.video, downloads));
         _view.addedMovies
-            .forEach((v) => items.add(_MovieHomeItem(_downloadState, v)));
+            .forEach((v) => items.add(_MovieHomeItem(_cacheState, v)));
         return items;
     }
   }
 }
 
 class _SeriesHomeGrid extends _HomeGrid {
-  _SeriesHomeGrid(
-      super.view, super._type, super._downloadState, super._onSearch);
+  _SeriesHomeGrid(super.view, super._type, super._cacheState, super._onSearch);
 
   @override
   double _gridAspectRatio() => seriesAspectRatio;
@@ -571,13 +576,13 @@ class _SeriesHomeGrid extends _HomeGrid {
     switch (_type) {
       case GridType.released:
       case GridType.added:
-        return _view.newSeries!.map((v) => _SeriesHomeItem(_downloadState, v));
+        return _view.newSeries!.map((v) => _SeriesHomeItem(_cacheState, v));
       case GridType.downloads:
         final items = <_HomeItem>[];
         final downloadedItems = _downloadedItems(MediaType.podcast, downloads);
         _view.newSeries!.forEach((v) {
           // use series items with downloads over download items
-          final seriesItem = _SeriesHomeItem(_downloadState, v);
+          final seriesItem = _SeriesHomeItem(_cacheState, v);
           if (downloadedItems.any((e) => e.key == seriesItem.key)) {
             items.add(seriesItem);
           }
@@ -590,7 +595,7 @@ class _SeriesHomeGrid extends _HomeGrid {
         //     .forEach((v) => items.add(_SeriesHomeItem(_cacheSnapshot, v)));
         // prefer series items over downloads
         final items =
-            _view.newSeries!.map((v) => _SeriesHomeItem(_downloadState, v));
+            _view.newSeries!.map((v) => _SeriesHomeItem(_cacheState, v));
         return items;
     }
   }

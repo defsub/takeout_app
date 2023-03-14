@@ -82,13 +82,13 @@ class OffsetCacheCubit extends Cubit<OffsetCacheState> {
   final OffsetCacheRepository repository;
   final ClientRepository clientRepository;
 
-  OffsetCacheCubit(this.repository, this.clientRepository) : super(OffsetCacheState.empty()) {
+  OffsetCacheCubit(this.repository, this.clientRepository)
+      : super(OffsetCacheState.empty()) {
     _emitState();
   }
 
   void _emitState() async {
-    final entries = await repository.entries();
-    emit(OffsetCacheState(entries));
+    emit(OffsetCacheState(await repository.entries));
   }
 
   void add(Offset offset) async {

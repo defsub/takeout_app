@@ -10,7 +10,6 @@ abstract class ClientPageBuilder<T> {
     final builder = (context) => BlocProvider(
         create: (context) => ClientCubit(context.clientRepository),
         child: BlocBuilder<ClientCubit, ClientState>(builder: (context, state) {
-          print('got state $state');
           if (state is ClientReady) {
             if (value != null) {
               return page(context, value);

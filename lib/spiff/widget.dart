@@ -17,6 +17,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
 import 'package:takeout_app/app/context.dart';
 import 'package:takeout_app/art/scaffold.dart';
 import 'package:takeout_app/cache/offset.dart';
@@ -44,11 +45,15 @@ class SpiffWidget extends ClientPage<Spiff> {
     fetch?.call(context.client, ttl: ttl);
   }
 
-  List<Widget>? actions(BuildContext context) {
+  List<Widget>? actions(BuildContext context, Spiff spiff, bool isCached) {
     return [
       popupMenu(context, [
         if (fetch != null)
           PopupItem.refresh(context, (_) => refreshPage(context)),
+        // TODO this doesn't delete cached spiff without downloaded tracks
+        if (isCached)
+          PopupItem.delete(context, context.strings.deleteItem,
+              (_) => _onDelete(context, spiff)),
       ]),
     ];
   }
@@ -75,8 +80,7 @@ class SpiffWidget extends ClientPage<Spiff> {
             color: Theme.of(context).primaryColorLight,
             icon: Icon(IconsDownload),
             onPressed: () => {})
-        : DownloadButton(
-            onPressed: () => context.download(spiff));
+        : DownloadButton(onPressed: () => context.download(spiff));
   }
 
   @override
@@ -85,54 +89,56 @@ class SpiffWidget extends ClientPage<Spiff> {
   }
 
   Widget body(BuildContext context, Spiff spiff) {
-    final trackCache = context.watch<TrackCacheCubit>();
-    final isCached = trackCache.state.containsAll(spiff.playlist.tracks);
+    return BlocBuilder<TrackCacheCubit, TrackCacheState>(
+        builder: (context, state) {
+      final isCached = state.containsAll(spiff.playlist.tracks);
 
-    // cover images are 250x250 (or 500x500)
-    // distort a bit to only take half the screen
-    final screen = MediaQuery.of(context).size;
-    final expandedHeight = screen.height / 2;
+      // cover images are 250x250 (or 500x500)
+      // distort a bit to only take half the screen
+      final screen = MediaQuery.of(context).size;
+      final expandedHeight = screen.height / 2;
 
-    return CustomScrollView(slivers: [
-      SliverAppBar(
-        foregroundColor: overlayIconColor(context),
-        expandedHeight: expandedHeight,
-        actions: actions(context),
-        flexibleSpace: FlexibleSpaceBar(
-            // centerTitle: true,
-            // title: Text(release.name, style: TextStyle(fontSize: 15)),
-            stretchModes: [StretchMode.zoomBackground, StretchMode.fadeTitle],
-            background: Stack(fit: StackFit.expand, children: [
-              spiffCover(context, spiff.cover),
-              const DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment(0.0, 0.75),
-                    end: Alignment(0.0, 0.0),
-                    colors: <Color>[
-                      Color(0x60000000),
-                      Color(0x00000000),
-                    ],
+      return CustomScrollView(slivers: [
+        SliverAppBar(
+          foregroundColor: overlayIconColor(context),
+          expandedHeight: expandedHeight,
+          actions: actions(context, spiff, isCached),
+          flexibleSpace: FlexibleSpaceBar(
+              // centerTitle: true,
+              // title: Text(release.name, style: TextStyle(fontSize: 15)),
+              stretchModes: [StretchMode.zoomBackground, StretchMode.fadeTitle],
+              background: Stack(fit: StackFit.expand, children: [
+                spiffCover(context, spiff.cover),
+                const DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment(0.0, 0.75),
+                      end: Alignment(0.0, 0.0),
+                      colors: <Color>[
+                        Color(0x60000000),
+                        Color(0x00000000),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              Align(
-                  alignment: Alignment.bottomLeft,
-                  child: playButton(context, spiff, isCached)),
-              Align(
-                  alignment: Alignment.bottomRight,
-                  child: bottomRight(context, spiff, isCached))
-            ])),
-      ),
-      SliverToBoxAdapter(
-          child: Container(
-              padding: EdgeInsets.fromLTRB(0, 16, 0, 0),
-              child: Column(children: [
-                title(context, spiff),
-                subtitle(context, spiff),
-              ]))),
-      SliverToBoxAdapter(child: SpiffTrackListView(spiff)),
-    ]);
+                Align(
+                    alignment: Alignment.bottomLeft,
+                    child: playButton(context, spiff, isCached)),
+                Align(
+                    alignment: Alignment.bottomRight,
+                    child: bottomRight(context, spiff, isCached))
+              ])),
+        ),
+        SliverToBoxAdapter(
+            child: Container(
+                padding: EdgeInsets.fromLTRB(0, 16, 0, 0),
+                child: Column(children: [
+                  title(context, spiff),
+                  subtitle(context, spiff),
+                ]))),
+        SliverToBoxAdapter(child: SpiffTrackListView(spiff)),
+      ]);
+    });
   }
 
   // List<Widget>? actions(BuildContext context);
@@ -162,6 +168,36 @@ class SpiffWidget extends ClientPage<Spiff> {
       context.play(spiff);
     }
   }
+
+  void _onDelete(BuildContext context, Spiff spiff) {
+    showDialog(
+        context: context,
+        builder: (ctx) {
+          return AlertDialog(
+            title: Text(context.strings.confirmDelete),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child:
+                    Text(MaterialLocalizations.of(context).cancelButtonLabel),
+              ),
+              TextButton(
+                onPressed: () {
+                  _onDeleteConfirmed(context, spiff);
+                  Navigator.pop(ctx);
+                  Navigator.pop(context);
+                },
+                child: Text(MaterialLocalizations.of(context).okButtonLabel),
+              ),
+            ],
+          );
+        });
+  }
+
+  void _onDeleteConfirmed(BuildContext context, Spiff spiff) {
+    context.trackCache.removeIds(spiff.playlist.tracks);
+    context.spiffCache.remove(spiff);
+  }
 }
 
 class SpiffTrackListView extends StatelessWidget {
@@ -185,28 +221,31 @@ class SpiffTrackListView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final downloads = context.watch<DownloadCubit>();
-    final trackCache = context.watch<TrackCacheCubit>();
-    final offsets = context.watch<OffsetCacheCubit>();
-    final children = <Widget>[];
-    final tracks = _spiff.playlist.tracks;
-    final sameArtwork = tracks.every((e) => e.image == tracks.first.image);
-    for (var i = 0; i < tracks.length; i++) {
-      final e = tracks[i];
-      final subChildren = _subtitle(trackCache.state, offsets.state, e);
-      final subtitle = Column(
-          children: subChildren, crossAxisAlignment: CrossAxisAlignment.start);
-      final isThreeLine = subChildren.length > 1 || _spiff.isPodcast();
-      children.add(ListTile(
-          isThreeLine: isThreeLine,
-          onTap: () => _onTrack(context, offsets.state, i),
-          onLongPress: () => _onArtist(context, _spiff.creator),
-          leading: _leading(context, e, sameArtwork),
-          trailing: _trailing(downloads.state, trackCache.state, e),
-          subtitle: subtitle,
-          title: Text(e.title)));
-    }
-    return Column(children: children);
+    return Builder(builder: (context) {
+      final downloads = context.watch<DownloadCubit>();
+      final trackCache = context.watch<TrackCacheCubit>();
+      final offsets = context.watch<OffsetCacheCubit>();
+      final children = <Widget>[];
+      final tracks = _spiff.playlist.tracks;
+      final sameArtwork = tracks.every((e) => e.image == tracks.first.image);
+      for (var i = 0; i < tracks.length; i++) {
+        final e = tracks[i];
+        final subChildren = _subtitle(trackCache.state, offsets.state, e);
+        final subtitle = Column(
+            children: subChildren,
+            crossAxisAlignment: CrossAxisAlignment.start);
+        final isThreeLine = subChildren.length > 1 || _spiff.isPodcast();
+        children.add(ListTile(
+            isThreeLine: isThreeLine,
+            onTap: () => _onTrack(context, offsets.state, i),
+            onLongPress: () => _onArtist(context, _spiff.creator),
+            leading: _leading(context, e, sameArtwork),
+            trailing: _trailing(downloads.state, trackCache.state, e),
+            subtitle: subtitle,
+            title: Text(e.title)));
+      }
+      return Column(children: children);
+    });
   }
 
   Widget? _leading(BuildContext context, Entry entry, bool sameArtwork) {
@@ -219,15 +258,15 @@ class SpiffTrackListView extends StatelessWidget {
     return sameArtwork ? null : tileCover(context, entry.image);
   }
 
-  Widget _trailing(DownloadState downloads, TrackCacheState cache, Entry entry) {
-    final download = downloads.get(entry);
-    if (download?.downloading == true) {
-      final value = download?.progress?.value ?? 0.0;
-      return value > 1.0
-          ? CircularProgressIndicator()
-          : CircularProgressIndicator(value: value);
+  Widget? _trailing(
+      DownloadState downloads, TrackCacheState cache, Entry entry) {
+    if (cache.contains(entry)) {
+      return Icon(IconsCached);
     }
-    return Icon(cache.contains(entry) ? IconsCached : null);
+    final progress = downloads.progress(entry);
+    return progress != null
+        ? CircularProgressIndicator(value: progress.value)
+        : null;
   }
 
   List<Widget> _subtitle(
@@ -238,10 +277,7 @@ class SpiffTrackListView extends StatelessWidget {
         children.add(Text(entry.creator, overflow: TextOverflow.ellipsis));
       }
       children.add(Text(
-          merge([
-            entry.album,
-            if (state.contains(entry)) storage(entry.size)
-          ]),
+          merge([entry.album, if (state.contains(entry)) storage(entry.size)]),
           overflow: TextOverflow.ellipsis));
     } else {
       final duration = offsets.remaining(entry);

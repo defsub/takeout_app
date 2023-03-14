@@ -19,10 +19,8 @@ import 'dart:collection';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-
-import 'package:takeout_app/app/context.dart';
 import 'package:takeout_app/api/model.dart';
+import 'package:takeout_app/app/context.dart';
 import 'package:takeout_app/history/history.dart';
 import 'package:takeout_app/history/model.dart';
 import 'package:takeout_app/page/page.dart';
@@ -30,6 +28,7 @@ import 'package:takeout_app/podcasts.dart';
 import 'package:takeout_app/release.dart';
 
 import 'artists.dart';
+import 'nav.dart';
 import 'style.dart';
 import 'video.dart';
 
@@ -100,30 +99,30 @@ class SearchWidget extends ClientPage<SearchView?> {
                 if (view.artists != null && view.artists!.isNotEmpty)
                   Container(
                       child: Column(children: [
-                    heading(AppLocalizations.of(context)!.artistsLabel),
+                    heading(context.strings.artistsLabel),
                     _ArtistResultsWidget(view.artists!),
                   ])),
                 if (view.releases != null && view.releases!.isNotEmpty)
                   Container(
                       child: Column(children: [
-                    heading(AppLocalizations.of(context)!.releasesLabel),
+                    heading(context.strings.releasesLabel),
                     ReleaseListWidget(view.releases!),
                   ])),
                 if (view.tracks != null && view.tracks!.isNotEmpty)
                   Container(
                       child: Column(children: [
-                    heading(AppLocalizations.of(context)!.tracksLabel),
+                    heading(context.strings.tracksLabel),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
                         OutlinedButton.icon(
                             label:
-                                Text(AppLocalizations.of(context)!.playLabel),
+                                Text(context.strings.playLabel),
                             icon: Icon(Icons.play_arrow),
                             onPressed: () => _onPlay(context, view)),
                         OutlinedButton.icon(
                             label: Text(
-                                AppLocalizations.of(context)!.downloadLabel),
+                                context.strings.downloadLabel),
                             icon: Icon(Icons.radio),
                             onPressed: () => _onDownload(context, view)),
                       ],
@@ -133,19 +132,19 @@ class SearchWidget extends ClientPage<SearchView?> {
                 if (view.movies != null && view.movies!.isNotEmpty)
                   Container(
                       child: Column(children: [
-                    heading(AppLocalizations.of(context)!.moviesLabel),
+                    heading(context.strings.moviesLabel),
                     MovieListWidget(view.movies!),
                   ])),
                 if (view.series != null && view.series!.isNotEmpty)
                   Container(
                       child: Column(children: [
-                    heading(AppLocalizations.of(context)!.seriesLabel),
+                    heading(context.strings.seriesLabel),
                     SeriesListWidget(view.series!),
                   ])),
                 if (view.episodes != null && view.episodes!.isNotEmpty)
                   Container(
                       child: Column(children: [
-                    heading(AppLocalizations.of(context)!.episodesLabel),
+                    heading(context.strings.episodesLabel),
                     EpisodeListWidget(view.episodes!),
                   ])),
               ]))
@@ -179,7 +178,6 @@ class _ArtistResultsWidget extends StatelessWidget {
   }
 
   void _onTapped(BuildContext context, Artist artist) {
-    Navigator.push(
-        context, MaterialPageRoute(builder: (_) => ArtistWidget(artist)));
+    push(context, builder: (_) => ArtistWidget(artist));
   }
 }

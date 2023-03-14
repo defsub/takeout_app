@@ -26,10 +26,13 @@ import 'package:takeout_app/menu.dart';
 import 'package:takeout_app/style.dart';
 import 'package:takeout_app/tiles.dart';
 import 'package:takeout_app/spiff/widget.dart';
+
 import 'history.dart';
 import 'model.dart';
 
 class HistoryListWidget extends StatelessWidget {
+  HistoryListWidget() : super(key: historyKey);
+
   @override
   Widget build(BuildContext context) {
     final cubit = context.watch<HistoryCubit>();
@@ -39,12 +42,12 @@ class HistoryListWidget extends StatelessWidget {
       spiffs.sort((a, b) => b.dateTime.compareTo(a.dateTime));
       return Scaffold(
           appBar: AppBar(
-            title: header(AppLocalizations.of(context)!.historyLabel),
+            title: header(context.strings.historyLabel),
             actions: [
               popupMenu(context, [
                 PopupItem.delete(
                     context,
-                    AppLocalizations.of(context)!.deleteAll,
+                    context.strings.deleteAll,
                     (ctx) => _onDelete(ctx)),
               ])
             ],
@@ -59,6 +62,7 @@ class HistoryListWidget extends StatelessWidget {
           ]));
     };
     return Navigator(
+        key: key,
         initialRoute: '/',
         observers: [heroController()],
         onGenerateRoute: (RouteSettings settings) {
@@ -71,8 +75,8 @@ class HistoryListWidget extends StatelessWidget {
         context: context,
         builder: (ctx) {
           return AlertDialog(
-            title: Text(AppLocalizations.of(context)!.confirmDelete),
-            content: Text(AppLocalizations.of(context)!.deleteHistory),
+            title: Text(context.strings.confirmDelete),
+            content: Text(context.strings.deleteHistory),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),

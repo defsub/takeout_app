@@ -70,6 +70,10 @@ class ClientRepository {
     return _provider.series(id, ttl: ttl);
   }
 
+  Future<Spiff> seriesPlaylist(int id, {Duration? ttl = Duration.zero}) async {
+    return _provider.seriesPlaylist(id, ttl: ttl);
+  }
+
   Future<Spiff> station(int id, {Duration? ttl = Duration.zero}) async {
     return _provider.station(id, ttl: ttl);
   }
@@ -100,6 +104,10 @@ class ClientRepository {
 
   Future<ReleaseView> release(int id, {Duration? ttl = Duration.zero}) async {
     return _provider.release(id, ttl: ttl);
+  }
+
+  Future<Spiff> releasePlaylist(int id, {Duration? ttl}) async {
+    return _provider.releasePlaylist(id, ttl: ttl);
   }
 
   Future<Spiff> recentTracks({Duration? ttl}) async {

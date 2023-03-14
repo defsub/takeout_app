@@ -17,9 +17,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_settings_screens/flutter_settings_screens.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:rxdart/rxdart.dart';
 import 'package:logging/logging.dart';
+import 'package:takeout_app/app/context.dart';
 
 import 'model.dart';
 import 'style.dart';
@@ -34,20 +33,6 @@ enum LiveType { none, share, follow }
 
 enum GridType { mix, downloads, released, added }
 
-GridType settingsGridType(String key, GridType def) {
-  final v = Settings.getValue<int>(key, defaultValue: def.index) ?? def.index;
-  return GridType.values[v];
-}
-
-LiveType settingsLiveType([LiveType def = LiveType.none]) {
-  final v =
-      Settings.getValue(settingLiveMode, defaultValue: def.index) ?? def.index;
-  return LiveType.values[v];
-}
-
-final settingsChangeSubject =
-    BehaviorSubject<String>.seeded(''); // TODO seems ok
-
 class AppSettings extends StatelessWidget {
   static final log = Logger('AppSettingsState');
 
@@ -55,44 +40,44 @@ class AppSettings extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       child: SettingsScreen(
-        title: AppLocalizations.of(context)!.settingsLabel,
+        title: context.strings.settingsLabel,
         children: [
           SettingsGroup(
-              title: AppLocalizations.of(context)!.homeSettingsTitle,
+              title: context.strings.homeSettingsTitle,
               children: <Widget>[
                 DropDownSettingsTile<int>(
                   settingKey: settingHomeGridType,
-                  title: AppLocalizations.of(context)!.settingHomeGridTitle,
+                  title: context.strings.settingHomeGridTitle,
                   subtitle:
-                      AppLocalizations.of(context)!.settingHomeGridSubtitle,
+                      context.strings.settingHomeGridSubtitle,
                   values: <int, String>{
                     GridType.mix.index:
-                        AppLocalizations.of(context)!.settingHomeGridMix,
+                        context.strings.settingHomeGridMix,
                     GridType.downloads.index:
-                        AppLocalizations.of(context)!.settingHomeGridDownloads,
+                        context.strings.settingHomeGridDownloads,
                     GridType.added.index:
-                        AppLocalizations.of(context)!.settingHomeGridAdded,
+                        context.strings.settingHomeGridAdded,
                     GridType.released.index:
-                        AppLocalizations.of(context)!.settingHomeGridReleased,
+                        context.strings.settingHomeGridReleased,
                   },
                   selected: Settings.getValue<int>(settingHomeGridType,
                           defaultValue: GridType.mix.index) ??
                       GridType.mix.index,
                   onChange: (value) {
-                    settingsChangeSubject.add(settingHomeGridType);
+                    // settingsChangeSubject.add(settingHomeGridType);
                   },
                 ),
               ]),
           SettingsGroup(
-            title: AppLocalizations.of(context)!.networkSettingsTitle,
+            title: context.strings.networkSettingsTitle,
             children: <Widget>[
               SwitchSettingsTile(
                 settingKey: settingAllowStreaming,
-                title: AppLocalizations.of(context)!.settingStreamingTitle,
+                title: context.strings.settingStreamingTitle,
                 subtitle:
-                    AppLocalizations.of(context)!.settingStreamingSubtitle,
-                enabledLabel: AppLocalizations.of(context)!.settingEnabled,
-                disabledLabel: AppLocalizations.of(context)!.settingDisabled,
+                    context.strings.settingStreamingSubtitle,
+                enabledLabel: context.strings.settingEnabled,
+                disabledLabel: context.strings.settingDisabled,
                 leading: Icon(Icons.cloud_outlined),
                 onChange: (value) {
                   log.finer('streaming: $value');
@@ -100,11 +85,11 @@ class AppSettings extends StatelessWidget {
               ),
               SwitchSettingsTile(
                 settingKey: settingAllowDownload,
-                title: AppLocalizations.of(context)!.settingDownloadsTitle,
+                title: context.strings.settingDownloadsTitle,
                 subtitle:
-                    AppLocalizations.of(context)!.settingDownloadsSubtitle,
-                enabledLabel: AppLocalizations.of(context)!.settingEnabled,
-                disabledLabel: AppLocalizations.of(context)!.settingDisabled,
+                    context.strings.settingDownloadsSubtitle,
+                enabledLabel: context.strings.settingEnabled,
+                disabledLabel: context.strings.settingDisabled,
                 leading: Icon(IconsDownload),
                 onChange: (value) {
                   log.finer('downloads: $value');
@@ -112,10 +97,10 @@ class AppSettings extends StatelessWidget {
               ),
               SwitchSettingsTile(
                 settingKey: settingAllowArtistArtwork,
-                title: AppLocalizations.of(context)!.settingArtworkTitle,
-                subtitle: AppLocalizations.of(context)!.settingArtworkSubtitle,
-                enabledLabel: AppLocalizations.of(context)!.settingEnabled,
-                disabledLabel: AppLocalizations.of(context)!.settingDisabled,
+                title: context.strings.settingArtworkTitle,
+                subtitle: context.strings.settingArtworkSubtitle,
+                enabledLabel: context.strings.settingEnabled,
+                disabledLabel: context.strings.settingDisabled,
                 leading: Icon(Icons.image_outlined),
                 onChange: (value) {
                   log.finer('artwork: $value');
@@ -124,24 +109,24 @@ class AppSettings extends StatelessWidget {
             ],
           ),
           SettingsGroup(
-              title: AppLocalizations.of(context)!.settingLive,
+              title: context.strings.settingLive,
               children: <Widget>[
                 DropDownSettingsTile<int>(
-                    title: AppLocalizations.of(context)!.settingLiveMode,
+                    title: context.strings.settingLiveMode,
                     settingKey: settingLiveMode,
                     values: <int, String>{
                       LiveType.none.index:
-                          AppLocalizations.of(context)!.settingLiveNone,
+                          context.strings.settingLiveNone,
                       LiveType.share.index:
-                          AppLocalizations.of(context)!.settingLiveShare,
+                          context.strings.settingLiveShare,
                       LiveType.follow.index:
-                          AppLocalizations.of(context)!.settingLiveFollow,
+                          context.strings.settingLiveFollow,
                     },
                     selected: Settings.getValue<int>(settingLiveMode,
                             defaultValue: LiveType.none.index) ??
                         LiveType.none.index,
                     onChange: (value) {
-                      settingsChangeSubject.add(settingLiveMode);
+                      // settingsChangeSubject.add(settingLiveMode);
                     })
               ]),
         ],

@@ -213,7 +213,7 @@ class Entry extends DownloadIdentifier implements MediaTrack, OffsetIdentifier {
 
   @override
   String get key {
-    return ETag(etag).value;
+    return ETag(etag).key;
   }
 
   @override

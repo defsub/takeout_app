@@ -33,6 +33,8 @@ abstract class FileCacheProvider {
 
   Future remove(FileIdentifier id, {bool delete = true});
 
+  Future removeAll();
+
   File create(FileIdentifier id);
 
   Future retain(Iterable<FileIdentifier> ids);
@@ -115,6 +117,15 @@ class DirectoryFileCache implements FileCacheProvider {
     if (delete) {
       await file?.delete();
     }
+  }
+
+  @override
+  Future removeAll() {
+    // copy keys to avoid concurrent modification
+    return Future.forEach<String>(List<String>.from(_entries.keys),
+        (key) async {
+      await _remove(key);
+    });
   }
 
   @override

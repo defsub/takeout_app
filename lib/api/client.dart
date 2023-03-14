@@ -170,161 +170,29 @@ class TakeoutClient implements ClientProvider {
     return settings.endpoint;
   }
 
-  // Future<void> setEndpoint(String? v) async {
-  //   SharedPreferences prefs = await SharedPreferences.getInstance();
-  //   _endpoint = v;
-  //   if (v == null) {
-  //     prefs.remove(settingEndpoint);
-  //   } else {
-  //     prefs.setString(settingEndpoint, v);
-  //   }
-  // }
-  //
-  // Future<String> getEndpoint() async {
-  //   if (_endpoint == null) {
-  //     SharedPreferences prefs = await SharedPreferences.getInstance();
-  //     if (prefs.containsKey(settingEndpoint)) {
-  //       _endpoint = prefs.getString(settingEndpoint);
-  //     }
-  //   }
-  //   return _endpoint!;
-  // }
-  //
-  // Future<void> _clearTokens() async {
-  //   SharedPreferences prefs = await SharedPreferences.getInstance();
-  //   _accessToken = null;
-  //   _mediaToken = null;
-  //   await prefs.remove(settingAccessToken);
-  //   await prefs.remove(settingMediaToken);
-  //   await prefs.remove(settingRefreshToken);
-  // }
-  //
-  // // clear and refresh all tokens
-  // Future<void> _setTokens(Map<String, dynamic> result) async {
-  //   SharedPreferences prefs = await SharedPreferences.getInstance();
-  //
-  //   await _clearTokens();
-  //   await _refreshTokens(result);
-  //
-  //   // media token
-  //   _mediaToken = result[fieldMediaToken];
-  //   if (_mediaToken != null) {
-  //     await prefs.setString(settingMediaToken, _mediaToken!);
-  //   }
-  // }
-  //
-  // // refresh access and refresh tokens (not media)
-  // Future<void> _refreshTokens(Map<String, dynamic> result) async {
-  //   SharedPreferences prefs = await SharedPreferences.getInstance();
-  //
-  //   if (result.containsKey(fieldAccessToken)) {
-  //     _accessToken = result[fieldAccessToken];
-  //     if (_accessToken != null) {
-  //       await prefs.setString(settingAccessToken, _accessToken!);
-  //     }
-  //   }
-  //
-  //   if (result.containsKey(fieldRefreshToken)) {
-  //     final String? refreshToken = result[fieldRefreshToken];
-  //     if (refreshToken != null) {
-  //       await prefs.setString(settingRefreshToken, refreshToken);
-  //     }
-  //   }
-  // }
-  //
-  // Future<Duration> _tokenTimeRemaining(String? token) async {
-  //   if (token == null) {
-  //     return Duration.zero;
-  //   }
-  //   final expired = JwtDecoder.isExpired(token);
-  //   log.fine('expired $expired (${JwtDecoder.getExpirationDate(token)})');
-  //   return JwtDecoder.getRemainingTime(token);
-  // }
-  //
-  // Future<String?> getAccessToken() async => _getAccessToken();
-  //
-  // Future<String?> _getAccessToken() async {
-  //   if (_accessToken == null) {
-  //     SharedPreferences prefs = await SharedPreferences.getInstance();
-  //     if (prefs.containsKey(settingAccessToken)) {
-  //       _accessToken = prefs.getString(settingAccessToken);
-  //     }
-  //   }
-  //   // final duration = await _tokenTimeRemaining(_accessToken);
-  //   // log.fine('access token remaining $duration');
-  //   return _accessToken;
-  // }
-  //
-  // Future<String?> _getMediaToken() async {
-  //   if (_mediaToken == null) {
-  //     SharedPreferences prefs = await SharedPreferences.getInstance();
-  //     if (prefs.containsKey(settingMediaToken)) {
-  //       _mediaToken = prefs.getString(settingMediaToken);
-  //     }
-  //   }
-  //   // final duration = await _tokenTimeRemaining(_mediaToken);
-  //   // log.fine('media token remaining $duration');
-  //   return _mediaToken;
-  // }
-  //
-  // Future<String?> _getRefreshToken() async {
-  //   String? token;
-  //   SharedPreferences prefs = await SharedPreferences.getInstance();
-  //   if (prefs.containsKey(settingRefreshToken)) {
-  //     token = prefs.getString(settingRefreshToken);
-  //   }
-  //   return token;
-  // }
-
   Map<String, String> _headersWithAccessToken() {
-    final accessToken = tokenRepository.accessToken;
-    return {
-      if (accessToken != null) 'Authorization': 'Bearer $accessToken',
-    };
+    return tokenRepository.addAccessToken();
   }
 
   Map<String, String> _headersWithRefreshToken() {
-    final refreshToken = tokenRepository.refreshToken;
-    return {
-      if (refreshToken != null) 'Authorization': 'Bearer $refreshToken',
-    };
+    return tokenRepository.addRefreshToken();
   }
 
-  Map<String, String> headersWithMediaToken() {
-    final mediaToken = tokenRepository.mediaToken;
-    return {
-      if (mediaToken != null) 'Authorization': 'Bearer $mediaToken',
-      HttpHeaders.userAgentHeader: _userAgent,
-    };
+  Map<String, String> _headersWithMediaToken() {
+    return tokenRepository.addMediaToken(headers: headers());
   }
 
   Map<String, String> headers() {
     return {HttpHeaders.userAgentHeader: userAgent};
   }
 
-  // Future<bool> needLogin() async {
-  //   final token = await _getRefreshToken();
-  //   // TODO check age?
-  //   return token == null;
-  // }
-  //
   bool _haveTokens() {
     return tokenRepository.refreshToken != null &&
         tokenRepository.accessToken != null;
   }
 
-  // Future<void> logout() async {
-  //   return _clearTokens();
-  // }
-
   Future<Map<String, dynamic>> _getJson(String uri,
       {bool cacheable = true, Duration? ttl}) async {
-    // final token = await _getAccessToken();
-    // if (token == null) {
-    //   throw ClientException(
-    //     statusCode: HttpStatus.networkAuthenticationRequired,
-    //   );
-    // }
 
     ttl = ttl ?? defaultTTL;
     Map<String, dynamic>? cachedJson = null;
@@ -767,10 +635,14 @@ class TakeoutClient implements ClientProvider {
     final completer = Completer<int>();
     log.fine('download file is $file');
 
+    if (uri.hasScheme == false) {
+      uri = Uri.parse('$endpoint${uri.toString()}');
+    }
+
     HttpClient()
         .getUrl(uri)
         .then((request) async {
-          final headers = await headersWithMediaToken();
+          final headers = await _headersWithMediaToken();
           headers.forEach((k, v) {
             request.headers.set(k, v);
           });
@@ -803,31 +675,4 @@ class TakeoutClient implements ClientProvider {
         });
     return completer.future;
   }
-
-  /// Download
-  Future<List<bool>> downloadSpiffTracks(Spiff spiff) async {
-    throw UnsupportedError;
-    // final result = <bool>[];
-    // for (var t in spiff.playlist.tracks) {
-    //   await download(t)
-    //       .then((v) => result.add(true))
-    //       .catchError((e) => result.add(false));
-    // }
-    // return result;
-  }
-
-  /// Obtain the Uri to playback/stream a resource. This will either be a local
-  /// file from the cache or a url indirectly pointing to s3 bucket item.
-// Future<Uri> locate(Locatable d) async {
-//   if (d.location.startsWith('http')) {
-//     // already located or internet radio
-//     return Uri.parse(d.location);
-//   }
-//   final result = null; //await trackCacheRepository.get(d);
-//   if (result is File) {
-//     return result.uri;
-//   } else {
-//     return Uri.parse('$endpoint${d.location}');
-//   }
-// }
 }

@@ -16,23 +16,22 @@
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
 import 'package:flutter/material.dart';
-import 'package:takeout_app/buttons.dart';
-import 'package:takeout_app/cache/offset.dart';
-import 'package:webview_flutter/webview_flutter.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
+import 'package:takeout_app/api/model.dart';
 import 'package:takeout_app/app/context.dart';
 import 'package:takeout_app/art/builder.dart';
 import 'package:takeout_app/art/cover.dart';
-import 'package:takeout_app/api/model.dart';
-import 'package:takeout_app/client/download.dart';
+import 'package:takeout_app/buttons.dart';
+import 'package:takeout_app/cache/offset.dart';
 import 'package:takeout_app/cache/track.dart';
+import 'package:takeout_app/client/download.dart';
 import 'package:takeout_app/page/page.dart';
 import 'package:takeout_app/util.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
-import 'style.dart';
 import 'menu.dart';
+import 'nav.dart';
+import 'style.dart';
 import 'tiles.dart';
 
 class SeriesWidget extends ClientPage<SeriesView> {
@@ -91,7 +90,8 @@ class SeriesWidget extends ClientPage<SeriesView> {
                                   child: _playButton(context, isCached)),
                               Align(
                                   alignment: Alignment.bottomRight,
-                                  child: _downloadButton(context, isCached)),
+                                  child:
+                                      _downloadButton(context, view, isCached)),
                             ])),
                       ),
                       SliverToBoxAdapter(
@@ -124,21 +124,21 @@ class SeriesWidget extends ClientPage<SeriesView> {
         : StreamingButton(onPressed: () => _onPlay(context));
   }
 
-  Widget _downloadButton(BuildContext context, bool isCached) {
+  Widget _downloadButton(BuildContext context, SeriesView view, bool isCached) {
     return isCached
         ? IconButton(
             color: overlayIconColor(context),
             icon: Icon(IconsDownloadDone),
             onPressed: () => {})
-        : DownloadButton(onPressed: () => _onDownload(context));
+        : DownloadButton(onPressed: () => _onDownload(context, view));
   }
 
   void _onPlay(BuildContext context) {
     context.playlist.replace(_series.reference);
   }
 
-  void _onDownload(BuildContext context) {
-    // Downloads.downloadSeries(context, _series);
+  void _onDownload(BuildContext context, SeriesView view) {
+    context.downloadSeries(view.series);
   }
 }
 
@@ -152,11 +152,15 @@ class _SeriesEpisodeListWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final episodes = List<Episode>.from(_view.episodes.map((e) =>
         e.copyWith(album: _view.series.title, image: _view.series.image)));
-    return BlocBuilder<DownloadCubit, DownloadState>(builder: (context, state) {
+    return Builder(builder: (context) {
+      final downloads = context.watch<DownloadCubit>();
+      final trackCache = context.watch<TrackCacheCubit>();
+      final offsets = context.watch<OffsetCacheCubit>();
       return Column(children: [
         ...episodes.asMap().keys.toList().map((index) => ListTile(
             isThreeLine: true,
-            trailing: _trailing(context, state, episodes[index]),
+            trailing: _trailing(
+                context, downloads.state, trackCache.state, episodes[index]),
             onTap: () => _onPlay(context, episodes[index]),
             onLongPress: () => _onEpisode(context, episodes[index], index),
             title: Text(episodes[index].title),
@@ -183,12 +187,15 @@ class _SeriesEpisodeListWidget extends StatelessWidget {
     });
   }
 
-  Widget? _trailing(
-      BuildContext context, DownloadState state, Episode episode) {
-    final progress = state.progress(episode);
+  Widget? _trailing(BuildContext context, DownloadState downloadState,
+      TrackCacheState trackCache, Episode episode) {
+    if (trackCache.contains(episode)) {
+      return Icon(IconsCached);
+    }
+    final progress = downloadState.progress(episode);
     return (progress != null)
         ? CircularProgressIndicator(value: progress.value)
-        : Icon(context.trackCache.state.contains(episode) ? IconsCached : null);
+        : null;
   }
 
   // void _onCache(BuildContext context, bool isCached, Episode episode) {
@@ -200,11 +207,9 @@ class _SeriesEpisodeListWidget extends StatelessWidget {
   // }
 
   void _onEpisode(BuildContext context, Episode episode, int index) {
-    Navigator.push(
-        context,
-        MaterialPageRoute(
-            builder: (_) => _EpisodeWidget(episode, _view.series.title,
-                backgroundColor: backgroundColor)));
+    push(context,
+        builder: (_) => _EpisodeWidget(episode, _view.series.title,
+            backgroundColor: backgroundColor));
   }
 
   void _onPlay(BuildContext context, Episode episode) {
@@ -231,7 +236,7 @@ class _EpisodeWidget extends StatelessWidget {
               // TODO this shows delete when there's nothing to delete
               PopupItem.delete(
                   context,
-                  AppLocalizations.of(context)!.deleteItem,
+                  context.strings.deleteItem,
                   (ctx) => _onDelete(ctx)),
             ])
           ],
@@ -330,28 +335,23 @@ class _EpisodeWidget extends StatelessWidget {
 
   Widget _downloadButton(BuildContext context) {
     return Builder(builder: (context) {
-      final downloads = context.watch<DownloadCubit>();
-      final cache = context.watch<TrackCacheCubit>();
-
-      final download = downloads.state.get(episode);
-      if (download != null) {
-        final value = download.progress?.value ?? 0.0;
-        return value > 1.0
-            ? CircularProgressIndicator()
-            : CircularProgressIndicator(value: value);
+      final downloads = context.watch<DownloadCubit>().state;
+      final trackCache = context.watch<TrackCacheCubit>().state;
+      final download = downloads.get(episode);
+      final isCached = trackCache.contains(episode);
+      if (isCached) {
+        return Icon(IconsDownloadDone);
+      } else if (download != null) {
+        final value = download.progress?.value;
+        return CircularProgressIndicator(value: value);
+      } else {
+        return DownloadButton(onPressed: () => _onDownload(context));
       }
-      final isCached = cache.state.contains(episode);
-      return isCached
-          ? IconButton(
-              color: overlayIconColor(context),
-              icon: Icon(IconsDownloadDone),
-              onPressed: () => {})
-          : DownloadButton(onPressed: () => _onDownload(context));
     });
   }
 
   void _onDownload(BuildContext context) {
-    // Downloads.downloadEpisode(episode);
+    context.downloadEpisodes([episode]);
   }
 
   Widget _playButton(BuildContext context, bool isCached) {
@@ -361,7 +361,6 @@ class _EpisodeWidget extends StatelessWidget {
   }
 
   void _onPlay(BuildContext context) {
-    print('play $episode');
     context.playlist.replace(episode.reference);
   }
 
@@ -370,8 +369,8 @@ class _EpisodeWidget extends StatelessWidget {
         context: context,
         builder: (ctx) {
           return AlertDialog(
-            title: Text(AppLocalizations.of(context)!.confirmDelete),
-            content: Text(AppLocalizations.of(context)!.deleteEpisode),
+            title: Text(context.strings.confirmDelete),
+            content: Text(context.strings.deleteEpisode),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
@@ -417,8 +416,7 @@ class SeriesListWidget extends StatelessWidget {
   }
 
   void _onTapped(BuildContext context, Series series) {
-    Navigator.push(
-        context, MaterialPageRoute(builder: (_) => SeriesWidget(series)));
+    push(context, builder: (_) => SeriesWidget(series));
   }
 }
 
@@ -444,9 +442,7 @@ class EpisodeListWidget extends StatelessWidget {
   }
 
   void _onTapped(BuildContext context, Episode episode) {
-    Navigator.push(
-        context,
-        MaterialPageRoute(
-            builder: (_) => _EpisodeWidget(episode, ""))); // TODO need title
+    push(context,
+        builder: (_) => _EpisodeWidget(episode, "")); // TODO need title
   }
 }

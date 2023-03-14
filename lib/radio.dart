@@ -16,29 +16,30 @@
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
-import 'package:takeout_app/app/context.dart';
 import 'package:takeout_app/api/model.dart';
+import 'package:takeout_app/app/context.dart';
 import 'package:takeout_app/buttons.dart';
 import 'package:takeout_app/cache/spiff.dart';
 import 'package:takeout_app/page/page.dart';
 import 'package:takeout_app/spiff/model.dart';
-import 'package:takeout_app/spiff/widget.dart';
 import 'package:takeout_app/tiles.dart';
 
 import 'downloads.dart';
-import 'style.dart';
-import 'menu.dart';
 import 'global.dart';
+import 'menu.dart';
+import 'nav.dart';
+import 'style.dart';
+
+const radioCreator = 'Radio';
+const radioStream = 'stream';
 
 class RadioWidget extends NavigatorClientPage<RadioView> {
   RadioWidget() : super(radioKey);
 
   List<Spiff> _radioFilter(Iterable<Spiff> entries) {
     final list = List<Spiff>.from(entries);
-    list.retainWhere((spiff) => spiff.creator == 'Radio');
+    list.retainWhere((spiff) => spiff.creator == radioCreator);
     return list;
   }
 
@@ -60,7 +61,7 @@ class RadioWidget extends NavigatorClientPage<RadioView> {
               onRefresh: () => refreshPage(context),
               child: Scaffold(
                   appBar: AppBar(
-                      title: header(AppLocalizations.of(context)!.radioLabel),
+                      title: header(context.strings.radioLabel),
                       actions: [
                         popupMenu(context, [
                           PopupItem.refresh(
@@ -69,13 +70,13 @@ class RadioWidget extends NavigatorClientPage<RadioView> {
                       ],
                       bottom: TabBar(
                         tabs: [
-                          Tab(text: AppLocalizations.of(context)!.genresLabel),
-                          Tab(text: AppLocalizations.of(context)!.decadesLabel),
-                          Tab(text: AppLocalizations.of(context)!.otherLabel),
-                          Tab(text: AppLocalizations.of(context)!.streamsLabel),
+                          Tab(text: context.strings.genresLabel),
+                          Tab(text: context.strings.decadesLabel),
+                          Tab(text: context.strings.otherLabel),
+                          Tab(text: context.strings.streamsLabel),
                           if (haveDownloads)
                             Tab(
-                                text: AppLocalizations.of(context)!
+                                text: context.strings
                                     .downloadsLabel)
                         ],
                       )),
@@ -103,10 +104,10 @@ class RadioWidget extends NavigatorClientPage<RadioView> {
     return ListView.builder(
         itemCount: stations.length,
         itemBuilder: (context, index) {
-          final isStream = stations[index].type == 'stream';
+          final isStream = stations[index].type == radioStream;
           return isStream
               ? StreamingTile(
-                  onTap: () => _onStream(context, stations[index]),
+                  onTap: () => _onRadioStream(context, stations[index]),
                   leading: Icon(Icons.radio),
                   title: Text(stations[index].name),
                   trailing: Icon(Icons.play_arrow))
@@ -118,26 +119,18 @@ class RadioWidget extends NavigatorClientPage<RadioView> {
         });
   }
 
-  void _onStream(BuildContext context, Station station) async {
-    final client = context.clientRepository;
-    client.station(station.id, ttl: Duration.zero).then((spiff) {
-      context.play(spiff);
-    });
+  void _onRadioStream(BuildContext context, Station station) async {
+    context.stream(station.id);
   }
 
   void _onStation(BuildContext context, Station station) {
-    Navigator.push(
+    pushSpiff(
         context,
-        MaterialPageRoute(
-            builder: (_) => SpiffWidget(
-                fetch: (client, {Duration? ttl}) =>
-                    client.station(station.id, ttl: Duration.zero))));
+        (client, {Duration? ttl}) =>
+            client.station(station.id, ttl: Duration.zero));
   }
 
   void _onDownload(BuildContext context, Station station) {
-    final client = context.clientRepository;
-    client.station(station.id, ttl: Duration.zero).then((spiff) {
-      context.download(spiff);
-    });
+    context.downloadStation(station);
   }
 }

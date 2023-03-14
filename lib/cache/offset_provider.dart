@@ -49,17 +49,25 @@ class OffsetFileCache implements OffsetCache {
   final Map<String, Offset> _entries = {};
   bool _initialized = false;
 
-  OffsetFileCache({required this.directory});
+  OffsetFileCache({required this.directory}) {
+    try {
+      if (directory.existsSync() == false) {
+        directory.createSync(recursive: true);
+      }
+    } catch (e, stack) {
+      log.warning(directory, e, stack);
+    }
+  }
 
   Future _checkInitialized() async {
     if (_initialized) {
       return;
     }
     final files = await directory.list().toList();
-    return Future.forEach(files, (FileSystemEntity file) async {
+    return Future.forEach<FileSystemEntity>(files, (file) async {
       final offset = _decode(file as File);
       if (offset != null) {
-        await put(offset);
+        await _put(offset);
       } else {
         // corrupt? delete it
         log.warning('offset deleting $file');
@@ -113,6 +121,10 @@ class OffsetFileCache implements OffsetCache {
   @override
   Future put(Offset offset) async {
     await _checkInitialized();
+    return _put(offset);
+  }
+
+  Future _put(Offset offset) async {
     final curr = _entries[offset.key];
     if (curr != null && curr.hasDuration() && offset.duration == 0) {
       // duration is dynamic so don't zero out previously found duration

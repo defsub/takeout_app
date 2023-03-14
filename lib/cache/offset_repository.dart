@@ -30,7 +30,7 @@ class OffsetCacheRepository {
     return _cache.merge(offsets);
   }
 
-  Future<Map<String, Offset>> entries() async {
+  Future<Map<String, Offset>> get entries async {
     return _cache.entries();
   }
 }

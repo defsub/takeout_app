@@ -37,6 +37,10 @@ class FileCacheRepository {
     return _cache.remove(id, delete: delete);
   }
 
+  Future removeAll() async {
+    return _cache.removeAll();
+  }
+
   File create(FileIdentifier id) {
     return _cache.create(id);
   }
@@ -47,7 +51,7 @@ class FileCacheRepository {
 
   Future<bool> containsAll(List<FileIdentifier> ids) async {
     int count = 0;
-    for (var id in ids) {
+    for (final id in ids) {
       final result = await get(id);
       if (result is File) {
         count++;
@@ -58,7 +62,7 @@ class FileCacheRepository {
 
   Future<int> size(Iterable<FileIdentifier> ids) async {
     int size = 0;
-    for (var id in ids) {
+    for (final id in ids) {
       final file = await get(id);
       if (file is File) {
         size += file.lengthSync();

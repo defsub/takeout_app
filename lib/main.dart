@@ -24,42 +24,17 @@ import 'dart:io';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:path_provider/path_provider.dart';
-
-import 'package:takeout_app/connectivity/connectivity.dart';
-import 'package:takeout_app/connectivity/repository.dart';
-import 'package:takeout_app/index/index.dart';
-
-import 'media_type/media_type.dart';
-
-import 'package:takeout_app/app/app.dart';
-import 'package:takeout_app/app/context.dart';
-import 'package:takeout_app/db/search.dart';
-import 'package:takeout_app/cache/offset.dart';
-import 'package:takeout_app/cache/offset_repository.dart';
-import 'package:takeout_app/cache/spiff.dart';
-import 'package:takeout_app/cache/json_repository.dart';
-import 'package:takeout_app/cache/track_repository.dart';
-import 'package:takeout_app/cache/track.dart';
-import 'package:takeout_app/client/repository.dart';
-import 'package:takeout_app/client/download.dart';
-import 'package:takeout_app/history/history.dart';
-import 'package:takeout_app/history/repository.dart';
-import 'package:takeout_app/tokens/tokens.dart';
-import 'package:takeout_app/tokens/repository.dart';
-import 'package:takeout_app/client/resolver.dart';
-import 'package:takeout_app/player/player.dart';
-import 'package:takeout_app/player/widget.dart';
-import 'package:takeout_app/settings/settings.dart';
-import 'package:takeout_app/settings/repository.dart';
-import 'package:takeout_app/spiff/model.dart';
-import 'package:takeout_app/player/playing.dart';
-import 'package:takeout_app/player/playlist.dart';
-
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:dynamic_color/dynamic_color.dart';
+
+import 'package:takeout_app/app/app.dart';
+import 'package:takeout_app/app/context.dart';
+import 'package:takeout_app/app/bloc.dart';
+import 'package:takeout_app/player/player.dart';
+import 'package:takeout_app/player/widget.dart';
 import 'package:takeout_app/history/widget.dart';
 
 import 'artists.dart';
@@ -88,164 +63,34 @@ void main() async {
 
 final _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
-class TakeoutApp extends StatelessWidget {
+class TakeoutApp extends StatelessWidget with AppBloc {
   final Directory directory;
 
   TakeoutApp(this.directory);
 
   @override
   Widget build(BuildContext context) {
-    return repositories(directory,
-        child: blocs(
-            child: listeners(context, child: DynamicColorBuilder(
-                builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
-          return MaterialApp(
-              onGenerateTitle: (context) {
-                return AppLocalizations.of(context)!.takeoutTitle;
-              },
-              localizationsDelegates: [
-                AppLocalizations.delegate,
-                GlobalMaterialLocalizations.delegate,
-                GlobalWidgetsLocalizations.delegate,
-                GlobalCupertinoLocalizations.delegate,
-              ],
-              supportedLocales: [
-                const Locale('en', ''),
-              ],
-              home: _TakeoutWidget(),
-              theme: ThemeData.light()
-                  .copyWith(useMaterial3: true, colorScheme: lightDynamic),
-              darkTheme: ThemeData.dark()
-                  .copyWith(useMaterial3: true, colorScheme: darkDynamic));
-        }))));
-  }
-
-  Widget repositories(Directory directory, {required Widget child}) {
-    final d = (String name) => Directory('${directory.path}/${name}');
-
-    final settingsRepository = SettingsRepository();
-
-    final trackCacheRepository =
-        TrackCacheRepository(directory: d('track_cache'));
-
-    final jsonCacheRepository = JsonCacheRepository(directory: d('json_cache'));
-
-    final offsetCacheRepository =
-        OffsetCacheRepository(directory: d('offset_cache'));
-
-    final spiffCacheRepository =
-        SpiffCacheRepository(directory: d('spiff_cache'));
-
-    final historyRepository = HistoryRepository(directory: directory);
-
-    final tokenRepository = TokenRepository();
-
-    final clientRepository = ClientRepository(
-        settingsRepository: settingsRepository,
-        tokenRepository: tokenRepository,
-        jsonCacheRepository: jsonCacheRepository);
-
-    final connectivityRepository = ConnectivityRepository();
-
-    final search = Search(clientRepository: clientRepository);
-
-    final trackResolver =
-        MediaTrackResolver(trackCacheRepository: trackCacheRepository);
-
-    return MultiRepositoryProvider(providers: [
-      RepositoryProvider(create: (_) => search),
-      RepositoryProvider(create: (_) => settingsRepository),
-      RepositoryProvider(create: (_) => trackCacheRepository),
-      RepositoryProvider(create: (_) => jsonCacheRepository),
-      RepositoryProvider(create: (_) => offsetCacheRepository),
-      RepositoryProvider(create: (_) => spiffCacheRepository),
-      RepositoryProvider(create: (_) => historyRepository),
-      RepositoryProvider(create: (_) => clientRepository),
-      RepositoryProvider(create: (_) => connectivityRepository),
-      RepositoryProvider(create: (_) => tokenRepository),
-      RepositoryProvider(create: (_) => trackResolver),
-    ], child: child);
-  }
-
-  Widget blocs({required Widget child}) {
-    return MultiBlocProvider(providers: [
-      BlocProvider(
-          lazy: false,
-          create: (context) {
-            final settings = SettingsCubit();
-            context.read<SettingsRepository>().init(settings);
-            return settings;
-          }),
-      BlocProvider(create: (_) => AppCubit()),
-      BlocProvider(create: (_) => SelectedMediaType()),
-      BlocProvider(create: (_) => NowPlaying()),
-      BlocProvider(
-          create: (context) => PlaylistCubit(context.read<ClientRepository>())),
-      BlocProvider(
-          create: (context) =>
-              ConnectivityCubit(context.read<ConnectivityRepository>())),
-      BlocProvider(create: (context) {
-        final tokens = TokensCubit();
-        context.read<TokenRepository>().init(tokens);
-        return tokens;
-      }),
-      BlocProvider(
-          create: (context) => Player(
-              offsetRepository: context.read<OffsetCacheRepository>(),
-              settingsRepository: context.read<SettingsRepository>(),
-              tokenRepository: context.read<TokenRepository>(),
-              trackResolver: context.read<MediaTrackResolver>())),
-      BlocProvider(
-          create: (context) =>
-              SpiffCacheCubit(context.read<SpiffCacheRepository>())),
-      BlocProvider(
-          create: (context) => OffsetCacheCubit(
-              context.read<OffsetCacheRepository>(),
-              context.read<ClientRepository>())),
-      BlocProvider(
-          create: (context) => DownloadCubit(
-                trackCacheRepository: context.read<TrackCacheRepository>(),
-                clientRepository: context.read<ClientRepository>(),
-              )),
-      BlocProvider(
-          create: (context) => TrackCacheCubit(
-                context.read<TrackCacheRepository>(),
-              )),
-      BlocProvider(
-          create: (context) => HistoryCubit(context.read<HistoryRepository>())),
-      BlocProvider(
-          create: (context) => IndexCubit(context.read<ClientRepository>()))
-    ], child: child);
-  }
-
-  Widget listeners(BuildContext context, {required Widget child}) {
-    return MultiBlocListener(listeners: [
-      BlocListener<NowPlaying, Spiff?>(listener: (context, spiff) {
-        if (spiff != null) {
-          // load now playing playlist into player
-          context.player.load(spiff);
-        }
-      }),
-      BlocListener<Player, PlayerState>(
-          listenWhen: (_, state) =>
-              state is PlayerReady || state is PlayerLoaded,
-          listener: (context, state) {
-            if (state is PlayerReady) {
-              // restore playlist at startup
-              final spiff = context.nowPlaying.state;
-              if (spiff != null) {
-                context.player.load(spiff);
-              }
-            }
-          }),
-      BlocListener<PlaylistCubit, PlaylistState>(
-          listenWhen: (_, state) => state is PlaylistChanged,
-          listener: (context, state) {
-            if (state is PlaylistChanged) {
-              context.play(state.spiff);
-            }
-          }),
-    ], child: child);
+    return appInit(context, directory: directory, child: DynamicColorBuilder(
+        builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
+      return MaterialApp(
+          onGenerateTitle: (context) {
+            return context.strings.takeoutTitle;
+          },
+          localizationsDelegates: [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: [
+            const Locale('en', ''),
+          ],
+          home: _TakeoutWidget(),
+          theme: ThemeData.light()
+              .copyWith(useMaterial3: true, colorScheme: lightDynamic),
+          darkTheme: ThemeData.dark()
+              .copyWith(useMaterial3: true, colorScheme: darkDynamic));
+    }));
   }
 }
 
@@ -256,8 +101,7 @@ class _TakeoutWidget extends StatefulWidget {
   _TakeoutState createState() => _TakeoutState();
 }
 
-class _TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
-  StreamSubscription<PlayerPositionChanged>? _considerPlayedSubscription;
+class _TakeoutState extends State<_TakeoutWidget> with AppBlocState, WidgetsBindingObserver {
 
   @override
   void initState() {
@@ -265,25 +109,7 @@ class _TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
 
     WidgetsBinding.instance.addObserver(this);
 
-    if (context.tokens.state.authenticated) {
-      // restore authenticated state
-      context.app.authenticated();
-    }
-
-    // keep track of position changes and update history once a track is considered played
-    _considerPlayedSubscription = context.player.stream
-        .where((state) => state is PlayerPositionChanged)
-        .cast<PlayerPositionChanged>()
-        .distinct((a, b) =>
-            a.currentTrack.etag == b.currentTrack.etag &&
-            a.considerPlayed == b.considerPlayed)
-        .listen((state) {
-      if (state.considerPlayed) {
-        print(
-            'consider played ${state.position} ${state.duration} ${state.currentTrack.title}');
-        context.history.add(track: state.currentTrack);
-      }
-    });
+    appInitState(context);
 
     // TODO prune cache
   }
@@ -292,7 +118,7 @@ class _TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     snackBarStateSubject.close();
-    _considerPlayedSubscription?.cancel();
+    appDispose();
     super.dispose();
   }
 
@@ -492,41 +318,29 @@ class _TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
           items: <BottomNavigationBarItem>[
             BottomNavigationBarItem(
               icon: Icon(Icons.home),
-              label: AppLocalizations.of(context)!.navHome,
+              label: context.strings.navHome,
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.people_alt),
-              label: AppLocalizations.of(context)!.navArtists,
+              label: context.strings.navArtists,
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.history),
-              label: AppLocalizations.of(context)!.navHistory,
+              label: context.strings.navHistory,
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.radio),
-              label: AppLocalizations.of(context)!.navRadio,
+              label: context.strings.navRadio,
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.queue_music),
-              label: AppLocalizations.of(context)!.navPlayer,
+              label: context.strings.navPlayer,
             ),
           ],
           currentIndex: index,
           onTap: (index) => _onNavTapped(context, index),
         );
       }),
-      // if (!_showingPlayer())
-      //   StreamBuilder<Duration>(
-      //       stream: audioPlayerHandler.positionStream(),
-      //       builder: (context, snapshot) {
-      //         final position = snapshot.data?.inSeconds.toDouble() ?? 0;
-      //         final mediaItem = audioPlayerHandler.currentItem;
-      //         final duration = mediaItem?.duration?.inSeconds.toDouble() ?? 0;
-      //         if (duration > 0 && position > 0) {
-      //           return LinearProgressIndicator(value: position / duration);
-      //         }
-      //         return SizedBox.shrink();
-      //       })
     ]);
   }
 

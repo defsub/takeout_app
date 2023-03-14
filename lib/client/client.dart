@@ -114,12 +114,20 @@ class ClientCubit extends Cubit<ClientState> {
       _doit<ReleaseView>(({Duration? ttl}) => repository.release(id, ttl: ttl),
           ttl: ttl);
 
+  void releasePlaylist(int id, {Duration? ttl}) async =>
+      _doit<Spiff>(({Duration? ttl}) => repository.releasePlaylist(id, ttl: ttl),
+          ttl: ttl);
+
   void search(String query, {Duration? ttl}) async =>
       _doit<SearchView>(({Duration? ttl}) => repository.search(query, ttl: ttl),
           ttl: ttl);
 
   void series(int id, {Duration? ttl}) async =>
       _doit<SeriesView>(({Duration? ttl}) => repository.series(id, ttl: ttl),
+          ttl: ttl);
+
+  void seriesPlaylist(int id, {Duration? ttl}) async =>
+      _doit<Spiff>(({Duration? ttl}) => repository.seriesPlaylist(id, ttl: ttl),
           ttl: ttl);
 
   void station(int id, {Duration? ttl}) async =>

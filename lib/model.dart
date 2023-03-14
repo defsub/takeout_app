@@ -15,38 +15,14 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
-import 'media_type/media_type.dart';
-
-// abstract class Locatable {
-//   /// Cache key.
-//   String get key;
-//
-//   /// Etag
-//   String get etag;
-//
-//   /// Location URL to get location.
-//   String get location;
-//
-//   int get size;
-// }
-
-// class Reference {
-//   final String reference;
-//   final MediaType type;
-//
-//   Reference(this.reference, this.type);
-// }
-//
-// abstract class Referencable {
-//   Reference get reference;
-// }
-
 abstract class MediaEntry {
   String get creator;
 
   String get album;
 
   String get image;
+
+  String get date;
 
   int get year;
 }
@@ -66,7 +42,7 @@ abstract class MediaTrack implements MediaEntry {
 
   // 1999-07-27T00:00:00Z
   // 2022-02-03T09:21:26-08:00
-  String get date;
+  // String get date;
 
   String get location;
 }

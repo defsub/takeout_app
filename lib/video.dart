@@ -1,28 +1,27 @@
 import 'dart:async';
 
-import 'package:flutter/services.dart';
-import 'package:rxdart/rxdart.dart';
-import 'package:video_player/video_player.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:wakelock/wakelock.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
+import 'package:rxdart/rxdart.dart';
 import 'package:takeout_app/api/model.dart';
 import 'package:takeout_app/app/context.dart';
 import 'package:takeout_app/art/artwork.dart';
-import 'package:takeout_app/art/cover.dart';
 import 'package:takeout_app/art/builder.dart';
-import 'package:takeout_app/page/page.dart';
+import 'package:takeout_app/art/cover.dart';
 import 'package:takeout_app/cache/track.dart';
 import 'package:takeout_app/client/resolver.dart';
+import 'package:takeout_app/page/page.dart';
 import 'package:takeout_app/settings/repository.dart';
 import 'package:takeout_app/tokens/repository.dart';
+import 'package:video_player/video_player.dart';
+import 'package:wakelock/wakelock.dart';
 
-import 'style.dart';
-import 'util.dart';
 import 'buttons.dart';
 import 'model.dart';
+import 'nav.dart';
+import 'style.dart';
+import 'util.dart';
 
 class MovieWidget extends ClientPage<MovieView> {
   final Movie _movie;
@@ -103,19 +102,19 @@ class MovieWidget extends ClientPage<MovieView> {
                       if (view.hasCast())
                         SliverToBoxAdapter(
                             child: heading(
-                                AppLocalizations.of(context)!.castLabel)),
+                                context.strings.castLabel)),
                       if (view.hasCast())
                         SliverToBoxAdapter(child: _CastListWidget(view)),
                       if (view.hasCrew())
                         SliverToBoxAdapter(
                             child: heading(
-                                AppLocalizations.of(context)!.crewLabel)),
+                                context.strings.crewLabel)),
                       if (view.hasCrew())
                         SliverToBoxAdapter(child: _CrewListWidget(view)),
                       if (view.hasRelated())
                         SliverToBoxAdapter(
                           child: heading(
-                              AppLocalizations.of(context)!.relatedLabel),
+                              context.strings.relatedLabel),
                         ),
                       if (view.hasRelated()) MovieGridWidget(view.other!),
                     ]);
@@ -227,8 +226,7 @@ class MovieWidget extends ClientPage<MovieView> {
   }
 
   void _onGenre(BuildContext context, String genre) {
-    Navigator.push(
-        context, MaterialPageRoute(builder: (_) => GenreWidget(genre)));
+    push(context, builder: (_) => GenreWidget(genre));
   }
 }
 
@@ -249,8 +247,7 @@ class _CastListWidget extends StatelessWidget {
   }
 
   void _onCast(BuildContext context, Cast cast) {
-    Navigator.push(
-        context, MaterialPageRoute(builder: (_) => ProfileWidget(cast.person)));
+    push(context, builder: (_) => ProfileWidget(cast.person));
   }
 }
 
@@ -271,8 +268,7 @@ class _CrewListWidget extends StatelessWidget {
   }
 
   void _onCrew(BuildContext context, Crew crew) {
-    Navigator.push(
-        context, MaterialPageRoute(builder: (_) => ProfileWidget(crew.person)));
+    push(context, builder: (_) => ProfileWidget(crew.person));
   }
 }
 
@@ -335,19 +331,19 @@ class ProfileWidget extends ClientPage<ProfileView> {
                     if (view.hasStarring())
                       SliverToBoxAdapter(
                           child: heading(
-                              AppLocalizations.of(context)!.starringLabel)),
+                              context.strings.starringLabel)),
                     if (view.hasStarring())
                       MovieGridWidget(view.starringMovies()),
                     if (view.hasDirecting())
                       SliverToBoxAdapter(
                           child: heading(
-                              AppLocalizations.of(context)!.directingLabel)),
+                              context.strings.directingLabel)),
                     if (view.hasDirecting())
                       MovieGridWidget(view.directingMovies()),
                     if (view.hasWriting())
                       SliverToBoxAdapter(
                         child:
-                            heading(AppLocalizations.of(context)!.writingLabel),
+                            heading(context.strings.writingLabel),
                       ),
                     if (view.hasWriting())
                       MovieGridWidget(view.writingMovies()),
@@ -418,9 +414,7 @@ class MovieGridWidget extends StatelessWidget {
   }
 
   void _onTap(BuildContext context, Movie movie) {
-    Navigator.push(context, MaterialPageRoute(builder: (context) {
-      return MovieWidget(movie);
-    }));
+    push(context, builder: (_) => MovieWidget(movie));
   }
 }
 
@@ -446,7 +440,7 @@ class MoviePlayer extends StatefulWidget {
 // TODO add location back to movie to avoid this hassle?
 class _MovieMediaTrack implements MediaTrack {
   MovieView view;
-  
+
   _MovieMediaTrack(this.view);
 
   String get creator => '';
@@ -456,7 +450,7 @@ class _MovieMediaTrack implements MediaTrack {
   String get image => view.movie.image;
 
   int get year => 0;
-  
+
   String get title => view.movie.title;
 
   String get etag => view.movie.etag;
@@ -491,12 +485,13 @@ class _MoviePlayerState extends State<MoviePlayer> {
 
   void prepareController() async {
     // controller
-    final uri = await widget.mediaTrackResolver.resolve(_MovieMediaTrack(widget._view));
+    final uri =
+        await widget.mediaTrackResolver.resolve(_MovieMediaTrack(widget._view));
     String url = uri.toString();
     if (url.startsWith('/api/')) {
       url = '${widget.settingsRepository.settings?.endpoint}$url';
     }
-    final headers = widget.tokenRepository.addMediaToken(<String, String>{});
+    final headers = widget.tokenRepository.addMediaToken();
     final controller = VideoPlayerController.network(url, httpHeaders: headers)
       ..initialize().then((_) {
         setState(() {}); // see example
@@ -666,13 +661,11 @@ class MovieListWidget extends StatelessWidget {
   }
 
   void _onTapped(BuildContext context, Movie movie) {
-    Navigator.push(
-        context, MaterialPageRoute(builder: (_) => MovieWidget(movie)));
+    push(context, builder: (_) => MovieWidget(movie));
   }
 }
 
-void showMovie(BuildContext context, MovieView view,
-    {Duration? startOffset}) {
+void showMovie(BuildContext context, MovieView view, {Duration? startOffset}) {
   Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(
       builder: (_) => MoviePlayer(view,
           settingsRepository: context.read<SettingsRepository>(),

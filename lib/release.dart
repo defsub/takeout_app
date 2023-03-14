@@ -17,24 +17,23 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:url_launcher/url_launcher.dart';
-
-import 'package:takeout_app/app/context.dart';
 import 'package:takeout_app/api/model.dart';
+import 'package:takeout_app/app/context.dart';
 import 'package:takeout_app/art/builder.dart';
 import 'package:takeout_app/art/cover.dart';
-import 'package:takeout_app/client/download.dart';
 import 'package:takeout_app/cache/track.dart';
-import 'package:takeout_app/page/page.dart';
+import 'package:takeout_app/client/download.dart';
 import 'package:takeout_app/menu.dart';
+import 'package:takeout_app/page/page.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'artists.dart';
-import 'style.dart';
-import 'model.dart';
-import 'util.dart';
 import 'buttons.dart';
+import 'model.dart';
+import 'nav.dart';
+import 'style.dart';
 import 'tiles.dart';
+import 'util.dart';
 
 class ReleaseWidget extends ClientPage<ReleaseView> {
   final Release _release;
@@ -47,16 +46,15 @@ class ReleaseWidget extends ClientPage<ReleaseView> {
   }
 
   void _onArtist(BuildContext context, ReleaseView view) {
-    Navigator.push(
-        context, MaterialPageRoute(builder: (_) => ArtistWidget(view.artist)));
+    push(context, builder: (_) => ArtistWidget(view.artist));
   }
 
   void _onPlay(BuildContext context) {
     context.playlist.replace(_release.reference);
   }
 
-  void _onDownload(BuildContext context) {
-    // Downloads.downloadRelease(context, _release);
+  void _onDownload(BuildContext context, ReleaseView view) {
+    context.downloadRelease(view.release);
   }
 
   @override
@@ -90,7 +88,7 @@ class ReleaseWidget extends ClientPage<ReleaseView> {
                           popupMenu(context, [
                             PopupItem.play(context, (_) => _onPlay(context)),
                             PopupItem.download(
-                                context, (_) => _onDownload(context)),
+                                context, (_) => _onDownload(context, view)),
                             PopupItem.divider(),
                             PopupItem.link(context, 'MusicBrainz Release',
                                 (_) => launchUrl(Uri.parse(releaseUrl))),
@@ -127,7 +125,8 @@ class ReleaseWidget extends ClientPage<ReleaseView> {
                                   child: _playButton(context, isCached)),
                               Align(
                                   alignment: Alignment.bottomRight,
-                                  child: _downloadButton(context, isCached)),
+                                  child:
+                                      _downloadButton(context, view, isCached)),
                             ])),
                       ),
                       SliverToBoxAdapter(
@@ -144,7 +143,7 @@ class ReleaseWidget extends ClientPage<ReleaseView> {
                       SliverToBoxAdapter(child: _ReleaseTracksWidget(view)),
                       if (view.similar.isNotEmpty)
                         SliverToBoxAdapter(
-                          child: heading(AppLocalizations.of(context)!
+                          child: heading(context.strings
                               .similarReleasesLabel),
                         ),
                       if (view.similar.isNotEmpty)
@@ -176,13 +175,14 @@ class ReleaseWidget extends ClientPage<ReleaseView> {
         : StreamingButton(onPressed: () => _onPlay(context));
   }
 
-  Widget _downloadButton(BuildContext context, bool isCached) {
+  Widget _downloadButton(
+      BuildContext context, ReleaseView view, bool isCached) {
     return isCached
         ? IconButton(
             color: overlayIconColor(context),
             icon: Icon(IconsDownloadDone),
             onPressed: () => {})
-        : DownloadButton(onPressed: () => _onDownload(context));
+        : DownloadButton(onPressed: () => _onDownload(context, view));
   }
 }
 
@@ -192,12 +192,14 @@ class _ReleaseTracksWidget extends StatelessWidget {
   const _ReleaseTracksWidget(this._view);
 
   void _onTap(BuildContext context, int index) {
-    // MediaQueue.play(context, index: index, release: _view.release);
+    context.playlist.replace(_view.release.reference, index: index);
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<DownloadCubit, DownloadState>(builder: (context, state) {
+    return Builder(builder: (context) {
+      final downloads = context.watch<DownloadCubit>();
+      final trackCache = context.watch<TrackCacheCubit>();
       int discs = _view.discs;
       int d = 0;
       List<Widget> children = [];
@@ -208,22 +210,27 @@ class _ReleaseTracksWidget extends StatelessWidget {
             children.add(Divider());
           }
           children.add(smallHeading(context,
-              AppLocalizations.of(context)!.discLabel(e.discNum, discs)));
+              context.strings.discLabel(e.discNum, discs)));
           d = e.discNum;
         }
         children.add(NumberedTrackListTile(e,
             onTap: () => _onTap(context, i),
-            trailing: _trailing(context, state, e)));
+            trailing:
+                _trailing(context, downloads.state, trackCache.state, e)));
       }
       return Column(children: children);
     });
   }
 
-  Widget _trailing(BuildContext context, DownloadState state, Track t) {
-    final progress = state.progress(t);
+  Widget? _trailing(BuildContext context, DownloadState downloadState,
+      TrackCacheState trackCache, Track t) {
+    if (trackCache.contains(t)) {
+      return Icon(IconsCached);
+    }
+    final progress = downloadState.progress(t);
     return (progress != null)
         ? CircularProgressIndicator(value: progress.value)
-        : Icon(context.trackCache.state.contains(t) ? IconsCached : null);
+        : null;
   }
 }
 
@@ -261,15 +268,12 @@ class AlbumGridWidget extends StatelessWidget {
   }
 
   void _onTap(BuildContext context, MediaAlbum album) {
-    Navigator.push(context, MaterialPageRoute(builder: (context) {
+    push(context, builder: (context) {
       if (album is Release) {
         return ReleaseWidget(album);
-        // } else if (album is SpiffDownloadEntry) {
-        //   TODO is this used?
-        // return DownloadWidget(spiff: album.spiff);
       }
-      return Text('');
-    }));
+      throw UnimplementedError;
+    });
   }
 }
 
@@ -337,8 +341,7 @@ class ReleaseListWidget extends StatelessWidget {
   }
 
   void _onTap(BuildContext context, Release release) {
-    Navigator.push(
-        context, MaterialPageRoute(builder: (_) => ReleaseWidget(release)));
+    push(context, builder: (_) => ReleaseWidget(release));
   }
 
   void _onPlay(BuildContext context, Release release) {

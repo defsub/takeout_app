@@ -34,7 +34,6 @@ import 'package:takeout_app/cache/offset_repository.dart';
 import 'provider.dart';
 
 const ExtraHeaders = 'headers';
-const ExtraMediaTrack = 'mediaTrack';
 
 extension TakeoutMediaItem on MediaItem {
   Map<String, String>? headers() =>
@@ -45,7 +44,7 @@ extension TakeoutMediaItem on MediaItem {
 
   bool _isLocalFile() => id.startsWith(RegExp(r'^file'));
 
-  bool _isRemote() => id.startsWith(RegExp(r'^http'));
+  // bool _isRemote() => id.startsWith(RegExp(r'^http'));
 }
 
 class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
@@ -65,7 +64,7 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
   final PositionCallback onDurationChange;
   final TrackChangeCallback onTrackChange;
 
-  final List<StreamSubscription> _subscriptions = [];
+  final _subscriptions = <StreamSubscription>[];
 
   Spiff _spiff = Spiff.empty();
   final _queue = <MediaItem>[];
@@ -140,6 +139,7 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
       if (index != null) {
         _spiff = _spiff.copyWith(index: index);
         onIndexChange(_spiff, _player.playing);
+        mediaItem.add(_queue[index]);
       }
     }));
 
@@ -176,7 +176,7 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
 
     // send state from the audio player to AudioService clients.
     _subscriptions.add(_player.playbackEventStream.listen((state) {
-      _broadcastState(state, mediaItem.valueOrNull);
+      _broadcastState(state);
     }));
 
     // automatically go to the beginning of queue & stop.
@@ -211,7 +211,7 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
     if (id.startsWith('/api/')) {
       id = '${settingsRepository.settings?.endpoint}$id';
     }
-    final headers = tokenRepository.addMediaToken(<String, String>{});
+    final headers = tokenRepository.addMediaToken();
     return MediaItem(
       id: id,
       album: entry.album,
@@ -220,7 +220,6 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
       artUri: Uri.parse(image),
       extras: {
         ExtraHeaders: headers,
-        // ExtraMediaTrack: entry,
       },
     );
   }
@@ -238,22 +237,20 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
 
     // build a new MediaItem queue
     _queue.clear();
-    final items = await _mapAll(_spiff.playlist.tracks);
-    _queue.addAll(items);
+    _queue.addAll(await _mapAll(_spiff.playlist.tracks));
+
+    // broadcast queue state
     queue.add(_queue);
 
     // build audio sources from the queue
     final sources = _queue.map((item) => item.toAudioSource()).toList();
     _source.clear();
     _source.addAll(sources);
-    _player.setAudioSource(_source);
-
-    skipToQueueItem(_spiff.index >= 0 ? _spiff.index : 0);
+    _player.setAudioSource(_source, initialIndex: _spiff.index);
   }
 
   @override
   Future<void> skipToQueueItem(int index) async {
-    print('skipToQueueItem $index, ${_player.currentIndex}');
     if (index < 0) {
       return;
     }
@@ -336,7 +333,7 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
   }
 
   /// Broadcasts the current state to all clients.
-  void _broadcastState(PlaybackEvent event, MediaItem? item) {
+  void _broadcastState(PlaybackEvent event) {
     final playing = _player.playing;
     List<MediaControl> controls;
     List<int> compactControls;

@@ -33,7 +33,7 @@ abstract class _ConnectivityButton extends StatelessWidget {
     return BlocBuilder<ConnectivityCubit, ConnectivityState>(
         builder: (context, state) {
       return IconButton(
-          // color: overlayIconColor(context),
+          color: overlayIconColor(context),
           icon: icon,
           onPressed: _allowed(context, state) ? onPressed : null);
     });

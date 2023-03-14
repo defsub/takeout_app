@@ -16,7 +16,8 @@
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:takeout_app/app/context.dart';
+
 import 'style.dart';
 
 typedef MenuCallback = void Function(BuildContext);
@@ -34,43 +35,43 @@ class PopupItem {
   const PopupItem(this.icon, this.title, this.onSelected, {this.divider = false});
 
   PopupItem.music(BuildContext context, MenuCallback onSelected) :
-      this(Icon(Icons.music_note), AppLocalizations.of(context)!.musicSwitchLabel, onSelected);
+      this(Icon(Icons.music_note), context.strings.musicSwitchLabel, onSelected);
 
   PopupItem.video(BuildContext context, MenuCallback onSelected) :
-        this(Icon(Icons.movie), AppLocalizations.of(context)!.videoSwitchLabel, onSelected);
+        this(Icon(Icons.movie), context.strings.videoSwitchLabel, onSelected);
 
   PopupItem.podcasts(BuildContext context, MenuCallback onSelected) :
-        this(Icon(Icons.podcasts), AppLocalizations.of(context)!.podcastsSwitchLabel, onSelected);
+        this(Icon(Icons.podcasts), context.strings.podcastsSwitchLabel, onSelected);
 
   PopupItem.downloads(BuildContext context, MenuCallback onSelected)
       : this(Icon(IconsDownload),
-            AppLocalizations.of(context)!.downloadsLabel, onSelected);
+            context.strings.downloadsLabel, onSelected);
 
   PopupItem.download(BuildContext context, MenuCallback onSelected)
       : this(Icon(IconsDownload),
-            AppLocalizations.of(context)!.downloadsLabel, onSelected);
+            context.strings.downloadsLabel, onSelected);
 
   PopupItem.play(BuildContext context, MenuCallback onSelected)
-      : this(Icon(Icons.play_arrow), AppLocalizations.of(context)!.playLabel,
+      : this(Icon(Icons.play_arrow), context.strings.playLabel,
             onSelected);
 
   PopupItem.refresh(BuildContext context, MenuCallback onSelected)
       : this(Icon(Icons.refresh_sharp),
-            AppLocalizations.of(context)!.refreshLabel, onSelected);
+            context.strings.refreshLabel, onSelected);
 
   PopupItem.logout(BuildContext context, MenuCallback onSelected)
-      : this(Icon(Icons.logout), AppLocalizations.of(context)!.logoutLabel,
+      : this(Icon(Icons.logout), context.strings.logoutLabel,
             onSelected);
 
   PopupItem.link(BuildContext context, String text, MenuCallback onSelected)
       : this(Icon(Icons.link), text, onSelected);
 
   PopupItem.about(BuildContext context, MenuCallback onSelected)
-      : this(Icon(Icons.info_outline), AppLocalizations.of(context)!.aboutLabel,
+      : this(Icon(Icons.info_outline), context.strings.aboutLabel,
             onSelected);
 
   PopupItem.settings(BuildContext context, MenuCallback onSelected)
-      : this(Icon(Icons.settings), AppLocalizations.of(context)!.settingsLabel,
+      : this(Icon(Icons.settings), context.strings.settingsLabel,
             onSelected);
 
   PopupItem.delete(BuildContext context, String text, MenuCallback onSelected)
@@ -78,11 +79,11 @@ class PopupItem {
 
   PopupItem.singles(BuildContext context, MenuCallback onSelected)
       : this(Icon(Icons.audiotrack_outlined),
-            AppLocalizations.of(context)!.singlesLabel, onSelected);
+            context.strings.singlesLabel, onSelected);
 
   PopupItem.popular(BuildContext context, MenuCallback onSelected)
       : this(Icon(Icons.audiotrack_outlined),
-            AppLocalizations.of(context)!.popularLabel, onSelected);
+            context.strings.popularLabel, onSelected);
 
   PopupItem.genre(BuildContext context, String genre, MenuCallback onSelected)
       : this(Icon(Icons.people), genre, onSelected);
@@ -95,15 +96,15 @@ class PopupItem {
 
   PopupItem.shuffle(BuildContext context, MenuCallback onSelected)
       : this(Icon(Icons.shuffle_sharp),
-            AppLocalizations.of(context)!.shuffleLabel, onSelected);
+            context.strings.shuffleLabel, onSelected);
 
   PopupItem.radio(BuildContext context, MenuCallback onSelected)
-      : this(Icon(Icons.radio), AppLocalizations.of(context)!.radioLabel,
+      : this(Icon(Icons.radio), context.strings.radioLabel,
             onSelected);
 
   PopupItem.playlist(BuildContext context, MenuCallback onSelected)
       : this(Icon(Icons.playlist_play_sharp),
-      AppLocalizations.of(context)!.recentlyPlayed, onSelected);
+      context.strings.recentlyPlayed, onSelected);
 }
 
 Widget popupMenu(BuildContext context, List<PopupItem> items) {

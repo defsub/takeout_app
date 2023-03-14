@@ -51,10 +51,6 @@ class PatchResult extends PostResult {
   bool get isModified => statusCode == HttpStatus.ok;
 
   bool get notModified => noContent;
-
-// Spiff toSpiff() {
-//   return Spiff.fromJson(body);
-// }
 }
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
@@ -248,7 +244,7 @@ class Release implements MediaAlbum {
   final String? reid;
   final String? disambiguation;
   final String? type;
-  final String? date;
+  final String _date;
   final String? releaseDate;
   final bool artwork;
   final bool frontArtwork;
@@ -265,19 +261,22 @@ class Release implements MediaAlbum {
       this.reid,
       this.disambiguation,
       this.type,
-      this.date,
+      String? date,
       this.releaseDate,
       this.artwork = false,
       this.frontArtwork = false,
       this.backArtwork = false,
       this.otherArtwork,
       this.groupArtwork = false})
-      : _year = parseYear(date ?? '');
+      : _year = parseYear(date ?? ''), _date = date ?? '';
 
   factory Release.fromJson(Map<String, dynamic> json) =>
       _$ReleaseFromJson(json);
 
   Map<String, dynamic> toJson() => _$ReleaseToJson(this);
+
+  @override
+  String get date => _date;
 
   @override
   String get album => name;
@@ -309,8 +308,6 @@ class Release implements MediaAlbum {
 
   String get reference => '/music/releases/${id}/tracks';
 }
-
-// abstract class MediaLocatable extends MediaTrack with Locatable {}
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
 class Track extends DownloadIdentifier implements MediaTrack, OffsetIdentifier {
@@ -471,6 +468,8 @@ class Station {
       _$StationFromJson(json);
 
   Map<String, dynamic> toJson() => _$StationToJson(this);
+
+  String get reference => '/music/radio/stations/${id}';
 }
 
 abstract class ArtistTracksView {
@@ -563,20 +562,20 @@ class MovieView {
       this.vote,
       this.voteCount});
 
-  @override
-  String get key {
-    return ETag(movie.etag).key;
-  }
-
-  @override
-  String get etag {
-    return movie.etag;
-  }
-
-  @override
-  int get size {
-    return movie.size;
-  }
+  // @override
+  // String get key {
+  //   return ETag(movie.etag).key;
+  // }
+  //
+  // @override
+  // String get etag {
+  //   return movie.etag;
+  // }
+  //
+  // @override
+  // int get size {
+  //   return movie.size;
+  // }
 
   factory MovieView.fromJson(Map<String, dynamic> json) =>
       _$MovieViewFromJson(json);
@@ -825,7 +824,7 @@ class Movie extends DownloadIdentifier
 
   @override
   String get key {
-    return ETag(etag).value;
+    return ETag(etag).key;
   }
 
   @override

@@ -20,7 +20,7 @@ import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:audio_service/audio_service.dart';
 
-const appVersion = '0.9.6';
+const appVersion = '0.10.0';
 const appSource = 'https://github.com/defsub/takeout_app';
 const appHome = 'https://defsub.github.io';
 
@@ -36,25 +36,6 @@ final playerKey = GlobalKey<NavigatorState>();
 final searchKey = GlobalKey<NavigatorState>();
 
 final bottomNavKey = new GlobalKey();
-
-// void navigate(int index) {
-//   BottomNavigationBar navBar =
-//       bottomNavKey.currentWidget as BottomNavigationBar;
-//   navBar.onTap!(index);
-// }
-
-// Map<String, Artist> artistMap = {};
-//
-// void loadArtistMap(List<Artist> artists) {
-//   artistMap.clear();
-//   artists.forEach((a) {
-//     artistMap[a.name] = a;
-//   });
-// }
-
-// void showPlayer() {
-//   navigate(4);
-// }
 
 // void showArtist(String name) async {
 //   Artist? artist = artistMap[name];

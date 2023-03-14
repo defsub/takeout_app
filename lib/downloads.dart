@@ -19,7 +19,6 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import 'package:takeout_app/app/context.dart';
 import 'package:takeout_app/cache/spiff.dart';
@@ -28,18 +27,19 @@ import 'package:takeout_app/spiff/widget.dart';
 
 import 'menu.dart';
 import 'tiles.dart';
+import 'nav.dart';
 
 class DownloadsWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
-            title: Text(AppLocalizations.of(context)!.downloadsLabel),
+            title: Text(context.strings.downloadsLabel),
             actions: [
               popupMenu(context, [
                 PopupItem.delete(
                     context,
-                    AppLocalizations.of(context)!.deleteAll,
+                    context.strings.deleteAll,
                     (ctx) => _onDeleteAll(ctx)),
               ])
             ]),
@@ -56,8 +56,8 @@ class DownloadsWidget extends StatelessWidget {
         context: context,
         builder: (ctx) {
           return AlertDialog(
-            title: Text(AppLocalizations.of(context)!.confirmDelete),
-            content: Text(AppLocalizations.of(context)!.deleteDownloadedTracks),
+            title: Text(context.strings.confirmDelete),
+            content: Text(context.strings.deleteDownloadedTracks),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
@@ -79,6 +79,7 @@ class DownloadsWidget extends StatelessWidget {
 
   void _onDeleteConfirmed(BuildContext context) {
     context.spiffCache.removeAll();
+    context.trackCache.removeAll();
   }
 }
 
@@ -149,8 +150,7 @@ class DownloadListState extends State<DownloadListWidget> {
   }
 
   void _onTap(BuildContext context, Spiff spiff) {
-    Navigator.push(
-        context, MaterialPageRoute(builder: (_) => SpiffWidget(value: spiff)));
+    push(context, builder: (_) => SpiffWidget(value: spiff));
   }
 
   void _onPlay(BuildContext context, Spiff spiff) {
@@ -215,7 +215,7 @@ class DownloadListState extends State<DownloadListWidget> {
 //   List<Widget>? actions(BuildContext context) {
 //     return [
 //       popupMenu(context, [
-//         PopupItem.delete(context, AppLocalizations.of(context)!.deleteItem,
+//         PopupItem.delete(context, context.strings.deleteItem,
 //             (_) => _onDelete(context)),
 //         PopupItem.refresh(context, (_) => onRefresh()),
 //       ]),
@@ -262,10 +262,10 @@ class DownloadListState extends State<DownloadListWidget> {
 //         context: context,
 //         builder: (ctx) {
 //           return AlertDialog(
-//             title: Text(AppLocalizations.of(context)!
+//             title: Text(context.strings
 //                 .deleteTitle(spiff!.playlist.title)),
 //             content:
-//                 Text(AppLocalizations.of(context)!.deleteFree(spiff!.size)),
+//                 Text(context.strings.deleteFree(spiff!.size)),
 //             actions: [
 //               TextButton(
 //                 onPressed: () => Navigator.pop(ctx),
@@ -403,7 +403,7 @@ class DownloadListState extends State<DownloadListWidget> {
 // static Future<bool> _downloadSpiff(BuildContext context, String snackBarName,
 //     Future<Spiff> Function() fetchSpiff,
 //     {bool includeTracks = true}) {
-//   final L = AppLocalizations.of(context)!;
+//   final L = context.strings;
 //   final client = _downloadClient();
 //   showSnackBar(L.downloadingLabel(snackBarName));
 //   return _download(client, fetchSpiff, includeTracks: includeTracks)

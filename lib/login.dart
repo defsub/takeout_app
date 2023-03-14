@@ -17,8 +17,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:takeout_app/app/context.dart';
 
+import 'package:takeout_app/app/context.dart';
 import 'package:takeout_app/page/page.dart';
 
 class LoginWidget extends ClientPage<bool> {
@@ -53,7 +53,7 @@ class LoginWidget extends ClientPage<bool> {
 
     return Scaffold(
         appBar: AppBar(
-          title: Text(AppLocalizations.of(context)!.takeoutTitle),
+          title: Text(context.strings.takeoutTitle),
         ),
         body: Padding(
             padding: EdgeInsets.all(10),
@@ -63,7 +63,7 @@ class LoginWidget extends ClientPage<bool> {
                     alignment: Alignment.center,
                     padding: EdgeInsets.all(10),
                     child: Text(
-                      AppLocalizations.of(context)!.hostLabel,
+                      context.strings.hostLabel,
                       style:
                           TextStyle(fontWeight: FontWeight.w500, fontSize: 30),
                     )),
@@ -73,7 +73,7 @@ class LoginWidget extends ClientPage<bool> {
                     controller: _hostText,
                     decoration: InputDecoration(
                       border: OutlineInputBorder(),
-                      labelText: AppLocalizations.of(context)!.hostLabel,
+                      labelText: context.strings.hostLabel,
                     ),
                   ),
                 ),
@@ -81,7 +81,7 @@ class LoginWidget extends ClientPage<bool> {
                     alignment: Alignment.center,
                     padding: EdgeInsets.all(10),
                     child: Text(
-                      AppLocalizations.of(context)!.loginLabel,
+                      context.strings.loginLabel,
                       style:
                           TextStyle(fontWeight: FontWeight.w500, fontSize: 30),
                     )),
@@ -91,7 +91,7 @@ class LoginWidget extends ClientPage<bool> {
                     controller: _userText,
                     decoration: InputDecoration(
                       border: OutlineInputBorder(),
-                      labelText: AppLocalizations.of(context)!.userLabel,
+                      labelText: context.strings.userLabel,
                     ),
                   ),
                 ),
@@ -102,7 +102,7 @@ class LoginWidget extends ClientPage<bool> {
                     controller: _passwordText,
                     decoration: InputDecoration(
                       border: OutlineInputBorder(),
-                      labelText: AppLocalizations.of(context)!.passwordLabel,
+                      labelText: context.strings.passwordLabel,
                     ),
                   ),
                 ),
@@ -110,7 +110,7 @@ class LoginWidget extends ClientPage<bool> {
                     height: 70,
                     padding: EdgeInsets.all(10),
                     child: OutlinedButton(
-                      child: Text(AppLocalizations.of(context)!.loginLabel),
+                      child: Text(context.strings.loginLabel),
                       onPressed: () {
                         refreshPage(context);
                       },

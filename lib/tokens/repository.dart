@@ -45,17 +45,18 @@ class TokenRepository {
 
   String? get mediaToken => _provider?.mediaToken;
 
-  Map<String, String> addAccessToken(Map<String, String> headers) =>
+  Map<String, String> addAccessToken({Map<String, String>? headers}) =>
       _addAuthToken(headers, accessToken);
 
-  Map<String, String> addRefreshToken(Map<String, String> headers) =>
+  Map<String, String> addRefreshToken({Map<String, String>? headers}) =>
       _addAuthToken(headers, refreshToken);
 
-  Map<String, String> addMediaToken(Map<String, String> headers) =>
+  Map<String, String> addMediaToken({Map<String, String>? headers}) =>
       _addAuthToken(headers, mediaToken);
 
   Map<String, String> _addAuthToken(
-      Map<String, String> headers, String? token) {
+      Map<String, String>? headers, String? token) {
+    headers = headers ?? <String, String>{};
     if (token != null) {
       headers[HttpHeaders.authorizationHeader] = 'Bearer $token';
     }
