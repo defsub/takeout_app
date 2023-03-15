@@ -74,8 +74,7 @@ class HomeWidget extends NavigatorClientPage<HomeView> {
   @override
   void reload(BuildContext context) {
     super.reload(context);
-    context.index.reload();
-    context.search.reload();
+    context.reload();
   }
 
   @override
@@ -88,7 +87,7 @@ class HomeWidget extends NavigatorClientPage<HomeView> {
       final type = GridType.mix;
       return Scaffold(
           body: RefreshIndicator(
-        onRefresh: () => refreshPage(context),
+        onRefresh: () => reloadPage(context),
         child: _grid(view, mediaType.state, type, trackCache.state),
       ));
     });

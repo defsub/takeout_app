@@ -55,7 +55,7 @@ class PopupItem {
       : this(Icon(Icons.play_arrow), context.strings.playLabel,
             onSelected);
 
-  PopupItem.refresh(BuildContext context, MenuCallback onSelected)
+  PopupItem.reload(BuildContext context, MenuCallback onSelected)
       : this(Icon(Icons.refresh_sharp),
             context.strings.refreshLabel, onSelected);
 

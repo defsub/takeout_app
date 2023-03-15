@@ -112,7 +112,7 @@ class LoginWidget extends ClientPage<bool> {
                     child: OutlinedButton(
                       child: Text(context.strings.loginLabel),
                       onPressed: () {
-                        refreshPage(context);
+                        reloadPage(context);
                       },
                     )),
               ],

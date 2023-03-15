@@ -1,3 +1,20 @@
+// Copyright (C) 2023 The Takeout Authors.
+//
+// This file is part of Takeout.
+//
+// Takeout is free software: you can redistribute it and/or modify it under the
+// terms of the GNU Affero General Public License as published by the Free
+// Software Foundation, either version 3 of the License, or (at your option)
+// any later version.
+//
+// Takeout is distributed in the hope that it will be useful, but WITHOUT ANY
+// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+// FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public License for
+// more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -83,6 +100,12 @@ extension AppContext on BuildContext {
     // app.showArtist(artist);
   }
 
+  void reload() {
+    index.reload();
+    search.reload();
+    offsets.reload();
+  }
+
   AppCubit get app => read<AppCubit>();
 
   ClientCubit get client => read<ClientCubit>();
@@ -101,7 +124,7 @@ extension AppContext on BuildContext {
 
   NowPlaying get nowPlaying => read<NowPlaying>();
 
-  OffsetCacheCubit get offsetCache => read<OffsetCacheCubit>();
+  OffsetCacheCubit get offsets => read<OffsetCacheCubit>();
 
   Player get player => read<Player>();
 

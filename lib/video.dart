@@ -1,3 +1,20 @@
+// Copyright (C) 2023 The Takeout Authors.
+//
+// This file is part of Takeout.
+//
+// Takeout is free software: you can redistribute it and/or modify it under the
+// terms of the GNU Affero General Public License as published by the Free
+// Software Foundation, either version 3 of the License, or (at your option)
+// any later version.
+//
+// Takeout is distributed in the hope that it will be useful, but WITHOUT ANY
+// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+// FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public License for
+// more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -44,7 +61,7 @@ class MovieWidget extends ClientPage<MovieView> {
           return Scaffold(
               backgroundColor: backgroundColor,
               body: RefreshIndicator(
-                  onRefresh: () => refreshPage(context),
+                  onRefresh: () => reloadPage(context),
                   child: BlocBuilder<TrackCacheCubit, TrackCacheState>(
                       builder: (context, state) {
                     final isCached = state.contains(_movie);
@@ -123,7 +140,7 @@ class MovieWidget extends ClientPage<MovieView> {
   }
 
   Widget _progress(BuildContext context) {
-    final value = context.offsetCache.state.value(_movie);
+    final value = context.offsets.state.value(_movie);
     return value != null
         ? LinearProgressIndicator(value: value)
         : SizedBox.shrink();
@@ -198,7 +215,7 @@ class MovieWidget extends ClientPage<MovieView> {
   }
 
   Widget _playButton(BuildContext context, MovieView view, bool isCached) {
-    final offsetCache = context.offsetCache;
+    final offsetCache = context.offsets;
     final pos = offsetCache.state.position(_movie) ?? Duration.zero;
     return isCached
         ? IconButton(
@@ -293,7 +310,7 @@ class ProfileWidget extends ClientPage<ProfileView> {
           return Scaffold(
               backgroundColor: backgroundColor,
               body: RefreshIndicator(
-                  onRefresh: () => refreshPage(context),
+                  onRefresh: () => reloadPage(context),
                   child: CustomScrollView(slivers: [
                     SliverAppBar(
                       // actions: [ ],
@@ -370,7 +387,7 @@ class GenreWidget extends ClientPage<GenreView> {
   Widget page(BuildContext context, GenreView view) {
     return Scaffold(
         body: RefreshIndicator(
-            onRefresh: () => refreshPage(context),
+            onRefresh: () => reloadPage(context),
             child: CustomScrollView(slivers: [
               SliverAppBar(title: Text(_genre)),
               if (view.movies.isNotEmpty)

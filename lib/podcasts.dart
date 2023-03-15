@@ -55,7 +55,7 @@ class SeriesWidget extends ClientPage<SeriesView> {
           return Scaffold(
               backgroundColor: backgroundColor,
               body: RefreshIndicator(
-                  onRefresh: () => refreshPage(context),
+                  onRefresh: () => reloadPage(context),
                   child: BlocBuilder<TrackCacheCubit, TrackCacheState>(
                       builder: (context, state) {
                     final isCached = state.containsAll(view.episodes);

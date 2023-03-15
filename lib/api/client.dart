@@ -58,40 +58,6 @@ class _ClientError extends Error {
     return 'Client error';
   }
 }
-// class DownloadSnapshot {
-//   final int size;
-//   final int offset;
-//   final Object? err;
-//
-//   const DownloadSnapshot(this.size, this.offset, {this.err});
-//
-//   bool hasError() {
-//     return err != null;
-//   }
-//
-//   bool isComplete() {
-//     return offset == size;
-//   }
-//
-//   // Value used for progress display.
-//   double get value {
-//     return offset.toDouble() / size;
-//   }
-// }
-
-// class _SnapshotSink extends Sink<int> {
-//   final Locatable locatable;
-//   int offset = 0;
-//
-//   _SnapshotSink(this.locatable);
-//
-//   void add(int chunk) {
-//     offset += chunk;
-//     Client._downloadSnapshotUpdate(locatable, offset);
-//   }
-//
-//   void close() {}
-// }
 
 class _ClientWithUserAgent extends http.BaseClient {
   static final log = Logger('HttpClient');

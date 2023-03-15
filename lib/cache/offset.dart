@@ -15,8 +15,9 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
-import 'package:bloc/bloc.dart';
+import 'dart:async';
 
+import 'package:bloc/bloc.dart';
 import 'package:takeout_app/api/model.dart';
 import 'package:takeout_app/client/repository.dart';
 
@@ -85,6 +86,7 @@ class OffsetCacheCubit extends Cubit<OffsetCacheState> {
   OffsetCacheCubit(this.repository, this.clientRepository)
       : super(OffsetCacheState.empty()) {
     _emitState();
+    reload();
   }
 
   void _emitState() async {
@@ -97,6 +99,17 @@ class OffsetCacheCubit extends Cubit<OffsetCacheState> {
 
   void remove(Offset offset) {
     repository.remove(offset);
+    _emitState();
+  }
+
+  void reload() async {
+    final result = await clientRepository
+        .progress(ttl: Duration.zero)
+        .then((view) => repository.merge(view.offsets));
+    final offsets = List<Offset>.from(result);
+    if (offsets.isNotEmpty) {
+      await clientRepository.updateProgress(Offsets(offsets: offsets));
+    }
     _emitState();
   }
 }

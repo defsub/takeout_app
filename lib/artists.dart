@@ -53,11 +53,11 @@ class ArtistsWidget extends NavigatorClientPage<ArtistsView> {
     return Scaffold(
         appBar: AppBar(title: _title(context), actions: [
           popupMenu(context, [
-            PopupItem.refresh(context, (_) => refreshPage(context)),
+            PopupItem.reload(context, (_) => reloadPage(context)),
           ])
         ]),
         body: RefreshIndicator(
-            onRefresh: () => refreshPage(context),
+            onRefresh: () => reloadPage(context),
             child: ArtistListWidget(_artists(view))));
   }
 
@@ -200,7 +200,7 @@ class ArtistWidget extends ClientPage<ArtistView> with ArtistPage {
         PopupItem.link(context, 'MusicBrainz Artist',
             (_) => launchUrl(Uri.parse(artistUrl))),
         PopupItem.divider(),
-        PopupItem.refresh(context, (_) => refreshPage(context)),
+        PopupItem.reload(context, (_) => reloadPage(context)),
       ])
     ];
   }

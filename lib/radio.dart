@@ -58,14 +58,14 @@ class RadioWidget extends NavigatorClientPage<RadioView> {
       return DefaultTabController(
           length: haveDownloads ? 5 : 4, // TODO FIXME
           child: RefreshIndicator(
-              onRefresh: () => refreshPage(context),
+              onRefresh: () => reloadPage(context),
               child: Scaffold(
                   appBar: AppBar(
                       title: header(context.strings.radioLabel),
                       actions: [
                         popupMenu(context, [
-                          PopupItem.refresh(
-                              context, (_) => refreshPage(context)),
+                          PopupItem.reload(
+                              context, (_) => reloadPage(context)),
                         ]),
                       ],
                       bottom: TabBar(

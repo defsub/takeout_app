@@ -73,9 +73,15 @@ abstract class ClientProvider {
 
   Future<int> download(Uri uri, File file, int size, {Sink<int>? progress});
 
-  Future<int> updateActivity(Events events);
-
   Future<PatchResult> patch(List<Map<String, dynamic>> body);
 
   Future<Spiff> playlist({Duration? ttl});
+
+  Future<ProgressView> progress({Duration? ttl});
+
+  Future<int> updateProgress(Offsets offsets);
+
+  Future<ActivityView> activity({Duration? ttl});
+
+  Future<int> updateActivity(Events events);
 }

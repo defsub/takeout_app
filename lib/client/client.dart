@@ -114,9 +114,9 @@ class ClientCubit extends Cubit<ClientState> {
       _doit<ReleaseView>(({Duration? ttl}) => repository.release(id, ttl: ttl),
           ttl: ttl);
 
-  void releasePlaylist(int id, {Duration? ttl}) async =>
-      _doit<Spiff>(({Duration? ttl}) => repository.releasePlaylist(id, ttl: ttl),
-          ttl: ttl);
+  void releasePlaylist(int id, {Duration? ttl}) async => _doit<Spiff>(
+      ({Duration? ttl}) => repository.releasePlaylist(id, ttl: ttl),
+      ttl: ttl);
 
   void search(String query, {Duration? ttl}) async =>
       _doit<SearchView>(({Duration? ttl}) => repository.search(query, ttl: ttl),
@@ -149,15 +149,26 @@ class ClientCubit extends Cubit<ClientState> {
       _doit<Spiff>(({Duration? ttl}) => repository.popularTracks(ttl: ttl),
           ttl: ttl);
 
-  void updateActivity(Events events) async =>
-      _doit<int>(({Duration? ttl}) => repository.updateActivity(events));
-
   void patch(List<Map<String, dynamic>> body) async =>
       _doit<PatchResult>(({Duration? ttl}) => repository.patch(body));
 
   void playlist({Duration? ttl}) async =>
       _doit<Spiff>(({Duration? ttl}) => repository.playlist(ttl: ttl),
           ttl: ttl);
+
+  void progress({Duration? ttl}) async =>
+      _doit<ProgressView>(({Duration? ttl}) => repository.progress(ttl: ttl),
+          ttl: ttl);
+
+  void updateProgress(Offsets offsets) async =>
+      _doit<int>(({Duration? ttl}) => repository.updateProgress(offsets));
+
+  void activity({Duration? ttl}) async =>
+      _doit<ActivityView>(({Duration? ttl}) => repository.activity(ttl: ttl),
+          ttl: ttl);
+
+  void updateActivity(Events events) async =>
+      _doit<int>(({Duration? ttl}) => repository.updateActivity(events));
 
   void _doit<T>(ClientRequest<T> call, {Duration? ttl}) async {
     emit(ClientLoading());

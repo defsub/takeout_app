@@ -149,22 +149,6 @@ class Spiff {
       position: 0,
       playlist: Playlist(title: '', tracks: []),
       type: MediaType.music.name);
-
-// static Future<Spiff> fromFile(File file) async {
-//   final completer = Completer<Spiff>();
-//   file.exists().then((exists) {
-//     if (exists) {
-//       file.readAsBytes().then((body) {
-//         completer.complete(Spiff.fromJson(jsonDecode(utf8.decode(body))));
-//       }).catchError((e) {
-//         completer.completeError(e);
-//       });
-//     } else {
-//       completer.complete(Spiff.empty());
-//     }
-//   });
-//   return completer.future;
-// }
 }
 
 @JsonSerializable()

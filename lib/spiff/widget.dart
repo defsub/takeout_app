@@ -17,10 +17,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:provider/provider.dart';
 import 'package:takeout_app/app/context.dart';
 import 'package:takeout_app/art/scaffold.dart';
 import 'package:takeout_app/cache/offset.dart';
+import 'package:takeout_app/cache/spiff.dart';
 import 'package:takeout_app/cache/track.dart';
 import 'package:takeout_app/menu.dart';
 import 'package:takeout_app/buttons.dart';
@@ -45,13 +45,13 @@ class SpiffWidget extends ClientPage<Spiff> {
     fetch?.call(context.client, ttl: ttl);
   }
 
-  List<Widget>? actions(BuildContext context, Spiff spiff, bool isCached) {
+  List<Widget>? actions(
+      BuildContext context, Spiff spiff, bool isCached, bool isDownloaded) {
     return [
       popupMenu(context, [
         if (fetch != null)
-          PopupItem.refresh(context, (_) => refreshPage(context)),
-        // TODO this doesn't delete cached spiff without downloaded tracks
-        if (isCached)
+          PopupItem.reload(context, (_) => reloadPage(context)),
+        if (isCached || isDownloaded)
           PopupItem.delete(context, context.strings.deleteItem,
               (_) => _onDelete(context, spiff)),
       ]),
@@ -89,9 +89,11 @@ class SpiffWidget extends ClientPage<Spiff> {
   }
 
   Widget body(BuildContext context, Spiff spiff) {
-    return BlocBuilder<TrackCacheCubit, TrackCacheState>(
-        builder: (context, state) {
-      final isCached = state.containsAll(spiff.playlist.tracks);
+    return Builder(builder: (context) {
+      final trackCache = context.watch<TrackCacheCubit>();
+      final spiffCache = context.watch<SpiffCacheCubit>();
+      final isDownloaded = spiffCache.state.contains(spiff);
+      final isCached = trackCache.state.containsAll(spiff.playlist.tracks);
 
       // cover images are 250x250 (or 500x500)
       // distort a bit to only take half the screen
@@ -102,7 +104,7 @@ class SpiffWidget extends ClientPage<Spiff> {
         SliverAppBar(
           foregroundColor: overlayIconColor(context),
           expandedHeight: expandedHeight,
-          actions: actions(context, spiff, isCached),
+          actions: actions(context, spiff, isCached, isDownloaded),
           flexibleSpace: FlexibleSpaceBar(
               // centerTitle: true,
               // title: Text(release.name, style: TextStyle(fontSize: 15)),

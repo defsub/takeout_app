@@ -1,4 +1,3 @@
-
 // Copyright (C) 2020 The Takeout Authors.
 //
 // This file is part of Takeout.

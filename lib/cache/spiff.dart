@@ -30,6 +30,10 @@ class SpiffCacheState {
   SpiffCacheState(this.spiffs);
 
   factory SpiffCacheState.empty() => SpiffCacheState([]);
+
+  bool contains(Spiff spiff) {
+    return spiffs?.contains(spiff) ?? false;
+  }
 }
 
 class SpiffCacheCubit extends Cubit<SpiffCacheState> {

@@ -1,3 +1,20 @@
+// Copyright (C) 2023 The Takeout Authors.
+//
+// This file is part of Takeout.
+//
+// Takeout is free software: you can redistribute it and/or modify it under the
+// terms of the GNU Affero General Public License as published by the Free
+// Software Foundation, either version 3 of the License, or (at your option)
+// any later version.
+//
+// Takeout is distributed in the hope that it will be useful, but WITHOUT ANY
+// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+// FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public License for
+// more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
+
 import 'dart:async';
 import 'dart:io';
 
@@ -8,6 +25,7 @@ import 'package:takeout_app/cache/offset.dart';
 import 'package:takeout_app/cache/offset_repository.dart';
 import 'package:takeout_app/cache/spiff.dart';
 import 'package:takeout_app/cache/track.dart';
+import 'package:takeout_app/cache/prune.dart';
 import 'package:takeout_app/cache/track_repository.dart';
 import 'package:takeout_app/client/download.dart';
 import 'package:takeout_app/client/repository.dart';
@@ -27,6 +45,7 @@ import 'package:takeout_app/settings/settings.dart';
 import 'package:takeout_app/spiff/model.dart';
 import 'package:takeout_app/tokens/repository.dart';
 import 'package:takeout_app/tokens/tokens.dart';
+import 'package:takeout_app/api/model.dart';
 
 import 'app.dart';
 import 'context.dart';
@@ -117,6 +136,7 @@ mixin AppBloc {
           create: (context) =>
               SpiffCacheCubit(context.read<SpiffCacheRepository>())),
       BlocProvider(
+          lazy: false,
           create: (context) => OffsetCacheCubit(
               context.read<OffsetCacheRepository>(),
               context.read<ClientRepository>())),
@@ -202,11 +222,15 @@ mixin AppBlocState {
             a.considerPlayed == b.considerPlayed)
         .listen((state) {
       if (state.considerPlayed) {
-        print(
-            'consider played ${state.position} ${state.duration} ${state.currentTrack.title}');
+        // add track to history & activity
         context.history.add(track: state.currentTrack);
+        context.client.updateActivity(
+            Events(trackEvents: [TrackEvent.now(state.currentTrack.etag)]));
       }
     });
+
+    // prune incomplete/partial downloads
+    pruneCache(context.spiffCache.repository, context.trackCache.repository);
   }
 
   void appDispose() {

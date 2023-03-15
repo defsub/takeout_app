@@ -73,7 +73,7 @@ class ReleaseWidget extends ClientPage<ReleaseView> {
           return Scaffold(
               backgroundColor: backgroundColor,
               body: RefreshIndicator(
-                  onRefresh: () => refreshPage(context),
+                  onRefresh: () => reloadPage(context),
                   child: BlocBuilder<TrackCacheCubit, TrackCacheState>(
                       builder: (context, state) {
                     final isCached = state.containsAll(view.tracks);
@@ -95,8 +95,8 @@ class ReleaseWidget extends ClientPage<ReleaseView> {
                             PopupItem.link(context, 'MusicBrainz Release Group',
                                 (_) => launchUrl(Uri.parse(releaseGroupUrl))),
                             PopupItem.divider(),
-                            PopupItem.refresh(
-                                context, (_) => refreshPage(context)),
+                            PopupItem.reload(
+                                context, (_) => reloadPage(context)),
                           ]),
                         ],
                         flexibleSpace: FlexibleSpaceBar(
