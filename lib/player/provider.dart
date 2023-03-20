@@ -28,17 +28,17 @@ final DummyStoppedCallback = (_) {};
 final DummyTrackChangeCallback = (_, __, {String? title}) {};
 final DummyPositionCallback = (_, __, ___, ____) {};
 final DummyIndexCallback = (_, __) {};
-final DummyTrackEndCallback = (_, __, ___, ____) {};
+final DummyTrackEndCallback = (_, __, ___, ____, _____) {};
 
 typedef PlayerCallback = void Function(Spiff, Duration, Duration);
 typedef IndexCallback = void Function(Spiff, bool);
 typedef PositionCallback = void Function(Spiff, Duration, Duration, bool);
 typedef StoppedCallback = void Function(Spiff);
 typedef TrackChangeCallback = void Function(Spiff, int index, {String? title});
-typedef TrackEndCallback = void Function(Spiff, int index, Duration, Duration);
+typedef TrackEndCallback = void Function(Spiff, int index, Duration, Duration, bool);
 
 abstract class PlayerProvider {
-  Future init(
+  Future<void> init(
       {required MediaTrackResolver trackResolver,
       required TokenRepository tokenRepository,
       required SettingsRepository settingsRepository,
@@ -78,7 +78,7 @@ abstract class PlayerProvider {
 class DefaultPlayerProvider implements PlayerProvider {
   late TakeoutPlayerHandler handler;
 
-  Future init(
+  Future<void> init(
       {required MediaTrackResolver trackResolver,
       required TokenRepository tokenRepository,
       required SettingsRepository settingsRepository,

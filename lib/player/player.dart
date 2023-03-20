@@ -117,13 +117,13 @@ class PlayerTrackChange extends PlayerState {
   PlayerTrackChange(super.spiff, this.index, {this.title});
 }
 
-class PlayerTrackEnd extends PlayerState {
+class PlayerTrackEnd extends PlayerPositionState {
   final int index;
-  final Duration duration;
-  final Duration position;
 
   PlayerTrackEnd(super.spiff, this.index,
-      {required this.duration, required this.position});
+      {required super.duration,
+        required super.position,
+        required super.playing});
 }
 
 class Player extends Cubit<PlayerState> {
@@ -162,9 +162,9 @@ class Player extends Cubit<PlayerState> {
                     duration: duration, position: position, playing: playing)),
             onTrackChange: (spiff, index, {String? title}) =>
                 emit(PlayerTrackChange(spiff, index, title: title)),
-            onTrackEnd: (spiff, index, duration, position) => emit(
+            onTrackEnd: (spiff, index, duration, position, playing) => emit(
                 PlayerTrackEnd(spiff, index,
-                    duration: duration, position: position)))
+                    duration: duration, position: position, playing: playing)))
         .whenComplete(() => emit(PlayerReady()));
   }
 

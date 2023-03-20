@@ -165,12 +165,74 @@ mixin AppBloc {
     ], child: child);
   }
 
+  /// NowPlaying manages the playlist that should be playing.
+  void onNowPlayingChange(BuildContext context, Spiff? spiff) {
+    if (spiff != null) {
+      // load now playing playlist into player
+      context.player.load(spiff);
+    }
+  }
+
+  void onPlaylistChange(BuildContext context, PlaylistChange state) {
+    context.play(state.spiff);
+  }
+
+  /// Restore previous playlist once the player is ready.
+  void onPlayerReady(BuildContext context, PlayerReady state) {
+    final spiff = context.nowPlaying.state;
+    onNowPlayingChange(context, spiff);
+
+    context.player.stream.timeout(Duration(minutes: 1), onTimeout: (_) {
+      context.player.stop();
+    }).listen((event) {});
+  }
+
+  void onPlayerPlay(BuildContext context, PlayerPlay state) {}
+
+  void _updateProgress(BuildContext context, PlayerPositionState state) {
+    if (state.spiff.isPodcast()) {
+      final currentTrack = state.currentTrack;
+      if (currentTrack != null) {
+        context.updateProgress(currentTrack.etag,
+            position: state.position, duration: state.duration);
+      }
+    }
+  }
+
+  void onPlayerPause(BuildContext context, PlayerPause state) {
+    _updateProgress(context, state);
+  }
+
+  void onPlayerTrackEnd(BuildContext context, PlayerTrackEnd state) {
+    _updateProgress(context, state);
+  }
+
+  void onDownloadComplete(BuildContext context, DownloadComplete state) {
+    // add completed download to TrackCache
+    final download = state.get(state.id);
+    final file = download?.file;
+    if (download != null && file != null) {
+      context.trackCache.add(state.id, file);
+    }
+  }
+
+  void onDownloadChange(BuildContext context, DownloadState state) {
+    // check if downloads should be started
+    // TODO this will only prevent the next download from starting
+    // the current one will continue if network switched from to mobile
+    // during the download.
+    if (context.connectivity.state.mobile
+        ? context.settings.state.settings.allowMobileDownload
+        : true) {
+      context.downloads.check();
+    }
+  }
+
   Widget _listeners(BuildContext context, {required Widget child}) {
     return MultiBlocListener(listeners: [
       BlocListener<NowPlayingCubit, Spiff?>(listener: (context, spiff) {
         if (spiff != null) {
-          // load now playing playlist into player
-          context.player.load(spiff);
+          onNowPlayingChange(context, spiff);
         }
       }),
       BlocListener<Player, PlayerState>(
@@ -181,41 +243,20 @@ mixin AppBloc {
               state is PlayerTrackEnd,
           listener: (context, state) {
             if (state is PlayerReady) {
-              // restore playlist at startup
-              final spiff = context.nowPlaying.state;
-              if (spiff != null) {
-                context.player.load(spiff);
-              }
-              context.player.stream.timeout(Duration(minutes: 1),
-                  onTimeout: (_) {
-                print('calling stop');
-                context.player.stop();
-              }).listen((event) {});
+              onPlayerReady(context, state);
             } else if (state is PlayerPlay) {
+              onPlayerPlay(context, state);
             } else if (state is PlayerPause) {
-              if (state.spiff.isPodcast()) {
-                final currentTrack = state.currentTrack;
-                if (currentTrack != null) {
-                  context.updateProgress(currentTrack.etag,
-                      position: state.position, duration: state.duration);
-                }
-              }
+              onPlayerPause(context, state);
             } else if (state is PlayerTrackEnd) {
-              print('PlayerTrackEnd');
-              if (state.spiff.isPodcast()) {
-                final currentTrack = state.currentTrack;
-                if (currentTrack != null) {
-                  context.updateProgress(currentTrack.etag,
-                      position: state.position, duration: state.duration);
-                }
-              }
+              onPlayerTrackEnd(context, state);
             }
           }),
       BlocListener<PlaylistCubit, PlaylistState>(
           listenWhen: (_, state) => state is PlaylistChange,
           listener: (context, state) {
             if (state is PlaylistChange) {
-              context.play(state.spiff);
+              onPlaylistChange(context, state);
             }
           }),
       BlocListener<DownloadCubit, DownloadState>(
@@ -225,23 +266,9 @@ mixin AppBloc {
               state is DownloadError,
           listener: (context, state) {
             if (state is DownloadComplete) {
-              // add completed download to TrackCache
-              final download = state.get(state.id);
-              final file = download?.file;
-              if (download != null && file != null) {
-                context.trackCache.add(state.id, file);
-              }
+              onDownloadComplete(context, state);
             }
-            // check if downloads should be started
-
-            // TODO this will only prevent the next download from starting
-            // the current one will continue if network switched from to mobile
-            // during the download.
-            if (context.connectivity.state.mobile
-                ? context.settings.state.settings.allowMobileDownload
-                : true) {
-              context.downloads.check();
-            }
+            onDownloadChange(context, state);
           }),
     ], child: child);
   }

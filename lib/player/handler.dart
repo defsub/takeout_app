@@ -172,7 +172,8 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
         final duration = discontinuity.previousEvent.duration ?? Duration.zero;
         final position = discontinuity.previousEvent.updatePosition;
         if (previousIndex != null) {
-          onTrackEnd(_spiff, previousIndex, duration, position);
+          onTrackEnd(
+              _spiff, previousIndex, duration, position, _player.playing);
         }
       }
     });
@@ -211,7 +212,8 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
       if (_player.currentIndex == null) {
         return null;
       }
-      if (state.playing == false && state.processingState == ProcessingState.ready) {
+      if (state.playing == false &&
+          state.processingState == ProcessingState.ready) {
         onPause(_spiff, _player.duration ?? Duration.zero, _player.position);
       } else {
         onPlay(_spiff, _player.duration ?? Duration.zero, _player.position);
