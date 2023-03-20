@@ -18,19 +18,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:takeout_app/app/context.dart';
+import 'package:takeout_app/art/cover.dart';
 import 'package:takeout_app/art/scaffold.dart';
+import 'package:takeout_app/buttons.dart';
 import 'package:takeout_app/cache/offset.dart';
 import 'package:takeout_app/cache/spiff.dart';
 import 'package:takeout_app/cache/track.dart';
-import 'package:takeout_app/menu.dart';
-import 'package:takeout_app/buttons.dart';
-import 'package:takeout_app/util.dart';
-import 'package:takeout_app/style.dart';
-import 'package:takeout_app/art/cover.dart';
 import 'package:takeout_app/client/client.dart';
 import 'package:takeout_app/client/download.dart';
+import 'package:takeout_app/menu.dart';
 import 'package:takeout_app/page/page.dart';
+import 'package:takeout_app/style.dart';
 import 'package:takeout_app/tiles.dart';
+import 'package:takeout_app/util.dart';
+
 import 'model.dart';
 
 typedef FetchSpiff = void Function(ClientCubit, {Duration? ttl});

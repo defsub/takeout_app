@@ -47,17 +47,11 @@ class AppCubit extends Cubit<AppState> {
 
   void artists() => emit(state.copyWith(index: NavigationIndex.artists));
 
-  // void search() => emit(AppShowSearch());
-
   void history() => emit(state.copyWith(index: NavigationIndex.history));
 
   void radio() => emit(state.copyWith(index: NavigationIndex.radio));
 
   void player() => emit(state.copyWith(index: NavigationIndex.player));
-
-  // void showArtist(String name) => emit(AppShowArtist(name));
-  //
-  // void showMovie(MediaTrack mediaTrack) => emit(AppShowMovie(mediaTrack));
 
   void showPlayer() => player();
 }

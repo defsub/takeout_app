@@ -16,6 +16,7 @@
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
 import 'dart:io';
+
 import 'file_provider.dart';
 
 class FileCacheRepository {
@@ -29,15 +30,15 @@ class FileCacheRepository {
     return _cache.get(id);
   }
 
-  Future put(FileIdentifier id, File file) async {
+  Future<void> put(FileIdentifier id, File file) async {
     return _cache.put(id, file);
   }
 
-  Future remove(FileIdentifier id, {bool delete = true}) async {
+  Future<void> remove(FileIdentifier id, {bool delete = true}) async {
     return _cache.remove(id, delete: delete);
   }
 
-  Future removeAll() async {
+  Future<void> removeAll() {
     return _cache.removeAll();
   }
 
@@ -71,7 +72,7 @@ class FileCacheRepository {
     return size;
   }
 
-  Future retain(Iterable<FileIdentifier> ids) async {
+  Future<void> retain(Iterable<FileIdentifier> ids) async {
     return _cache.retain(ids);
   }
 

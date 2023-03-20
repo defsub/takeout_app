@@ -23,9 +23,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:takeout_app/cache/json_repository.dart';
 import 'package:takeout_app/cache/offset.dart';
 import 'package:takeout_app/cache/offset_repository.dart';
+import 'package:takeout_app/cache/prune.dart';
 import 'package:takeout_app/cache/spiff.dart';
 import 'package:takeout_app/cache/track.dart';
-import 'package:takeout_app/cache/prune.dart';
 import 'package:takeout_app/cache/track_repository.dart';
 import 'package:takeout_app/client/download.dart';
 import 'package:takeout_app/client/repository.dart';
@@ -45,15 +45,24 @@ import 'package:takeout_app/settings/settings.dart';
 import 'package:takeout_app/spiff/model.dart';
 import 'package:takeout_app/tokens/repository.dart';
 import 'package:takeout_app/tokens/tokens.dart';
-import 'package:takeout_app/api/model.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:hydrated_bloc/hydrated_bloc.dart';
 
 import 'app.dart';
 import 'context.dart';
 
+late final Directory _appDir;
+
+Future<void> appMain() async {
+  _appDir = await getApplicationDocumentsDirectory();
+  final storageDir = Directory('${_appDir.path}/state');
+  HydratedBloc.storage =
+      await HydratedStorage.build(storageDirectory: storageDir);
+}
+
 mixin AppBloc {
-  Widget appInit(BuildContext context,
-      {required Directory directory, required Widget child}) {
-    return _repositories(directory,
+  Widget appInit(BuildContext context, {required Widget child}) {
+    return _repositories(_appDir,
         child: _blocs(child: _listeners(context, child: child)));
   }
 
@@ -114,8 +123,8 @@ mixin AppBloc {
             return settings;
           }),
       BlocProvider(create: (_) => AppCubit()),
-      BlocProvider(create: (_) => SelectedMediaType()),
-      BlocProvider(create: (_) => NowPlaying()),
+      BlocProvider(create: (_) => MediaTypeCubit()),
+      BlocProvider(create: (_) => NowPlayingCubit()),
       BlocProvider(
           create: (context) => PlaylistCubit(context.read<ClientRepository>())),
       BlocProvider(
@@ -158,7 +167,7 @@ mixin AppBloc {
 
   Widget _listeners(BuildContext context, {required Widget child}) {
     return MultiBlocListener(listeners: [
-      BlocListener<NowPlaying, Spiff?>(listener: (context, spiff) {
+      BlocListener<NowPlayingCubit, Spiff?>(listener: (context, spiff) {
         if (spiff != null) {
           // load now playing playlist into player
           context.player.load(spiff);
@@ -166,7 +175,10 @@ mixin AppBloc {
       }),
       BlocListener<Player, PlayerState>(
           listenWhen: (_, state) =>
-              state is PlayerReady || state is PlayerLoaded,
+              state is PlayerReady ||
+              state is PlayerPlay ||
+              state is PlayerPause ||
+              state is PlayerTrackEnd,
           listener: (context, state) {
             if (state is PlayerReady) {
               // restore playlist at startup
@@ -174,22 +186,45 @@ mixin AppBloc {
               if (spiff != null) {
                 context.player.load(spiff);
               }
+              context.player.stream.timeout(Duration(minutes: 1),
+                  onTimeout: (_) {
+                print('calling stop');
+                context.player.stop();
+              }).listen((event) {});
+            } else if (state is PlayerPlay) {
+            } else if (state is PlayerPause) {
+              if (state.spiff.isPodcast()) {
+                final currentTrack = state.currentTrack;
+                if (currentTrack != null) {
+                  context.updateProgress(currentTrack.etag,
+                      position: state.position, duration: state.duration);
+                }
+              }
+            } else if (state is PlayerTrackEnd) {
+              print('PlayerTrackEnd');
+              if (state.spiff.isPodcast()) {
+                final currentTrack = state.currentTrack;
+                if (currentTrack != null) {
+                  context.updateProgress(currentTrack.etag,
+                      position: state.position, duration: state.duration);
+                }
+              }
             }
           }),
       BlocListener<PlaylistCubit, PlaylistState>(
-          listenWhen: (_, state) => state is PlaylistChanged,
+          listenWhen: (_, state) => state is PlaylistChange,
           listener: (context, state) {
-            if (state is PlaylistChanged) {
+            if (state is PlaylistChange) {
               context.play(state.spiff);
             }
           }),
       BlocListener<DownloadCubit, DownloadState>(
           listenWhen: (_, state) =>
-              state is DownloadAdded ||
-              state is DownloadCompleted ||
+              state is DownloadAdd ||
+              state is DownloadComplete ||
               state is DownloadError,
           listener: (context, state) {
-            if (state is DownloadCompleted) {
+            if (state is DownloadComplete) {
               // add completed download to TrackCache
               final download = state.get(state.id);
               final file = download?.file;
@@ -197,37 +232,46 @@ mixin AppBloc {
                 context.trackCache.add(state.id, file);
               }
             }
-            // always check if downloads should be started
-            context.downloads.check();
+            // check if downloads should be started
+
+            // TODO this will only prevent the next download from starting
+            // the current one will continue if network switched from to mobile
+            // during the download.
+            if (context.connectivity.state.mobile
+                ? context.settings.state.settings.allowMobileDownload
+                : true) {
+              context.downloads.check();
+            }
           }),
     ], child: child);
   }
 }
 
 mixin AppBlocState {
-  StreamSubscription<PlayerPositionChanged>? _considerPlayedSubscription;
+  StreamSubscription<PlayerPositionChange>? _considerPlayedSubscription;
 
   void appInitState(BuildContext context) {
-    if (context.tokens.state.authenticated) {
+    if (context.tokens.state.tokens.authenticated) {
       // restore authenticated state
       context.app.authenticated();
     }
 
     // keep track of position changes and update history once a track is considered played
-    _considerPlayedSubscription = context.player.stream
-        .where((state) => state is PlayerPositionChanged)
-        .cast<PlayerPositionChanged>()
-        .distinct((a, b) =>
-            a.currentTrack.etag == b.currentTrack.etag &&
-            a.considerPlayed == b.considerPlayed)
-        .listen((state) {
-      if (state.considerPlayed) {
-        // add track to history & activity
-        context.history.add(track: state.currentTrack);
-        context.client.updateActivity(
-            Events(trackEvents: [TrackEvent.now(state.currentTrack.etag)]));
-      }
-    });
+    // _considerPlayedSubscription = context.player.stream
+    //     .where((state) => state is PlayerPositionChange)
+    //     .cast<PlayerPositionChange>()
+    //     .distinct((a, b) =>
+    // a or b current track failed - RangeError (index): Invalid value: Valid value range is empty: 0
+    //         a.currentTrack.etag == b.currentTrack.etag &&
+    //         a.considerPlayed == b.considerPlayed)
+    //     .listen((state) {
+    //   if (state.considerPlayed) {
+    //     // add track to history & activity
+    //     context.history.add(track: state.currentTrack);
+    //     context.client.updateActivity(
+    //         Events(trackEvents: [TrackEvent.now(state.currentTrack.etag)]));
+    //   }
+    // });
 
     // prune incomplete/partial downloads
     pruneCache(context.spiffCache.repository, context.trackCache.repository);

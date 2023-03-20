@@ -16,8 +16,9 @@
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
 import 'dart:io';
-import 'package:takeout_app/cache/file_repository.dart';
+
 import 'package:takeout_app/cache/file_provider.dart';
+import 'package:takeout_app/cache/file_repository.dart';
 
 abstract class TrackIdentifier implements FileIdentifier {}
 

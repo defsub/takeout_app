@@ -15,19 +15,19 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
-import 'package:flutter/material.dart';
 import 'package:audio_service/audio_service.dart';
-import 'package:takeout_app/app/context.dart';
-import 'package:timeago_flutter/timeago_flutter.dart';
-import 'package:timeago/timeago.dart' as timeago;
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
-import 'package:takeout_app/art/cover.dart';
 import 'package:takeout_app/api/model.dart';
+import 'package:takeout_app/app/context.dart';
+import 'package:takeout_app/art/cover.dart';
 import 'package:takeout_app/connectivity/connectivity.dart';
-import 'util.dart';
+import 'package:timeago/timeago.dart' as timeago;
+import 'package:timeago_flutter/timeago_flutter.dart';
+
 import 'global.dart';
 import 'model.dart';
+import 'util.dart';
 
 class AlbumListTile extends StatelessWidget {
   final String? artist;
@@ -211,7 +211,7 @@ class StreamingTile extends _ConnectivityTile {
       super.subtitle});
 
   bool _enabled(BuildContext context, ConnectivityState state) {
-    final settings = context.settings.state;
+    final settings = context.settings.state.settings;
     final allow = settings.allowMobileStreaming;
     return state.mobile ? allow : true;
   }

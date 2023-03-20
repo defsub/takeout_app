@@ -29,11 +29,11 @@ class PlayerScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<Player, PlayerState>(buildWhen: (context, state) {
-      return state is PlayerLoaded || state is PlayerIndexChanged;
+      return state is PlayerLoad || state is PlayerIndexChange;
     }, builder: (context, state) {
       String? image;
-      if (state is PlayerLoaded || state is PlayerIndexChanged) {
-        image = state.currentTrack.image;
+      if (state is PlayerLoad || state is PlayerIndexChange) {
+        image = state.currentTrack?.image;
       }
       return scaffold(context, image: image, body: body);
     });

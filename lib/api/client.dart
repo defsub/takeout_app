@@ -22,12 +22,11 @@ import 'dart:io';
 
 import 'package:http/http.dart' as http;
 import 'package:logging/logging.dart';
-
-import 'package:takeout_app/tokens/repository.dart';
-import 'package:takeout_app/client/provider.dart';
 import 'package:takeout_app/cache/json_repository.dart';
-import 'package:takeout_app/spiff/model.dart';
+import 'package:takeout_app/client/provider.dart';
 import 'package:takeout_app/settings/repository.dart';
+import 'package:takeout_app/spiff/model.dart';
+import 'package:takeout_app/tokens/repository.dart';
 
 import 'model.dart';
 
@@ -80,28 +79,15 @@ typedef Future<T> FutureGenerator<T>();
 class TakeoutClient implements ClientProvider {
   static final log = Logger('Client');
 
-  static const settingAccessToken = 'access_token';
-  static const settingMediaToken = 'media_token';
-  static const settingRefreshToken = 'refresh_token';
-  static const settingEndpoint = 'endpoint';
   static const fieldAccessToken = 'AccessToken';
   static const fieldRefreshToken = 'RefreshToken';
   static const fieldMediaToken = 'MediaToken';
-  static const _defaultPlaylist = '/api/playlist';
 
   static const locationTTL = Duration(hours: 1);
   static const playlistTTL = Duration(minutes: 1);
   static const defaultTTL = Duration(hours: 24);
   static const defaultTimeout = Duration(seconds: 5);
   static const downloadTimeout = Duration(minutes: 5);
-
-  static Uri _defaultPlaylistUri = Uri.parse(_defaultPlaylist);
-
-  static Uri defaultPlaylistUri() {
-    return _defaultPlaylistUri;
-  }
-
-  bool Function()? _allowDownloads;
 
   final SettingsRepository settingsRepository;
   final TokenRepository tokenRepository;
@@ -121,9 +107,6 @@ class TakeoutClient implements ClientProvider {
   http.Client get client => _client;
 
   String get userAgent => _userAgent;
-
-  bool get allowDownloads =>
-      _allowDownloads != null ? _allowDownloads!() : true;
 
   String get endpoint {
     final settings = settingsRepository.settings;
@@ -210,35 +193,35 @@ class TakeoutClient implements ClientProvider {
     }
   }
 
-  Future _delete(String uri) async {
-    final token = tokenRepository.accessToken;
-    if (token == null) {
-      throw ClientException(
-        statusCode: HttpStatus.networkAuthenticationRequired,
-      );
-    }
-
-    try {
-      log.fine('DELETE $endpoint$uri');
-      final response = await _client.delete(Uri.parse('$endpoint$uri'),
-          headers: _headersWithAccessToken());
-      log.fine('got ${response.statusCode}');
-      switch (response.statusCode) {
-        case HttpStatus.accepted:
-        case HttpStatus.noContent:
-        case HttpStatus.ok:
-          // success
-          break;
-        default:
-          // failure
-          throw ClientException(
-              statusCode: response.statusCode,
-              url: response.request?.url.toString());
-      }
-    } on TlsException catch (e) {
-      return Future.error(e);
-    }
-  }
+  // Future _delete(String uri) async {
+  //   final token = tokenRepository.accessToken;
+  //   if (token == null) {
+  //     throw ClientException(
+  //       statusCode: HttpStatus.networkAuthenticationRequired,
+  //     );
+  //   }
+  //
+  //   try {
+  //     log.fine('DELETE $endpoint$uri');
+  //     final response = await _client.delete(Uri.parse('$endpoint$uri'),
+  //         headers: _headersWithAccessToken());
+  //     log.fine('got ${response.statusCode}');
+  //     switch (response.statusCode) {
+  //       case HttpStatus.accepted:
+  //       case HttpStatus.noContent:
+  //       case HttpStatus.ok:
+  //         // success
+  //         break;
+  //       default:
+  //         // failure
+  //         throw ClientException(
+  //             statusCode: response.statusCode,
+  //             url: response.request?.url.toString());
+  //     }
+  //   } on TlsException catch (e) {
+  //     return Future.error(e);
+  //   }
+  // }
 
   /// no caching
   Future<Map<String, dynamic>> _postJson(String uri, Map<String, dynamic> json,
@@ -361,12 +344,10 @@ class TakeoutClient implements ClientProvider {
     return success;
   }
 
-// TODO ensure mutex to avoid multiple access tokens
   Future<T> _retry<T>(FutureGenerator<T> aFuture) async {
     try {
       return await aFuture();
-    } catch (e) {
-      log.fine('in retry got $e');
+    } catch (e, stackTrace) {
       if (e is ClientException && e.authenticationFailed && _haveTokens()) {
         // have refresh token, try to refresh access token
         final result = await _refreshAccessToken();
@@ -375,6 +356,7 @@ class TakeoutClient implements ClientProvider {
           return await aFuture();
         }
       }
+      log.warning('in retry got $stackTrace', e, stackTrace);
       rethrow;
     }
   }
@@ -576,7 +558,7 @@ class TakeoutClient implements ClientProvider {
   Future<Spiff> popularTracks({Duration? ttl}) async =>
       spiff('/api/activity/tracks/popular/playlist', ttl: ttl);
 
-  /// Download locatable to a file with optional retries.
+  /// Download uri to a file with optional retries.
   Future<int> download(Uri uri, File file, int size,
       {Sink<int>? progress, int retries = 0}) async {
     for (;;) {
@@ -595,7 +577,7 @@ class TakeoutClient implements ClientProvider {
     }
   }
 
-  /// Download locatable to a file.
+  /// Download uri to a file.
   Future<int> _download(Uri uri, File file, int size,
       {Sink<int>? progress}) async {
     final completer = Completer<int>();

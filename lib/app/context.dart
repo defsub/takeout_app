@@ -20,6 +20,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:takeout_app/api/model.dart';
 import 'package:takeout_app/cache/offset.dart';
+import 'package:takeout_app/cache/offset_repository.dart';
 import 'package:takeout_app/cache/spiff.dart';
 import 'package:takeout_app/cache/track.dart';
 import 'package:takeout_app/client/client.dart';
@@ -106,6 +107,18 @@ extension AppContext on BuildContext {
     offsets.reload();
   }
 
+  void updateProgress(String etag,
+      {required Duration position, Duration? duration}) {
+    final offset = Offset.now(etag: etag, offset: position, duration: duration);
+    if (offsets.repository.contains(offset) == false) {
+      print('updateProgress $etag $position $duration');
+      // add local offset
+      offsets.add(offset);
+      // send to server
+      clientRepository.updateProgress(Offsets(offsets: [offset]));
+    }
+  }
+
   AppCubit get app => read<AppCubit>();
 
   ClientCubit get client => read<ClientCubit>();
@@ -122,7 +135,7 @@ extension AppContext on BuildContext {
 
   MediaTrackResolver get resolver => read<MediaTrackResolver>();
 
-  NowPlaying get nowPlaying => read<NowPlaying>();
+  NowPlayingCubit get nowPlaying => read<NowPlayingCubit>();
 
   OffsetCacheCubit get offsets => read<OffsetCacheCubit>();
 
@@ -132,7 +145,7 @@ extension AppContext on BuildContext {
 
   Search get search => read<Search>();
 
-  SelectedMediaType get selectedMediaType => read<SelectedMediaType>();
+  MediaTypeCubit get selectedMediaType => read<MediaTypeCubit>();
 
   SettingsCubit get settings => read<SettingsCubit>();
 

@@ -80,7 +80,7 @@ class HomeWidget extends NavigatorClientPage<HomeView> {
   @override
   Widget page(BuildContext context, HomeView view) {
     return Builder(builder: (context) {
-      final mediaType = context.watch<SelectedMediaType>();
+      final mediaType = context.watch<MediaTypeCubit>();
       final trackCache = context.watch<TrackCacheCubit>();
       // TODO remove old settings
       // final type = settingsGridType(settingHomeGridType, GridType.mix);
@@ -88,7 +88,7 @@ class HomeWidget extends NavigatorClientPage<HomeView> {
       return Scaffold(
           body: RefreshIndicator(
         onRefresh: () => reloadPage(context),
-        child: _grid(view, mediaType.state, type, trackCache.state),
+        child: _grid(view, mediaType.state.mediaType, type, trackCache.state),
       ));
     });
   }

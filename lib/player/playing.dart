@@ -16,11 +16,10 @@
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
 import 'package:hydrated_bloc/hydrated_bloc.dart';
-
 import 'package:takeout_app/spiff/model.dart';
 
-class NowPlaying extends HydratedCubit<Spiff?> {
-  NowPlaying() : super(null);
+class NowPlayingCubit extends HydratedCubit<Spiff?> {
+  NowPlayingCubit() : super(null);
 
   void add(Spiff spiff) => emit(spiff);
 

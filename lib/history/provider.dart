@@ -15,11 +15,12 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
-import 'dart:io';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:takeout_app/model.dart';
 import 'package:takeout_app/spiff/model.dart';
+
 import 'model.dart';
 
 abstract class HistoryProvider {
@@ -132,7 +133,7 @@ class JsonHistoryProvider implements HistoryProvider {
     }
   }
 
-  Future _save(File file, History history) async {
+  Future<void> _save(File file, History history) async {
     final data = jsonEncode(history.toJson());
     try {
       await file.writeAsString(data);

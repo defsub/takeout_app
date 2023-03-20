@@ -25,6 +25,7 @@ import 'package:takeout_app/buttons.dart';
 import 'package:takeout_app/cache/offset.dart';
 import 'package:takeout_app/cache/track.dart';
 import 'package:takeout_app/client/download.dart';
+import 'package:takeout_app/media_type/media_type.dart';
 import 'package:takeout_app/page/page.dart';
 import 'package:takeout_app/util.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -134,7 +135,7 @@ class SeriesWidget extends ClientPage<SeriesView> {
   }
 
   void _onPlay(BuildContext context) {
-    context.playlist.replace(_series.reference);
+    context.playlist.replace(_series.reference, mediaType: MediaType.podcast);
   }
 
   void _onDownload(BuildContext context, SeriesView view) {
@@ -164,18 +165,18 @@ class _SeriesEpisodeListWidget extends StatelessWidget {
             onTap: () => _onPlay(context, episodes[index]),
             onLongPress: () => _onEpisode(context, episodes[index], index),
             title: Text(episodes[index].title),
-            subtitle: _subtitle(context, episodes[index])))
+            subtitle: _subtitle(context, offsets.state, episodes[index])))
       ]);
     });
   }
 
-  Widget _subtitle(BuildContext context, Episode episode) {
+  Widget _subtitle(
+      BuildContext context, OffsetCacheState offsets, Episode episode) {
     return Builder(builder: (context) {
-      final offsets = context.watch<OffsetCacheCubit>();
       final children = <Widget>[];
-      final remaining = offsets.state.remaining(episode);
+      final remaining = offsets.remaining(episode);
       if (remaining != null && remaining.inSeconds > 0) {
-        final value = offsets.state.value(episode);
+        final value = offsets.value(episode);
         if (value != null) {
           children.add(LinearProgressIndicator(value: value));
         }
@@ -213,7 +214,7 @@ class _SeriesEpisodeListWidget extends StatelessWidget {
   }
 
   void _onPlay(BuildContext context, Episode episode) {
-    context.playlist.replace(episode.reference);
+    context.playlist.replace(episode.reference, mediaType: MediaType.podcast);
   }
 }
 
@@ -235,18 +236,17 @@ class _EpisodeWidget extends StatelessWidget {
             popupMenu(context, [
               // TODO this shows delete when there's nothing to delete
               PopupItem.delete(
-                  context,
-                  context.strings.deleteItem,
-                  (ctx) => _onDelete(ctx)),
+                  context, context.strings.deleteItem, (ctx) => _onDelete(ctx)),
             ])
           ],
         ),
-        body: BlocBuilder<OffsetCacheCubit, OffsetCacheState>(
-            builder: (context, state) {
-          final when = state.when(episode);
-          final duration = state.duration(episode);
-          final remaining = state.remaining(episode);
-          final isCached = state.contains(episode);
+        body: Builder(builder: (context) {
+          final offsetCache = context.watch<OffsetCacheCubit>().state;
+          final trackCache = context.watch<TrackCacheCubit>().state;
+          final when = offsetCache.when(episode);
+          final duration = offsetCache.duration(episode);
+          final remaining = offsetCache.remaining(episode);
+          final isCached = trackCache.contains(episode);
           var title = episode.creator;
           var subtitle = merge([
             ymd(episode.date),
@@ -265,15 +265,15 @@ class _EpisodeWidget extends StatelessWidget {
                   subtitle: Text(subtitle, overflow: TextOverflow.ellipsis),
                   trailing: _downloadButton(context),
                 ),
-                _progress(state) ?? SizedBox.shrink(),
+                _progress(offsetCache) ?? SizedBox.shrink(),
                 Expanded(child: _episodeDetail()),
                 ListTile(
                   title: remaining != null
                       ? Text(
                           '${remaining.inHoursMinutes} remaining') // TODO intl
                       : SizedBox.shrink(),
-                  subtitle: remaining != null
-                      ? RelativeDateWidget(when!)
+                  subtitle: when != null
+                      ? RelativeDateWidget(when)
                       : SizedBox.shrink(),
                   leading: _playButton(context, isCached),
                 ),
@@ -361,7 +361,7 @@ class _EpisodeWidget extends StatelessWidget {
   }
 
   void _onPlay(BuildContext context) {
-    context.playlist.replace(episode.reference);
+    context.playlist.replace(episode.reference, mediaType: MediaType.podcast);
   }
 
   void _onDelete(BuildContext context) {
@@ -389,7 +389,7 @@ class _EpisodeWidget extends StatelessWidget {
         });
   }
 
-  void _onDeleteConfirmed() async {
+  void _onDeleteConfirmed() {
     // Downloads.deleteEpisode(episode);
   }
 }

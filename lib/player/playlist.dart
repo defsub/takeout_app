@@ -16,11 +16,10 @@
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
 import 'package:bloc/bloc.dart';
-
 import 'package:takeout_app/client/repository.dart';
 import 'package:takeout_app/media_type/media_type.dart';
-import 'package:takeout_app/spiff/model.dart';
 import 'package:takeout_app/patch.dart';
+import 'package:takeout_app/spiff/model.dart';
 
 class PlaylistState {
   final Spiff spiff;
@@ -30,16 +29,16 @@ class PlaylistState {
   factory PlaylistState.initial() => PlaylistState(Spiff.empty());
 }
 
-class PlaylistLoaded extends PlaylistState {
-  PlaylistLoaded(super.spiff);
+class PlaylistLoad extends PlaylistState {
+  PlaylistLoad(super.spiff);
 }
 
-class PlaylistChanged extends PlaylistState {
-  PlaylistChanged(super.spiff);
+class PlaylistChange extends PlaylistState {
+  PlaylistChange(super.spiff);
 }
 
-class PlaylistUpdated extends PlaylistState {
-  PlaylistUpdated(super.spiff);
+class PlaylistUpdate extends PlaylistState {
+  PlaylistUpdate(super.spiff);
 }
 
 class PlaylistCubit extends Cubit<PlaylistState> {
@@ -51,7 +50,7 @@ class PlaylistCubit extends Cubit<PlaylistState> {
 
   void load({Duration? ttl}) {
     clientRepository.playlist(ttl: ttl).then((spiff) {
-      emit(PlaylistLoaded(spiff));
+      emit(PlaylistLoad(spiff));
     }).onError((error, stackTrace) {});
   }
 
@@ -68,7 +67,7 @@ class PlaylistCubit extends Cubit<PlaylistState> {
     clientRepository.patch(body).then((result) {
       if (result.isModified) {
         final spiff = Spiff.fromJson(result.body);
-        emit(PlaylistChanged(spiff));
+        emit(PlaylistChange(spiff));
       } else {
         // TODO
       }

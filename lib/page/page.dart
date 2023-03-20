@@ -17,7 +17,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import 'package:takeout_app/app/context.dart';
 import 'package:takeout_app/client/client.dart';
 import 'package:takeout_app/global.dart';

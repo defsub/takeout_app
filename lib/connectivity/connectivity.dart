@@ -18,6 +18,7 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
+
 import 'provider.dart';
 import 'repository.dart';
 
@@ -40,6 +41,10 @@ class ConnectivityState {
       type == ConnectivityType.ethernet;
 }
 
+class ConnectivityChange extends ConnectivityState {
+  ConnectivityChange(super.type);
+}
+
 class ConnectivityCubit extends Cubit<ConnectivityState> {
   final ConnectivityRepository repository;
   StreamSubscription<ConnectivityType>? _subscription;
@@ -49,19 +54,26 @@ class ConnectivityCubit extends Cubit<ConnectivityState> {
     _init();
   }
 
+  void _emitEvent(ConnectivityType type) {
+    if (state.type != type) {
+      emit(ConnectivityChange(type));
+    } else {
+      emit(ConnectivityState(type));
+    }
+  }
+
   void _init() {
-    _subscription =
-        repository.stream.listen((event) => emit(ConnectivityState(event)));
+    _subscription = repository.stream.listen((event) => _emitEvent(event));
     repository.check();
   }
 
   @override
   Future<void> close() async {
     await _subscription?.cancel();
-    await super.close();
+    return super.close();
   }
 
-  void check() async {
-    await repository.check().then((type) => emit(ConnectivityState(type)));
+  void check() {
+    repository.check().then((event) => _emitEvent(event));
   }
 }

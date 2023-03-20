@@ -15,12 +15,12 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
-import 'dart:io';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:logging/logging.dart';
 import 'package:crypto/crypto.dart';
+import 'package:logging/logging.dart';
 
 import 'json_repository.dart';
 

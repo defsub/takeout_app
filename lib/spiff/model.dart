@@ -23,10 +23,9 @@ import 'package:json_annotation/json_annotation.dart';
 import 'package:takeout_app/cache/offset_repository.dart';
 import 'package:takeout_app/client/download.dart';
 import 'package:takeout_app/client/etag.dart';
-
+import 'package:takeout_app/media_type/media_type.dart';
 import 'package:takeout_app/model.dart';
 import 'package:takeout_app/util.dart';
-import 'package:takeout_app/media_type/media_type.dart';
 
 part 'model.g.dart';
 
@@ -116,7 +115,18 @@ class Spiff {
     return MediaType.of(type);
   }
 
-  factory Spiff.fromJson(Map<String, dynamic> json) => _$SpiffFromJson(json);
+  factory Spiff.fromJson(Map<String, dynamic> json) {
+    try {
+      return _$SpiffFromJson(json);
+    } catch (e) {
+      print('got error $e, using empty');
+      return Spiff(
+          index: 0,
+          position: 0,
+          playlist: Playlist(title: 'error: $e', tracks: []),
+          type: MediaType.music.name);
+    }
+  }
 
   Map<String, dynamic> toJson() => _$SpiffToJson(this);
 
@@ -145,7 +155,7 @@ class Spiff {
   }
 
   factory Spiff.empty() => Spiff(
-      index: -1,
+      index: 0,
       position: 0,
       playlist: Playlist(title: '', tracks: []),
       type: MediaType.music.name);
@@ -191,7 +201,17 @@ class Entry extends DownloadIdentifier implements MediaTrack, OffsetIdentifier {
           identifiers: this.identifiers,
           sizes: this.sizes);
 
-  factory Entry.fromJson(Map<String, dynamic> json) => _$EntryFromJson(json);
+  factory Entry.fromJson(Map<String, dynamic> json) {
+    try {
+      return _$EntryFromJson(json);
+    } catch (e) {
+      if (json['creator'] == null) json['creator'] = 'no creator';
+      if (json['album'] == null) json['album'] = 'no album';
+      if (json['title'] == null) json['title'] = 'no title';
+      if (json['image'] == null) json['image'] = '';
+      return _$EntryFromJson(json);
+    }
+  }
 
   Map<String, dynamic> toJson() => _$EntryToJson(this);
 

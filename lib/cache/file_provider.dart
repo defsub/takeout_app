@@ -29,15 +29,15 @@ abstract class FileCacheProvider {
 
   Future<bool> contains(FileIdentifier id);
 
-  Future put(FileIdentifier id, File file);
+  Future<void> put(FileIdentifier id, File file);
 
-  Future remove(FileIdentifier id, {bool delete = true});
+  Future<void> remove(FileIdentifier id, {bool delete = true});
 
-  Future removeAll();
+  Future<void> removeAll();
 
   File create(FileIdentifier id);
 
-  Future retain(Iterable<FileIdentifier> ids);
+  Future<void> retain(Iterable<FileIdentifier> ids);
 
   Future<Iterable<String>> keys();
 }
@@ -47,7 +47,7 @@ class DirectoryFileCache implements FileCacheProvider {
 
   final Directory directory;
   final Map<String, File> _entries = {};
-  bool _initialized = false;
+  late Future<void> _initialized;
 
   DirectoryFileCache({required this.directory}) {
     try {
@@ -57,18 +57,14 @@ class DirectoryFileCache implements FileCacheProvider {
     } catch (e, stack) {
       log.warning(directory, e, stack);
     }
+    _initialized = _initialize();
   }
 
-  Future _checkInitialized() async {
-    if (_initialized) {
-      return;
-    }
+  Future<void> _initialize() async {
     final files = await directory.list().toList();
     return Future.forEach(files, (FileSystemEntity entity) async {
       // entry keys are file names
       _entries[basename(entity.path)] = entity as File;
-    }).whenComplete(() {
-      _initialized = true;
     });
   }
 
@@ -78,22 +74,21 @@ class DirectoryFileCache implements FileCacheProvider {
 
   @override
   Future<bool> contains(FileIdentifier id) async {
+    await _initialized;
     final file = await get(id);
     return file is File && file.existsSync();
   }
 
   @override
   Future<File?> get(FileIdentifier id) async {
-    await _checkInitialized();
+    await _initialized;
     final file = _toFile(id);
-    return file.exists().then((exists) {
-      return exists ? file : null;
-    });
+    return file.exists().then((exists) => exists ? file : null);
   }
 
   @override
-  Future put(FileIdentifier id, File file) async {
-    await _checkInitialized();
+  Future<void> put(FileIdentifier id, File file) async {
+    await _initialized;
     // key should be the cleaned etag or similar hash
     _entries[id.key] = file;
   }
@@ -105,31 +100,33 @@ class DirectoryFileCache implements FileCacheProvider {
   }
 
   @override
-  Future remove(FileIdentifier id, {bool delete = true}) async {
+  Future<void> remove(FileIdentifier id, {bool delete = true}) async {
+    await _initialized;
     final file = await get(id);
     if (file != null) {
       _remove(id.key, delete: delete);
     }
   }
 
-  Future _remove(String key, {bool delete = true}) async {
+  void _remove(String key, {bool delete = true}) {
     final file = _entries.remove(key);
     if (delete) {
-      await file?.delete();
+      file?.deleteSync();
     }
   }
 
   @override
-  Future removeAll() {
+  Future<void> removeAll() async {
+    await _initialized;
     // copy keys to avoid concurrent modification
-    return Future.forEach<String>(List<String>.from(_entries.keys),
-        (key) async {
-      await _remove(key);
+    List<String>.from(_entries.keys).forEach((key) {
+      _remove(key);
     });
   }
 
   @override
-  Future retain(Iterable<FileIdentifier> keep) async {
+  Future<void> retain(Iterable<FileIdentifier> keep) async {
+    await _initialized;
     final removal = Set<String>.from(_entries.keys);
     keep.forEach((e) => removal.remove(e.key));
     return Future.forEach(removal, (String key) async {
@@ -139,7 +136,7 @@ class DirectoryFileCache implements FileCacheProvider {
 
   @override
   Future<Iterable<String>> keys() async {
-    await _checkInitialized();
+    await _initialized;
     return _entries.keys;
   }
 }

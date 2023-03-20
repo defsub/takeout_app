@@ -17,15 +17,13 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:takeout_app/art/cover.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-
 import 'package:takeout_app/app/context.dart';
+import 'package:takeout_app/art/cover.dart';
 import 'package:takeout_app/global.dart';
 import 'package:takeout_app/menu.dart';
+import 'package:takeout_app/spiff/widget.dart';
 import 'package:takeout_app/style.dart';
 import 'package:takeout_app/tiles.dart';
-import 'package:takeout_app/spiff/widget.dart';
 
 import 'history.dart';
 import 'model.dart';
@@ -35,9 +33,9 @@ class HistoryListWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cubit = context.watch<HistoryCubit>();
+    final historyCubit = context.watch<HistoryCubit>();
     final builder = (_) {
-      final history = cubit.state;
+      final history = historyCubit.state.history;
       final spiffs = List<SpiffHistory>.from(history.spiffs);
       spiffs.sort((a, b) => b.dateTime.compareTo(a.dateTime));
       return Scaffold(
@@ -45,9 +43,7 @@ class HistoryListWidget extends StatelessWidget {
             title: header(context.strings.historyLabel),
             actions: [
               popupMenu(context, [
-                PopupItem.delete(
-                    context,
-                    context.strings.deleteAll,
+                PopupItem.delete(context, context.strings.deleteAll,
                     (ctx) => _onDelete(ctx)),
               ])
             ],
@@ -95,7 +91,7 @@ class HistoryListWidget extends StatelessWidget {
         });
   }
 
-  void _onDeleteConfirmed(BuildContext context) async {
+  Future<void> _onDeleteConfirmed(BuildContext context) async {
     context.history.remove();
   }
 }

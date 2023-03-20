@@ -17,11 +17,11 @@
 
 import 'dart:async';
 
-import 'settings.dart';
 import 'model.dart';
+import 'settings.dart';
 
 class SettingsRepository {
-  StreamSubscription<Settings>? _subscription;
+  StreamSubscription<SettingsState>? _subscription;
   Settings? _settings;
 
   SettingsRepository({SettingsCubit? cubit}) {
@@ -31,9 +31,9 @@ class SettingsRepository {
   }
 
   void init(SettingsCubit cubit) {
-    _settings = cubit.state;
+    _settings = cubit.state.settings;
     _subscription = cubit.stream.listen((event) {
-      _settings = event;
+      _settings = event.settings;
     });
   }
 

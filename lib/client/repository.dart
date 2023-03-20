@@ -18,13 +18,13 @@
 import 'dart:io';
 
 import 'package:http/http.dart';
-import 'package:takeout_app/cache/json_repository.dart';
-
-import 'package:takeout_app/api/model.dart';
 import 'package:takeout_app/api/client.dart';
-import 'package:takeout_app/spiff/model.dart';
+import 'package:takeout_app/api/model.dart';
+import 'package:takeout_app/cache/json_repository.dart';
 import 'package:takeout_app/settings/repository.dart';
+import 'package:takeout_app/spiff/model.dart';
 import 'package:takeout_app/tokens/repository.dart';
+
 import 'provider.dart';
 
 class ClientRepository {

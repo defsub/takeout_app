@@ -15,13 +15,13 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
-import 'dart:io';
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
+import 'package:bloc/bloc.dart';
 import 'package:crypto/crypto.dart';
 import 'package:logging/logging.dart';
-import 'package:bloc/bloc.dart';
-
 import 'package:takeout_app/spiff/model.dart';
 
 class SpiffCacheState {
@@ -43,19 +43,19 @@ class SpiffCacheCubit extends Cubit<SpiffCacheState> {
     _emitState();
   }
 
-  void _emitState() async {
+  Future<void> _emitState() async {
     emit(SpiffCacheState(await repository.entries));
   }
 
-  void add(Spiff spiff) async {
+  void add(Spiff spiff) {
     repository.add(spiff).whenComplete(() => _emitState());
   }
 
-  void remove(Spiff spiff) async {
+  void remove(Spiff spiff) {
     repository.remove(spiff).whenComplete(() => _emitState());
   }
 
-  void removeAll() async {
+  void removeAll() {
     repository.removeAll().whenComplete(() => _emitState());
   }
 }
@@ -67,15 +67,15 @@ class SpiffCacheRepository {
   SpiffCacheRepository({required this.directory, SpiffCache? cache})
       : _cache = cache ?? DirectorySpiffCache(directory);
 
-  Future add(Spiff spiff) {
+  Future<void> add(Spiff spiff) async {
     return _cache.add(spiff);
   }
 
-  Future remove(Spiff spiff) async {
+  Future<void> remove(Spiff spiff) async {
     return _cache.remove(spiff);
   }
 
-  Future removeAll() async {
+  Future<void> removeAll() async {
     return _cache.removeAll();
   }
 
@@ -83,13 +83,13 @@ class SpiffCacheRepository {
 }
 
 abstract class SpiffCache {
-  Future add(Spiff spiff);
+  Future<void> add(Spiff spiff);
 
   Future<Iterable<Spiff>> get entries;
 
-  Future remove(Spiff spiff);
+  Future<void> remove(Spiff spiff);
 
-  Future removeAll();
+  Future<void> removeAll();
 }
 
 class DirectorySpiffCache implements SpiffCache {
@@ -97,7 +97,7 @@ class DirectorySpiffCache implements SpiffCache {
 
   final Directory directory;
   final Map<String, Spiff> _cache = {};
-  bool _initialized = false;
+  late Future<void> _initialized;
 
   DirectorySpiffCache(this.directory) {
     try {
@@ -107,12 +107,10 @@ class DirectorySpiffCache implements SpiffCache {
     } catch (e, stack) {
       log.warning(directory, e, stack);
     }
+    _initialized = _initialize();
   }
 
-  Future _checkInitialized() async {
-    if (_initialized) {
-      return;
-    }
+  Future<void> _initialize() async {
     final files = await directory.list().toList();
     return Future.forEach<FileSystemEntity>(files, (file) async {
       final spiff = _decode(file as File);
@@ -123,8 +121,6 @@ class DirectorySpiffCache implements SpiffCache {
         log.warning('spiff deleting $file');
         file.deleteSync();
       }
-    }).whenComplete(() {
-      _initialized = true;
     });
   }
 
@@ -133,8 +129,7 @@ class DirectorySpiffCache implements SpiffCache {
       return Spiff.fromJson(jsonDecode(file.readAsStringSync()))
           .copyWith(lastModified: file.lastModifiedSync());
     } on FormatException {
-      log.warning(
-          '_decode failed to parse $file with "${file.readAsStringSync()}"');
+      log.warning('failed parsing $file with "${file.readAsStringSync()}"');
       return null;
     }
   }
@@ -152,7 +147,6 @@ class DirectorySpiffCache implements SpiffCache {
   }
 
   Future<File?> _save(String key, Spiff spiff) async {
-    log.fine('_saving $spiff');
     final data = jsonEncode(spiff.toJson());
     try {
       File file = _cacheFile(key);
@@ -165,20 +159,20 @@ class DirectorySpiffCache implements SpiffCache {
   }
 
   @override
-  Future add(Spiff spiff) async {
-    await _checkInitialized();
+  Future<void> add(Spiff spiff) async {
+    await _initialized;
     return _add(spiff);
   }
 
-  Future _add(Spiff spiff) async {
+  Future<void> _add(Spiff spiff) async {
     final key = _cacheKey(spiff);
     final curr = _cache[key];
-    log.fine('put ${key.toString()} -> ${spiff.title} with ${spiff.playlist.tracks.length} tracks');
     if (curr != null &&
         spiff == curr &&
         spiff.index == curr.index &&
         spiff.position == curr.position) {
-      log.fine('put unchanged');
+      // log.fine('put unchanged');
+      return;
     } else {
       final file = await _save(key, spiff);
       if (file != null) {
@@ -189,13 +183,13 @@ class DirectorySpiffCache implements SpiffCache {
 
   @override
   Future<Iterable<Spiff>> get entries async {
-    await _checkInitialized();
+    await _initialized;
     return List.unmodifiable(_cache.values);
   }
 
   @override
-  Future remove(Spiff spiff) async {
-    await _checkInitialized();
+  Future<void> remove(Spiff spiff) async {
+    await _initialized;
     final key = _cacheKey(spiff);
     _cache.remove(key);
     try {
@@ -206,12 +200,10 @@ class DirectorySpiffCache implements SpiffCache {
   }
 
   @override
-  Future removeAll() async {
-    await _checkInitialized();
+  Future<void> removeAll() async {
+    await _initialized;
     // copy list to avoid concurrent modification
     final values = List<Spiff>.from(_cache.values);
-    return values.forEach((spiff) async {
-      await remove(spiff);
-    });
+    return Future.forEach<Spiff>(values, (spiff) async => remove(spiff));
   }
 }

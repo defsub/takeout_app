@@ -115,11 +115,11 @@ class ExpiringMap<K, V> {
     return _map.containsKey(key);
   }
 
-  Iterable<K> keys() {
+  Iterable<K> get keys {
     return _map.keys;
   }
 
-  Iterable<V> values() {
+  Iterable<V> get values {
     return _map.values;
   }
 
@@ -130,7 +130,7 @@ class ExpiringMap<K, V> {
 
 class ExpiringSet<V> {
   final Duration duration;
-  final Set<V> _set = HashSet<V>();
+  final _set = HashSet<V>();
 
   ExpiringSet(this.duration);
 

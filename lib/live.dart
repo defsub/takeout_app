@@ -15,16 +15,18 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
-import 'dart:convert';
 import 'dart:async';
 import 'dart:collection';
-import 'package:collection/collection.dart';
-import 'package:rxdart/rxdart.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
-import 'package:json_annotation/json_annotation.dart';
+import 'dart:convert';
+
 import 'package:audio_service/audio_service.dart';
+import 'package:collection/collection.dart';
+import 'package:json_annotation/json_annotation.dart';
 import 'package:logging/logging.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:wakelock/wakelock.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
+
 import 'model.dart';
 
 part 'live.g.dart';

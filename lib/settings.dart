@@ -20,7 +20,6 @@ import 'package:flutter_settings_screens/flutter_settings_screens.dart';
 import 'package:logging/logging.dart';
 import 'package:takeout_app/app/context.dart';
 
-import 'model.dart';
 import 'style.dart';
 
 const settingAllowStreaming = 'allow_streaming';

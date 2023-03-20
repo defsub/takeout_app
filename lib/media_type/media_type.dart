@@ -16,6 +16,9 @@
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
 import 'package:hydrated_bloc/hydrated_bloc.dart';
+import 'package:json_annotation/json_annotation.dart';
+
+part 'media_type.g.dart';
 
 enum MediaType {
   music,
@@ -31,110 +34,66 @@ enum MediaType {
   }
 }
 
-abstract class MediaTypeEvent {}
-
-class NextMediaTypeEvent extends MediaTypeEvent {}
-
-class PreviousMediaTypeEvent extends MediaTypeEvent {}
-
-class SelectMediaTypeEvent extends MediaTypeEvent {
+@JsonSerializable()
+class MediaTypeState {
   final MediaType mediaType;
 
-  SelectMediaTypeEvent(this.mediaType);
+  MediaTypeState(this.mediaType);
+
+  factory MediaTypeState.fromJson(Map<String, dynamic> json) =>
+      _$MediaTypeStateFromJson(json);
+
+  Map<String, dynamic> toJson() => _$MediaTypeStateToJson(this);
 }
 
-class MediaTypeBloc extends Bloc<MediaTypeEvent, MediaType> {
-  MediaTypeBloc() : super(MediaType.music) {
-    on<NextMediaTypeEvent>(_onNext);
-    on<PreviousMediaTypeEvent>(_onPrevious);
-    on<SelectMediaTypeEvent>(_onSelect);
-  }
-
-  void _onNext(NextMediaTypeEvent event, Emitter<MediaType> emit) {
-    switch (state) {
-      case MediaType.music:
-        emit(MediaType.video);
-        break;
-      case MediaType.video:
-        emit(MediaType.podcast);
-        break;
-      case MediaType.podcast:
-        emit(MediaType.music);
-        break;
-      default:
-        emit(MediaType.music);
-        break;
-    }
-  }
-
-  void _onPrevious(PreviousMediaTypeEvent event, Emitter<MediaType> emit) {
-    switch (state) {
-      case MediaType.music:
-        emit(MediaType.podcast);
-        break;
-      case MediaType.video:
-        emit(MediaType.music);
-        break;
-      case MediaType.podcast:
-        emit(MediaType.video);
-        break;
-      default:
-        emit(MediaType.music);
-        break;
-    }
-  }
-
-  void _onSelect(SelectMediaTypeEvent event, Emitter<MediaType> emit) {
-    emit(event.mediaType);
-  }
-}
-
-class SelectedMediaType extends HydratedCubit<MediaType> {
-  SelectedMediaType() : super(MediaType.music);
+class MediaTypeCubit extends HydratedCubit<MediaTypeState> {
+  MediaTypeCubit() : super(MediaTypeState(MediaType.music));
 
   // music -> video -> podcast
   void next() {
-    switch (state) {
+    switch (state.mediaType) {
       case MediaType.music:
-        emit(MediaType.video);
+        emit(MediaTypeState(MediaType.video));
         break;
       case MediaType.video:
-        emit(MediaType.podcast);
+        emit(MediaTypeState(MediaType.podcast));
         break;
       case MediaType.podcast:
-        emit(MediaType.music);
+        emit(MediaTypeState(MediaType.music));
         break;
       default:
-        emit(MediaType.music);
+        emit(MediaTypeState(MediaType.music));
         break;
     }
   }
 
   // music <- video <- podcast
   void previous() {
-    switch (state) {
+    switch (state.mediaType) {
       case MediaType.music:
-        emit(MediaType.podcast);
+        emit(MediaTypeState(MediaType.podcast));
         break;
       case MediaType.video:
-        emit(MediaType.music);
+        emit(MediaTypeState(MediaType.music));
         break;
       case MediaType.podcast:
-        emit(MediaType.video);
+        emit(MediaTypeState(MediaType.video));
         break;
       default:
-        emit(MediaType.music);
+        emit(MediaTypeState(MediaType.music));
         break;
     }
   }
 
   void select(MediaType mediaType) {
-    emit(mediaType);
+    emit(MediaTypeState(mediaType));
   }
 
   @override
-  MediaType? fromJson(Map<String, dynamic> json) => MediaType.of(json['name']);
+  MediaTypeState? fromJson(Map<String, dynamic> json) =>
+      MediaTypeState.fromJson(json['mediaType']);
 
   @override
-  Map<String, dynamic>? toJson(MediaType state) => {'name': state.name};
+  Map<String, dynamic>? toJson(MediaTypeState state) =>
+      {'mediaType': state.toJson()};
 }

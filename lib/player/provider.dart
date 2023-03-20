@@ -15,12 +15,11 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
-import 'package:takeout_app/client/resolver.dart';
-import 'package:takeout_app/tokens/repository.dart';
-import 'package:takeout_app/model.dart';
-import 'package:takeout_app/settings/repository.dart';
 import 'package:takeout_app/cache/offset_repository.dart';
+import 'package:takeout_app/client/resolver.dart';
+import 'package:takeout_app/settings/repository.dart';
 import 'package:takeout_app/spiff/model.dart';
+import 'package:takeout_app/tokens/repository.dart';
 
 import 'handler.dart';
 
@@ -29,26 +28,29 @@ final DummyStoppedCallback = (_) {};
 final DummyTrackChangeCallback = (_, __, {String? title}) {};
 final DummyPositionCallback = (_, __, ___, ____) {};
 final DummyIndexCallback = (_, __) {};
+final DummyTrackEndCallback = (_, __, ___, ____) {};
 
 typedef PlayerCallback = void Function(Spiff, Duration, Duration);
 typedef IndexCallback = void Function(Spiff, bool);
 typedef PositionCallback = void Function(Spiff, Duration, Duration, bool);
 typedef StoppedCallback = void Function(Spiff);
 typedef TrackChangeCallback = void Function(Spiff, int index, {String? title});
+typedef TrackEndCallback = void Function(Spiff, int index, Duration, Duration);
 
 abstract class PlayerProvider {
   Future init(
       {required MediaTrackResolver trackResolver,
       required TokenRepository tokenRepository,
       required SettingsRepository settingsRepository,
-        required OffsetCacheRepository offsetRepository,
+      required OffsetCacheRepository offsetRepository,
       PlayerCallback? onPlay,
       PlayerCallback? onPause,
       StoppedCallback? onStop,
       IndexCallback? onIndexChange,
       PositionCallback? onPositionChange,
       PositionCallback? onDurationChange,
-      TrackChangeCallback? onTrackChange});
+      TrackChangeCallback? onTrackChange,
+      TrackEndCallback? onTrackEnd});
 
   void load(Spiff spiff);
 
@@ -80,14 +82,15 @@ class DefaultPlayerProvider implements PlayerProvider {
       {required MediaTrackResolver trackResolver,
       required TokenRepository tokenRepository,
       required SettingsRepository settingsRepository,
-        required OffsetCacheRepository offsetRepository,
+      required OffsetCacheRepository offsetRepository,
       PlayerCallback? onPlay,
       PlayerCallback? onPause,
       StoppedCallback? onStop,
       IndexCallback? onIndexChange,
       PositionCallback? onPositionChange,
       PositionCallback? onDurationChange,
-      TrackChangeCallback? onTrackChange}) async {
+      TrackChangeCallback? onTrackChange,
+      TrackEndCallback? onTrackEnd}) async {
     handler = await TakeoutPlayerHandler.create(
         trackResolver: trackResolver,
         tokenRepository: tokenRepository,
@@ -99,7 +102,8 @@ class DefaultPlayerProvider implements PlayerProvider {
         onIndexChange: onIndexChange ?? DummyIndexCallback,
         onPositionChange: onPositionChange ?? DummyPositionCallback,
         onDurationChange: onDurationChange ?? DummyPositionCallback,
-        onTrackChange: onTrackChange ?? DummyTrackChangeCallback);
+        onTrackChange: onTrackChange ?? DummyTrackChangeCallback,
+        onTrackEnd: onTrackEnd ?? DummyTrackEndCallback);
   }
 
   void load(Spiff spiff) => handler.load(spiff);

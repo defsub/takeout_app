@@ -19,15 +19,14 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import 'package:takeout_app/app/context.dart';
 import 'package:takeout_app/cache/spiff.dart';
 import 'package:takeout_app/spiff/model.dart';
 import 'package:takeout_app/spiff/widget.dart';
 
 import 'menu.dart';
-import 'tiles.dart';
 import 'nav.dart';
+import 'tiles.dart';
 
 class DownloadsWidget extends StatelessWidget {
   @override

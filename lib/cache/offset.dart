@@ -15,8 +15,6 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
-import 'dart:async';
-
 import 'package:bloc/bloc.dart';
 import 'package:takeout_app/api/model.dart';
 import 'package:takeout_app/client/repository.dart';
@@ -35,41 +33,41 @@ class OffsetCacheState {
   OffsetCacheState copyWith({Map<String, Offset>? offsets}) =>
       OffsetCacheState(offsets ?? this.offsets);
 
-  bool contains(OffsetIdentifier id) {
-    return offsets.containsKey(id.key);
-  }
+  // bool contains(OffsetIdentifier id) {
+  //   return offsets.containsKey(id.etag);
+  // }
 
   Offset? get(OffsetIdentifier id) {
-    return offsets[id.key];
+    return offsets[id.etag];
   }
 
   Duration? duration(OffsetIdentifier id) {
-    final offset = offsets[id.key];
+    final offset = offsets[id.etag];
     return offset != null && offset.hasDuration()
         ? Duration(seconds: offset.duration)
         : null;
   }
 
   Duration? position(OffsetIdentifier id) {
-    final offset = offsets[id.key];
+    final offset = offsets[id.etag];
     return offset?.position();
   }
 
   Duration? remaining(OffsetIdentifier id) {
-    final offset = offsets[id.key];
+    final offset = offsets[id.etag];
     return offset != null
         ? Duration(seconds: offset.duration - offset.offset)
         : null;
   }
 
   DateTime? when(OffsetIdentifier id) {
-    final offset = offsets[id.key];
+    final offset = offsets[id.etag];
     return offset?.dateTime;
   }
 
   double? value(OffsetIdentifier id) {
-    final offset = offsets[id.key];
-    final pos = offset?.offset ?? null;
+    final offset = offsets[id.etag];
+    final pos = offset?.offset;
     final end = offset?.duration;
     if (pos != null && end != null) {
       final value = pos.toDouble() / end.toDouble();
@@ -89,27 +87,32 @@ class OffsetCacheCubit extends Cubit<OffsetCacheState> {
     reload();
   }
 
-  void _emitState() async {
+  Future<void> _emitState() async {
     emit(OffsetCacheState(await repository.entries));
   }
 
-  void add(Offset offset) async {
+  void add(Offset offset) {
     repository.put(offset).whenComplete(() => _emitState());
   }
 
   void remove(Offset offset) {
-    repository.remove(offset);
-    _emitState();
+    repository.remove(offset).whenComplete(() => _emitState());
   }
 
-  void reload() async {
-    final result = await clientRepository
+  void reload() {
+    // get server offsets
+    // merge with local offsets
+    // update server with newer offsets
+    clientRepository
         .progress(ttl: Duration.zero)
-        .then((view) => repository.merge(view.offsets));
-    final offsets = List<Offset>.from(result);
-    if (offsets.isNotEmpty) {
-      await clientRepository.updateProgress(Offsets(offsets: offsets));
-    }
-    _emitState();
+        .then((view) => repository.merge(view.offsets))
+        .then((result) {
+      final offsets = List<Offset>.from(result);
+      if (offsets.isNotEmpty) {
+        clientRepository
+            .updateProgress(Offsets(offsets: offsets))
+            .then((_) => _emitState());
+      }
+    });
   }
 }

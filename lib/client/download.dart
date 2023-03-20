@@ -91,28 +91,28 @@ class DownloadProgress {
   bool get incomplete => offset < size;
 }
 
-class DownloadAdded extends DownloadState {
-  DownloadAdded(super.downloads, super.failed);
+class DownloadAdd extends DownloadState {
+  DownloadAdd(super.downloads, super.failed);
 
   /// Download added but not yet in progress
-  factory DownloadAdded.from(DownloadState state, Download download) {
+  factory DownloadAdd.from(DownloadState state, Download download) {
     final downloads = Map<DownloadIdentifier, Download>.from(state._downloads);
     final failed = Map<DownloadIdentifier, Object?>.from(state._failed);
 
     downloads[download.id] = download;
     failed.remove(download.id);
 
-    return DownloadAdded(downloads, failed);
+    return DownloadAdd(downloads, failed);
   }
 }
 
-class DownloadStarted extends DownloadState {
+class DownloadStart extends DownloadState {
   final DownloadIdentifier id;
 
-  DownloadStarted(this.id, super.downloads, super.failed);
+  DownloadStart(this.id, super.downloads, super.failed);
 
   /// Download started
-  factory DownloadStarted.from(
+  factory DownloadStart.from(
       DownloadState state, DownloadIdentifier id, File file) {
     final downloads = Map<DownloadIdentifier, Download>.from(state._downloads);
     final failed = Map<DownloadIdentifier, Object?>.from(state._failed);
@@ -123,17 +123,17 @@ class DownloadStarted extends DownloadState {
           file: file, progress: DownloadProgress(0, download.size));
     }
 
-    return DownloadStarted(id, downloads, failed);
+    return DownloadStart(id, downloads, failed);
   }
 }
 
-class DownloadUpdated extends DownloadState {
+class DownloadUpdate extends DownloadState {
   final DownloadIdentifier id;
 
-  DownloadUpdated(this.id, super.downloads, super.failed);
+  DownloadUpdate(this.id, super.downloads, super.failed);
 
   /// Download progress updated
-  factory DownloadUpdated.from(
+  factory DownloadUpdate.from(
       DownloadState state, DownloadIdentifier id, int offset) {
     final downloads = Map<DownloadIdentifier, Download>.from(state._downloads);
     final failed = Map<DownloadIdentifier, Object?>.from(state._failed);
@@ -144,17 +144,17 @@ class DownloadUpdated extends DownloadState {
           download.copyWith(progress: DownloadProgress(offset, download.size));
     }
 
-    return DownloadUpdated(id, downloads, failed);
+    return DownloadUpdate(id, downloads, failed);
   }
 }
 
-class DownloadCompleted extends DownloadState {
+class DownloadComplete extends DownloadState {
   final DownloadIdentifier id;
 
-  DownloadCompleted(this.id, super.downloads, super.errors);
+  DownloadComplete(this.id, super.downloads, super.errors);
 
   /// Download completed
-  factory DownloadCompleted.from(
+  factory DownloadComplete.from(
       DownloadState state, DownloadIdentifier id, int offset) {
     final downloads = Map<DownloadIdentifier, Download>.from(state._downloads);
     final failed = Map<DownloadIdentifier, Object?>.from(state._failed);
@@ -165,7 +165,7 @@ class DownloadCompleted extends DownloadState {
           download.copyWith(progress: DownloadProgress(offset, download.size));
     }
 
-    return DownloadCompleted(id, downloads, failed);
+    return DownloadComplete(id, downloads, failed);
   }
 }
 
@@ -274,7 +274,7 @@ class DownloadCubit extends Cubit<DownloadState> {
     trackCacheRepository.contains(event.id).then((isCached) {
       if (!isCached) {
         if (state.contains(event.id) == false) {
-          emit(DownloadAdded.from(
+          emit(DownloadAdd.from(
               state, Download(event.id, event.uri, event.size)));
         }
       }
@@ -283,9 +283,9 @@ class DownloadCubit extends Cubit<DownloadState> {
 
   void _start(Download download) {
     final file = trackCacheRepository.create(download.id);
-    emit(DownloadStarted.from(state, download.id, file));
+    emit(DownloadStart.from(state, download.id, file));
 
-    // async
+    // *must* emit state before async code
     clientRepository
         .download(download.uri, file, download.size,
             progress: _ProgressSink((offset) => _update(download.id, offset)))
@@ -294,15 +294,15 @@ class DownloadCubit extends Cubit<DownloadState> {
   }
 
   void _update(DownloadIdentifier id, int offset) {
-    emit(DownloadUpdated.from(state, id, offset));
+    emit(DownloadUpdate.from(state, id, offset));
   }
 
   void _complete(DownloadIdentifier id) {
     final download = state.get(id);
     final file = download?.file;
     if (file != null) {
-      emit(DownloadCompleted.from(state, id, file.lengthSync()));
-      // async
+      emit(DownloadComplete.from(state, id, file.lengthSync()));
+      // *must* emit state before async code
       trackCacheRepository.put(id, file);
     }
   }

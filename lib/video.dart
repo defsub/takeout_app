@@ -500,7 +500,7 @@ class _MoviePlayerState extends State<MoviePlayer> {
     prepareController();
   }
 
-  void prepareController() async {
+  Future<void> prepareController() async {
     // controller
     final uri =
         await widget.mediaTrackResolver.resolve(_MovieMediaTrack(widget._view));
@@ -577,6 +577,7 @@ class _MoviePlayerState extends State<MoviePlayer> {
   }
 
   void _saveState(BuildContext context) {
+
     // Progress.update(_movie.key, _controller?.value.position ?? Duration.zero,
     //     _controller?.value.duration ?? Duration.zero);
   }

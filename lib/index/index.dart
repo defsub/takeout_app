@@ -16,7 +16,6 @@
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
 import 'package:bloc/bloc.dart';
-
 import 'package:takeout_app/client/repository.dart';
 
 class IndexState {

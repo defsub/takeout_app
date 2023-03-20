@@ -20,7 +20,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import 'package:takeout_app/app/context.dart';
 import 'package:takeout_app/art/cover.dart';
 import 'package:takeout_app/player/scaffold.dart';
@@ -34,13 +33,13 @@ class PlayerWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screen = MediaQuery.of(context).size;
-    final expandedHeight = screen.height / 2;
-    final builder = (_) => PlayerScaffold(
+    // final screen = MediaQuery.of(context).size;
+    // final expandedHeight = screen.height / 2;
+    final builder = (context) => PlayerScaffold(
             body: CustomScrollView(slivers: [
           SliverAppBar(
               automaticallyImplyLeading: false,
-              expandedHeight: expandedHeight,
+              expandedHeight: MediaQuery.of(context).size.height / 2,
               actions: [],
               flexibleSpace: FlexibleSpaceBar(
                   stretchModes: [
@@ -71,10 +70,11 @@ class PlayerWidget extends StatelessWidget {
 
   Widget playerImage(BuildContext context) {
     return BlocBuilder<Player, PlayerState>(buildWhen: (_, state) {
-      return state is PlayerLoaded || state is PlayerIndexChanged;
+      return state is PlayerLoad || state is PlayerIndexChange;
     }, builder: (context, state) {
-      if (state is PlayerLoaded || state is PlayerIndexChanged) {
-        return playerCover(context, state.currentTrack.image);
+      if (state is PlayerLoad || state is PlayerIndexChange) {
+        final image = state.currentTrack?.image;
+        return image != null ? playerCover(context, image) : SizedBox.shrink();
       }
       return SizedBox.shrink();
     });
@@ -82,16 +82,20 @@ class PlayerWidget extends StatelessWidget {
 
   Widget playerTitle(BuildContext context) {
     return BlocBuilder<Player, PlayerState>(buildWhen: (_, state) {
-      return state is PlayerLoaded ||
-          state is PlayerIndexChanged ||
-          state is PlayerTrackChanged;
+      return state is PlayerLoad ||
+          state is PlayerIndexChange ||
+          state is PlayerTrackChange;
     }, builder: (context, state) {
-      if (state is PlayerLoaded ||
-          state is PlayerIndexChanged ||
-          state is PlayerTrackChanged) {
+      if (state is PlayerLoad ||
+          state is PlayerIndexChange ||
+          state is PlayerTrackChange) {
+        final currentTrack = state.currentTrack;
+        if (currentTrack == null) {
+          return SizedBox.shrink();
+        }
         return GestureDetector(
-            onTap: () => _onArtist(context, state.currentTrack.creator),
-            child: Text(state.currentTrack.title,
+            onTap: () => _onArtist(context, currentTrack.creator),
+            child: Text(currentTrack.title,
                 style: Theme.of(context).textTheme.headlineSmall));
       }
       return SizedBox.shrink();
@@ -100,10 +104,14 @@ class PlayerWidget extends StatelessWidget {
 
   Widget playerArtist(BuildContext context) {
     return BlocBuilder<Player, PlayerState>(buildWhen: (_, state) {
-      return state is PlayerLoaded || state is PlayerIndexChanged;
+      return state is PlayerLoad || state is PlayerIndexChange;
     }, builder: (context, state) {
-      if (state is PlayerLoaded || state is PlayerIndexChanged) {
-        return Text(state.currentTrack.creator,
+      if (state is PlayerLoad || state is PlayerIndexChange) {
+        final currentTrack = state.currentTrack;
+        if (currentTrack == null) {
+          return SizedBox.shrink();
+        }
+        return Text(currentTrack.creator,
             style: Theme.of(context).textTheme.titleMedium!);
       }
       return SizedBox.shrink();
@@ -112,15 +120,15 @@ class PlayerWidget extends StatelessWidget {
 
   Widget playerControls(BuildContext context) {
     return BlocBuilder<Player, PlayerState>(buildWhen: (_, state) {
-      return state is PlayerPlaying ||
-          state is PlayerPaused ||
-          state is PlayerIndexChanged;
+      return state is PlayerPlay ||
+          state is PlayerPause ||
+          state is PlayerIndexChange;
     }, builder: (context, state) {
-      if (state is PlayerIndexChanged) {
+      if (state is PlayerIndexChange) {
         return _controlButtons(context, state, state.playing);
-      } else if (state is PlayerPlaying) {
+      } else if (state is PlayerPlay) {
         return _controlButtons(context, state, true);
-      } else if (state is PlayerPaused) {
+      } else if (state is PlayerPause) {
         return _controlButtons(context, state, false);
       }
       return SizedBox.shrink();
@@ -132,10 +140,10 @@ class PlayerWidget extends StatelessWidget {
     return BlocBuilder<Player, PlayerState>(
         bloc: player,
         buildWhen: (_, state) {
-          return state is PlayerIndexChanged || state is PlayerPositionState;
+          return state is PlayerIndexChange || state is PlayerPositionState;
         },
         builder: (context, state) {
-          if (state is PlayerIndexChanged) {
+          if (state is PlayerIndexChange) {
             return _seekBar(player, Duration.zero, Duration.zero);
           } else if (state is PlayerPositionState) {
             return _seekBar(player, state.duration, state.position);
@@ -149,12 +157,16 @@ class PlayerWidget extends StatelessWidget {
     return BlocBuilder<Player, PlayerState>(
         bloc: player,
         buildWhen: (_, state) {
-          return state is PlayerLoaded || state is PlayerIndexChanged;
+          return state is PlayerLoad || state is PlayerIndexChange;
         },
         builder: (context, state) {
-          if (state is PlayerLoaded) {
+          if (state.spiff.isStream() || state.spiff.length == 1) {
+            // hide track list
+            return SizedBox.shrink();
+          }
+          if (state is PlayerLoad || state is PlayerIndexChange) {
             return _trackList(context, player, state);
-          } else if (state is PlayerIndexChanged) {
+          } else if (state is PlayerIndexChange) {
             return _trackList(context, player, state);
           }
           return SizedBox.shrink();
@@ -236,7 +248,7 @@ class PlayerWidget extends StatelessWidget {
           tracks.length,
           (index) => CoverTrackListTile.mediaTrack(context, tracks[index],
               showCover: !sameArtwork,
-              trailing: _cachedIcon(tracks[index]),
+              trailing: _cachedIcon(),
               selected: index == state.currentIndex,
               // TODO
               onTap: () => player.playIndex(index),
@@ -246,11 +258,8 @@ class PlayerWidget extends StatelessWidget {
     ]));
   }
 
-  Widget _cachedIcon(dynamic foo) {
-    //TODO
-    // if (track.) {
-    //   return IconButton(icon: Icon(IconsCached), onPressed: () => {});
-    // }
+  Widget _cachedIcon() {
+    // TODO
     return SizedBox.shrink();
   }
 }

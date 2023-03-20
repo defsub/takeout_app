@@ -37,7 +37,7 @@ class TrackCacheCubit extends Cubit<TrackCacheState> {
     _emitState();
   }
 
-  void _emitState() async {
+  Future<void> _emitState() async {
     final keys = await repository.keys();
     emit(TrackCacheState(Set<String>.from(keys)));
   }

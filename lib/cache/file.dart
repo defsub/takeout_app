@@ -52,20 +52,20 @@ class FileCacheCubit extends Cubit<FileCacheState> {
     _emitState();
   }
 
-  void _emitState() async {
+  Future<void> _emitState() async {
     final keys = await repository.keys();
     emit(FileCacheState(Set<String>.from(keys)));
   }
 
-  void add(FileIdentifier id, File file) async {
+  void add(FileIdentifier id, File file) {
     repository.put(id, file).whenComplete(() => _emitState());
   }
 
-  void remove(FileIdentifier id) async {
+  void remove(FileIdentifier id) {
     repository.remove(id).whenComplete(() => _emitState());
   }
 
-  void retain(Iterable<FileIdentifier> ids) async {
+  void retain(Iterable<FileIdentifier> ids) {
     repository.retain(ids).whenComplete(() => _emitState());
   }
 }

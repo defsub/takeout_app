@@ -20,8 +20,8 @@ import 'dart:io';
 import 'package:takeout_app/model.dart';
 import 'package:takeout_app/spiff/model.dart';
 
-import 'provider.dart';
 import 'model.dart';
+import 'provider.dart';
 
 class HistoryRepository {
   final Directory directory;

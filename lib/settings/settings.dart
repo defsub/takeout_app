@@ -16,11 +16,26 @@
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
 import 'package:hydrated_bloc/hydrated_bloc.dart';
+import 'package:json_annotation/json_annotation.dart';
 
 import 'model.dart';
 
-class SettingsCubit extends HydratedCubit<Settings> {
-  SettingsCubit() : super(Settings.initial());
+part 'settings.g.dart';
+
+@JsonSerializable()
+class SettingsState {
+  final Settings settings;
+
+  SettingsState(this.settings);
+
+  factory SettingsState.fromJson(Map<String, dynamic> json) =>
+      _$SettingsStateFromJson(json);
+
+  Map<String, dynamic> toJson() => _$SettingsStateToJson(this);
+}
+
+class SettingsCubit extends HydratedCubit<SettingsState> {
+  SettingsCubit() : super(SettingsState(Settings.initial()));
 
   void add(
           {String? user,
@@ -28,38 +43,39 @@ class SettingsCubit extends HydratedCubit<Settings> {
           bool? allowStreaming,
           bool? allowDownload,
           bool? allowArtistArtwork}) =>
-      emit(state.copyWith(
+      emit(SettingsState(state.settings.copyWith(
           user: user,
           host: host,
           allowMobileStreaming: allowStreaming,
           allowMobileDownload: allowDownload,
-          allowMobileArtistArtwork: allowArtistArtwork));
+          allowMobileArtistArtwork: allowArtistArtwork)));
 
   void set user(String user) {
-    emit(state.copyWith(user: user));
+    emit(SettingsState(state.settings.copyWith(user: user)));
   }
 
   void set host(String host) {
-    emit(state.copyWith(host: host));
+    emit(SettingsState(state.settings.copyWith(host: host)));
   }
 
   void set allowStreaming(bool value) {
-    emit(state.copyWith(allowMobileStreaming: value));
+    emit(SettingsState(state.settings.copyWith(allowMobileStreaming: value)));
   }
 
   void set allowDownload(bool value) {
-    emit(state.copyWith(allowMobileDownload: value));
+    emit(SettingsState(state.settings.copyWith(allowMobileDownload: value)));
   }
 
   void set allowArtistArtwork(bool value) {
-    emit(state.copyWith(allowMobileArtistArtwork: value));
+    emit(SettingsState(
+        state.settings.copyWith(allowMobileArtistArtwork: value)));
   }
 
   @override
-  Settings fromJson(Map<String, dynamic> json) =>
-      Settings.fromJson(json['settings']);
+  SettingsState fromJson(Map<String, dynamic> json) =>
+      SettingsState.fromJson(json['settings']);
 
   @override
-  Map<String, dynamic>? toJson(Settings settings) =>
+  Map<String, dynamic>? toJson(SettingsState settings) =>
       {'settings': settings.toJson()};
 }

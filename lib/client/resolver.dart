@@ -15,8 +15,9 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
-import 'package:takeout_app/model.dart';
 import 'package:takeout_app/cache/track_repository.dart';
+import 'package:takeout_app/model.dart';
+
 import 'etag.dart';
 
 class MediaTrackResolver {

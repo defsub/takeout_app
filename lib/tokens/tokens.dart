@@ -16,19 +16,36 @@
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
 import 'package:hydrated_bloc/hydrated_bloc.dart';
+import 'package:json_annotation/json_annotation.dart';
 
 import 'model.dart';
 
-class TokensCubit extends HydratedCubit<Tokens> {
-  TokensCubit() : super(Tokens.empty());
+part 'tokens.g.dart';
+
+@JsonSerializable()
+class TokensState {
+  final Tokens tokens;
+
+  TokensState(this.tokens);
+
+  factory TokensState.fromJson(Map<String, dynamic> json) =>
+      _$TokensStateFromJson(json);
+
+  Map<String, dynamic> toJson() => _$TokensStateToJson(this);
+}
+
+class TokensCubit extends HydratedCubit<TokensState> {
+  TokensCubit() : super(TokensState(Tokens.initial()));
 
   void add(Tokens tokens) {
-    emit(tokens);
+    emit(TokensState(tokens));
   }
 
   @override
-  Tokens fromJson(Map<String, dynamic> json) => Tokens.fromJson(json['tokens']);
+  TokensState fromJson(Map<String, dynamic> json) =>
+      TokensState.fromJson(json['tokens']);
 
   @override
-  Map<String, dynamic>? toJson(Tokens tokens) => {'tokens': tokens.toJson()};
+  Map<String, dynamic>? toJson(TokensState tokensState) =>
+      {'tokens': tokensState.toJson()};
 }

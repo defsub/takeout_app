@@ -18,7 +18,6 @@
 import 'dart:io';
 
 import 'package:http/http.dart';
-
 import 'package:takeout_app/api/model.dart';
 import 'package:takeout_app/spiff/model.dart';
 

@@ -61,9 +61,9 @@ class SearchWidget extends ClientPage<SearchView?> {
 
   @override
   Widget page(BuildContext context, SearchView? view) {
-    final cubit = context.watch<HistoryCubit>();
+    final historyCubit = context.watch<HistoryCubit>();
     final WidgetBuilder builder = (_) {
-      final history = cubit.state;
+      final history = historyCubit.state.history;
       final searches = List<SearchHistory>.from(history.searches);
       searches.sort((a, b) => b.dateTime.compareTo(a.dateTime));
       final words = searches.map((e) => e.search);

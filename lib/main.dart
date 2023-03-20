@@ -15,34 +15,25 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
-// The navigation stack and routing code is heavily based on example code.
-// Still looking for the original reference.
-
-import 'dart:async';
-import 'dart:io';
-
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:hydrated_bloc/hydrated_bloc.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:flutter/material.dart';
-import 'package:logging/logging.dart';
 import 'package:dynamic_color/dynamic_color.dart';
-
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:logging/logging.dart';
 import 'package:takeout_app/app/app.dart';
-import 'package:takeout_app/app/context.dart';
 import 'package:takeout_app/app/bloc.dart';
+import 'package:takeout_app/app/context.dart';
+import 'package:takeout_app/history/widget.dart';
 import 'package:takeout_app/player/player.dart';
 import 'package:takeout_app/player/widget.dart';
-import 'package:takeout_app/history/widget.dart';
 
 import 'artists.dart';
+import 'global.dart';
 import 'home.dart';
 import 'login.dart';
 import 'radio.dart';
 import 'search.dart';
-import 'global.dart';
 
 void main() async {
   // setup the logger
@@ -53,29 +44,21 @@ void main() async {
 
   WidgetsFlutterBinding.ensureInitialized();
 
-  final appDir = await getApplicationDocumentsDirectory();
-  final storageDir = Directory('${appDir.path}/state');
-  HydratedBloc.storage =
-      await HydratedStorage.build(storageDirectory: storageDir);
+  await appMain();
 
-  runApp(TakeoutApp(appDir));
+  runApp(TakeoutApp());
 }
 
+// TODO what's this for now? snack bar?
 final _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
 class TakeoutApp extends StatelessWidget with AppBloc {
-  final Directory directory;
-
-  TakeoutApp(this.directory);
-
   @override
   Widget build(BuildContext context) {
-    return appInit(context, directory: directory, child: DynamicColorBuilder(
+    return appInit(context, child: DynamicColorBuilder(
         builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
       return MaterialApp(
-          onGenerateTitle: (context) {
-            return context.strings.takeoutTitle;
-          },
+          onGenerateTitle: (context) => context.strings.takeoutTitle,
           localizationsDelegates: [
             AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
@@ -101,24 +84,19 @@ class _TakeoutWidget extends StatefulWidget {
   _TakeoutState createState() => _TakeoutState();
 }
 
-class _TakeoutState extends State<_TakeoutWidget> with AppBlocState, WidgetsBindingObserver {
-
+class _TakeoutState extends State<_TakeoutWidget>
+    with AppBlocState, WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
-
     WidgetsBinding.instance.addObserver(this);
-
     appInitState(context);
-
-    // TODO prune cache
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    snackBarStateSubject.close();
     appDispose();
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
@@ -232,15 +210,8 @@ class _TakeoutState extends State<_TakeoutWidget> with AppBlocState, WidgetsBind
     }
   }
 
-  StreamSubscription<SnackBarState>? snackBarSubscription;
-
   @override
   Widget build(final BuildContext context) {
-    snackBarSubscription?.cancel();
-    snackBarSubscription = snackBarStateSubject.listen((e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: e.content));
-    });
-
     final builders = _pageBuilders();
     final pages = List.generate(
         _routes.length, (index) => builders[_routes[index]]!(context));
@@ -280,8 +251,8 @@ class _TakeoutState extends State<_TakeoutWidget> with AppBlocState, WidgetsBind
 
       if (state is PlayerInit ||
           state is PlayerReady ||
-          state is PlayerLoaded ||
-          state is PlayerStopped) {
+          state is PlayerLoad ||
+          state is PlayerStop) {
         return SizedBox.shrink();
       }
 

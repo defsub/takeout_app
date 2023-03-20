@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
-// This file is heavily based on the audio_service example app located here:
+// This file is based on the audio_service example app located here:
 // https://github.com/ryanheise/audio_service
 
 import 'dart:async';
@@ -24,27 +24,18 @@ import 'package:audio_service/audio_service.dart';
 import 'package:audio_session/audio_session.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:logging/logging.dart';
-
+import 'package:takeout_app/cache/offset_repository.dart';
 import 'package:takeout_app/client/resolver.dart';
-import 'package:takeout_app/tokens/repository.dart';
 import 'package:takeout_app/settings/repository.dart';
 import 'package:takeout_app/spiff/model.dart';
-import 'package:takeout_app/cache/offset_repository.dart';
+import 'package:takeout_app/tokens/repository.dart';
 
 import 'provider.dart';
 
-const ExtraHeaders = 'headers';
-
 extension TakeoutMediaItem on MediaItem {
-  Map<String, String>? headers() =>
-      _isLocalFile() ? null : extras?[ExtraHeaders];
+  bool isLocalFile() => id.startsWith(RegExp(r'^file'));
 
-  IndexedAudioSource toAudioSource() =>
-      AudioSource.uri(Uri.parse(id), headers: headers());
-
-  bool _isLocalFile() => id.startsWith(RegExp(r'^file'));
-
-  // bool _isRemote() => id.startsWith(RegExp(r'^http'));
+  bool isRemote() => id.startsWith(RegExp(r'^http'));
 }
 
 class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
@@ -63,14 +54,14 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
   final PositionCallback onPositionChange;
   final PositionCallback onDurationChange;
   final TrackChangeCallback onTrackChange;
+  final TrackEndCallback onTrackEnd;
 
   final _subscriptions = <StreamSubscription>[];
 
   Spiff _spiff = Spiff.empty();
   final _queue = <MediaItem>[];
-  final _source = ConcatenatingAudioSource(children: []);
 
-  final Duration _skipBeginningInterval;
+  final Duration _skipToBeginningInterval;
 
   TakeoutPlayerHandler._(
       {required this.onPlay,
@@ -80,13 +71,14 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
       required this.onPositionChange,
       required this.onDurationChange,
       required this.onTrackChange,
+      required this.onTrackEnd,
       required this.trackResolver,
       required this.tokenRepository,
       required this.settingsRepository,
       required this.offsetRepository,
-      Duration? skipBeginningInterval})
-      : _skipBeginningInterval =
-            skipBeginningInterval ?? Duration(seconds: 10) {
+      Duration? skipToBeginningInterval})
+      : _skipToBeginningInterval =
+            skipToBeginningInterval ?? Duration(seconds: 10) {
     _init();
   }
 
@@ -102,6 +94,7 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
       required PositionCallback onPositionChange,
       required PositionCallback onDurationChange,
       required TrackChangeCallback onTrackChange,
+      required TrackEndCallback onTrackEnd,
       Duration? skipBeginningInterval,
       Duration? fastForwardInterval,
       Duration? rewindInterval}) async {
@@ -114,11 +107,12 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
             onPositionChange: onPositionChange,
             onDurationChange: onDurationChange,
             onTrackChange: onTrackChange,
+            onTrackEnd: onTrackEnd,
             trackResolver: trackResolver,
             tokenRepository: tokenRepository,
             settingsRepository: settingsRepository,
             offsetRepository: offsetRepository,
-            skipBeginningInterval: skipBeginningInterval),
+            skipToBeginningInterval: skipBeginningInterval),
         config: AudioServiceConfig(
           androidNotificationIcon: 'drawable/ic_stat_name',
           androidNotificationChannelId: 'com.defsub.takeout.channel.audio',
@@ -136,10 +130,19 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
 
     // index changes
     _subscriptions.add(_player.currentIndexStream.listen((index) {
-      if (index != null) {
+      if (index == null) {
+        // player sends index as null at startup
+        return;
+      }
+      if (index >= 0 && index < _spiff.length) {
+        print(
+            'index change $index ${_spiff.playlist.tracks.length}  ${_queue.length}');
         _spiff = _spiff.copyWith(index: index);
         onIndexChange(_spiff, _player.playing);
         mediaItem.add(_queue[index]);
+      } else {
+        print(
+            'bad index change $index ${_spiff.playlist.tracks.length}  ${_queue.length}');
       }
     }));
 
@@ -156,22 +159,38 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
     // player position changes
     // TODO consider reducing position update frequency
     _subscriptions.add(_player.positionStream.listen((position) {
+      if (_player.currentIndex == null) {
+        return;
+      }
       onPositionChange(_spiff, _player.duration ?? Duration.zero,
           _player.position, _player.playing);
     }));
 
-    // icy metadata changes
-    _subscriptions.add(_player.icyMetadataStream.listen((event) {
-      final item = mediaItem.valueOrNull;
-      if (item != null && event != null) {
-        final title = event.info?.title ?? item.title;
-        mediaItem.add(item.copyWith(title: title));
-
-        _spiff.playlist.tracks[_spiff.index] =
-            _spiff.playlist.tracks[_spiff.index].copyWith(title: title);
-
-        onTrackChange(_spiff, _spiff.index, title: event.info?.title);
+    _player.positionDiscontinuityStream.listen((discontinuity) {
+      if (discontinuity.reason == PositionDiscontinuityReason.autoAdvance) {
+        final previousIndex = discontinuity.previousEvent.currentIndex;
+        final duration = discontinuity.previousEvent.duration ?? Duration.zero;
+        final position = discontinuity.previousEvent.updatePosition;
+        if (previousIndex != null) {
+          onTrackEnd(_spiff, previousIndex, duration, position);
+        }
       }
+    });
+
+    // icy metadata changes
+    // TODO icy events are happening for regular media and out of sync
+    _subscriptions.add(_player.icyMetadataStream.listen((event) {
+      // final item = mediaItem.valueOrNull;
+      // print('icy event $event');
+      // if (item != null && event != null) {
+      //   final title = event.info?.title ?? item.title;
+      //   mediaItem.add(item.copyWith(title: title));
+      //
+      //   _spiff.playlist.tracks[_spiff.index] =
+      //       _spiff.playlist.tracks[_spiff.index].copyWith(title: title);
+      //
+      //   onTrackChange(_spiff, _spiff.index, title: event.info?.title);
+      // }
     }));
 
     // send state from the audio player to AudioService clients.
@@ -188,13 +207,23 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
     }));
 
     // player state changes (playing/paused)
-    _subscriptions.add(_player.playerStateStream.listen((state) {
-      if (state.playing == false) {
+    _subscriptions.add(_player.playerStateStream.distinct().listen((state) {
+      if (_player.currentIndex == null) {
+        return null;
+      }
+      if (state.playing == false && state.processingState == ProcessingState.ready) {
         onPause(_spiff, _player.duration ?? Duration.zero, _player.position);
       } else {
         onPlay(_spiff, _player.duration ?? Duration.zero, _player.position);
       }
     }));
+
+    // keep track of position changes and update history once a track is considered played
+    // 180 = 18 secs
+    // _subscriptions.add(_player.createPositionStream(steps: 10,
+    //     minPeriod: const Duration(seconds: 1),
+    //     maxPeriod: const Duration(seconds: 10)).listen((position) {
+    // }));
   }
 
   void dispose() {
@@ -211,17 +240,12 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
     if (id.startsWith('/api/')) {
       id = '${settingsRepository.settings?.endpoint}$id';
     }
-    final headers = tokenRepository.addMediaToken();
     return MediaItem(
-      id: id,
-      album: entry.album,
-      title: entry.title,
-      artist: entry.creator,
-      artUri: Uri.parse(image),
-      extras: {
-        ExtraHeaders: headers,
-      },
-    );
+        id: id,
+        album: entry.album,
+        title: entry.title,
+        artist: entry.creator,
+        artUri: Uri.parse(image));
   }
 
   Future<List<MediaItem>> _mapAll(List<Entry> tracks) async {
@@ -232,8 +256,14 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
     return list;
   }
 
-  void load(Spiff spiff) async {
+  IndexedAudioSource toAudioSource(MediaItem item,
+      {Map<String, String>? headers}) {
+    return AudioSource.uri(Uri.parse(item.id), headers: headers);
+  }
+
+  Future<void> load(Spiff spiff) async {
     this._spiff = spiff;
+    final index = _spiff.index < 0 ? 0 : _spiff.index;
 
     // build a new MediaItem queue
     _queue.clear();
@@ -243,33 +273,50 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
     queue.add(_queue);
 
     // build audio sources from the queue
-    final sources = _queue.map((item) => item.toAudioSource()).toList();
-    _source.clear();
-    _source.addAll(sources);
-    _player.setAudioSource(_source, initialIndex: _spiff.index);
+    final headers = tokenRepository.addMediaToken();
+    final sources = _queue
+        .map((item) =>
+            toAudioSource(item, headers: item.isRemote() ? headers : null))
+        .toList();
+    final source = ConcatenatingAudioSource(children: []);
+    source.addAll(sources);
+
+    final offset = await offsetRepository.get(_spiff.playlist.tracks[index]);
+    final position = offset?.position() ?? Duration.zero;
+
+    // this sends events so use the correct index and position even though
+    // skipToQueueItem does the same thing later
+    await _player.setAudioSource(source,
+        initialIndex: index, initialPosition: position);
+
+    return skipToQueueItem(index);
   }
 
   @override
   Future<void> skipToQueueItem(int index) async {
-    if (index < 0) {
-      return;
-    }
+    final offset = await offsetRepository.get(_spiff.playlist.tracks[index]);
+    var position = offset?.position() ?? Duration.zero;
 
     final currentIndex = _player.currentIndex;
     if (currentIndex != null && index == currentIndex - 1) {
-      if (_player.position > _skipBeginningInterval) {
+      if (_player.position > _skipToBeginningInterval) {
         // skip to beginning before going to previous
         index = currentIndex;
+        position = Duration.zero;
       }
     }
 
     // keep the spiff updated
-    // TODO remove this?
     _spiff = _spiff.copyWith(index: index);
+    onIndexChange(_spiff, _player.playing);
 
-    // final offset = await offsetRepository.get(_spiff.playlist.tracks[index]);
-    // return _player.seek(offset?.position() ?? Duration.zero, index: index);
-    return _player.seek(Duration.zero, index: index);
+    // update the current media item
+    mediaItem.add(_queue[index]);
+    playbackState.add(playbackState.value.copyWith(queueIndex: index));
+
+    // onPositionChange(_spiff, _player.duration ?? Duration.zero, position, _player.playing);
+
+    return _player.seek(position, index: index);
   }
 
   @override
@@ -309,7 +356,7 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
   Future<void> stop() async {
     await _player.stop();
 
-    // TODO what does this do?
+    // wait for `idle`
     await playbackState.firstWhere(
         (state) => state.processingState == AudioProcessingState.idle);
 

@@ -16,17 +16,13 @@
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
 import 'package:flutter/material.dart';
-import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:audio_service/audio_service.dart';
 
 const appVersion = '0.10.0';
 const appSource = 'https://github.com/defsub/takeout_app';
 const appHome = 'https://defsub.github.io';
 
 const textSeparator = ' \u2022 ';
-
-late AudioHandler audioHandler;
 
 final homeKey = GlobalKey<NavigatorState>();
 final artistsKey = GlobalKey<NavigatorState>();
@@ -37,27 +33,17 @@ final searchKey = GlobalKey<NavigatorState>();
 
 final bottomNavKey = new GlobalKey();
 
-// void showArtist(String name) async {
-//   Artist? artist = artistMap[name];
-//   if (artist != null) {
-//     final route = MaterialPageRoute(builder: (_) => ArtistWidget(artist));
-//     Navigator.push(artistsKey.currentContext!, route);
-//     await route.didPush();
-//     navigate(1);
-//   }
+// class SnackBarState {
+//   final Widget content;
+//
+//   SnackBarState(this.content);
 // }
-
-class SnackBarState {
-  final Widget content;
-
-  SnackBarState(this.content);
-}
-
-final snackBarStateSubject = PublishSubject<SnackBarState>();
-
-void showSnackBar(String text) {
-  snackBarStateSubject.add(SnackBarState(Text(text)));
-}
+//
+// final snackBarStateSubject = PublishSubject<SnackBarState>();
+//
+// void showSnackBar(String text) {
+//   snackBarStateSubject.add(SnackBarState(Text(text)));
+// }
 
 Future<SharedPreferences> prefs = SharedPreferences.getInstance();
 

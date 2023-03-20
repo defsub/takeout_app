@@ -18,7 +18,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:takeout_app/app/context.dart';
-
 import 'package:takeout_app/connectivity/connectivity.dart';
 
 import 'style.dart';
@@ -61,7 +60,7 @@ class DownloadButton extends _ConnectivityButton {
   DownloadButton({super.icon = const Icon(IconsDownload), super.onPressed});
 
   bool _allowed(BuildContext context, ConnectivityState state) {
-    final settings = context.settings.state;
+    final settings = context.settings.state.settings;
     final allow = settings.allowMobileDownload;
     return state.mobile ? allow : true;
   }
@@ -71,7 +70,7 @@ class StreamingButton extends _ConnectivityButton {
   StreamingButton({super.icon = PlayIcon, super.onPressed});
 
   bool _allowed(BuildContext context, ConnectivityState state) {
-    final settings = context.settings.state;
+    final settings = context.settings.state.settings;
     final allow = settings.allowMobileStreaming;
     return state.mobile ? allow : true;
   }

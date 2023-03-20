@@ -15,11 +15,6 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
-// This file is heavily based on the audio_service example app located here:
-// https://github.com/ryanheise/audio_service
-
-import 'dart:async';
-
 import 'model.dart';
 import 'tokens.dart';
 
@@ -38,16 +33,16 @@ class DefaultTokenProvider implements TokenProvider {
 
   DefaultTokenProvider(TokensCubit tokens) : _tokens = tokens;
 
-  Tokens get tokens => _tokens.state;
+  Tokens get tokens => _tokens.state.tokens;
 
-  String? get accessToken => _tokens.state.access;
+  String? get accessToken => _tokens.state.tokens.access;
 
-  String? get refreshToken => _tokens.state.refresh;
+  String? get refreshToken => _tokens.state.tokens.refresh;
 
-  String? get mediaToken => _tokens.state.media;
+  String? get mediaToken => _tokens.state.tokens.media;
 
   void add({String? accessToken, String? refreshToken, String? mediaToken}) {
-    _tokens.add(_tokens.state.copyWith(
+    _tokens.add(_tokens.state.tokens.copyWith(
         access: accessToken, refresh: refreshToken, media: mediaToken));
   }
 }

@@ -20,22 +20,21 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:recase/recase.dart';
-import 'package:url_launcher/url_launcher.dart';
-
 import 'package:takeout_app/api/model.dart';
 import 'package:takeout_app/app/context.dart';
 import 'package:takeout_app/art/builder.dart';
-import 'package:takeout_app/page/page.dart';
 import 'package:takeout_app/connectivity/connectivity.dart';
+import 'package:takeout_app/page/page.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-import 'release.dart';
-import 'style.dart';
-import 'menu.dart';
-import 'util.dart';
 import 'global.dart';
-import 'tiles.dart';
+import 'menu.dart';
 import 'model.dart';
 import 'nav.dart';
+import 'release.dart';
+import 'style.dart';
+import 'tiles.dart';
+import 'util.dart';
 
 class ArtistsWidget extends NavigatorClientPage<ArtistsView> {
   final String? genre;
@@ -171,11 +170,11 @@ class ArtistWidget extends ClientPage<ArtistView> with ArtistPage {
             client.artistPopularPlaylist(_artist.id, ttl: ttl));
   }
 
-  void _onGenre(BuildContext context, String genre) async {
+  void _onGenre(BuildContext context, String genre) {
     push(context, builder: (_) => ArtistsWidget(genre: genre));
   }
 
-  void _onArea(BuildContext context, String area) async {
+  void _onArea(BuildContext context, String area) {
     push(context, builder: (_) => ArtistsWidget(area: area));
   }
 
@@ -221,15 +220,13 @@ class ArtistWidget extends ClientPage<ArtistView> with ArtistPage {
 
   List<Widget> slivers(BuildContext context, ArtistView view) {
     return [
-      SliverToBoxAdapter(
-          child: heading(context.strings.releasesLabel)),
+      SliverToBoxAdapter(child: heading(context.strings.releasesLabel)),
       AlbumGridWidget(
         view.releases,
         subtitle: false,
       ),
       if (view.similar.isNotEmpty)
-        SliverToBoxAdapter(
-            child: heading(context.strings.similarArtists)),
+        SliverToBoxAdapter(child: heading(context.strings.similarArtists)),
       if (view.similar.isNotEmpty)
         SliverToBoxAdapter(child: SimilarArtistListWidget(view))
     ];
@@ -316,7 +313,7 @@ mixin ArtistPage {
 
     return BlocBuilder<ConnectivityCubit, ConnectivityState>(
         builder: (context, state) {
-      final settings = context.settings.state;
+      final settings = context.settings.state.settings;
       final allow = settings.allowMobileArtistArtwork;
       String? image;
       if (state.mobile ? allow : true) {

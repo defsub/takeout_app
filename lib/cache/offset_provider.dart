@@ -15,8 +15,8 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
-import 'dart:io';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:logging/logging.dart';
 import 'package:takeout_app/api/model.dart';
@@ -33,21 +33,23 @@ extension FileExpiration on File {
 abstract class OffsetCache {
   Future<Offset?> get(OffsetIdentifier id, {Duration? ttl});
 
-  Future put(Offset offset);
+  Future<bool> contains(Offset offset);
 
-  void remove(Offset offset);
+  Future<void> put(Offset offset);
+
+  Future<void> remove(Offset offset);
 
   Future<Iterable<Offset>> merge(Iterable<Offset> offsets);
 
-  Future<Map<String, Offset>> entries();
+  Future<Map<String, Offset>> get entries;
 }
 
 class OffsetFileCache implements OffsetCache {
   static final log = Logger('OffsetFileCache');
 
-  final Directory directory; // 'offset_cache'
+  final Directory directory;
   final Map<String, Offset> _entries = {};
-  bool _initialized = false;
+  late Future<void> _initialized;
 
   OffsetFileCache({required this.directory}) {
     try {
@@ -57,12 +59,10 @@ class OffsetFileCache implements OffsetCache {
     } catch (e, stack) {
       log.warning(directory, e, stack);
     }
+    _initialized = _initialize();
   }
 
-  Future _checkInitialized() async {
-    if (_initialized) {
-      return;
-    }
+  Future<void> _initialize() async {
     final files = await directory.list().toList();
     return Future.forEach<FileSystemEntity>(files, (file) async {
       final offset = _decode(file as File);
@@ -73,14 +73,12 @@ class OffsetFileCache implements OffsetCache {
         log.warning('offset deleting $file');
         file.deleteSync();
       }
-    }).whenComplete(() {
-      _initialized = true;
     });
   }
 
   File _cacheFile(String key) {
     // ensure no weird chars
-    var fileName = key.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
+    var fileName = key.replaceAll(RegExp(r'[^a-zA-Z\d_-]'), '_');
     fileName = '$fileName.json';
     return File('${directory.path}/$fileName');
   }
@@ -96,46 +94,66 @@ class OffsetFileCache implements OffsetCache {
   }
 
   Future<File> _save(Offset offset) async {
-    File file = _cacheFile(offset.key);
+    // print('offset saving ${offset.etag} ${offset.position()} ${offset.duration}');
+    File file = _cacheFile(offset.etag);
     final data = jsonEncode(offset.toJson());
     return file.writeAsString(data);
   }
 
   @override
-  Future<Offset?> get(OffsetIdentifier id, {Duration? ttl}) async {
-    await _checkInitialized();
-    final file = _cacheFile(id.key);
-    return file.exists().then((exists) {
-      if (exists) {
-        if (ttl != null && file.isExpired(ttl)) {
-          log.fine('deleting $file');
-          _remove(id.key);
-        } else {
-          return _decode(file);
-        }
-      }
-      return null;
-    });
+  Future<bool> contains(Offset offset) async {
+    await _initialized;
+    final current = await _get(offset.etag);
+    return current != null && offset == current;
   }
 
   @override
-  Future put(Offset offset) async {
-    await _checkInitialized();
-    return _put(offset);
+  Future<Offset?> get(OffsetIdentifier id, {Duration? ttl}) async {
+    await _initialized;
+    return _get(id.etag, ttl: ttl);
   }
 
-  Future _put(Offset offset) async {
-    final curr = _entries[offset.key];
+  Future<Offset?> _get(String key, {Duration? ttl}) async {
+    if (_entries.containsKey(key) == false) {
+      return null;
+    }
+    if (ttl != null) {
+      final file = _cacheFile(key);
+      return file.exists().then((exists) {
+        if (exists) {
+          if (file.isExpired(ttl)) {
+            log.fine('deleting expired offset $file');
+            _remove(key);
+          } else {
+            return _entries[key];
+          }
+        }
+        return null;
+      });
+    } else {
+      return _entries[key];
+    }
+  }
+
+  @override
+  Future<void> put(Offset offset) async {
+    await _initialized;
+    await _put(offset);
+  }
+
+  Future<File> _put(Offset offset) async {
+    final curr = _entries[offset.etag];
     if (curr != null && curr.hasDuration() && offset.duration == 0) {
       // duration is dynamic so don't zero out previously found duration
       offset = offset.copyWith(duration: curr.duration);
     }
-    _entries[offset.key] = offset;
+    _entries[offset.etag] = offset;
     return _save(offset);
   }
 
   @override
   Future<Iterable<Offset>> merge(Iterable<Offset> offsets) async {
+    await _initialized;
     final newer = <Offset>[];
     await Future.forEach(offsets, (Offset remote) async {
       final local = await get(remote);
@@ -149,14 +167,12 @@ class OffsetFileCache implements OffsetCache {
   }
 
   @override
-  void remove(Offset offset) {
-    _remove(offset.key);
+  Future<void> remove(Offset offset) async {
+    await _initialized;
+    _remove(offset.etag);
   }
 
   void _remove(String key) {
-    if (_entries.containsKey(key) == false) {
-      return;
-    }
     _entries.remove(key);
     final file = _cacheFile(key);
     if (file.existsSync()) {
@@ -164,13 +180,14 @@ class OffsetFileCache implements OffsetCache {
     }
   }
 
-  void removeAll() {
+  void removeAll() async {
+    await _initialized;
     _entries.keys.forEach((key) => _remove(key));
   }
 
   @override
-  Future<Map<String, Offset>> entries() async {
-    await _checkInitialized();
+  Future<Map<String, Offset>> get entries async {
+    await _initialized;
     return Map.unmodifiable(_entries);
   }
 }

@@ -15,11 +15,11 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
+import 'package:takeout_app/client/etag.dart';
+import 'package:takeout_app/spiff/model.dart';
+
 import 'spiff.dart';
 import 'track_repository.dart';
-
-import 'package:takeout_app/spiff/model.dart';
-import 'package:takeout_app/client/etag.dart';
 
 class _TrackIdentifier implements TrackIdentifier {
   final ETag _etag;
@@ -30,7 +30,7 @@ class _TrackIdentifier implements TrackIdentifier {
   String get key => _etag.key;
 }
 
-void pruneCache(
+Future<void> pruneCache(
     SpiffCacheRepository spiffCache, TrackCacheRepository trackCache) async {
   final spiffs = await spiffCache.entries;
   await Future.forEach<Spiff>(spiffs, (spiff) async {

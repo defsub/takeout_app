@@ -119,7 +119,7 @@ class RadioWidget extends NavigatorClientPage<RadioView> {
         });
   }
 
-  void _onRadioStream(BuildContext context, Station station) async {
+  void _onRadioStream(BuildContext context, Station station) {
     context.stream(station.id);
   }
 

@@ -15,17 +15,17 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
-import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
-import 'package:palette_generator/palette_generator.dart';
-import 'package:rxdart/rxdart.dart';
 import 'package:logging/logging.dart';
 import 'package:octo_image/octo_image.dart';
-
+import 'package:palette_generator/palette_generator.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:takeout_app/app/context.dart';
 import 'package:takeout_app/client/repository.dart';
 import 'package:takeout_app/util.dart';
+
 import 'artwork.dart';
 
 class ArtworkBuilder {
@@ -145,7 +145,7 @@ CachedNetworkImageProvider _imageProvider(BuildContext context, String url) {
 }
 
 String fullUrl(BuildContext context, String url) {
-  final endpoint = context.settings.state.endpoint;
+  final endpoint = context.settings.state.settings.endpoint;
   if (url.startsWith('/img/')) {
     return '$endpoint$url';
   }

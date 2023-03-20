@@ -27,7 +27,7 @@ class Tokens {
 
   Tokens({this.access, this.media, this.refresh});
 
-  factory Tokens.empty() => Tokens();
+  factory Tokens.initial() => Tokens();
 
   Tokens copyWith({String? access, String? media, String? refresh}) => Tokens(
       access: access ?? this.access,

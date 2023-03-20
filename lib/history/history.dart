@@ -16,32 +16,40 @@
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
 import 'package:bloc/bloc.dart';
-
 import 'package:takeout_app/model.dart';
 import 'package:takeout_app/spiff/model.dart';
+
 import 'model.dart';
 import 'repository.dart';
 
-class HistoryCubit extends Cubit<History> {
+class HistoryState {
+  final History history;
+
+  HistoryState(this.history);
+}
+
+class HistoryCubit extends Cubit<HistoryState> {
   final HistoryRepository repository;
 
-  HistoryCubit(this.repository) : super(History()) {
+  HistoryCubit(this.repository) : super(HistoryState(History())) {
     _load();
   }
 
-  void _load() async {
-    await repository.get().then((history) => emit(history.unmodifiableCopy()));
+  void _load() {
+    repository
+        .get()
+        .then((history) => emit(HistoryState(history.unmodifiableCopy())));
   }
 
-  Future add({String? search, Spiff? spiff, MediaTrack? track}) async {
-    await repository
+  void add({String? search, Spiff? spiff, MediaTrack? track}) {
+    repository
         .add(search: search, spiff: spiff, track: track)
-        .then((history) => emit(history.unmodifiableCopy()));
+        .then((history) => emit(HistoryState(history.unmodifiableCopy())));
   }
 
-  Future remove() async {
-    await repository
+  void remove() {
+    repository
         .remove()
-        .then((history) => emit(history.unmodifiableCopy()));
+        .then((history) => emit(HistoryState(history.unmodifiableCopy())));
   }
 }

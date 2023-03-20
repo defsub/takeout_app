@@ -18,10 +18,11 @@
 import 'dart:io';
 
 import 'package:takeout_app/api/model.dart';
+
 import 'offset_provider.dart';
 
 abstract class OffsetIdentifier {
-  String get key;
+  String get etag;
 }
 
 class OffsetCacheRepository {
@@ -35,12 +36,16 @@ class OffsetCacheRepository {
     return _cache.get(id, ttl: ttl);
   }
 
-  Future put(Offset offset) async {
+  Future<bool> contains(Offset offset) async {
+    return _cache.contains(offset);
+  }
+
+  Future<void> put(Offset offset) async {
     return _cache.put(offset);
   }
 
-  void remove(Offset offset) {
-    _cache.remove(offset);
+  Future<void> remove(Offset offset) {
+    return _cache.remove(offset);
   }
 
   Future<Iterable<Offset>> merge(Iterable<Offset> offsets) {
@@ -48,6 +53,6 @@ class OffsetCacheRepository {
   }
 
   Future<Map<String, Offset>> get entries async {
-    return _cache.entries();
+    return _cache.entries;
   }
 }

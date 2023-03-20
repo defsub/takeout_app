@@ -19,7 +19,6 @@ import 'dart:core';
 import 'dart:io';
 
 import 'package:json_annotation/json_annotation.dart';
-
 import 'package:takeout_app/cache/offset_repository.dart';
 import 'package:takeout_app/client/download.dart';
 import 'package:takeout_app/client/etag.dart';
@@ -40,7 +39,6 @@ class PostResult {
   bool get clientError => statusCode == HttpStatus.badRequest;
 
   bool get serverError => statusCode == HttpStatus.internalServerError;
-
 }
 
 class PatchResult extends PostResult {
@@ -268,7 +266,8 @@ class Release implements MediaAlbum {
       this.backArtwork = false,
       this.otherArtwork,
       this.groupArtwork = false})
-      : _year = parseYear(date ?? ''), _date = date ?? '';
+      : _year = parseYear(date ?? ''),
+        _date = date ?? '';
 
   factory Release.fromJson(Map<String, dynamic> json) =>
       _$ReleaseFromJson(json);
@@ -972,7 +971,7 @@ class Episode extends DownloadIdentifier
 
   @override
   String get etag {
-    return '';
+    return eid;
   }
 
   @override
@@ -1059,9 +1058,6 @@ class Offset implements OffsetIdentifier {
       offset: offset ?? this.offset,
       date: date ?? this.date);
 
-  @override
-  String get key => etag;
-
   DateTime get dateTime => DateTime.parse(date);
 
   bool newerThan(Offset o) {
@@ -1094,6 +1090,17 @@ class Offset implements OffsetIdentifier {
   factory Offset.fromJson(Map<String, dynamic> json) => _$OffsetFromJson(json);
 
   Map<String, dynamic> toJson() => _$OffsetToJson(this);
+
+  @override
+  bool operator ==(other) {
+    if (other is Offset) {
+      // not using date intentionally
+      return etag == other.etag &&
+          offset == other.offset &&
+          duration == other.duration;
+    }
+    return false;
+  }
 }
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
