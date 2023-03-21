@@ -107,11 +107,10 @@ extension AppContext on BuildContext {
     offsets.reload();
   }
 
-  void updateProgress(String etag,
-      {required Duration position, Duration? duration}) {
+  Future<void> updateProgress(String etag,
+      {required Duration position, Duration? duration}) async {
     final offset = Offset.now(etag: etag, offset: position, duration: duration);
-    if (offsets.repository.contains(offset) == false) {
-      print('updateProgress $etag $position $duration');
+    if (await offsets.repository.contains(offset) == false) {
       // add local offset
       offsets.add(offset);
       // send to server

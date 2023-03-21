@@ -118,20 +118,17 @@ class MovieWidget extends ClientPage<MovieView> {
                               ]))),
                       if (view.hasCast())
                         SliverToBoxAdapter(
-                            child: heading(
-                                context.strings.castLabel)),
+                            child: heading(context.strings.castLabel)),
                       if (view.hasCast())
                         SliverToBoxAdapter(child: _CastListWidget(view)),
                       if (view.hasCrew())
                         SliverToBoxAdapter(
-                            child: heading(
-                                context.strings.crewLabel)),
+                            child: heading(context.strings.crewLabel)),
                       if (view.hasCrew())
                         SliverToBoxAdapter(child: _CrewListWidget(view)),
                       if (view.hasRelated())
                         SliverToBoxAdapter(
-                          child: heading(
-                              context.strings.relatedLabel),
+                          child: heading(context.strings.relatedLabel),
                         ),
                       if (view.hasRelated()) MovieGridWidget(view.other!),
                     ]);
@@ -141,6 +138,7 @@ class MovieWidget extends ClientPage<MovieView> {
 
   Widget _progress(BuildContext context) {
     final value = context.offsets.state.value(_movie);
+    print('progress for ${_movie.etag} is $value');
     return value != null
         ? LinearProgressIndicator(value: value)
         : SizedBox.shrink();
@@ -347,20 +345,17 @@ class ProfileWidget extends ClientPage<ProfileView> {
                             ]))),
                     if (view.hasStarring())
                       SliverToBoxAdapter(
-                          child: heading(
-                              context.strings.starringLabel)),
+                          child: heading(context.strings.starringLabel)),
                     if (view.hasStarring())
                       MovieGridWidget(view.starringMovies()),
                     if (view.hasDirecting())
                       SliverToBoxAdapter(
-                          child: heading(
-                              context.strings.directingLabel)),
+                          child: heading(context.strings.directingLabel)),
                     if (view.hasDirecting())
                       MovieGridWidget(view.directingMovies()),
                     if (view.hasWriting())
                       SliverToBoxAdapter(
-                        child:
-                            heading(context.strings.writingLabel),
+                        child: heading(context.strings.writingLabel),
                       ),
                     if (view.hasWriting())
                       MovieGridWidget(view.writingMovies()),
@@ -577,9 +572,10 @@ class _MoviePlayerState extends State<MoviePlayer> {
   }
 
   void _saveState(BuildContext context) {
-
-    // Progress.update(_movie.key, _controller?.value.position ?? Duration.zero,
-    //     _controller?.value.duration ?? Duration.zero);
+    final position = _controller?.value.position ?? Duration.zero;
+    final duration = _controller?.value.duration;
+    context.updateProgress(widget._view.movie.etag,
+        position: position, duration: duration);
   }
 
   @override

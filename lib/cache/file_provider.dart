@@ -43,7 +43,7 @@ abstract class FileCacheProvider {
 }
 
 class DirectoryFileCache implements FileCacheProvider {
-  static final log = Logger('JsonCache');
+  static final log = Logger('DirectoryFileCache');
 
   final Directory directory;
   final Map<String, File> _entries = {};
@@ -111,6 +111,7 @@ class DirectoryFileCache implements FileCacheProvider {
   void _remove(String key, {bool delete = true}) {
     final file = _entries.remove(key);
     if (delete) {
+      log.fine('removing $file');
       file?.deleteSync();
     }
   }
@@ -129,7 +130,7 @@ class DirectoryFileCache implements FileCacheProvider {
     await _initialized;
     final removal = Set<String>.from(_entries.keys);
     keep.forEach((e) => removal.remove(e.key));
-    return Future.forEach(removal, (String key) async {
+    return Future.forEach<String>(removal, (key) async {
       _remove(key, delete: true);
     });
   }

@@ -94,8 +94,8 @@ class OffsetFileCache implements OffsetCache {
   }
 
   Future<File> _save(Offset offset) async {
-    // print('offset saving ${offset.etag} ${offset.position()} ${offset.duration}');
     File file = _cacheFile(offset.etag);
+    log.fine('saving ${offset.etag} ${offset.position()} ${offset.duration} to $file');
     final data = jsonEncode(offset.toJson());
     return file.writeAsString(data);
   }
@@ -138,28 +138,28 @@ class OffsetFileCache implements OffsetCache {
   @override
   Future<void> put(Offset offset) async {
     await _initialized;
-    await _put(offset);
+    await _put(offset).then((value) => _save(offset));
   }
 
-  Future<File> _put(Offset offset) async {
+  Future<Offset> _put(Offset offset) async {
     final curr = _entries[offset.etag];
     if (curr != null && curr.hasDuration() && offset.duration == 0) {
       // duration is dynamic so don't zero out previously found duration
       offset = offset.copyWith(duration: curr.duration);
     }
     _entries[offset.etag] = offset;
-    return _save(offset);
+    return offset;
   }
 
   @override
   Future<Iterable<Offset>> merge(Iterable<Offset> offsets) async {
     await _initialized;
     final newer = <Offset>[];
-    await Future.forEach(offsets, (Offset remote) async {
+    await Future.forEach<Offset>(offsets, (remote) async {
       final local = await get(remote);
       if (local != null && local.newerThan(remote)) {
         newer.add(local);
-      } else {
+      } else if (contains(remote) == false) {
         await put(remote);
       }
     });

@@ -317,11 +317,9 @@ class _TakeoutState extends State<_TakeoutWidget>
 
   Map<String, WidgetBuilder> _pageBuilders() {
     final builders = {
-      '/home': (context) {
-        // return SizedBox.shrink();
-        return HomeWidget((ctx) => Navigator.push(
-            ctx, MaterialPageRoute(builder: (_) => SearchWidget())));
-      },
+      '/home': (_) =>
+          HomeWidget((ctx) => Navigator.push(
+              ctx, MaterialPageRoute(builder: (_) => SearchWidget()))),
       '/artists': (_) => ArtistsWidget(),
       '/history': (_) => HistoryListWidget(),
       '/radio': (_) => RadioWidget(),

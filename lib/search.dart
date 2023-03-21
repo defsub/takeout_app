@@ -32,9 +32,10 @@ import 'nav.dart';
 import 'style.dart';
 import 'video.dart';
 
-class SearchWidget extends ClientPage<SearchView?> {
-  // final TextEditingController _searchText = TextEditingController();
+class SearchWidget extends ClientPage<SearchView> {
   final _query = StringBuffer();
+
+  SearchWidget() : super(value: SearchView.empty());
 
   void _onPlay(BuildContext context, SearchView view) {
     final List<Track>? tracks = view.tracks;
@@ -55,15 +56,15 @@ class SearchWidget extends ClientPage<SearchView?> {
   @override
   void load(BuildContext context, {Duration? ttl}) {
     if (_query.isNotEmpty) {
-      context.client.search(_query.toString(), ttl: ttl);
+      context.client.search(_query.toString(), ttl: ttl ?? Duration.zero);
     }
   }
 
   @override
-  Widget page(BuildContext context, SearchView? view) {
-    final historyCubit = context.watch<HistoryCubit>();
-    final WidgetBuilder builder = (_) {
-      final history = historyCubit.state.history;
+  Widget page(BuildContext context, SearchView view) {
+    print('search page $view');
+    return Builder(builder: (context) {
+      final history = context.watch<HistoryCubit>().state.history;
       final searches = List<SearchHistory>.from(history.searches);
       searches.sort((a, b) => b.dateTime.compareTo(a.dateTime));
       final words = searches.map((e) => e.search);
@@ -93,64 +94,60 @@ class SearchWidget extends ClientPage<SearchView?> {
               )),
           body: Container(
               child: Column(children: [
-            if (view != null)
-              Flexible(
-                  child: ListView(children: [
-                if (view.artists != null && view.artists!.isNotEmpty)
-                  Container(
-                      child: Column(children: [
-                    heading(context.strings.artistsLabel),
-                    _ArtistResultsWidget(view.artists!),
-                  ])),
-                if (view.releases != null && view.releases!.isNotEmpty)
-                  Container(
-                      child: Column(children: [
-                    heading(context.strings.releasesLabel),
-                    ReleaseListWidget(view.releases!),
-                  ])),
-                if (view.tracks != null && view.tracks!.isNotEmpty)
-                  Container(
-                      child: Column(children: [
-                    heading(context.strings.tracksLabel),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        OutlinedButton.icon(
-                            label:
-                                Text(context.strings.playLabel),
-                            icon: Icon(Icons.play_arrow),
-                            onPressed: () => _onPlay(context, view)),
-                        OutlinedButton.icon(
-                            label: Text(
-                                context.strings.downloadLabel),
-                            icon: Icon(Icons.radio),
-                            onPressed: () => _onDownload(context, view)),
-                      ],
-                    ),
-                    TrackListWidget(view.tracks!),
-                  ])),
-                if (view.movies != null && view.movies!.isNotEmpty)
-                  Container(
-                      child: Column(children: [
-                    heading(context.strings.moviesLabel),
-                    MovieListWidget(view.movies!),
-                  ])),
-                if (view.series != null && view.series!.isNotEmpty)
-                  Container(
-                      child: Column(children: [
-                    heading(context.strings.seriesLabel),
-                    SeriesListWidget(view.series!),
-                  ])),
-                if (view.episodes != null && view.episodes!.isNotEmpty)
-                  Container(
-                      child: Column(children: [
-                    heading(context.strings.episodesLabel),
-                    EpisodeListWidget(view.episodes!),
-                  ])),
-              ]))
+            Flexible(
+                child: ListView(children: [
+              if (view.artists != null && view.artists!.isNotEmpty)
+                Container(
+                    child: Column(children: [
+                  heading(context.strings.artistsLabel),
+                  _ArtistResultsWidget(view.artists!),
+                ])),
+              if (view.releases != null && view.releases!.isNotEmpty)
+                Container(
+                    child: Column(children: [
+                  heading(context.strings.releasesLabel),
+                  ReleaseListWidget(view.releases!),
+                ])),
+              if (view.tracks != null && view.tracks!.isNotEmpty)
+                Container(
+                    child: Column(children: [
+                  heading(context.strings.tracksLabel),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      OutlinedButton.icon(
+                          label: Text(context.strings.playLabel),
+                          icon: Icon(Icons.play_arrow),
+                          onPressed: () => _onPlay(context, view)),
+                      OutlinedButton.icon(
+                          label: Text(context.strings.downloadLabel),
+                          icon: Icon(Icons.radio),
+                          onPressed: () => _onDownload(context, view)),
+                    ],
+                  ),
+                  TrackListWidget(view.tracks!),
+                ])),
+              if (view.movies != null && view.movies!.isNotEmpty)
+                Container(
+                    child: Column(children: [
+                  heading(context.strings.moviesLabel),
+                  MovieListWidget(view.movies!),
+                ])),
+              if (view.series != null && view.series!.isNotEmpty)
+                Container(
+                    child: Column(children: [
+                  heading(context.strings.seriesLabel),
+                  SeriesListWidget(view.series!),
+                ])),
+              if (view.episodes != null && view.episodes!.isNotEmpty)
+                Container(
+                    child: Column(children: [
+                  heading(context.strings.episodesLabel),
+                  EpisodeListWidget(view.episodes!),
+                ])),
+            ]))
           ])));
-    };
-    return builder(context);
+    });
   }
 
   void _onSubmit(BuildContext context, String q) {

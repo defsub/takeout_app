@@ -33,6 +33,7 @@ class _TrackIdentifier implements TrackIdentifier {
 Future<void> pruneCache(
     SpiffCacheRepository spiffCache, TrackCacheRepository trackCache) async {
   final spiffs = await spiffCache.entries;
+  final keep = <TrackIdentifier>[];
   await Future.forEach<Spiff>(spiffs, (spiff) async {
     final tracks = spiff.playlist.tracks;
     await Future.forEach<Entry>(tracks, (track) async {
@@ -40,14 +41,18 @@ Future<void> pruneCache(
       final file = await trackCache.get(id);
       if (file != null) {
         final fileSize = file.statSync().size;
-        if (fileSize != track.size) {
-          if (spiff.isPodcast()) {
-            // Allow podcasts download to be larger - TWiT sizes can be off
-          } else {
-            await trackCache.remove(id);
+        if (fileSize == track.size) {
+          keep.add(id);
+        } else if (spiff.isPodcast()) {
+          // Allow podcasts download to be larger - TWiT sizes can be off
+          // TODO is this still valid?
+          if (fileSize > track.size) {
+            keep.add(id);
           }
         }
+        // otherwise remove likely incomplete download
       }
     });
   });
+  await trackCache.retain(keep);
 }

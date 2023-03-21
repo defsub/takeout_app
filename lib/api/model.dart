@@ -180,6 +180,8 @@ class SearchView {
       required this.query,
       required this.hits});
 
+  factory SearchView.empty() => SearchView(query: "", hits: 0);
+
   factory SearchView.fromJson(Map<String, dynamic> json) =>
       _$SearchViewFromJson(json);
 
