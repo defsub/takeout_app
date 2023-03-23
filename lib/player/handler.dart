@@ -135,8 +135,6 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
         return;
       }
       if (index >= 0 && index < _spiff.length) {
-        print(
-            'index change $index ${_spiff.playlist.tracks.length}  ${_queue.length}');
         _spiff = _spiff.copyWith(index: index);
         onIndexChange(_spiff, _player.playing);
         mediaItem.add(_queue[index]);
@@ -179,19 +177,27 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
     });
 
     // icy metadata changes
-    // TODO icy events are happening for regular media and out of sync
     _subscriptions.add(_player.icyMetadataStream.listen((event) {
-      // final item = mediaItem.valueOrNull;
-      // print('icy event $event');
-      // if (item != null && event != null) {
-      //   final title = event.info?.title ?? item.title;
-      //   mediaItem.add(item.copyWith(title: title));
-      //
-      //   _spiff.playlist.tracks[_spiff.index] =
-      //       _spiff.playlist.tracks[_spiff.index].copyWith(title: title);
-      //
-      //   onTrackChange(_spiff, _spiff.index, title: event.info?.title);
-      // }
+      // TODO icy events are sometimes sent for regular media so ignore them.
+      if (_spiff.isStream()) {
+        var item = mediaItem.valueOrNull;
+        if (item != null && event != null) {
+          final index = _spiff.index;
+
+          // update the current media item
+          final title = event.info?.title ?? item.title;
+          item = item.copyWith(title: title);
+          mediaItem.add(item);
+
+          // update the media queue
+          _queue[index] = item;
+          queue.add(_queue);
+
+          // update the current spiff
+          _spiff = _spiff.updateAt(index, _spiff[index].copyWith(title: title));
+          onTrackChange(_spiff, index, title: event.info?.title);
+        }
+      }
     }));
 
     // send state from the audio player to AudioService clients.
@@ -265,7 +271,11 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
 
   Future<void> load(Spiff spiff) async {
     this._spiff = spiff;
-    final index = _spiff.index < 0 ? 0 : _spiff.index;
+    if (_spiff.index < 0) {
+      // TODO server sends -1
+      _spiff = _spiff.copyWith(index: 0);
+    }
+    final index = _spiff.index;
 
     // build a new MediaItem queue
     _queue.clear();
@@ -315,8 +325,6 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
     // update the current media item
     mediaItem.add(_queue[index]);
     playbackState.add(playbackState.value.copyWith(queueIndex: index));
-
-    // onPositionChange(_spiff, _player.duration ?? Duration.zero, position, _player.playing);
 
     return _player.seek(position, index: index);
   }
@@ -386,6 +394,7 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
     final playing = _player.playing;
     List<MediaControl> controls;
     List<int> compactControls;
+    List<MediaAction> systemActions;
 
     final isPodcast = _spiff.isPodcast();
     final isStream = _spiff.isStream();
@@ -397,11 +406,23 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
         MediaControl.fastForward,
       ];
       compactControls = const [0, 1, 2];
+      systemActions = const [
+        MediaAction.skipToPrevious,
+        MediaAction.skipToNext,
+        MediaAction.stop,
+        MediaAction.seek,
+        MediaAction.seekForward,
+        MediaAction.seekBackward,
+      ];
     } else if (isStream) {
       controls = [
         if (playing) MediaControl.pause else MediaControl.play,
       ];
       compactControls = const [0];
+      systemActions = const [
+        MediaAction.stop,
+        MediaAction.seek,
+      ];
     } else {
       controls = [
         MediaControl.skipToPrevious,
@@ -409,18 +430,19 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
         MediaControl.skipToNext,
       ];
       compactControls = const [0, 1, 2];
-    }
-
-    playbackState.add(playbackState.value.copyWith(
-      controls: controls,
-      systemActions: const {
+      systemActions = const [
         MediaAction.skipToPrevious,
         MediaAction.skipToNext,
         MediaAction.stop,
         MediaAction.seek,
         MediaAction.seekForward,
         MediaAction.seekBackward,
-      },
+      ];
+    }
+
+    playbackState.add(playbackState.value.copyWith(
+      controls: controls,
+      systemActions: Set<MediaAction>.from(systemActions),
       androidCompactActionIndices: compactControls,
       processingState: const {
         ProcessingState.idle: AudioProcessingState.idle,

@@ -232,9 +232,13 @@ class RelativeDateWidget extends StatelessWidget {
       {String prefix = '',
       String suffix = '',
       String separator = textSeparator}) {
-    final t = DateTime.parse(date);
-    return RelativeDateWidget(t,
-        prefix: prefix, suffix: suffix, separator: separator);
+    try {
+      final t = DateTime.parse(date);
+      return RelativeDateWidget(t,
+          prefix: prefix, suffix: suffix, separator: separator);
+    } on FormatException {
+      return RelativeDateWidget(DateTime(1, 1, 1));
+    }
   }
 
   @override

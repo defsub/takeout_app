@@ -30,6 +30,8 @@ class _TrackIdentifier implements TrackIdentifier {
   String get key => _etag.key;
 }
 
+// TODO prune will currently delete all tracks not found in a spiff.
+// podcasts can download an episode w/o a spiff
 Future<void> pruneCache(
     SpiffCacheRepository spiffCache, TrackCacheRepository trackCache) async {
   final spiffs = await spiffCache.entries;

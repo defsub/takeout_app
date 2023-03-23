@@ -19,8 +19,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:takeout_app/api/model.dart';
 import 'package:takeout_app/app/context.dart';
-import 'package:takeout_app/art/builder.dart';
 import 'package:takeout_app/art/cover.dart';
+import 'package:takeout_app/art/scaffold.dart';
 import 'package:takeout_app/cache/track.dart';
 import 'package:takeout_app/client/download.dart';
 import 'package:takeout_app/menu.dart';
@@ -66,91 +66,82 @@ class ReleaseWidget extends ClientPage<ReleaseView> {
     // distort a bit to only take half the screen
     final screen = MediaQuery.of(context).size;
     final expandedHeight = screen.height / 2;
-    return FutureBuilder<Color?>(
-        future: getImageBackgroundColor(context, _release.image),
-        builder: (context, snapshot) {
-          final backgroundColor = snapshot.data;
-          return Scaffold(
-              backgroundColor: backgroundColor,
-              body: RefreshIndicator(
-                  onRefresh: () => reloadPage(context),
-                  child: BlocBuilder<TrackCacheCubit, TrackCacheState>(
-                      builder: (context, state) {
-                    final isCached = state.containsAll(view.tracks);
-                    return CustomScrollView(slivers: [
-                      SliverAppBar(
-                        // floating: true,
-                        // snap: false,
-                        // backgroundColor: backgroundColor,
-                        foregroundColor: overlayIconColor(context),
-                        expandedHeight: expandedHeight,
-                        actions: [
-                          popupMenu(context, [
-                            PopupItem.play(context, (_) => _onPlay(context)),
-                            PopupItem.download(
-                                context, (_) => _onDownload(context, view)),
-                            PopupItem.divider(),
-                            PopupItem.link(context, 'MusicBrainz Release',
-                                (_) => launchUrl(Uri.parse(releaseUrl))),
-                            PopupItem.link(context, 'MusicBrainz Release Group',
-                                (_) => launchUrl(Uri.parse(releaseGroupUrl))),
-                            PopupItem.divider(),
-                            PopupItem.reload(
-                                context, (_) => reloadPage(context)),
-                          ]),
-                        ],
-                        flexibleSpace: FlexibleSpaceBar(
-                            // centerTitle: true,
-                            // title: Text(release.name, style: TextStyle(fontSize: 15)),
-                            stretchModes: [
-                              StretchMode.zoomBackground,
-                              StretchMode.fadeTitle
-                            ],
-                            background: Stack(fit: StackFit.expand, children: [
-                              releaseSmallCover(context, _release.image),
-                              const DecoratedBox(
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment(0.0, 0.75),
-                                    end: Alignment(0.0, 0.0),
-                                    colors: <Color>[
-                                      Color(0x60000000),
-                                      Color(0x00000000),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              Align(
-                                  alignment: Alignment.bottomLeft,
-                                  child: _playButton(context, isCached)),
-                              Align(
-                                  alignment: Alignment.bottomRight,
-                                  child:
-                                      _downloadButton(context, view, isCached)),
-                            ])),
-                      ),
-                      SliverToBoxAdapter(
-                          child: Container(
-                              padding: EdgeInsets.fromLTRB(0, 16, 0, 4),
-                              child: Column(children: [
-                                GestureDetector(
-                                    onTap: () => _onArtist(context, view),
-                                    child: _title(context)),
-                                GestureDetector(
-                                    onTap: () => _onArtist(context, view),
-                                    child: _artist(context)),
-                              ]))),
-                      SliverToBoxAdapter(child: _ReleaseTracksWidget(view)),
-                      if (view.similar.isNotEmpty)
-                        SliverToBoxAdapter(
-                          child: heading(context.strings
-                              .similarReleasesLabel),
+    return scaffold(context,
+        image: _release.image,
+        body: (_) => RefreshIndicator(
+            onRefresh: () => reloadPage(context),
+            child: BlocBuilder<TrackCacheCubit, TrackCacheState>(
+                builder: (context, state) {
+              final isCached = state.containsAll(view.tracks);
+              return CustomScrollView(slivers: [
+                SliverAppBar(
+                  // floating: true,
+                  // snap: false,
+                  // backgroundColor: backgroundColor,
+                  foregroundColor: overlayIconColor(context),
+                  expandedHeight: expandedHeight,
+                  actions: [
+                    popupMenu(context, [
+                      PopupItem.play(context, (_) => _onPlay(context)),
+                      PopupItem.download(
+                          context, (_) => _onDownload(context, view)),
+                      PopupItem.divider(),
+                      PopupItem.link(context, 'MusicBrainz Release',
+                          (_) => launchUrl(Uri.parse(releaseUrl))),
+                      PopupItem.link(context, 'MusicBrainz Release Group',
+                          (_) => launchUrl(Uri.parse(releaseGroupUrl))),
+                      PopupItem.divider(),
+                      PopupItem.reload(context, (_) => reloadPage(context)),
+                    ]),
+                  ],
+                  flexibleSpace: FlexibleSpaceBar(
+                      // centerTitle: true,
+                      // title: Text(release.name, style: TextStyle(fontSize: 15)),
+                      stretchModes: [
+                        StretchMode.zoomBackground,
+                        StretchMode.fadeTitle
+                      ],
+                      background: Stack(fit: StackFit.expand, children: [
+                        releaseSmallCover(context, _release.image),
+                        const DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment(0.0, 0.75),
+                              end: Alignment(0.0, 0.0),
+                              colors: <Color>[
+                                Color(0x60000000),
+                                Color(0x00000000),
+                              ],
+                            ),
+                          ),
                         ),
-                      if (view.similar.isNotEmpty)
-                        AlbumGridWidget(view.similar),
-                    ]);
-                  })));
-        });
+                        Align(
+                            alignment: Alignment.bottomLeft,
+                            child: _playButton(context, isCached)),
+                        Align(
+                            alignment: Alignment.bottomRight,
+                            child: _downloadButton(context, view, isCached)),
+                      ])),
+                ),
+                SliverToBoxAdapter(
+                    child: Container(
+                        padding: EdgeInsets.fromLTRB(0, 16, 0, 4),
+                        child: Column(children: [
+                          GestureDetector(
+                              onTap: () => _onArtist(context, view),
+                              child: _title(context)),
+                          GestureDetector(
+                              onTap: () => _onArtist(context, view),
+                              child: _artist(context)),
+                        ]))),
+                SliverToBoxAdapter(child: _ReleaseTracksWidget(view)),
+                if (view.similar.isNotEmpty)
+                  SliverToBoxAdapter(
+                    child: heading(context.strings.similarReleasesLabel),
+                  ),
+                if (view.similar.isNotEmpty) AlbumGridWidget(view.similar),
+              ]);
+            })));
   }
 
   Widget _title(BuildContext context) {
@@ -209,8 +200,8 @@ class _ReleaseTracksWidget extends StatelessWidget {
           if (e.discNum > 1) {
             children.add(Divider());
           }
-          children.add(smallHeading(context,
-              context.strings.discLabel(e.discNum, discs)));
+          children.add(smallHeading(
+              context, context.strings.discLabel(e.discNum, discs)));
           d = e.discNum;
         }
         children.add(NumberedTrackListTile(e,

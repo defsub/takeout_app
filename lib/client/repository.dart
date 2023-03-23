@@ -135,11 +135,11 @@ class ClientRepository {
     return _provider.popularTracks(ttl: ttl);
   }
 
-  Future<int> download(Uri uri, File file, int size, {Sink<int>? progress}) {
+  Future<int> download(Uri uri, File file, int size, {Sink<int>? progress}) async {
     return _provider.download(uri, file, size, progress: progress);
   }
 
-  Future<PatchResult> patch(List<Map<String, dynamic>> body) {
+  Future<PatchResult> patch(List<Map<String, dynamic>> body) async {
     return _provider.patch(body);
   }
 
@@ -155,11 +155,11 @@ class ClientRepository {
     return _provider.updateProgress(offsets);
   }
 
-  Future<ActivityView> activity({Duration? ttl}) {
+  Future<ActivityView> activity({Duration? ttl}) async {
     return _provider.activity(ttl: ttl);
   }
 
-  Future<int> updateActivity(Events events) {
+  Future<int> updateActivity(Events events) async {
     return _provider.updateActivity(events);
   }
 }

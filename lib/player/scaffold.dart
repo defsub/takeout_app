@@ -35,7 +35,7 @@ class PlayerScaffold extends StatelessWidget {
       if (state is PlayerLoad || state is PlayerIndexChange) {
         image = state.currentTrack?.image;
       }
-      return scaffold(context, image: image, body: body);
+      return scaffold(context, image: image, body: (_) => body);
     });
   }
 }

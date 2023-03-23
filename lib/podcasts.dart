@@ -19,7 +19,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:takeout_app/api/model.dart';
 import 'package:takeout_app/app/context.dart';
-import 'package:takeout_app/art/builder.dart';
+import 'package:takeout_app/art/scaffold.dart';
 import 'package:takeout_app/art/cover.dart';
 import 'package:takeout_app/buttons.dart';
 import 'package:takeout_app/cache/offset.dart';
@@ -47,66 +47,59 @@ class SeriesWidget extends ClientPage<SeriesView> {
 
   @override
   Widget page(BuildContext context, SeriesView view) {
-    return FutureBuilder<Color?>(
-        future: getImageBackgroundColor(context, _series.image),
-        builder: (context, snapshot) {
-          final backgroundColor = snapshot.data;
-          final screen = MediaQuery.of(context).size;
-          final expandedHeight = screen.height / 2;
-          return Scaffold(
-              backgroundColor: backgroundColor,
-              body: RefreshIndicator(
-                  onRefresh: () => reloadPage(context),
-                  child: BlocBuilder<TrackCacheCubit, TrackCacheState>(
-                      builder: (context, state) {
-                    final isCached = state.containsAll(view.episodes);
-                    return CustomScrollView(slivers: [
-                      SliverAppBar(
-                        // actions: [ ],
-                        foregroundColor: overlayIconColor(context),
-                        expandedHeight: expandedHeight,
-                        flexibleSpace: FlexibleSpaceBar(
-                            // centerTitle: true,
-                            // title: Text(release.name, style: TextStyle(fontSize: 15)),
-                            stretchModes: [
-                              StretchMode.zoomBackground,
-                              StretchMode.fadeTitle
-                            ],
-                            background: Stack(fit: StackFit.expand, children: [
-                              releaseSmallCover(context, _series.image),
-                              const DecoratedBox(
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment(0.0, 0.75),
-                                    end: Alignment(0.0, 0.0),
-                                    colors: <Color>[
-                                      Color(0x60000000),
-                                      Color(0x00000000),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              Align(
-                                  alignment: Alignment.bottomLeft,
-                                  child: _playButton(context, isCached)),
-                              Align(
-                                  alignment: Alignment.bottomRight,
-                                  child:
-                                      _downloadButton(context, view, isCached)),
-                            ])),
-                      ),
-                      SliverToBoxAdapter(
-                          child: Container(
-                              padding: EdgeInsets.fromLTRB(4, 16, 4, 4),
-                              child: Column(children: [
-                                _title(context),
-                              ]))),
-                      SliverToBoxAdapter(
-                          child:
-                              _SeriesEpisodeListWidget(view, backgroundColor)),
-                    ]);
-                  })));
-        });
+    return scaffold(context,
+        image: _series.image,
+        body: (color) => RefreshIndicator(
+            onRefresh: () => reloadPage(context),
+            child: BlocBuilder<TrackCacheCubit, TrackCacheState>(
+                builder: (context, state) {
+              final isCached = state.containsAll(view.episodes);
+              final screen = MediaQuery.of(context).size;
+              final expandedHeight = screen.height / 2;
+              return CustomScrollView(slivers: [
+                SliverAppBar(
+                  // actions: [ ],
+                  foregroundColor: overlayIconColor(context),
+                  expandedHeight: expandedHeight,
+                  flexibleSpace: FlexibleSpaceBar(
+                      // centerTitle: true,
+                      // title: Text(release.name, style: TextStyle(fontSize: 15)),
+                      stretchModes: [
+                        StretchMode.zoomBackground,
+                        StretchMode.fadeTitle
+                      ],
+                      background: Stack(fit: StackFit.expand, children: [
+                        releaseSmallCover(context, _series.image),
+                        const DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment(0.0, 0.75),
+                              end: Alignment(0.0, 0.0),
+                              colors: <Color>[
+                                Color(0x60000000),
+                                Color(0x00000000),
+                              ],
+                            ),
+                          ),
+                        ),
+                        Align(
+                            alignment: Alignment.bottomLeft,
+                            child: _playButton(context, isCached)),
+                        Align(
+                            alignment: Alignment.bottomRight,
+                            child: _downloadButton(context, view, isCached)),
+                      ])),
+                ),
+                SliverToBoxAdapter(
+                    child: Container(
+                        padding: EdgeInsets.fromLTRB(4, 16, 4, 4),
+                        child: Column(children: [
+                          _title(context),
+                        ]))),
+                SliverToBoxAdapter(
+                    child: _SeriesEpisodeListWidget(view, color)),
+              ]);
+            })));
   }
 
   Widget _title(BuildContext context) {

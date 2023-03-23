@@ -73,6 +73,10 @@ class Spiff {
     return false;
   }
 
+  Entry operator [](int index) {
+    return playlist.tracks[index];
+  }
+
   @override
   int get hashCode {
     return super.hashCode;
@@ -143,6 +147,10 @@ class Spiff {
           playlist: playlist ?? this.playlist,
           type: type ?? this.type,
           lastModified: lastModified ?? this.lastModified);
+
+  Spiff updateAt(int int, Entry entry) {
+    return copyWith(playlist: playlist.updateAt(index, entry));
+  }
 
   static Spiff cleanup(Spiff spiff) {
     final creator = _playlistCreator(spiff);
@@ -277,6 +285,16 @@ class Playlist {
         image: this.image,
         tracks: tracks ?? this.tracks,
       );
+
+  Playlist updateAt(int index, Entry entry) {
+    if (index >= 0 && index < tracks.length) {
+      final newTracks = List<Entry>.from(tracks);
+      newTracks[index] = entry;
+      return copyWith(tracks: newTracks);
+    } else {
+      throw IndexError.withLength(index, tracks.length);
+    }
+  }
 
   factory Playlist.fromJson(Map<String, dynamic> json) =>
       _$PlaylistFromJson(json);

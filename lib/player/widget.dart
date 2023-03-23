@@ -33,8 +33,6 @@ class PlayerWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // final screen = MediaQuery.of(context).size;
-    // final expandedHeight = screen.height / 2;
     final builder = (context) => PlayerScaffold(
             body: CustomScrollView(slivers: [
           SliverAppBar(
@@ -69,80 +67,82 @@ class PlayerWidget extends StatelessWidget {
   }
 
   Widget playerImage(BuildContext context) {
-    return BlocBuilder<Player, PlayerState>(buildWhen: (_, state) {
-      return state is PlayerLoad || state is PlayerIndexChange;
-    }, builder: (context, state) {
-      if (state is PlayerLoad || state is PlayerIndexChange) {
-        final image = state.currentTrack?.image;
-        return image != null ? playerCover(context, image) : SizedBox.shrink();
-      }
-      return SizedBox.shrink();
-    });
+    return BlocBuilder<Player, PlayerState>(
+        buildWhen: (_, state) =>
+            state is PlayerLoad || state is PlayerIndexChange,
+        builder: (context, state) {
+          if (state is PlayerLoad || state is PlayerIndexChange) {
+            final image = state.currentTrack?.image;
+            return image != null
+                ? playerCover(context, image)
+                : SizedBox.shrink();
+          }
+          return SizedBox.shrink();
+        });
   }
 
   Widget playerTitle(BuildContext context) {
-    return BlocBuilder<Player, PlayerState>(buildWhen: (_, state) {
-      return state is PlayerLoad ||
-          state is PlayerIndexChange ||
-          state is PlayerTrackChange;
-    }, builder: (context, state) {
-      if (state is PlayerLoad ||
-          state is PlayerIndexChange ||
-          state is PlayerTrackChange) {
-        final currentTrack = state.currentTrack;
-        if (currentTrack == null) {
+    return BlocBuilder<Player, PlayerState>(
+        buildWhen: (_, state) =>
+            state is PlayerLoad ||
+            state is PlayerIndexChange ||
+            state is PlayerTrackChange,
+        builder: (context, state) {
+          if (state is PlayerLoad ||
+              state is PlayerIndexChange ||
+              state is PlayerTrackChange) {
+            final currentTrack = state.currentTrack;
+            if (currentTrack == null) {
+              return SizedBox.shrink();
+            }
+            return GestureDetector(
+                onTap: () => _onArtist(context, currentTrack.creator),
+                child: Text(currentTrack.title,
+                    style: Theme.of(context).textTheme.headlineSmall));
+          }
           return SizedBox.shrink();
-        }
-        return GestureDetector(
-            onTap: () => _onArtist(context, currentTrack.creator),
-            child: Text(currentTrack.title,
-                style: Theme.of(context).textTheme.headlineSmall));
-      }
-      return SizedBox.shrink();
-    });
+        });
   }
 
   Widget playerArtist(BuildContext context) {
-    return BlocBuilder<Player, PlayerState>(buildWhen: (_, state) {
-      return state is PlayerLoad || state is PlayerIndexChange;
-    }, builder: (context, state) {
-      if (state is PlayerLoad || state is PlayerIndexChange) {
-        final currentTrack = state.currentTrack;
-        if (currentTrack == null) {
+    return BlocBuilder<Player, PlayerState>(
+        buildWhen: (_, state) =>
+            state is PlayerLoad || state is PlayerIndexChange,
+        builder: (context, state) {
+          if (state is PlayerLoad || state is PlayerIndexChange) {
+            final currentTrack = state.currentTrack;
+            if (currentTrack == null) {
+              return SizedBox.shrink();
+            }
+            return Text(currentTrack.creator,
+                style: Theme.of(context).textTheme.titleMedium!);
+          }
           return SizedBox.shrink();
-        }
-        return Text(currentTrack.creator,
-            style: Theme.of(context).textTheme.titleMedium!);
-      }
-      return SizedBox.shrink();
-    });
+        });
   }
 
   Widget playerControls(BuildContext context) {
-    return BlocBuilder<Player, PlayerState>(buildWhen: (_, state) {
-      return state is PlayerPlay ||
-          state is PlayerPause ||
-          state is PlayerIndexChange;
-    }, builder: (context, state) {
-      if (state is PlayerIndexChange) {
-        return _controlButtons(context, state, state.playing);
-      } else if (state is PlayerPlay) {
-        return _controlButtons(context, state, true);
-      } else if (state is PlayerPause) {
-        return _controlButtons(context, state, false);
-      }
-      return SizedBox.shrink();
-    });
+    return BlocBuilder<Player, PlayerState>(
+        buildWhen: (_, state) => state is PlayerPositionState,
+        builder: (context, state) {
+          if (state is PlayerPositionState) {
+            return _controlButtons(context, state, state.playing);
+          }
+          return SizedBox.shrink();
+        });
   }
 
   Widget playerSeekBar(BuildContext context) {
     final player = context.player;
     return BlocBuilder<Player, PlayerState>(
         bloc: player,
-        buildWhen: (_, state) {
-          return state is PlayerIndexChange || state is PlayerPositionState;
-        },
+        buildWhen: (_, state) =>
+            state is PlayerIndexChange || state is PlayerPositionState,
         builder: (context, state) {
+          if (state.spiff.isStream()) {
+            // no controls needed for streams
+            return SizedBox.shrink();
+          }
           if (state is PlayerIndexChange) {
             return _seekBar(player, Duration.zero, Duration.zero);
           } else if (state is PlayerPositionState) {
@@ -156,9 +156,8 @@ class PlayerWidget extends StatelessWidget {
     final player = context.player;
     return BlocBuilder<Player, PlayerState>(
         bloc: player,
-        buildWhen: (_, state) {
-          return state is PlayerLoad || state is PlayerIndexChange;
-        },
+        buildWhen: (_, state) =>
+            state is PlayerLoad || state is PlayerIndexChange,
         builder: (context, state) {
           if (state.spiff.isStream() || state.spiff.length == 1) {
             // hide track list
@@ -258,8 +257,8 @@ class PlayerWidget extends StatelessWidget {
     ]));
   }
 
-  Widget _cachedIcon() {
+  Widget? _cachedIcon() {
     // TODO
-    return SizedBox.shrink();
+    return null;
   }
 }

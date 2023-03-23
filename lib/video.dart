@@ -24,8 +24,8 @@ import 'package:rxdart/rxdart.dart';
 import 'package:takeout_app/api/model.dart';
 import 'package:takeout_app/app/context.dart';
 import 'package:takeout_app/art/artwork.dart';
-import 'package:takeout_app/art/builder.dart';
 import 'package:takeout_app/art/cover.dart';
+import 'package:takeout_app/art/scaffold.dart';
 import 'package:takeout_app/cache/track.dart';
 import 'package:takeout_app/client/resolver.dart';
 import 'package:takeout_app/page/page.dart';
@@ -52,88 +52,81 @@ class MovieWidget extends ClientPage<MovieView> {
 
   @override
   Widget page(BuildContext context, MovieView view) {
-    return FutureBuilder<Color?>(
-        future: getImageBackgroundColor(context, _movie.image),
-        builder: (context, snapshot) {
-          final backgroundColor = snapshot.data;
-          final screen = MediaQuery.of(context).size;
-          final expandedHeight = screen.height / 2;
-          return Scaffold(
-              backgroundColor: backgroundColor,
-              body: RefreshIndicator(
-                  onRefresh: () => reloadPage(context),
-                  child: BlocBuilder<TrackCacheCubit, TrackCacheState>(
-                      builder: (context, state) {
-                    final isCached = state.contains(_movie);
-                    return CustomScrollView(slivers: [
-                      SliverAppBar(
-                        // actions: [ ],
-                        foregroundColor: overlayIconColor(context),
-                        backgroundColor: Colors.black,
-                        expandedHeight: expandedHeight,
-                        flexibleSpace: FlexibleSpaceBar(
-                            // centerTitle: true,
-                            // title: Text(release.name, style: TextStyle(fontSize: 15)),
-                            stretchModes: [
-                              StretchMode.zoomBackground,
-                              StretchMode.fadeTitle
-                            ],
-                            background: Stack(fit: StackFit.expand, children: [
-                              releaseSmallCover(context, _movie.image),
-                              const DecoratedBox(
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment(0.0, 0.75),
-                                    end: Alignment(0.0, 0.0),
-                                    colors: <Color>[
-                                      Color(0x60000000),
-                                      Color(0x00000000),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              Align(
-                                  alignment: Alignment.bottomLeft,
-                                  child: _playButton(context, view, isCached)),
-                              Align(
-                                  alignment: Alignment.bottomCenter,
-                                  child: _progress(context)),
-                              Align(
-                                  alignment: Alignment.bottomRight,
-                                  child: _downloadButton(context, isCached)),
-                            ])),
-                      ),
-                      SliverToBoxAdapter(
-                          child: Container(
-                              padding: EdgeInsets.fromLTRB(4, 16, 4, 4),
-                              child: Column(children: [
-                                _title(context),
-                                _tagline(context),
-                                _details(context),
-                                if (view.hasGenres()) _genres(context, view),
-                                // GestureDetector(
-                                //     onTap: () => _onArtist(), child: _title()),
-                                // GestureDetector(
-                                //     onTap: () => _onArtist(), child: _artist()),
-                              ]))),
-                      if (view.hasCast())
-                        SliverToBoxAdapter(
-                            child: heading(context.strings.castLabel)),
-                      if (view.hasCast())
-                        SliverToBoxAdapter(child: _CastListWidget(view)),
-                      if (view.hasCrew())
-                        SliverToBoxAdapter(
-                            child: heading(context.strings.crewLabel)),
-                      if (view.hasCrew())
-                        SliverToBoxAdapter(child: _CrewListWidget(view)),
-                      if (view.hasRelated())
-                        SliverToBoxAdapter(
-                          child: heading(context.strings.relatedLabel),
+    return scaffold(context,
+        image: _movie.image,
+        body: (_) => RefreshIndicator(
+            onRefresh: () => reloadPage(context),
+            child: BlocBuilder<TrackCacheCubit, TrackCacheState>(
+                builder: (context, state) {
+              final isCached = state.contains(_movie);
+              final screen = MediaQuery.of(context).size;
+              final expandedHeight = screen.height / 2;
+              return CustomScrollView(slivers: [
+                SliverAppBar(
+                  // actions: [ ],
+                  foregroundColor: overlayIconColor(context),
+                  backgroundColor: Colors.black,
+                  expandedHeight: expandedHeight,
+                  flexibleSpace: FlexibleSpaceBar(
+                      // centerTitle: true,
+                      // title: Text(release.name, style: TextStyle(fontSize: 15)),
+                      stretchModes: [
+                        StretchMode.zoomBackground,
+                        StretchMode.fadeTitle
+                      ],
+                      background: Stack(fit: StackFit.expand, children: [
+                        releaseSmallCover(context, _movie.image),
+                        const DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment(0.0, 0.75),
+                              end: Alignment(0.0, 0.0),
+                              colors: <Color>[
+                                Color(0x60000000),
+                                Color(0x00000000),
+                              ],
+                            ),
+                          ),
                         ),
-                      if (view.hasRelated()) MovieGridWidget(view.other!),
-                    ]);
-                  })));
-        });
+                        Align(
+                            alignment: Alignment.bottomLeft,
+                            child: _playButton(context, view, isCached)),
+                        Align(
+                            alignment: Alignment.bottomCenter,
+                            child: _progress(context)),
+                        Align(
+                            alignment: Alignment.bottomRight,
+                            child: _downloadButton(context, isCached)),
+                      ])),
+                ),
+                SliverToBoxAdapter(
+                    child: Container(
+                        padding: EdgeInsets.fromLTRB(4, 16, 4, 4),
+                        child: Column(children: [
+                          _title(context),
+                          _tagline(context),
+                          _details(context),
+                          if (view.hasGenres()) _genres(context, view),
+                          // GestureDetector(
+                          //     onTap: () => _onArtist(), child: _title()),
+                          // GestureDetector(
+                          //     onTap: () => _onArtist(), child: _artist()),
+                        ]))),
+                if (view.hasCast())
+                  SliverToBoxAdapter(child: heading(context.strings.castLabel)),
+                if (view.hasCast())
+                  SliverToBoxAdapter(child: _CastListWidget(view)),
+                if (view.hasCrew())
+                  SliverToBoxAdapter(child: heading(context.strings.crewLabel)),
+                if (view.hasCrew())
+                  SliverToBoxAdapter(child: _CrewListWidget(view)),
+                if (view.hasRelated())
+                  SliverToBoxAdapter(
+                    child: heading(context.strings.relatedLabel),
+                  ),
+                if (view.hasRelated()) MovieGridWidget(view.other!),
+              ]);
+            })));
   }
 
   Widget _progress(BuildContext context) {
@@ -299,68 +292,58 @@ class ProfileWidget extends ClientPage<ProfileView> {
 
   @override
   Widget page(BuildContext context, ProfileView view) {
-    return FutureBuilder<Color?>(
-        future: getImageBackgroundColor(context, _person.image),
-        builder: (context, snapshot) {
-          final backgroundColor = snapshot.data;
-          final screen = MediaQuery.of(context).size;
-          final expandedHeight = screen.height / 2;
-          return Scaffold(
-              backgroundColor: backgroundColor,
-              body: RefreshIndicator(
-                  onRefresh: () => reloadPage(context),
-                  child: CustomScrollView(slivers: [
-                    SliverAppBar(
-                      // actions: [ ],
-                      foregroundColor: overlayIconColor(context),
-                      expandedHeight: expandedHeight,
-                      flexibleSpace: FlexibleSpaceBar(
-                          // centerTitle: true,
-                          // title: Text(release.name, style: TextStyle(fontSize: 15)),
-                          stretchModes: [
-                            StretchMode.zoomBackground,
-                            StretchMode.fadeTitle
-                          ],
-                          background: Stack(fit: StackFit.expand, children: [
-                            releaseSmallCover(context, _person.image),
-                            const DecoratedBox(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment(0.0, 0.75),
-                                  end: Alignment(0.0, 0.0),
-                                  colors: <Color>[
-                                    Color(0x60000000),
-                                    Color(0x00000000),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ])),
-                    ),
-                    SliverToBoxAdapter(
-                        child: Container(
-                            padding: EdgeInsets.fromLTRB(0, 16, 0, 4),
-                            child: Column(children: [
-                              _title(context),
-                            ]))),
-                    if (view.hasStarring())
-                      SliverToBoxAdapter(
-                          child: heading(context.strings.starringLabel)),
-                    if (view.hasStarring())
-                      MovieGridWidget(view.starringMovies()),
-                    if (view.hasDirecting())
-                      SliverToBoxAdapter(
-                          child: heading(context.strings.directingLabel)),
-                    if (view.hasDirecting())
-                      MovieGridWidget(view.directingMovies()),
-                    if (view.hasWriting())
-                      SliverToBoxAdapter(
-                        child: heading(context.strings.writingLabel),
+    return scaffold(context,
+        image: _person.image,
+        body: (_) => RefreshIndicator(
+            onRefresh: () => reloadPage(context),
+            child: CustomScrollView(slivers: [
+              SliverAppBar(
+                // actions: [ ],
+                foregroundColor: overlayIconColor(context),
+                expandedHeight: MediaQuery.of(context).size.height / 2,
+                flexibleSpace: FlexibleSpaceBar(
+                    // centerTitle: true,
+                    // title: Text(release.name, style: TextStyle(fontSize: 15)),
+                    stretchModes: [
+                      StretchMode.zoomBackground,
+                      StretchMode.fadeTitle
+                    ],
+                    background: Stack(fit: StackFit.expand, children: [
+                      releaseSmallCover(context, _person.image),
+                      const DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment(0.0, 0.75),
+                            end: Alignment(0.0, 0.0),
+                            colors: <Color>[
+                              Color(0x60000000),
+                              Color(0x00000000),
+                            ],
+                          ),
+                        ),
                       ),
-                    if (view.hasWriting())
-                      MovieGridWidget(view.writingMovies()),
-                  ])));
-        });
+                    ])),
+              ),
+              SliverToBoxAdapter(
+                  child: Container(
+                      padding: EdgeInsets.fromLTRB(0, 16, 0, 4),
+                      child: Column(children: [
+                        _title(context),
+                      ]))),
+              if (view.hasStarring())
+                SliverToBoxAdapter(
+                    child: heading(context.strings.starringLabel)),
+              if (view.hasStarring()) MovieGridWidget(view.starringMovies()),
+              if (view.hasDirecting())
+                SliverToBoxAdapter(
+                    child: heading(context.strings.directingLabel)),
+              if (view.hasDirecting()) MovieGridWidget(view.directingMovies()),
+              if (view.hasWriting())
+                SliverToBoxAdapter(
+                  child: heading(context.strings.writingLabel),
+                ),
+              if (view.hasWriting()) MovieGridWidget(view.writingMovies()),
+            ])));
   }
 
   Widget _title(BuildContext context) {

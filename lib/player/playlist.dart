@@ -70,6 +70,7 @@ class PlaylistCubit extends Cubit<PlaylistState> {
         emit(PlaylistChange(spiff));
       } else {
         // TODO
+        print('replace not modified');
       }
     }).onError((error, stackTrace) {
       // TODO
