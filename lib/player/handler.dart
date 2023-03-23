@@ -135,9 +135,12 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
         return;
       }
       if (index >= 0 && index < _spiff.length) {
+        // update the current media item
+        mediaItem.add(_queue[index]);
+
+        // update the spiff
         _spiff = _spiff.copyWith(index: index);
         onIndexChange(_spiff, _player.playing);
-        mediaItem.add(_queue[index]);
       } else {
         print(
             'bad index change $index ${_spiff.playlist.tracks.length}  ${_queue.length}');
@@ -146,9 +149,18 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
 
     // media duration changes
     _subscriptions.add(_player.durationStream.listen((duration) {
-      final item = mediaItem.valueOrNull;
-      if (item != null && duration != null) {
-        mediaItem.add(item.copyWith(duration: duration));
+      if (duration != null) {
+        final index = _spiff.index;
+        var item = _queue[index];
+
+        // update the current media item
+        item = item.copyWith(duration: duration);
+        mediaItem.add(item);
+
+        // update the media queue
+        _queue[index] = item;
+        queue.add(_queue);
+
         onDurationChange(_spiff, _player.duration ?? Duration.zero,
             _player.position, _player.playing);
       }
@@ -180,9 +192,9 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
     _subscriptions.add(_player.icyMetadataStream.listen((event) {
       // TODO icy events are sometimes sent for regular media so ignore them.
       if (_spiff.isStream()) {
-        var item = mediaItem.valueOrNull;
-        if (item != null && event != null) {
+        if (event != null) {
           final index = _spiff.index;
+          var item = _queue[index];
 
           // update the current media item
           final title = event.info?.title ?? item.title;
@@ -239,14 +251,15 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
   }
 
   Future<MediaItem> _map(Entry entry) async {
+    final endpoint = settingsRepository.settings?.endpoint;
     String image = entry.image;
     if (image.startsWith('/img/')) {
-      image = '${settingsRepository.settings?.endpoint}$image';
+      image = '${endpoint}$image';
     }
     final uri = await trackResolver.resolve(entry);
     String id = uri.toString();
     if (id.startsWith('/api/')) {
-      id = '${settingsRepository.settings?.endpoint}$id';
+      id = '${endpoint}$id';
     }
     return MediaItem(
         id: id,
