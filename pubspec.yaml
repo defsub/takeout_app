@@ -30,7 +30,7 @@ dependencies:
   timeago_flutter: ^1.2.0
 
   shared_preferences: ^2.0.6
-  json_annotation: ^4.7.0
+  json_annotation: ^4.8.0
   cached_network_image: ^3.0.0
   connectivity_plus: ^3.0.2
   palette_generator: ^0.3.0

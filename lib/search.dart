@@ -40,17 +40,12 @@ class SearchWidget extends ClientPage<SearchView> {
   void _onPlay(BuildContext context, SearchView view) {
     final List<Track>? tracks = view.tracks;
     if (tracks != null && tracks.length > 0) {
-      // MediaQueue.playTracks(context, tracks);
+      // TODO need spiff to play tracks
     }
   }
 
   void _onDownload(BuildContext context, SearchView view) {
-    // final List<Track>? tracks = view.tracks;
-    // if (tracks != null && tracks.length > 0) {
-    //   final spiff = MediaQueue.fromTracks(tracks,
-    //       creator: 'Search', title: 'TODO');
-    //   context.download.addSpiff(spiff);
-    // }
+    // TODO need spiff to download tracks
   }
 
   @override
