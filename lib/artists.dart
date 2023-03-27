@@ -206,14 +206,14 @@ class ArtistWidget extends ClientPage<ArtistView> with ArtistPage {
 
   Widget leftButton(BuildContext context) {
     return IconButton(
-        color: overlayIconColor(context),
+        // color: overlayIconColor(context),
         icon: Icon(Icons.shuffle_sharp),
         onPressed: () => _onShuffle(context));
   }
 
   Widget rightButton(BuildContext context) {
     return IconButton(
-        color: overlayIconColor(context),
+        // color: overlayIconColor(context),
         icon: Icon(Icons.radio),
         onPressed: () => _onRadio(context));
   }
@@ -333,7 +333,6 @@ mixin ArtistPage {
                     backgroundColor: snapshot.data,
                     body: CustomScrollView(slivers: [
                       SliverAppBar(
-                          foregroundColor: overlayIconColor(context),
                           expandedHeight: expandedHeight,
                           actions: actions(context, view),
                           flexibleSpace: FlexibleSpaceBar(

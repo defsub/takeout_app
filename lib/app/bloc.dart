@@ -20,6 +20,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:takeout_app/api/model.dart';
 import 'package:takeout_app/cache/json_repository.dart';
 import 'package:takeout_app/cache/offset.dart';
 import 'package:takeout_app/cache/offset_repository.dart';
@@ -166,25 +167,29 @@ mixin AppBloc {
   }
 
   /// NowPlaying manages the playlist that should be playing.
-  void onNowPlayingChange(BuildContext context, Spiff? spiff) {
-    if (spiff != null) {
-      // load now playing playlist into player
-      context.player.load(spiff);
-    }
+  void onNowPlayingChange(BuildContext context, Spiff spiff, bool autoplay) {
+    // load now playing playlist into player
+    context.player.load(spiff, autoplay: autoplay);
   }
 
   void onPlaylistChange(BuildContext context, PlaylistChange state) {
     context.play(state.spiff);
   }
 
-  /// Restore previous playlist once the player is ready.
+  /// Restore playlist once the player is ready.
   void onPlayerReady(BuildContext context, PlayerReady state) {
-    final spiff = context.nowPlaying.state;
-    onNowPlayingChange(context, spiff);
+    final nowPlaying = context.nowPlaying.state;
+    onNowPlayingChange(context, nowPlaying.spiff, false);
 
     context.player.stream.timeout(Duration(minutes: 1), onTimeout: (_) {
       context.player.stop();
     }).listen((event) {});
+  }
+
+  void onPlayerLoad(BuildContext context, PlayerLoad state) {
+    if (state.autoplay) {
+      context.player.play();
+    }
   }
 
   void onPlayerPlay(BuildContext context, PlayerPlay state) {}
@@ -201,6 +206,10 @@ mixin AppBloc {
 
   void onPlayerPause(BuildContext context, PlayerPause state) {
     _updateProgress(context, state);
+  }
+
+  void onPlayerIndexChange(BuildContext context, PlayerIndexChange state) {
+    context.nowPlaying.index(state.currentIndex);
   }
 
   void onPlayerTrackEnd(BuildContext context, PlayerTrackEnd state) {
@@ -230,24 +239,32 @@ mixin AppBloc {
 
   Widget _listeners(BuildContext context, {required Widget child}) {
     return MultiBlocListener(listeners: [
-      BlocListener<NowPlayingCubit, Spiff?>(listener: (context, spiff) {
-        if (spiff != null) {
-          onNowPlayingChange(context, spiff);
-        }
-      }),
+      BlocListener<NowPlayingCubit, NowPlayingState>(
+          listenWhen: (_, state) => state is NowPlayingChange,
+          listener: (context, state) {
+            if (state is NowPlayingChange) {
+              onNowPlayingChange(context, state.spiff, state.autoplay);
+            }
+          }),
       BlocListener<Player, PlayerState>(
           listenWhen: (_, state) =>
               state is PlayerReady ||
+              state is PlayerLoad ||
               state is PlayerPlay ||
               state is PlayerPause ||
+              state is PlayerIndexChange ||
               state is PlayerTrackEnd,
           listener: (context, state) {
             if (state is PlayerReady) {
               onPlayerReady(context, state);
+            } else if (state is PlayerLoad) {
+              onPlayerLoad(context, state);
             } else if (state is PlayerPlay) {
               onPlayerPlay(context, state);
             } else if (state is PlayerPause) {
               onPlayerPause(context, state);
+            } else if (state is PlayerIndexChange) {
+              onPlayerIndexChange(context, state);
             } else if (state is PlayerTrackEnd) {
               onPlayerTrackEnd(context, state);
             }
@@ -275,7 +292,7 @@ mixin AppBloc {
 }
 
 mixin AppBlocState {
-  StreamSubscription<PlayerPositionChange>? _considerPlayedSubscription;
+  StreamSubscription<PlayerProgressChange>? _considerPlayedSubscription;
 
   void appInitState(BuildContext context) {
     if (context.tokens.state.tokens.authenticated) {
@@ -284,21 +301,25 @@ mixin AppBlocState {
     }
 
     // keep track of position changes and update history once a track is considered played
-    // _considerPlayedSubscription = context.player.stream
-    //     .where((state) => state is PlayerPositionChange)
-    //     .cast<PlayerPositionChange>()
-    //     .distinct((a, b) =>
-    // a or b current track failed - RangeError (index): Invalid value: Valid value range is empty: 0
-    //         a.currentTrack.etag == b.currentTrack.etag &&
-    //         a.considerPlayed == b.considerPlayed)
-    //     .listen((state) {
-    //   if (state.considerPlayed) {
-    //     // add track to history & activity
-    //     context.history.add(track: state.currentTrack);
-    //     context.client.updateActivity(
-    //         Events(trackEvents: [TrackEvent.now(state.currentTrack.etag)]));
-    //   }
-    // });
+    // TODO consider a more efficient way to do this
+    _considerPlayedSubscription = context.player.stream
+        .where((state) => state is PlayerProgressChange)
+        .cast<PlayerProgressChange>()
+        .distinct((a, b) =>
+            a.currentTrack?.etag == b.currentTrack?.etag &&
+            a.considerPlayed == b.considerPlayed)
+        .listen((state) {
+      if (state.considerPlayed) {
+        final currentTrack = state.currentTrack;
+        if (currentTrack != null) {
+          print('consider played ${state.currentTrack?.title}');
+          // add track to history & activity
+          context.history.add(track: currentTrack);
+          context.clientRepository.updateActivity(
+              Events(trackEvents: [TrackEvent.now(currentTrack.etag)]));
+        }
+      }
+    });
 
     // prune incomplete/partial downloads
     pruneCache(context.spiffCache.repository, context.trackCache.repository);

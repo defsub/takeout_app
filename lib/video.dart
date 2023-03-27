@@ -31,6 +31,7 @@ import 'package:takeout_app/client/resolver.dart';
 import 'package:takeout_app/page/page.dart';
 import 'package:takeout_app/settings/repository.dart';
 import 'package:takeout_app/tokens/repository.dart';
+import 'package:takeout_app/empty.dart';
 import 'package:video_player/video_player.dart';
 import 'package:wakelock/wakelock.dart';
 
@@ -64,7 +65,6 @@ class MovieWidget extends ClientPage<MovieView> {
               return CustomScrollView(slivers: [
                 SliverAppBar(
                   // actions: [ ],
-                  foregroundColor: overlayIconColor(context),
                   backgroundColor: Colors.black,
                   expandedHeight: expandedHeight,
                   flexibleSpace: FlexibleSpaceBar(
@@ -134,7 +134,7 @@ class MovieWidget extends ClientPage<MovieView> {
     print('progress for ${_movie.etag} is $value');
     return value != null
         ? LinearProgressIndicator(value: value)
-        : SizedBox.shrink();
+        : EmptyWidget();
   }
 
   Widget _title(BuildContext context) {
@@ -210,7 +210,6 @@ class MovieWidget extends ClientPage<MovieView> {
     final pos = offsetCache.state.position(_movie) ?? Duration.zero;
     return isCached
         ? IconButton(
-            color: overlayIconColor(context),
             icon: Icon(Icons.play_arrow, size: 32),
             onPressed: () => _onPlay(context, view, pos))
         : StreamingButton(onPressed: () => _onPlay(context, view, pos));
@@ -219,7 +218,6 @@ class MovieWidget extends ClientPage<MovieView> {
   Widget _downloadButton(BuildContext context, bool isCached) {
     return isCached
         ? IconButton(
-            color: overlayIconColor(context),
             icon: Icon(IconsDownloadDone),
             onPressed: () => {})
         : DownloadButton(onPressed: () => _onDownload(context));
@@ -299,7 +297,6 @@ class ProfileWidget extends ClientPage<ProfileView> {
             child: CustomScrollView(slivers: [
               SliverAppBar(
                 // actions: [ ],
-                foregroundColor: overlayIconColor(context),
                 expandedHeight: MediaQuery.of(context).size.height / 2,
                 flexibleSpace: FlexibleSpaceBar(
                     // centerTitle: true,
@@ -572,7 +569,7 @@ class _MoviePlayerState extends State<MoviePlayer> {
             }
           },
           child: _controller == null
-              ? SizedBox.shrink()
+              ? EmptyWidget()
               : Center(
                   child: _controller!.value.isInitialized
                       ? AspectRatio(
@@ -602,7 +599,7 @@ class _MoviePlayerState extends State<MoviePlayer> {
                                       final state =
                                           snapshot.data ?? MovieState.none;
                                       return state == MovieState.none
-                                          ? SizedBox.shrink()
+                                          ? EmptyWidget()
                                           : Center(
                                               child: IconButton(
                                                   padding: EdgeInsets.all(0),
@@ -624,7 +621,7 @@ class _MoviePlayerState extends State<MoviePlayer> {
                                     })
                             ],
                           ))
-                      : SizedBox.shrink(),
+                      : EmptyWidget(),
                 )),
     );
   }

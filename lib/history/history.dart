@@ -31,7 +31,7 @@ class HistoryState {
 class HistoryCubit extends Cubit<HistoryState> {
   final HistoryRepository repository;
 
-  HistoryCubit(this.repository) : super(HistoryState(History())) {
+  HistoryCubit(this.repository) : super(HistoryState(History.empty())) {
     _load();
   }
 

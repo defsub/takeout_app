@@ -63,7 +63,9 @@ abstract class PlayerPositionState extends PlayerState {
 }
 
 class PlayerLoad extends PlayerState {
-  PlayerLoad(super.spiff);
+  final bool autoplay;
+
+  PlayerLoad(super.spiff, this.autoplay);
 }
 
 class PlayerInit extends PlayerState {
@@ -110,6 +112,13 @@ class PlayerDurationChange extends PlayerPositionState {
       required super.playing});
 }
 
+class PlayerProgressChange extends PlayerPositionState {
+  PlayerProgressChange(super.spiff,
+      {required super.duration,
+      required super.position,
+      required super.playing});
+}
+
 class PlayerTrackChange extends PlayerState {
   final int index;
   final String? title;
@@ -122,8 +131,8 @@ class PlayerTrackEnd extends PlayerPositionState {
 
   PlayerTrackEnd(super.spiff, this.index,
       {required super.duration,
-        required super.position,
-        required super.playing});
+      required super.position,
+      required super.playing});
 }
 
 class Player extends Cubit<PlayerState> {
@@ -160,17 +169,19 @@ class Player extends Cubit<PlayerState> {
             onDurationChange: (spiff, duration, position, playing) => emit(
                 PlayerDurationChange(spiff,
                     duration: duration, position: position, playing: playing)),
+            onProgressChange: (spiff, duration, position, playing) => emit(
+                PlayerProgressChange(spiff,
+                    duration: duration, position: position, playing: playing)),
             onTrackChange: (spiff, index, {String? title}) =>
                 emit(PlayerTrackChange(spiff, index, title: title)),
             onTrackEnd: (spiff, index, duration, position, playing) => emit(
-                PlayerTrackEnd(spiff, index,
-                    duration: duration, position: position, playing: playing)))
+                PlayerTrackEnd(spiff, index, duration: duration, position: position, playing: playing)))
         .whenComplete(() => emit(PlayerReady()));
   }
 
-  void load(Spiff spiff) {
+  void load(Spiff spiff, {bool autoplay = false}) {
     _provider.load(spiff);
-    emit(PlayerLoad(spiff));
+    emit(PlayerLoad(spiff, autoplay));
   }
 
   void play() => _provider.play();

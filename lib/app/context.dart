@@ -20,7 +20,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:takeout_app/api/model.dart';
 import 'package:takeout_app/cache/offset.dart';
-import 'package:takeout_app/cache/offset_repository.dart';
 import 'package:takeout_app/cache/spiff.dart';
 import 'package:takeout_app/cache/track.dart';
 import 'package:takeout_app/client/client.dart';
@@ -46,8 +45,14 @@ import 'app.dart';
 extension AppContext on BuildContext {
   AppLocalizations get strings => AppLocalizations.of(this)!;
 
+  void logout() {
+    tokens.removeAll();
+    app.logout();
+  }
+
   void play(Spiff spiff) {
-    nowPlaying.add(spiff);
+    nowPlaying.add(spiff, autoplay: true);
+    // TODO consider moving history.add from here to onNowPLayingChange
     history.add(spiff: Spiff.cleanup(spiff));
     app.showPlayer();
   }

@@ -17,16 +17,49 @@
 
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:takeout_app/spiff/model.dart';
+import 'package:json_annotation/json_annotation.dart';
 
-class NowPlayingCubit extends HydratedCubit<Spiff?> {
-  NowPlayingCubit() : super(null);
+part 'playing.g.dart';
 
-  void add(Spiff spiff) => emit(spiff);
+@JsonSerializable()
+class NowPlayingState {
+  final Spiff spiff;
+  @JsonKey(ignore: true)
+  final bool autoplay;
+
+  NowPlayingState(this.spiff, {bool? autoplay})
+      : this.autoplay = autoplay ?? false;
+
+  factory NowPlayingState.initial() => NowPlayingState(Spiff.empty());
+
+  factory NowPlayingState.fromJson(Map<String, dynamic> json) =>
+      _$NowPlayingStateFromJson(json);
+
+  Map<String, dynamic> toJson() => _$NowPlayingStateToJson(this);
+}
+
+class NowPlayingChange extends NowPlayingState {
+  NowPlayingChange(super.spiff, {bool? super.autoplay});
+}
+
+class NowPlayingIndexChange extends NowPlayingState {
+  NowPlayingIndexChange(super.spiff);
+}
+
+class NowPlayingCubit extends HydratedCubit<NowPlayingState> {
+  NowPlayingCubit() : super(NowPlayingState.initial());
+
+  void add(Spiff spiff, {bool? autoplay}) =>
+      emit(NowPlayingChange(spiff, autoplay: autoplay));
+
+  void index(int index) =>
+      emit(NowPlayingIndexChange(state.spiff.copyWith(index: index)));
 
   @override
-  Spiff? fromJson(Map<String, dynamic> json) => Spiff.fromJson(json['spiff']);
+  NowPlayingState fromJson(Map<String, dynamic> json) =>
+      NowPlayingState.fromJson(json['nowPlaying']);
 
   @override
-  Map<String, dynamic>? toJson(Spiff? spiff) =>
-      spiff != null ? {'spiff': spiff.toJson()} : null;
+  Map<String, dynamic>? toJson(NowPlayingState state) =>
+      {'nowPlaying': state.toJson()};
 }

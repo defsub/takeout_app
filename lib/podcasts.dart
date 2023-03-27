@@ -28,6 +28,7 @@ import 'package:takeout_app/client/download.dart';
 import 'package:takeout_app/media_type/media_type.dart';
 import 'package:takeout_app/page/page.dart';
 import 'package:takeout_app/util.dart';
+import 'package:takeout_app/empty.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import 'menu.dart';
@@ -59,7 +60,6 @@ class SeriesWidget extends ClientPage<SeriesView> {
               return CustomScrollView(slivers: [
                 SliverAppBar(
                   // actions: [ ],
-                  foregroundColor: overlayIconColor(context),
                   expandedHeight: expandedHeight,
                   flexibleSpace: FlexibleSpaceBar(
                       // centerTitle: true,
@@ -112,7 +112,6 @@ class SeriesWidget extends ClientPage<SeriesView> {
   Widget _playButton(BuildContext context, bool isCached) {
     return isCached
         ? IconButton(
-            color: overlayIconColor(context),
             icon: Icon(Icons.play_arrow, size: 32),
             onPressed: () => _onPlay(context))
         : StreamingButton(onPressed: () => _onPlay(context));
@@ -120,10 +119,7 @@ class SeriesWidget extends ClientPage<SeriesView> {
 
   Widget _downloadButton(BuildContext context, SeriesView view, bool isCached) {
     return isCached
-        ? IconButton(
-            color: overlayIconColor(context),
-            icon: Icon(IconsDownloadDone),
-            onPressed: () => {})
+        ? IconButton(icon: Icon(IconsDownloadDone), onPressed: () => {})
         : DownloadButton(onPressed: () => _onDownload(context, view));
   }
 
@@ -258,16 +254,16 @@ class _EpisodeWidget extends StatelessWidget {
                   subtitle: Text(subtitle, overflow: TextOverflow.ellipsis),
                   trailing: _downloadButton(context),
                 ),
-                _progress(offsetCache) ?? SizedBox.shrink(),
+                _progress(offsetCache) ?? EmptyWidget(),
                 Expanded(child: _episodeDetail()),
                 ListTile(
                   title: remaining != null
                       ? Text(
                           '${remaining.inHoursMinutes} remaining') // TODO intl
-                      : SizedBox.shrink(),
+                      : EmptyWidget(),
                   subtitle: when != null
                       ? RelativeDateWidget(when)
-                      : SizedBox.shrink(),
+                      : EmptyWidget(),
                   leading: _playButton(context, isCached),
                 ),
               ],

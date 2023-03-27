@@ -41,6 +41,10 @@ class TokensCubit extends HydratedCubit<TokensState> {
     emit(TokensState(tokens));
   }
 
+  void removeAll() {
+    emit(TokensState(Tokens.initial()));
+  }
+
   @override
   TokensState fromJson(Map<String, dynamic> json) =>
       TokensState.fromJson(json['tokens']);

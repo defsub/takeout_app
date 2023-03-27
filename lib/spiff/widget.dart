@@ -31,6 +31,7 @@ import 'package:takeout_app/page/page.dart';
 import 'package:takeout_app/style.dart';
 import 'package:takeout_app/tiles.dart';
 import 'package:takeout_app/util.dart';
+import 'package:takeout_app/empty.dart';
 
 import 'model.dart';
 
@@ -61,17 +62,14 @@ class SpiffWidget extends ClientPage<Spiff> {
 
   Widget bottomRight(BuildContext context, Spiff spiff, bool isCached) {
     return isCached
-        ? IconButton(
-            color: overlayIconColor(context),
-            icon: Icon(IconsDownloadDone),
-            onPressed: () => {})
+        ? IconButton(icon: Icon(IconsDownloadDone), onPressed: () => {})
         : downloadButton(context, spiff, isCached);
   }
 
   Widget subtitle(BuildContext context, Spiff spiff) {
     final text = spiff.playlist.creator;
     return text == null
-        ? SizedBox.shrink()
+        ? EmptyWidget()
         : Text(text, style: Theme.of(context).textTheme.titleMedium);
   }
 
@@ -109,7 +107,6 @@ class SpiffWidget extends ClientPage<Spiff> {
 
       return CustomScrollView(slivers: [
         SliverAppBar(
-          foregroundColor: overlayIconColor(context),
           expandedHeight: expandedHeight,
           actions: actions(context, spiff, isCached, isDownloaded),
           flexibleSpace: FlexibleSpaceBar(

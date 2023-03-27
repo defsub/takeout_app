@@ -59,6 +59,10 @@ class Spiff {
 
   String? get date => playlist.date;
 
+  bool get isEmpty => playlist.tracks.isEmpty;
+
+  bool get isNotEmpty => playlist.tracks.isNotEmpty;
+
   @override
   bool operator ==(other) {
     if (other is Spiff) {

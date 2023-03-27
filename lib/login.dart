@@ -18,6 +18,7 @@
 import 'package:flutter/material.dart';
 import 'package:takeout_app/app/context.dart';
 import 'package:takeout_app/page/page.dart';
+import 'package:takeout_app/empty.dart';
 
 class LoginWidget extends ClientPage<bool> {
   final TextEditingController _hostText = TextEditingController();
@@ -46,7 +47,7 @@ class LoginWidget extends ClientPage<bool> {
   Widget page(BuildContext context, bool success) {
     if (success) {
       context.app.authenticated();
-      return SizedBox.shrink();
+      return EmptyWidget();
     }
 
     return Scaffold(

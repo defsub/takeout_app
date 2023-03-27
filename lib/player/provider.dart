@@ -27,15 +27,18 @@ final DummyPlayerCallback = (_, __, ___) {};
 final DummyStoppedCallback = (_) {};
 final DummyTrackChangeCallback = (_, __, {String? title}) {};
 final DummyPositionCallback = (_, __, ___, ____) {};
+final DummyProgressCallback = (_, __, ___, ____) {};
 final DummyIndexCallback = (_, __) {};
 final DummyTrackEndCallback = (_, __, ___, ____, _____) {};
 
 typedef PlayerCallback = void Function(Spiff, Duration, Duration);
 typedef IndexCallback = void Function(Spiff, bool);
 typedef PositionCallback = void Function(Spiff, Duration, Duration, bool);
+typedef ProgressCallback = void Function(Spiff, Duration, Duration, bool);
 typedef StoppedCallback = void Function(Spiff);
 typedef TrackChangeCallback = void Function(Spiff, int index, {String? title});
-typedef TrackEndCallback = void Function(Spiff, int index, Duration, Duration, bool);
+typedef TrackEndCallback = void Function(
+    Spiff, int index, Duration, Duration, bool);
 
 abstract class PlayerProvider {
   Future<void> init(
@@ -49,6 +52,7 @@ abstract class PlayerProvider {
       IndexCallback? onIndexChange,
       PositionCallback? onPositionChange,
       PositionCallback? onDurationChange,
+      ProgressCallback? onProgressChange,
       TrackChangeCallback? onTrackChange,
       TrackEndCallback? onTrackEnd});
 
@@ -89,6 +93,7 @@ class DefaultPlayerProvider implements PlayerProvider {
       IndexCallback? onIndexChange,
       PositionCallback? onPositionChange,
       PositionCallback? onDurationChange,
+      ProgressCallback? onProgressChange,
       TrackChangeCallback? onTrackChange,
       TrackEndCallback? onTrackEnd}) async {
     handler = await TakeoutPlayerHandler.create(
@@ -102,6 +107,7 @@ class DefaultPlayerProvider implements PlayerProvider {
         onIndexChange: onIndexChange ?? DummyIndexCallback,
         onPositionChange: onPositionChange ?? DummyPositionCallback,
         onDurationChange: onDurationChange ?? DummyPositionCallback,
+        onProgressChange: onProgressChange ?? DummyProgressCallback,
         onTrackChange: onTrackChange ?? DummyTrackChangeCallback,
         onTrackEnd: onTrackEnd ?? DummyTrackEndCallback);
   }

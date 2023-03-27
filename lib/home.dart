@@ -34,6 +34,7 @@ import 'package:takeout_app/page/page.dart';
 import 'package:takeout_app/settings/widget.dart';
 import 'package:takeout_app/spiff/model.dart';
 import 'package:takeout_app/spiff/widget.dart';
+import 'package:takeout_app/empty.dart';
 import 'package:takeout_app/tiles.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -137,7 +138,7 @@ class _MediaHomeItem extends _HomeItem {
         return SpiffWidget(value: (album as _SpiffAlbum).spiff);
       }
       print('not supported ${album}');
-      return SizedBox.shrink();
+      return EmptyWidget();
     };
   }
 
@@ -153,8 +154,7 @@ class _MediaHomeItem extends _HomeItem {
   Widget _downloadIcon(BuildContext context, Spiff download,
       IconData completeIcon, IconData downloadingIcon) {
     final isCached = trackCache.containsAll(download.playlist.tracks);
-    return Icon(isCached ? completeIcon : downloadingIcon,
-        color: overlayIconColor(context));
+    return Icon(isCached ? completeIcon : downloadingIcon);
   }
 
   @override
@@ -166,7 +166,7 @@ class _MediaHomeItem extends _HomeItem {
     } else if (year > 1) {
       return Text('$year');
     }
-    return SizedBox.shrink();
+    return EmptyWidget();
   }
 
   @override
@@ -214,7 +214,7 @@ class _MovieHomeItem extends _MediaHomeItem {
   Widget? get subtitle => null;
 
   @override
-  Widget getTrailing(BuildContext context) => SizedBox.shrink();
+  Widget getTrailing(BuildContext context) => EmptyWidget();
 
   @override
   Widget image(BuildContext context) {
@@ -241,7 +241,7 @@ class _SeriesHomeItem extends _MediaHomeItem {
 
   @override
   Widget getTrailing(BuildContext context) =>
-      SizedBox.shrink(); // no trailer (year)
+      EmptyWidget(); // no trailer (year)
 
   @override
   Widget image(BuildContext context) {
@@ -476,7 +476,7 @@ abstract class _HomeGrid extends StatelessWidget {
   }
 
   void _onLogout(BuildContext context) {
-    throw UnimplementedError;
+    context.logout();
   }
 
   void _onAbout(BuildContext context) {

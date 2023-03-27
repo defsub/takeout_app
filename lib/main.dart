@@ -27,6 +27,7 @@ import 'package:takeout_app/app/context.dart';
 import 'package:takeout_app/history/widget.dart';
 import 'package:takeout_app/player/player.dart';
 import 'package:takeout_app/player/widget.dart';
+import 'package:takeout_app/empty.dart';
 
 import 'artists.dart';
 import 'global.dart';
@@ -57,6 +58,8 @@ class TakeoutApp extends StatelessWidget with AppBloc {
   Widget build(BuildContext context) {
     return appInit(context, child: DynamicColorBuilder(
         builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
+      final light = ThemeData.light(useMaterial3: true);
+      final dark = ThemeData.dark(useMaterial3: true);
       return MaterialApp(
           onGenerateTitle: (context) => context.strings.takeoutTitle,
           localizationsDelegates: [
@@ -69,10 +72,23 @@ class TakeoutApp extends StatelessWidget with AppBloc {
             const Locale('en', ''),
           ],
           home: _TakeoutWidget(),
-          theme: ThemeData.light()
-              .copyWith(useMaterial3: true, colorScheme: lightDynamic),
-          darkTheme: ThemeData.dark()
-              .copyWith(useMaterial3: true, colorScheme: darkDynamic));
+          theme: light.copyWith(
+              colorScheme: lightDynamic,
+              // appBarTheme:
+              //     light.appBarTheme.copyWith(iconTheme: light.iconTheme),
+              // iconButtonTheme: IconButtonThemeData(
+              //     style: IconButton.styleFrom(
+              //         foregroundColor: light.iconTheme.color)),
+              listTileTheme: light.listTileTheme
+                  .copyWith(iconColor: light.iconTheme.color)),
+          darkTheme: dark.copyWith(
+              colorScheme: darkDynamic,
+              // appBarTheme: dark.appBarTheme.copyWith(iconTheme: dark.iconTheme),
+              // iconButtonTheme: IconButtonThemeData(
+              //     style: IconButton.styleFrom(
+              //         foregroundColor: dark.iconTheme.color)),
+              listTileTheme: dark.listTileTheme
+                  .copyWith(iconColor: dark.iconTheme.color)));
     }));
   }
 }
@@ -212,32 +228,32 @@ class _TakeoutState extends State<_TakeoutWidget>
 
   @override
   Widget build(final BuildContext context) {
-    final builders = _pageBuilders();
-    final pages = List.generate(
-        _routes.length, (index) => builders[_routes[index]]!(context));
-
-    return WillPopScope(onWillPop: () async {
-      NavigatorState? navState = _navigatorState(context.app.state.index);
-      if (navState != null) {
-        final handled = await navState.maybePop();
-        if (!handled && context.app.state.index == NavigationIndex.home) {
-          // allow pop and app to exit
-          return true;
-        }
-      }
-      return false;
-    }, child: BlocBuilder<AppCubit, AppState>(builder: (context, state) {
+    return BlocBuilder<AppCubit, AppState>(builder: (context, state) {
       if (state.authenticated == false) {
         return LoginWidget();
-      } else {
-        return Scaffold(
-            key: _scaffoldMessengerKey,
-            floatingActionButton: _fab(context),
-            body:
-                IndexedStack(index: state.navigationBarIndex, children: pages),
-            bottomNavigationBar: _bottomNavigation());
       }
-    }));
+      final builders = _pageBuilders();
+      final pages = List.generate(
+          _routes.length, (index) => builders[_routes[index]]!(context));
+      return WillPopScope(
+          onWillPop: () async {
+            NavigatorState? navState = _navigatorState(context.app.state.index);
+            if (navState != null) {
+              final handled = await navState.maybePop();
+              if (!handled && context.app.state.index == NavigationIndex.home) {
+                // allow pop and app to exit
+                return true;
+              }
+            }
+            return false;
+          },
+          child: Scaffold(
+              key: _scaffoldMessengerKey,
+              floatingActionButton: _fab(context),
+              body: IndexedStack(
+                  index: state.navigationBarIndex, children: pages),
+              bottomNavigationBar: _bottomNavigation()));
+    });
   }
 
   Widget _fab(BuildContext context) {
@@ -246,21 +262,20 @@ class _TakeoutState extends State<_TakeoutWidget>
       double? progress;
 
       if (context.app.state.index == NavigationIndex.player) {
-        return SizedBox.shrink();
+        // hide fab on player page
+        return EmptyWidget();
       }
-
       if (state is PlayerInit ||
           state is PlayerReady ||
           state is PlayerLoad ||
           state is PlayerStop) {
-        return SizedBox.shrink();
+        // hide fab
+        return EmptyWidget();
       }
-
       if (state is PlayerPositionState) {
         playing = state.playing;
         progress = state.progress;
       }
-
       return Container(
           child: Stack(alignment: Alignment.center, children: [
         FloatingActionButton(
@@ -317,9 +332,8 @@ class _TakeoutState extends State<_TakeoutWidget>
 
   Map<String, WidgetBuilder> _pageBuilders() {
     final builders = {
-      '/home': (_) =>
-          HomeWidget((ctx) => Navigator.push(
-              ctx, MaterialPageRoute(builder: (_) => SearchWidget()))),
+      '/home': (_) => HomeWidget((ctx) => Navigator.push(
+          ctx, MaterialPageRoute(builder: (_) => SearchWidget()))),
       '/artists': (_) => ArtistsWidget(),
       '/history': (_) => HistoryListWidget(),
       '/radio': (_) => RadioWidget(),

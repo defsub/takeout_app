@@ -78,7 +78,6 @@ class ReleaseWidget extends ClientPage<ReleaseView> {
                   // floating: true,
                   // snap: false,
                   // backgroundColor: backgroundColor,
-                  foregroundColor: overlayIconColor(context),
                   expandedHeight: expandedHeight,
                   actions: [
                     popupMenu(context, [
@@ -152,7 +151,7 @@ class ReleaseWidget extends ClientPage<ReleaseView> {
   Widget _artist(BuildContext context) {
     var artist = _release.artist;
     if (isNotNullOrEmpty(_release.date)) {
-      artist = merge([artist, year(_release.date ?? '')]);
+      artist = merge([artist, year(_release.date)]);
     }
     return Text(artist, style: Theme.of(context).textTheme.titleMedium!);
   }
@@ -160,7 +159,6 @@ class ReleaseWidget extends ClientPage<ReleaseView> {
   Widget _playButton(BuildContext context, bool isCached) {
     return isCached
         ? IconButton(
-            color: overlayIconColor(context),
             icon: Icon(Icons.play_arrow, size: 32),
             onPressed: () => _onPlay(context))
         : StreamingButton(onPressed: () => _onPlay(context));
@@ -169,10 +167,7 @@ class ReleaseWidget extends ClientPage<ReleaseView> {
   Widget _downloadButton(
       BuildContext context, ReleaseView view, bool isCached) {
     return isCached
-        ? IconButton(
-            color: overlayIconColor(context),
-            icon: Icon(IconsDownloadDone),
-            onPressed: () => {})
+        ? IconButton(icon: Icon(IconsDownloadDone), onPressed: () => {})
         : DownloadButton(onPressed: () => _onDownload(context, view));
   }
 }
@@ -327,7 +322,7 @@ class ReleaseListWidget extends StatelessWidget {
                   icon: Icon(Icons.play_arrow),
                   onPressed: () => _onPlay(context, e)),
               title: Text(e.nameWithDisambiguation),
-              subtitle: Text(year(e.date ?? '')))))
+              subtitle: Text(year(e.date)))))
     ]);
   }
 

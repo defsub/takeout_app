@@ -53,6 +53,7 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
   final IndexCallback onIndexChange;
   final PositionCallback onPositionChange;
   final PositionCallback onDurationChange;
+  final ProgressCallback onProgressChange;
   final TrackChangeCallback onTrackChange;
   final TrackEndCallback onTrackEnd;
 
@@ -70,6 +71,7 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
       required this.onIndexChange,
       required this.onPositionChange,
       required this.onDurationChange,
+      required this.onProgressChange,
       required this.onTrackChange,
       required this.onTrackEnd,
       required this.trackResolver,
@@ -93,6 +95,7 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
       required IndexCallback onIndexChange,
       required PositionCallback onPositionChange,
       required PositionCallback onDurationChange,
+      required ProgressCallback onProgressChange,
       required TrackChangeCallback onTrackChange,
       required TrackEndCallback onTrackEnd,
       Duration? skipBeginningInterval,
@@ -106,6 +109,7 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
             onIndexChange: onIndexChange,
             onPositionChange: onPositionChange,
             onDurationChange: onDurationChange,
+            onProgressChange: onProgressChange,
             onTrackChange: onTrackChange,
             onTrackEnd: onTrackEnd,
             trackResolver: trackResolver,
@@ -191,24 +195,22 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
     // icy metadata changes
     _subscriptions.add(_player.icyMetadataStream.listen((event) {
       // TODO icy events are sometimes sent for regular media so ignore them.
-      if (_spiff.isStream()) {
-        if (event != null) {
-          final index = _spiff.index;
-          var item = _queue[index];
+      if (_spiff.isStream() && event != null) {
+        final index = _spiff.index;
+        var item = _queue[index];
 
-          // update the current media item
-          final title = event.info?.title ?? item.title;
-          item = item.copyWith(title: title);
-          mediaItem.add(item);
+        // update the current media item
+        final title = event.info?.title ?? item.title;
+        item = item.copyWith(title: title);
+        mediaItem.add(item);
 
-          // update the media queue
-          _queue[index] = item;
-          queue.add(_queue);
+        // update the media queue
+        _queue[index] = item;
+        queue.add(_queue);
 
-          // update the current spiff
-          _spiff = _spiff.updateAt(index, _spiff[index].copyWith(title: title));
-          onTrackChange(_spiff, index, title: event.info?.title);
-        }
+        // update the current spiff
+        _spiff = _spiff.updateAt(index, _spiff[index].copyWith(title: title));
+        onTrackChange(_spiff, index, title: event.info?.title);
       }
     }));
 
@@ -238,12 +240,16 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
       }
     }));
 
-    // keep track of position changes and update history once a track is considered played
-    // 180 = 18 secs
-    // _subscriptions.add(_player.createPositionStream(steps: 10,
-    //     minPeriod: const Duration(seconds: 1),
-    //     maxPeriod: const Duration(seconds: 10)).listen((position) {
-    // }));
+    // create a stream to update progress less frequently than position updates
+    _subscriptions.add(_player
+        .createPositionStream(
+            steps: 100,
+            minPeriod: const Duration(seconds: 1),
+            maxPeriod: const Duration(seconds: 5))
+        .listen((position) {
+      onProgressChange(_spiff, _player.duration ?? Duration.zero,
+          _player.position, _player.playing);
+    }));
   }
 
   void dispose() {
@@ -283,6 +289,9 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
   }
 
   Future<void> load(Spiff spiff) async {
+    if (spiff.isEmpty) {
+      return;
+    }
     this._spiff = spiff;
     if (_spiff.index < 0) {
       // TODO server sends -1
@@ -306,7 +315,7 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
     final source = ConcatenatingAudioSource(children: []);
     source.addAll(sources);
 
-    final offset = await offsetRepository.get(_spiff.playlist.tracks[index]);
+    final offset = await offsetRepository.get(_spiff[index]);
     final position = offset?.position() ?? Duration.zero;
 
     // this sends events so use the correct index and position even though
@@ -354,11 +363,7 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
   Future<void> play() => _player.play();
 
   Future<void> playIndex(int index) {
-    return skipToQueueItem(index).whenComplete(() {
-      if (_player.playing == false) {
-        _player.play();
-      }
-    });
+    return skipToQueueItem(index).whenComplete(() => play());
   }
 
   @override

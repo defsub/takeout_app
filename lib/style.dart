@@ -69,8 +69,3 @@ Widget smallHeading(BuildContext context, String text) {
           // style: TextStyle(fontWeight: FontWeight.w300, fontSize: 12))),
           padding: EdgeInsets.fromLTRB(17, 11, 0, 11)));
 }
-
-Color overlayIconColor(BuildContext context) {
-  // Theme.of(context).colorScheme.onBackground
-  return Colors.white;
-}

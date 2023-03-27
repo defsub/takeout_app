@@ -32,6 +32,8 @@ class History {
         this.spiffs = const [],
         this.tracks = const {}});
 
+  factory History.empty() => History();
+
   History unmodifiableCopy() => History(
       searches: List.unmodifiable(this.searches),
       spiffs: List.unmodifiable(this.spiffs),

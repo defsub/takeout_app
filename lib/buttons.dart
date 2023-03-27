@@ -31,8 +31,7 @@ class PlayButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return IconButton(
-        color: overlayIconColor(context), icon: PlayIcon, onPressed: onPressed);
+    return IconButton(icon: PlayIcon, onPressed: onPressed);
   }
 }
 
@@ -49,9 +48,7 @@ abstract class _ConnectivityButton extends StatelessWidget {
     return BlocBuilder<ConnectivityCubit, ConnectivityState>(
         builder: (context, state) {
       return IconButton(
-          color: overlayIconColor(context),
-          icon: icon,
-          onPressed: _allowed(context, state) ? onPressed : null);
+          icon: icon, onPressed: _allowed(context, state) ? onPressed : null);
     });
   }
 }
