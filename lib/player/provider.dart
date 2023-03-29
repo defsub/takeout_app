@@ -56,7 +56,7 @@ abstract class PlayerProvider {
       TrackChangeCallback? onTrackChange,
       TrackEndCallback? onTrackEnd});
 
-  void load(Spiff spiff);
+  Future<void> load(Spiff spiff);
 
   void play();
 
@@ -80,7 +80,7 @@ abstract class PlayerProvider {
 }
 
 class DefaultPlayerProvider implements PlayerProvider {
-  late TakeoutPlayerHandler handler;
+  late final TakeoutPlayerHandler handler;
 
   Future<void> init(
       {required MediaTrackResolver trackResolver,
@@ -112,25 +112,36 @@ class DefaultPlayerProvider implements PlayerProvider {
         onTrackEnd: onTrackEnd ?? DummyTrackEndCallback);
   }
 
-  void load(Spiff spiff) => handler.load(spiff);
+  @override
+  Future<void> load(Spiff spiff) => handler.load(spiff);
 
+  @override
   void play() => handler.play();
 
+  @override
   void playIndex(int index) => handler.playIndex(index);
 
+  @override
   void pause() => handler.pause();
 
+  @override
   void stop() => handler.stop();
 
+  @override
   void seek(Duration position) => handler.seek(position);
 
+  @override
   void skipForward() => handler.fastForward();
 
+  @override
   void skipBackward() => handler.rewind();
 
+  @override
   void skipToIndex(int index) => handler.skipToQueueItem(index);
 
+  @override
   void skipToNext() => handler.skipToNext();
 
+  @override
   void skipToPrevious() => handler.skipToPrevious();
 }

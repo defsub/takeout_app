@@ -40,7 +40,7 @@ class AppCubit extends Cubit<AppState> {
 
   void logout() => emit(state.copyWith(authenticated: false));
 
-  void go(int index) =>
+  void goto(int index) =>
       emit(state.copyWith(index: NavigationIndex.values[index]));
 
   void home() => emit(state.copyWith(index: NavigationIndex.home));

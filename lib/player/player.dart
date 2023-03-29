@@ -33,9 +33,10 @@ abstract class PlayerState {
 
   int get lastIndex => spiff.length - 1;
 
-  MediaTrack? get currentTrack => spiff.playlist.tracks.length > 0
-      ? spiff.playlist.tracks[currentIndex]
-      : null;
+  MediaTrack? get currentTrack =>
+      spiff.playlist.tracks.length > 0
+          ? spiff.playlist.tracks[currentIndex]
+          : null;
 }
 
 abstract class PlayerPositionState extends PlayerState {
@@ -84,8 +85,8 @@ class PlayerPlay extends PlayerPositionState {
 class PlayerPause extends PlayerPositionState {
   PlayerPause(super.spiff,
       {required super.duration,
-      required super.position,
-      super.playing = false});
+        required super.position,
+        super.playing = false});
 }
 
 class PlayerStop extends PlayerState {
@@ -101,22 +102,22 @@ class PlayerIndexChange extends PlayerState {
 class PlayerPositionChange extends PlayerPositionState {
   PlayerPositionChange(super.spiff,
       {required super.duration,
-      required super.position,
-      required super.playing});
+        required super.position,
+        required super.playing});
 }
 
 class PlayerDurationChange extends PlayerPositionState {
   PlayerDurationChange(super.spiff,
       {required super.duration,
-      required super.position,
-      required super.playing});
+        required super.position,
+        required super.playing});
 }
 
 class PlayerProgressChange extends PlayerPositionState {
   PlayerProgressChange(super.spiff,
       {required super.duration,
-      required super.position,
-      required super.playing});
+        required super.position,
+        required super.playing});
 }
 
 class PlayerTrackChange extends PlayerState {
@@ -131,8 +132,8 @@ class PlayerTrackEnd extends PlayerPositionState {
 
   PlayerTrackEnd(super.spiff, this.index,
       {required super.duration,
-      required super.position,
-      required super.playing});
+        required super.position,
+        required super.playing});
 }
 
 class Player extends Cubit<PlayerState> {
@@ -142,46 +143,51 @@ class Player extends Cubit<PlayerState> {
   final SettingsRepository settingsRepository;
   final OffsetCacheRepository offsetRepository;
 
-  Player(
-      {required this.trackResolver,
-      required this.tokenRepository,
-      required this.settingsRepository,
-      required this.offsetRepository,
-      PlayerProvider? provider})
+  Player({required this.trackResolver,
+    required this.tokenRepository,
+    required this.settingsRepository,
+    required this.offsetRepository,
+    PlayerProvider? provider})
       : _provider = provider ?? DefaultPlayerProvider(),
         super(PlayerInit()) {
     _provider
         .init(
-            tokenRepository: tokenRepository,
-            settingsRepository: settingsRepository,
-            trackResolver: trackResolver,
-            offsetRepository: offsetRepository,
-            onPlay: (spiff, duration, position) =>
-                emit(PlayerPlay(spiff, duration: duration, position: position)),
-            onPause: (spiff, duration, position) => emit(
+        tokenRepository: tokenRepository,
+        settingsRepository: settingsRepository,
+        trackResolver: trackResolver,
+        offsetRepository: offsetRepository,
+        onPlay: (spiff, duration, position) =>
+            emit(PlayerPlay(spiff, duration: duration, position: position)),
+        onPause: (spiff, duration, position) =>
+            emit(
                 PlayerPause(spiff, duration: duration, position: position)),
-            onStop: (spiff) => emit(PlayerStop(spiff)),
-            onIndexChange: (spiff, playing) =>
-                emit(PlayerIndexChange(spiff, playing)),
-            onPositionChange: (spiff, duration, position, playing) => emit(
+        onStop: (spiff) => emit(PlayerStop(spiff)),
+        onIndexChange: (spiff, playing) =>
+            emit(PlayerIndexChange(spiff, playing)),
+        onPositionChange: (spiff, duration, position, playing) =>
+            emit(
                 PlayerPositionChange(spiff,
                     duration: duration, position: position, playing: playing)),
-            onDurationChange: (spiff, duration, position, playing) => emit(
+        onDurationChange: (spiff, duration, position, playing) =>
+            emit(
                 PlayerDurationChange(spiff,
                     duration: duration, position: position, playing: playing)),
-            onProgressChange: (spiff, duration, position, playing) => emit(
+        onProgressChange: (spiff, duration, position, playing) =>
+            emit(
                 PlayerProgressChange(spiff,
                     duration: duration, position: position, playing: playing)),
-            onTrackChange: (spiff, index, {String? title}) =>
-                emit(PlayerTrackChange(spiff, index, title: title)),
-            onTrackEnd: (spiff, index, duration, position, playing) => emit(
-                PlayerTrackEnd(spiff, index, duration: duration, position: position, playing: playing)))
+        onTrackChange: (spiff, index, {String? title}) =>
+            emit(PlayerTrackChange(spiff, index, title: title)),
+        onTrackEnd: (spiff, index, duration, position, playing) =>
+            emit(
+                PlayerTrackEnd(spiff, index, duration: duration,
+                    position: position,
+                    playing: playing)))
         .whenComplete(() => emit(PlayerReady()));
   }
 
   void load(Spiff spiff, {bool autoplay = false}) {
-    _provider.load(spiff);
-    emit(PlayerLoad(spiff, autoplay));
+    _provider.load(spiff).whenComplete(() => emit(PlayerLoad(spiff, autoplay)));
   }
 
   void play() => _provider.play();

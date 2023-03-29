@@ -222,7 +222,7 @@ class _TakeoutState extends State<_TakeoutWidget>
         navState.popUntil((route) => route.isFirst);
       }
     } else {
-      context.app.go(index);
+      context.app.goto(index);
     }
   }
 

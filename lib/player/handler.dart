@@ -232,11 +232,12 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
       if (_player.currentIndex == null) {
         return null;
       }
-      if (state.playing == false &&
-          state.processingState == ProcessingState.ready) {
-        onPause(_spiff, _player.duration ?? Duration.zero, _player.position);
-      } else {
-        onPlay(_spiff, _player.duration ?? Duration.zero, _player.position);
+      if (state.processingState == ProcessingState.ready) {
+        if (state.playing) {
+          onPlay(_spiff, _player.duration ?? Duration.zero, _player.position);
+        } else {
+          onPause(_spiff, _player.duration ?? Duration.zero, _player.position);
+        }
       }
     }));
 
@@ -331,8 +332,8 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
     final offset = await offsetRepository.get(_spiff.playlist.tracks[index]);
     var position = offset?.position() ?? Duration.zero;
 
-    final currentIndex = _player.currentIndex;
-    if (currentIndex != null && index == currentIndex - 1) {
+    final currentIndex = _spiff.index;
+    if (index == currentIndex - 1) {
       if (_player.position > _skipToBeginningInterval) {
         // skip to beginning before going to previous
         index = currentIndex;
@@ -340,13 +341,15 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
       }
     }
 
-    // keep the spiff updated
-    _spiff = _spiff.copyWith(index: index);
-    onIndexChange(_spiff, _player.playing);
+    if (index != currentIndex) {
+      // keep the spiff updated
+      _spiff = _spiff.copyWith(index: index);
+      onIndexChange(_spiff, _player.playing);
 
-    // update the current media item
-    mediaItem.add(_queue[index]);
-    playbackState.add(playbackState.value.copyWith(queueIndex: index));
+      // update the current media item
+      mediaItem.add(_queue[index]);
+      playbackState.add(playbackState.value.copyWith(queueIndex: index));
+    }
 
     return _player.seek(position, index: index);
   }

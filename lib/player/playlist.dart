@@ -69,8 +69,8 @@ class PlaylistCubit extends Cubit<PlaylistState> {
         final spiff = Spiff.fromJson(result.body);
         emit(PlaylistChange(spiff));
       } else {
-        // TODO
-        print('replace not modified');
+        // emit as PlaylistChange for now
+        emit(PlaylistChange(state.spiff));
       }
     }).onError((error, stackTrace) {
       // TODO
