@@ -21,6 +21,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:logging/logging.dart';
 import 'package:takeout_app/api/model.dart';
+import 'package:takeout_app/app/app.dart';
 import 'package:takeout_app/app/context.dart';
 import 'package:takeout_app/art/artwork.dart';
 import 'package:takeout_app/art/cover.dart';

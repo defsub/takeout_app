@@ -18,10 +18,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-const appVersion = '0.10.0';
-const appSource = 'https://github.com/defsub/takeout_app';
-const appHome = 'https://defsub.github.io';
-
 const textSeparator = ' \u2022 ';
 
 final homeKey = GlobalKey<NavigatorState>();

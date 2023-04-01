@@ -927,9 +927,9 @@ class Episode extends DownloadIdentifier
   final int size;
   final int _year;
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   final String album;
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   final String image; // set from series
 
   Episode(

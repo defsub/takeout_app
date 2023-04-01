@@ -79,6 +79,7 @@
   "history": "History",
   "seriesLabel": "Series",
   "episodesLabel": "Episodes",
+  "variousArtists": "Various Artists",
   "deleteTitle": "Really delete {title}?",
   "@deleteTitle": {
     "placeholders": {

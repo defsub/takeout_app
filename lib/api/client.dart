@@ -51,10 +51,9 @@ class _ClientError extends Error {
   _ClientError([this.message]);
 
   String toString() {
-    if (message != null) {
-      return 'Client error: ${Error.safeToString(message)}';
-    }
-    return 'Client error';
+    return message != null
+        ? 'Client error: ${Error.safeToString(message)}'
+        : 'Client error';
   }
 }
 
@@ -142,7 +141,6 @@ class TakeoutClient implements ClientProvider {
 
   Future<Map<String, dynamic>> _getJson(String uri,
       {bool cacheable = true, Duration? ttl}) async {
-
     ttl = ttl ?? defaultTTL;
     Map<String, dynamic>? cachedJson = null;
 

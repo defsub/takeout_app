@@ -253,28 +253,6 @@ class SimilarArtistListWidget extends StatelessWidget {
   }
 }
 
-// TODO move to another file
-class TrackListWidget extends StatelessWidget {
-  final List<MediaTrack> _tracks;
-
-  const TrackListWidget(this._tracks);
-
-  void _onPlay(BuildContext context, int index) {
-    // MediaQueue.playTracks(context, _tracks, index: index);
-    // showPlayer();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(children: [
-      ..._tracks.asMap().keys.toList().map((index) =>
-          CoverTrackListTile.mediaTrack(context, _tracks[index],
-              onTap: () => _onPlay(context, index),
-              trailing: Icon(Icons.play_arrow)))
-    ]);
-  }
-}
-
 mixin ArtistPage {
   List<Widget> actions(BuildContext context, ArtistView view);
 

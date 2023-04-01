@@ -23,13 +23,17 @@ import 'package:takeout_app/api/model.dart';
 import 'package:takeout_app/app/context.dart';
 import 'package:takeout_app/history/history.dart';
 import 'package:takeout_app/history/model.dart';
+import 'package:takeout_app/media_type/media_type.dart';
 import 'package:takeout_app/page/page.dart';
+import 'package:takeout_app/spiff/model.dart';
 import 'package:takeout_app/podcasts.dart';
 import 'package:takeout_app/release.dart';
 
 import 'artists.dart';
+import 'model.dart';
 import 'nav.dart';
 import 'style.dart';
+import 'tracks.dart';
 import 'video.dart';
 
 class SearchWidget extends ClientPage<SearchView> {
@@ -40,12 +44,17 @@ class SearchWidget extends ClientPage<SearchView> {
   void _onPlay(BuildContext context, SearchView view) {
     final List<Track>? tracks = view.tracks;
     if (tracks != null && tracks.length > 0) {
-      // TODO need spiff to play tracks
+      final spiff = Spiff.fromMediaTracks(tracks);
+      context.play(spiff);
     }
   }
 
   void _onDownload(BuildContext context, SearchView view) {
-    // TODO need spiff to download tracks
+    final List<Track>? tracks = view.tracks;
+    if (tracks != null && tracks.length > 0) {
+      final spiff = Spiff.fromMediaTracks(tracks);
+      context.download(spiff);
+    }
   }
 
   @override
@@ -57,7 +66,6 @@ class SearchWidget extends ClientPage<SearchView> {
 
   @override
   Widget page(BuildContext context, SearchView view) {
-    print('search page $view');
     return Builder(builder: (context) {
       final history = context.watch<HistoryCubit>().state.history;
       final searches = List<SearchHistory>.from(history.searches);

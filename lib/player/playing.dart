@@ -24,7 +24,7 @@ part 'playing.g.dart';
 @JsonSerializable()
 class NowPlayingState {
   final Spiff spiff;
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   final bool autoplay;
 
   NowPlayingState(this.spiff, {bool? autoplay})

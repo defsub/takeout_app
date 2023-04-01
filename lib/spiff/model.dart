@@ -38,16 +38,16 @@ class Spiff {
   final Playlist playlist;
   final String type;
   final String cover;
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   final DateTime? lastModified;
 
-  Spiff(
-      {required this.index,
-      required this.position,
-      required this.playlist,
-      required this.type,
-      this.lastModified})
-      : cover = playlist._cover;
+  Spiff({
+    required this.index,
+    required this.position,
+    required this.playlist,
+    required this.type,
+    this.lastModified,
+  }) : cover = playlist._cover;
 
   int get size => playlist.tracks.fold(0, (sum, t) => sum + t.size);
 
@@ -136,6 +136,22 @@ class Spiff {
     }
   }
 
+  factory Spiff.fromMediaTracks(
+    Iterable<MediaTrack> mediaTracks, {
+    MediaType mediaType = MediaType.music,
+    String title = '',
+    int index = 0,
+    double position = 0.0,
+  }) {
+    final tracks =
+        mediaTracks.map<Entry>((t) => Entry.fromMediaTrack(t)).toList();
+    return cleanup(Spiff(
+        index: index,
+        position: position,
+        playlist: Playlist(title: title, tracks: tracks),
+        type: mediaType.name));
+  }
+
   Map<String, dynamic> toJson() => _$SpiffToJson(this);
 
   Spiff copyWith({
@@ -213,6 +229,16 @@ class Entry extends DownloadIdentifier implements MediaTrack, OffsetIdentifier {
           identifiers: this.identifiers,
           sizes: this.sizes);
 
+  factory Entry.fromMediaTrack(MediaTrack track) => Entry(
+      creator: track.creator,
+      album: track.album,
+      title: track.title,
+      image: track.image,
+      date: track.date,
+      locations: [track.location],
+      identifiers: [track.etag],
+      sizes: [track.size]);
+
   factory Entry.fromJson(Map<String, dynamic> json) {
     try {
       return _$EntryFromJson(json);
@@ -243,7 +269,7 @@ class Entry extends DownloadIdentifier implements MediaTrack, OffsetIdentifier {
   }
 
   int get size {
-    return sizes == null || sizes!.isEmpty ? 0 : sizes![0];
+    return sizes?[0] ?? 0;
   }
 
   @override
@@ -346,17 +372,30 @@ String _playlistCreator(Spiff spiff) {
   if (spiff.playlist.creator != null) {
     return spiff.playlist.creator!;
   }
-  final list = LinkedHashSet<String>();
   // use track creator(s)
-  list.addAll(spiff.playlist.tracks.map((e) => e.creator));
-  return list.join(', ');
+  final list = LinkedHashSet<String>()
+    ..addAll(spiff.playlist.tracks.map((e) => e.creator));
+  // TODO localize, need context
+  return list.length > 2 ? 'Various Artists' : list.join(', ');
 }
 
 String _playlistTitle(Spiff spiff) {
   if (spiff.playlist.title.isNotEmpty) {
     return spiff.playlist.title;
   }
-  final list = LinkedHashSet<String>()
-    ..addAll(spiff.playlist.tracks.map((e) => e.album));
-  return list.join(', ');
+  // map of album title counts
+  final counts = spiff.playlist.tracks
+      .map((t) => t.album)
+      .fold<Map<String, int>>({}, (map, album) {
+    map[album] = (map[album] ?? 0) + 1;
+    return map;
+  });
+  // sort ascending
+  final sorted = counts.entries.toList()
+    ..sort((a, b) => b.value.compareTo(a.value));
+  if (sorted.length > 2) {
+    // use top n album titles
+    return sorted.sublist(0, 2).map((e) => e.key).join(', ') + ', ...';
+  }
+  return sorted.map((e) => e.key).join(', ');
 }

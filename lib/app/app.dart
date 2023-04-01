@@ -17,6 +17,10 @@
 
 import 'package:bloc/bloc.dart';
 
+const appVersion = '0.10.1';
+const appSource = 'https://github.com/defsub/takeout_app';
+const appHome = 'https://defsub.github.io';
+
 enum NavigationIndex { home, artists, history, radio, player }
 
 class AppState {
