@@ -180,17 +180,24 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
           _player.position, _player.playing);
     }));
 
-    _player.positionDiscontinuityStream.listen((discontinuity) {
-      if (discontinuity.reason == PositionDiscontinuityReason.autoAdvance) {
-        final previousIndex = discontinuity.previousEvent.currentIndex;
-        final duration = discontinuity.previousEvent.duration ?? Duration.zero;
-        final position = discontinuity.previousEvent.updatePosition;
-        if (previousIndex != null) {
-          onTrackEnd(
-              _spiff, previousIndex, duration, position, _player.playing);
-        }
-      }
-    });
+    // TODO onTrackEnd isn't called right now
+    // FIXME: discontinuity doesn't work due to:
+    // - setAudioSource triggers events
+    // - switching spiffs is seen as a autoAdvance - seems wrong
+    // - onTrackEnd is called with new spiff, no longer have old one
+    // - previousEvent doesn't have enough to reconstruct previous state
+
+    // _player.positionDiscontinuityStream.listen((discontinuity) {
+    //   if (discontinuity.reason == PositionDiscontinuityReason.autoAdvance) {
+    //     final previousIndex = discontinuity.previousEvent.currentIndex;
+    //     final duration = discontinuity.previousEvent.duration ?? Duration.zero;
+    //     final position = discontinuity.previousEvent.updatePosition;
+    //     if (previousIndex != null) {
+    //       onTrackEnd(
+    //           _spiff, previousIndex, duration, position, _player.playing);
+    //     }
+    //   }
+    // });
 
     // icy metadata changes
     _subscriptions.add(_player.icyMetadataStream.listen((event) {
@@ -314,13 +321,14 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
             toAudioSource(item, headers: item.isRemote() ? headers : null))
         .toList();
     final source = ConcatenatingAudioSource(children: []);
-    source.addAll(sources);
+    await source.addAll(sources);
 
     final offset = await offsetRepository.get(_spiff[index]);
     final position = offset?.position() ?? Duration.zero;
 
-    // this sends events so use the correct index and position even though
-    // skipToQueueItem does the same thing later
+    // setAudioSource triggers events so use the correct index and position even though
+    // skipToQueueItem does the same thing next.
+    // also ensure _spiff is correct since events are triggered
     await _player.setAudioSource(source,
         initialIndex: index, initialPosition: position);
 
