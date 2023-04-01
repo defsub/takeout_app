@@ -91,7 +91,6 @@ String merge(List<String> args, {String separator = textSeparator}) {
   return args.join(separator);
 }
 
-// TODO move below to util, global or other
 String year(String date) {
   var d = DateTime.parse(date);
   // year 1 is a Go zero value date
