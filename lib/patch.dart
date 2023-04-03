@@ -28,7 +28,7 @@ List<Map<String, dynamic>> patchAppend(String ref) {
 List<Map<String, dynamic>> patchReplace(String ref, String type) {
   return [
     {'op': 'replace', 'path': '/type', 'value': type},
-    {'op': 'replace', 'path': '/playlist/track', 'value': []},
+    {'op': 'replace', 'path': '/playlist/track', 'value': <String>[]},
     {
       'op': 'add',
       'path': '/playlist/track/-',
@@ -45,7 +45,7 @@ List<Map<String, dynamic>> patchRemove(String index) {
 
 List<Map<String, dynamic>> patchClear() {
   return [
-    {'op': 'replace', 'path': '/playlist/track', 'value': []}
+    {'op': 'replace', 'path': '/playlist/track', 'value': <String>[]}
   ];
 }
 

@@ -119,7 +119,7 @@ extension AppContext on BuildContext {
       // add local offset
       offsets.add(offset);
       // send to server
-      clientRepository.updateProgress(Offsets(offsets: [offset]));
+      await clientRepository.updateProgress(Offsets(offsets: [offset]));
     }
   }
 

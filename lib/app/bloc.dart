@@ -20,7 +20,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:takeout_app/api/model.dart';
 import 'package:takeout_app/cache/json_repository.dart';
 import 'package:takeout_app/cache/offset.dart';
 import 'package:takeout_app/cache/offset_repository.dart';
@@ -68,7 +67,7 @@ mixin AppBloc {
   }
 
   Widget _repositories(Directory directory, {required Widget child}) {
-    final d = (String name) => Directory('${directory.path}/${name}');
+    final d = (String name) => Directory('${directory.path}/$name');
 
     final settingsRepository = SettingsRepository();
 
@@ -181,7 +180,7 @@ mixin AppBloc {
     final nowPlaying = context.nowPlaying.state;
     onNowPlayingChange(context, nowPlaying.spiff, false);
 
-    context.player.stream.timeout(Duration(minutes: 1), onTimeout: (_) {
+    context.player.stream.timeout(const Duration(minutes: 1), onTimeout: (_) {
       context.player.stop();
     }).listen((event) {});
   }
@@ -302,24 +301,28 @@ mixin AppBlocState {
 
     // keep track of position changes and update history once a track is considered played
     // TODO consider a more efficient way to do this
-    _considerPlayedSubscription = context.player.stream
-        .where((state) => state is PlayerProgressChange)
-        .cast<PlayerProgressChange>()
-        .distinct((a, b) =>
-            a.currentTrack?.etag == b.currentTrack?.etag &&
-            a.considerPlayed == b.considerPlayed)
-        .listen((state) {
-      if (state.considerPlayed) {
-        final currentTrack = state.currentTrack;
-        if (currentTrack != null) {
-          print('consider played ${state.currentTrack?.title}');
-          // add track to history & activity
-          context.history.add(track: currentTrack);
-          context.clientRepository.updateActivity(
-              Events(trackEvents: [TrackEvent.now(currentTrack.etag)]));
-        }
-      }
-    });
+    //
+    // TODO: not happy with this code. currently this will send history/activity event again
+    // when you resume playing something that is more than 1/2 way through.
+
+    // _considerPlayedSubscription = context.player.stream
+    //     .where((state) => state is PlayerProgressChange)
+    //     .cast<PlayerProgressChange>()
+    //     .distinct((a, b) =>
+    //         a.currentTrack?.etag == b.currentTrack?.etag &&
+    //         a.considerPlayed == b.considerPlayed)
+    //     .listen((state) {
+    //   if (state.considerPlayed) {
+    //     final currentTrack = state.currentTrack;
+    //     if (currentTrack != null) {
+    //       print('consider played ${state.currentTrack?.title}');
+    //       // add track to history & activity
+    //       context.history.add(track: currentTrack);
+    //       context.clientRepository.updateActivity(
+    //           Events(trackEvents: [TrackEvent.now(currentTrack.etag)]));
+    //     }
+    //   }
+    // });
 
     // prune incomplete/partial downloads
     pruneCache(context.spiffCache.repository, context.trackCache.repository);

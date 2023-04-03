@@ -30,11 +30,11 @@ import 'player.dart';
 import 'seekbar.dart';
 
 class PlayerWidget extends StatelessWidget {
-  PlayerWidget({super.key});
+  const PlayerWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final builder = (context) =>
+    final builder = (BuildContext context) =>
         PlayerScaffold(
             body: CustomScrollView(slivers: [
               SliverAppBar(
@@ -43,9 +43,9 @@ class PlayerWidget extends StatelessWidget {
                       .of(context)
                       .size
                       .height / 2,
-                  actions: [],
+                  actions: const [],
                   flexibleSpace: FlexibleSpaceBar(
-                      stretchModes: [
+                      stretchModes: const [
                         StretchMode.zoomBackground,
                         StretchMode.fadeTitle
                       ],
@@ -54,7 +54,7 @@ class PlayerWidget extends StatelessWidget {
                       ]))),
               SliverToBoxAdapter(
                   child: Container(
-                      padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                       child: Column(children: [
                         playerTitle(context),
                         playerArtist(context),
@@ -190,7 +190,7 @@ class PlayerWidget extends StatelessWidget {
 
   Widget _seekBar(Player player, Duration duration, Duration position) {
     return Container(
-        padding: EdgeInsets.fromLTRB(0, 0, 0, 16),
+        padding: const EdgeInsets.fromLTRB(0, 0, 0, 16),
         child: SeekBar(
             duration: duration,
             position: position,
@@ -203,32 +203,32 @@ class PlayerWidget extends StatelessWidget {
     final isPodcast = state.spiff.isPodcast();
     final isStream = state.spiff.isStream();
     return Container(
-        padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
+        padding: const EdgeInsets.fromLTRB(0, 0, 0, 0),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             if (!isStream)
               IconButton(
-                icon: Icon(Icons.skip_previous),
+                icon: const Icon(Icons.skip_previous),
                 onPressed: state.currentIndex == 0
                     ? null
                     : () => player.skipToPrevious(),
               ),
             if (isPodcast)
               IconButton(
-                icon: Icon(Icons.replay_10_outlined),
+                icon: const Icon(Icons.replay_10_outlined),
                 iconSize: 36,
                 onPressed: () => player.skipBackward(),
               ),
             if (playing)
               IconButton(
-                icon: Icon(Icons.pause),
+                icon: const Icon(Icons.pause),
                 iconSize: 64.0,
                 onPressed: () => player.pause(),
               )
             else
               IconButton(
-                icon: Icon(Icons.play_arrow),
+                icon: const Icon(Icons.play_arrow),
                 iconSize: 64.0,
                 onPressed: () => player.play(),
               ),
@@ -236,12 +236,12 @@ class PlayerWidget extends StatelessWidget {
             if (isPodcast)
               IconButton(
                 iconSize: 36,
-                icon: Icon(Icons.forward_30_outlined),
+                icon: const Icon(Icons.forward_30_outlined),
                 onPressed: () => player.skipForward(),
               ),
             if (!isStream)
               IconButton(
-                icon: Icon(Icons.skip_next),
+                icon: const Icon(Icons.skip_next),
                 onPressed: state.currentIndex == state.lastIndex
                     ? null
                     : () => player.skipToNext(),
@@ -257,21 +257,20 @@ class PlayerWidget extends StatelessWidget {
   Widget _trackList(BuildContext context, Player player, PlayerState state) {
     final tracks = state.spiff.playlist.tracks;
     final sameArtwork = tracks.every((t) => t.image == tracks.first.image);
-    return Container(
-        child: Column(children: [
-          ...List.generate(
-              tracks.length,
-                  (index) =>
-                  CoverTrackListTile.mediaTrack(context, tracks[index],
-                      showCover: !sameArtwork,
-                      trailing: _cachedIcon(),
-                      selected: index == state.currentIndex,
-                      // TODO
-                      onTap: () => player.playIndex(index),
-                      onLongPress: () {
-                        _onArtist(context, tracks[index].creator);
-                      }))
-        ]));
+    return Column(children: [
+      ...List.generate(
+          tracks.length,
+              (index) =>
+              CoverTrackListTile.mediaTrack(context, tracks[index],
+                  showCover: !sameArtwork,
+                  trailing: _cachedIcon(),
+                  selected: index == state.currentIndex,
+                  // TODO
+                  onTap: () => player.playIndex(index),
+                  onLongPress: () {
+                    _onArtist(context, tracks[index].creator);
+                  }))
+    ]);
   }
 
   Widget? _cachedIcon() {

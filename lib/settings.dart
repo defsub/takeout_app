@@ -35,101 +35,101 @@ enum GridType { mix, downloads, released, added }
 class AppSettings extends StatelessWidget {
   static final log = Logger('AppSettingsState');
 
+  const AppSettings({super.key});
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      child: SettingsScreen(
-        title: context.strings.settingsLabel,
-        children: [
-          SettingsGroup(
-              title: context.strings.homeSettingsTitle,
-              children: <Widget>[
-                DropDownSettingsTile<int>(
-                  settingKey: settingHomeGridType,
-                  title: context.strings.settingHomeGridTitle,
-                  subtitle:
-                      context.strings.settingHomeGridSubtitle,
-                  values: <int, String>{
-                    GridType.mix.index:
-                        context.strings.settingHomeGridMix,
-                    GridType.downloads.index:
-                        context.strings.settingHomeGridDownloads,
-                    GridType.added.index:
-                        context.strings.settingHomeGridAdded,
-                    GridType.released.index:
-                        context.strings.settingHomeGridReleased,
-                  },
-                  selected: Settings.getValue<int>(settingHomeGridType,
-                          defaultValue: GridType.mix.index) ??
-                      GridType.mix.index,
-                  onChange: (value) {
-                    // settingsChangeSubject.add(settingHomeGridType);
-                  },
-                ),
-              ]),
-          SettingsGroup(
-            title: context.strings.networkSettingsTitle,
+    return SettingsScreen(
+      title: context.strings.settingsLabel,
+      children: [
+        SettingsGroup(
+            title: context.strings.homeSettingsTitle,
             children: <Widget>[
-              SwitchSettingsTile(
-                settingKey: settingAllowStreaming,
-                title: context.strings.settingStreamingTitle,
+              DropDownSettingsTile<int>(
+                settingKey: settingHomeGridType,
+                title: context.strings.settingHomeGridTitle,
                 subtitle:
-                    context.strings.settingStreamingSubtitle,
-                enabledLabel: context.strings.settingEnabled,
-                disabledLabel: context.strings.settingDisabled,
-                leading: Icon(Icons.cloud_outlined),
+                    context.strings.settingHomeGridSubtitle,
+                values: <int, String>{
+                  GridType.mix.index:
+                      context.strings.settingHomeGridMix,
+                  GridType.downloads.index:
+                      context.strings.settingHomeGridDownloads,
+                  GridType.added.index:
+                      context.strings.settingHomeGridAdded,
+                  GridType.released.index:
+                      context.strings.settingHomeGridReleased,
+                },
+                selected: Settings.getValue<int>(settingHomeGridType,
+                        defaultValue: GridType.mix.index) ??
+                    GridType.mix.index,
                 onChange: (value) {
-                  log.finer('streaming: $value');
+                  // settingsChangeSubject.add(settingHomeGridType);
                 },
               ),
-              SwitchSettingsTile(
-                settingKey: settingAllowDownload,
-                title: context.strings.settingDownloadsTitle,
-                subtitle:
-                    context.strings.settingDownloadsSubtitle,
-                enabledLabel: context.strings.settingEnabled,
-                disabledLabel: context.strings.settingDisabled,
-                leading: Icon(IconsDownload),
-                onChange: (value) {
-                  log.finer('downloads: $value');
-                },
-              ),
-              SwitchSettingsTile(
-                settingKey: settingAllowArtistArtwork,
-                title: context.strings.settingArtworkTitle,
-                subtitle: context.strings.settingArtworkSubtitle,
-                enabledLabel: context.strings.settingEnabled,
-                disabledLabel: context.strings.settingDisabled,
-                leading: Icon(Icons.image_outlined),
-                onChange: (value) {
-                  log.finer('artwork: $value');
-                },
-              ),
-            ],
-          ),
-          SettingsGroup(
-              title: context.strings.settingLive,
-              children: <Widget>[
-                DropDownSettingsTile<int>(
-                    title: context.strings.settingLiveMode,
-                    settingKey: settingLiveMode,
-                    values: <int, String>{
-                      LiveType.none.index:
-                          context.strings.settingLiveNone,
-                      LiveType.share.index:
-                          context.strings.settingLiveShare,
-                      LiveType.follow.index:
-                          context.strings.settingLiveFollow,
-                    },
-                    selected: Settings.getValue<int>(settingLiveMode,
-                            defaultValue: LiveType.none.index) ??
-                        LiveType.none.index,
-                    onChange: (value) {
-                      // settingsChangeSubject.add(settingLiveMode);
-                    })
-              ]),
-        ],
-      ),
+            ]),
+        SettingsGroup(
+          title: context.strings.networkSettingsTitle,
+          children: <Widget>[
+            SwitchSettingsTile(
+              settingKey: settingAllowStreaming,
+              title: context.strings.settingStreamingTitle,
+              subtitle:
+                  context.strings.settingStreamingSubtitle,
+              enabledLabel: context.strings.settingEnabled,
+              disabledLabel: context.strings.settingDisabled,
+              leading: const Icon(Icons.cloud_outlined),
+              onChange: (value) {
+                log.finer('streaming: $value');
+              },
+            ),
+            SwitchSettingsTile(
+              settingKey: settingAllowDownload,
+              title: context.strings.settingDownloadsTitle,
+              subtitle:
+                  context.strings.settingDownloadsSubtitle,
+              enabledLabel: context.strings.settingEnabled,
+              disabledLabel: context.strings.settingDisabled,
+              leading: const Icon(iconsDownload),
+              onChange: (value) {
+                log.finer('downloads: $value');
+              },
+            ),
+            SwitchSettingsTile(
+              settingKey: settingAllowArtistArtwork,
+              title: context.strings.settingArtworkTitle,
+              subtitle: context.strings.settingArtworkSubtitle,
+              enabledLabel: context.strings.settingEnabled,
+              disabledLabel: context.strings.settingDisabled,
+              leading: const Icon(Icons.image_outlined),
+              onChange: (value) {
+                log.finer('artwork: $value');
+              },
+            ),
+          ],
+        ),
+        SettingsGroup(
+            title: context.strings.settingLive,
+            children: <Widget>[
+              DropDownSettingsTile<int>(
+                  title: context.strings.settingLiveMode,
+                  settingKey: settingLiveMode,
+                  values: <int, String>{
+                    LiveType.none.index:
+                        context.strings.settingLiveNone,
+                    LiveType.share.index:
+                        context.strings.settingLiveShare,
+                    LiveType.follow.index:
+                        context.strings.settingLiveFollow,
+                  },
+                  selected: Settings.getValue<int>(settingLiveMode,
+                          defaultValue: LiveType.none.index) ??
+                      LiveType.none.index,
+                  onChange: (value) {
+                    // settingsChangeSubject.add(settingLiveMode);
+                  })
+            ]),
+      ],
     );
   }
 }

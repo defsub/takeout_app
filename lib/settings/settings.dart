@@ -50,32 +50,32 @@ class SettingsCubit extends HydratedCubit<SettingsState> {
           allowMobileDownload: allowDownload,
           allowMobileArtistArtwork: allowArtistArtwork)));
 
-  void set user(String user) {
+  set user(String user) {
     emit(SettingsState(state.settings.copyWith(user: user)));
   }
 
-  void set host(String host) {
+  set host(String host) {
     emit(SettingsState(state.settings.copyWith(host: host)));
   }
 
-  void set allowStreaming(bool value) {
+  set allowStreaming(bool value) {
     emit(SettingsState(state.settings.copyWith(allowMobileStreaming: value)));
   }
 
-  void set allowDownload(bool value) {
+  set allowDownload(bool value) {
     emit(SettingsState(state.settings.copyWith(allowMobileDownload: value)));
   }
 
-  void set allowArtistArtwork(bool value) {
+  set allowArtistArtwork(bool value) {
     emit(SettingsState(
         state.settings.copyWith(allowMobileArtistArtwork: value)));
   }
 
   @override
   SettingsState fromJson(Map<String, dynamic> json) =>
-      SettingsState.fromJson(json['settings']);
+      SettingsState.fromJson(json['settings'] as Map<String, dynamic>);
 
   @override
-  Map<String, dynamic>? toJson(SettingsState settings) =>
-      {'settings': settings.toJson()};
+  Map<String, dynamic>? toJson(SettingsState state) =>
+      {'settings': state.toJson()};
 }

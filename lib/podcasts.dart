@@ -39,7 +39,7 @@ import 'tiles.dart';
 class SeriesWidget extends ClientPage<SeriesView> {
   final Series _series;
 
-  SeriesWidget(this._series);
+  SeriesWidget(this._series, {super.key});
 
   @override
   void load(BuildContext context, {Duration? ttl}) {
@@ -64,7 +64,7 @@ class SeriesWidget extends ClientPage<SeriesView> {
                   flexibleSpace: FlexibleSpaceBar(
                       // centerTitle: true,
                       // title: Text(release.name, style: TextStyle(fontSize: 15)),
-                      stretchModes: [
+                      stretchModes: const [
                         StretchMode.zoomBackground,
                         StretchMode.fadeTitle
                       ],
@@ -92,7 +92,7 @@ class SeriesWidget extends ClientPage<SeriesView> {
                 ),
                 SliverToBoxAdapter(
                     child: Container(
-                        padding: EdgeInsets.fromLTRB(4, 16, 4, 4),
+                        padding: const EdgeInsets.fromLTRB(4, 16, 4, 4),
                         child: Column(children: [
                           _title(context),
                         ]))),
@@ -104,7 +104,7 @@ class SeriesWidget extends ClientPage<SeriesView> {
 
   Widget _title(BuildContext context) {
     return Container(
-        padding: EdgeInsets.fromLTRB(10, 0, 10, 0),
+        padding: const EdgeInsets.fromLTRB(10, 0, 10, 0),
         child: Text(_series.title,
             style: Theme.of(context).textTheme.headlineSmall));
   }
@@ -112,14 +112,14 @@ class SeriesWidget extends ClientPage<SeriesView> {
   Widget _playButton(BuildContext context, bool isCached) {
     return isCached
         ? IconButton(
-            icon: Icon(Icons.play_arrow, size: 32),
+            icon: const Icon(Icons.play_arrow, size: 32),
             onPressed: () => _onPlay(context))
         : StreamingButton(onPressed: () => _onPlay(context));
   }
 
   Widget _downloadButton(BuildContext context, SeriesView view, bool isCached) {
     return isCached
-        ? IconButton(icon: Icon(IconsDownloadDone), onPressed: () => {})
+        ? IconButton(icon: const Icon(iconsDownloadDone), onPressed: () => {})
         : DownloadButton(onPressed: () => _onDownload(context, view));
   }
 
@@ -180,7 +180,7 @@ class _SeriesEpisodeListWidget extends StatelessWidget {
   Widget? _trailing(BuildContext context, DownloadState downloadState,
       TrackCacheState trackCache, Episode episode) {
     if (trackCache.contains(episode)) {
-      return Icon(IconsCached);
+      return const Icon(iconsCached);
     }
     final progress = downloadState.progress(episode);
     return (progress != null)
@@ -216,7 +216,7 @@ class _EpisodeWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final padding = const EdgeInsets.all(16);
+    const padding = EdgeInsets.all(16);
     return Scaffold(
         backgroundColor: backgroundColor,
         appBar: AppBar(
@@ -241,33 +241,31 @@ class _EpisodeWidget extends StatelessWidget {
             ymd(episode.date),
             if (duration != null) duration.inHoursMinutes
           ]);
-          return Container(
-            child: Column(
-              children: [
-                Container(
-                    padding: padding,
-                    alignment: Alignment.centerLeft,
-                    child: Text(episode.title,
-                        style: Theme.of(context).textTheme.titleLarge)),
-                ListTile(
-                  title: Text(title, overflow: TextOverflow.ellipsis),
-                  subtitle: Text(subtitle, overflow: TextOverflow.ellipsis),
-                  trailing: _downloadButton(context),
-                ),
-                _progress(offsetCache) ?? EmptyWidget(),
-                Expanded(child: _episodeDetail()),
-                ListTile(
-                  title: remaining != null
-                      ? Text(
-                          '${remaining.inHoursMinutes} remaining') // TODO intl
-                      : EmptyWidget(),
-                  subtitle: when != null
-                      ? RelativeDateWidget(when)
-                      : EmptyWidget(),
-                  leading: _playButton(context, isCached),
-                ),
-              ],
-            ),
+          return Column(
+            children: [
+              Container(
+                  padding: padding,
+                  alignment: Alignment.centerLeft,
+                  child: Text(episode.title,
+                      style: Theme.of(context).textTheme.titleLarge)),
+              ListTile(
+                title: Text(title, overflow: TextOverflow.ellipsis),
+                subtitle: Text(subtitle, overflow: TextOverflow.ellipsis),
+                trailing: _downloadButton(context),
+              ),
+              _progress(offsetCache) ?? const EmptyWidget(),
+              Expanded(child: _episodeDetail()),
+              ListTile(
+                title: remaining != null
+                    ? Text(
+                        '${remaining.inHoursMinutes} remaining') // TODO intl
+                    : const EmptyWidget(),
+                subtitle: when != null
+                    ? RelativeDateWidget(when)
+                    : const EmptyWidget(),
+                leading: _playButton(context, isCached),
+              ),
+            ],
           );
         }));
   }
@@ -290,16 +288,12 @@ class _EpisodeWidget extends StatelessWidget {
       ..setNavigationDelegate(
         NavigationDelegate(
           onProgress: (int progress) {
-            print('progress $progress');
           },
           onPageStarted: (String url) {
-            print('started $url');
           },
           onPageFinished: (String url) {
-            print('finished $url');
           },
           onWebResourceError: (WebResourceError error) {
-            print(error);
           },
           onNavigationRequest: (NavigationRequest request) {
             return NavigationDecision.navigate;
@@ -329,7 +323,7 @@ class _EpisodeWidget extends StatelessWidget {
       final download = downloads.get(episode);
       final isCached = trackCache.contains(episode);
       if (isCached) {
-        return Icon(IconsDownloadDone);
+        return const Icon(iconsDownloadDone);
       } else if (download != null) {
         final value = download.progress?.value;
         return CircularProgressIndicator(value: value);
@@ -354,7 +348,7 @@ class _EpisodeWidget extends StatelessWidget {
   }
 
   void _onDelete(BuildContext context) {
-    showDialog(
+    showDialog<void>(
         context: context,
         builder: (ctx) {
           return AlertDialog(
@@ -386,7 +380,7 @@ class _EpisodeWidget extends StatelessWidget {
 class SeriesListWidget extends StatelessWidget {
   final List<Series> _list;
 
-  const SeriesListWidget(this._list);
+  const SeriesListWidget(this._list, {super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -412,7 +406,7 @@ class SeriesListWidget extends StatelessWidget {
 class EpisodeListWidget extends StatelessWidget {
   final List<Episode> _list;
 
-  const EpisodeListWidget(this._list);
+  const EpisodeListWidget(this._list, {super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -432,6 +426,6 @@ class EpisodeListWidget extends StatelessWidget {
 
   void _onTapped(BuildContext context, Episode episode) {
     push(context,
-        builder: (_) => _EpisodeWidget(episode, "")); // TODO need title
+        builder: (_) => _EpisodeWidget(episode, '')); // TODO need title
   }
 }

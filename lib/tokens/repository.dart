@@ -29,7 +29,7 @@ class TokenRepository {
   TokenRepository({TokenProvider? provider}) : _provider = provider;
 
   void init(TokensCubit tokens) {
-    this._provider = DefaultTokenProvider(tokens);
+    _provider = DefaultTokenProvider(tokens);
   }
 
   void add({String? accessToken, String? refreshToken, String? mediaToken}) {

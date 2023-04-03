@@ -24,7 +24,7 @@ import 'player.dart';
 class PlayerScaffold extends StatelessWidget {
   final Widget? body;
 
-  PlayerScaffold({this.body});
+  PlayerScaffold({super.key, this.body});
 
   @override
   Widget build(BuildContext context) {

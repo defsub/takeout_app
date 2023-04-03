@@ -29,18 +29,16 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'global.dart';
 import 'menu.dart';
-import 'model.dart';
 import 'nav.dart';
 import 'release.dart';
 import 'style.dart';
-import 'tiles.dart';
 import 'util.dart';
 
 class ArtistsWidget extends NavigatorClientPage<ArtistsView> {
   final String? genre;
   final String? area;
 
-  ArtistsWidget({this.genre, this.area}) : super(artistsKey);
+  ArtistsWidget({this.genre, this.area}) : super(key: artistsKey);
 
   @override
   void load(BuildContext context, {Duration? ttl}) {
@@ -48,7 +46,7 @@ class ArtistsWidget extends NavigatorClientPage<ArtistsView> {
   }
 
   @override
-  Widget page(BuildContext context, ArtistsView view) {
+  Widget page(BuildContext context, ArtistsView state) {
     return Scaffold(
         appBar: AppBar(title: _title(context), actions: [
           popupMenu(context, [
@@ -57,15 +55,15 @@ class ArtistsWidget extends NavigatorClientPage<ArtistsView> {
         ]),
         body: RefreshIndicator(
             onRefresh: () => reloadPage(context),
-            child: ArtistListWidget(_artists(view))));
+            child: ArtistListWidget(_artists(state))));
   }
 
   Widget _title(BuildContext context) {
     final artistsText = context.strings.artistsLabel;
     return genre != null
-        ? header('$artistsText \u2013 ${genre}')
+        ? header('$artistsText \u2013 $genre')
         : area != null
-            ? header('$artistsText \u2013 ${area}')
+            ? header('$artistsText \u2013 $area')
             : header(artistsText);
   }
 
@@ -104,7 +102,7 @@ String _subtitle(Artist artist) {
 class ArtistListWidget extends StatelessWidget {
   final List<Artist> _artists;
 
-  const ArtistListWidget(this._artists);
+  const ArtistListWidget(this._artists, {super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -130,7 +128,7 @@ class ArtistListWidget extends StatelessWidget {
 class ArtistWidget extends ClientPage<ArtistView> with ArtistPage {
   final Artist _artist;
 
-  ArtistWidget(this._artist);
+  ArtistWidget(this._artist, {super.key});
 
   @override
   void load(BuildContext context, {Duration? ttl}) {
@@ -138,8 +136,8 @@ class ArtistWidget extends ClientPage<ArtistView> with ArtistPage {
   }
 
   @override
-  Widget page(BuildContext context, ArtistView view) {
-    return artistPage(context, view);
+  Widget page(BuildContext context, ArtistView state) {
+    return artistPage(context, state);
   }
 
   void _onRadio(BuildContext context) {
@@ -178,6 +176,7 @@ class ArtistWidget extends ClientPage<ArtistView> with ArtistPage {
     push(context, builder: (_) => ArtistsWidget(area: area));
   }
 
+  @override
   List<Widget> actions(BuildContext context, ArtistView view) {
     final artistUrl = 'https://musicbrainz.org/artist/${_artist.arid}';
     final genre = ReCase(_artist.genre ?? '').titleCase;
@@ -204,20 +203,23 @@ class ArtistWidget extends ClientPage<ArtistView> with ArtistPage {
     ];
   }
 
+  @override
   Widget leftButton(BuildContext context) {
     return IconButton(
         // color: overlayIconColor(context),
-        icon: Icon(Icons.shuffle_sharp),
+        icon: const Icon(Icons.shuffle_sharp),
         onPressed: () => _onShuffle(context));
   }
 
+  @override
   Widget rightButton(BuildContext context) {
     return IconButton(
         // color: overlayIconColor(context),
-        icon: Icon(Icons.radio),
+        icon: const Icon(Icons.radio),
         onPressed: () => _onRadio(context));
   }
 
+  @override
   List<Widget> slivers(BuildContext context, ArtistView view) {
     return [
       SliverToBoxAdapter(child: heading(context.strings.releasesLabel)),
@@ -236,7 +238,7 @@ class ArtistWidget extends ClientPage<ArtistView> with ArtistPage {
 class SimilarArtistListWidget extends StatelessWidget {
   final ArtistView _view;
 
-  const SimilarArtistListWidget(this._view);
+  const SimilarArtistListWidget(this._view, {super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -262,7 +264,7 @@ mixin ArtistPage {
 
   List<Widget> slivers(BuildContext context, ArtistView view);
 
-  static Random _random = Random();
+  static final Random _random = Random();
 
   String? _randomCover(ArtistView view) {
     for (var i = 0; i < 3; i++) {
@@ -314,7 +316,7 @@ mixin ArtistPage {
                           expandedHeight: expandedHeight,
                           actions: actions(context, view),
                           flexibleSpace: FlexibleSpaceBar(
-                              stretchModes: [
+                              stretchModes: const [
                                 StretchMode.zoomBackground,
                                 StretchMode.fadeTitle
                               ],
@@ -342,7 +344,7 @@ mixin ArtistPage {
                               ]))),
                       SliverToBoxAdapter(
                           child: Container(
-                              padding: EdgeInsets.fromLTRB(0, 16, 0, 0),
+                              padding: const EdgeInsets.fromLTRB(0, 16, 0, 0),
                               child: Column(children: [
                                 Text(view.artist.name,
                                     style: Theme.of(context)

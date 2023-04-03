@@ -43,12 +43,12 @@ class Download extends Equatable {
   final DateTime _date;
 
   Download(this.id, this.uri, this.size,
-      {File? this.file, DownloadProgress? this.progress, DateTime? date})
+      {this.file, this.progress, DateTime? date})
       : _date = date ?? DateTime.now();
 
   Download copyWith({File? file, DownloadProgress? progress}) =>
-      Download(this.id, this.uri, this.size,
-          date: this.date,
+      Download(id, uri, size,
+          date: date,
           file: file ?? this.file,
           progress: progress ?? this.progress);
 
@@ -78,7 +78,7 @@ class DownloadProgress {
   DownloadProgress(this.offset, this.size, {this.error});
 
   DownloadProgress copyWith({int? offset, Object? error}) =>
-      DownloadProgress(offset ?? this.offset, this.size,
+      DownloadProgress(offset ?? this.offset, size,
           error: error ?? this.error);
 
   // Value used for progress display.
@@ -258,7 +258,9 @@ class DownloadCubit extends Cubit<DownloadState> {
   }
 
   void addAll(Iterable<DownloadEvent> events) {
-    events.forEach((event) => _add(event));
+    for (var event in events) {
+      _add(event);
+    }
   }
 
   void check() {

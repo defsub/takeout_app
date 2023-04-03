@@ -22,16 +22,16 @@ import 'package:takeout_app/connectivity/connectivity.dart';
 
 import 'style.dart';
 
-const PlayIcon = Icon(Icons.play_arrow, size: 32);
+const playIcon = Icon(Icons.play_arrow, size: 32);
 
 class PlayButton extends StatelessWidget {
   final VoidCallback? onPressed;
 
-  PlayButton({this.onPressed});
+  const PlayButton({super.key, this.onPressed});
 
   @override
   Widget build(BuildContext context) {
-    return IconButton(icon: PlayIcon, onPressed: onPressed);
+    return IconButton(icon: playIcon, onPressed: onPressed);
   }
 }
 
@@ -39,7 +39,7 @@ abstract class _ConnectivityButton extends StatelessWidget {
   final Icon icon;
   final VoidCallback? onPressed;
 
-  _ConnectivityButton({required this.icon, this.onPressed});
+  const _ConnectivityButton({required this.icon, this.onPressed, super.key});
 
   bool _allowed(BuildContext context, ConnectivityState state);
 
@@ -54,8 +54,9 @@ abstract class _ConnectivityButton extends StatelessWidget {
 }
 
 class DownloadButton extends _ConnectivityButton {
-  DownloadButton({super.icon = const Icon(IconsDownload), super.onPressed});
+  const DownloadButton({super.key, super.icon = const Icon(iconsDownload), super.onPressed});
 
+  @override
   bool _allowed(BuildContext context, ConnectivityState state) {
     final settings = context.settings.state.settings;
     final allow = settings.allowMobileDownload;
@@ -64,8 +65,9 @@ class DownloadButton extends _ConnectivityButton {
 }
 
 class StreamingButton extends _ConnectivityButton {
-  StreamingButton({super.icon = PlayIcon, super.onPressed});
+  const StreamingButton({super.key, super.icon = playIcon, super.onPressed});
 
+  @override
   bool _allowed(BuildContext context, ConnectivityState state) {
     final settings = context.settings.state.settings;
     final allow = settings.allowMobileStreaming;

@@ -62,12 +62,12 @@ class HistoryListWidget extends StatelessWidget {
         initialRoute: '/',
         observers: [heroController()],
         onGenerateRoute: (RouteSettings settings) {
-          return MaterialPageRoute(builder: builder, settings: settings);
+          return MaterialPageRoute<void>(builder: builder, settings: settings);
         });
   }
 
   void _onDelete(BuildContext context) {
-    showDialog(
+    showDialog<void>(
         context: context,
         builder: (ctx) {
           return AlertDialog(
@@ -100,7 +100,8 @@ class SpiffHistoryWidget extends StatelessWidget {
   final SpiffHistory spiffHistory;
   final String _cover;
 
-  SpiffHistoryWidget(this.spiffHistory) : _cover = spiffHistory.spiff.cover;
+  SpiffHistoryWidget(this.spiffHistory, {super.key})
+      : _cover = spiffHistory.spiff.cover;
 
   @override
   Widget build(BuildContext context) {
@@ -124,9 +125,9 @@ class SpiffHistoryWidget extends StatelessWidget {
   }
 
   void _onTap(BuildContext context, SpiffHistory spiffHistory) {
-    Navigator.push(
+    Navigator.push<void>(
         context,
-        MaterialPageRoute(
+        MaterialPageRoute<void>(
             // TODO consider making spiff refreshable. Need original reference or uri.
             builder: (_) => SpiffWidget(value: spiffHistory.spiff)));
   }

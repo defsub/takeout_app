@@ -83,7 +83,8 @@ class Spiff {
 
   @override
   int get hashCode {
-    return super.hashCode;
+    return Object.hash(playlist.title, playlist.creator, playlist.location,
+        playlist.image, playlist.date, playlist.tracks.length, playlist.tracks);
   }
 
   int get length {
@@ -127,7 +128,6 @@ class Spiff {
     try {
       return _$SpiffFromJson(json);
     } catch (e) {
-      print('got error $e, using empty');
       return Spiff(
           index: 0,
           position: 0,
@@ -191,10 +191,15 @@ class Spiff {
 
 @JsonSerializable()
 class Entry extends DownloadIdentifier implements MediaTrack, OffsetIdentifier {
+  @override
   final String creator;
+  @override
   final String album;
+  @override
   final String title;
+  @override
   final String image;
+  @override
   final String date;
   @JsonKey(name: 'location')
   final List<String> locations;
@@ -220,14 +225,14 @@ class Entry extends DownloadIdentifier implements MediaTrack, OffsetIdentifier {
     // List<String>? locations,
   }) =>
       Entry(
-          creator: this.creator,
-          album: this.album,
+          creator: creator,
+          album: album,
           title: title ?? this.title,
-          image: this.image,
-          date: this.date,
-          locations: this.locations,
-          identifiers: this.identifiers,
-          sizes: this.sizes);
+          image: image,
+          date: date,
+          locations: locations,
+          identifiers: identifiers,
+          sizes: sizes);
 
   factory Entry.fromMediaTrack(MediaTrack track) => Entry(
       creator: track.creator,
@@ -268,6 +273,7 @@ class Entry extends DownloadIdentifier implements MediaTrack, OffsetIdentifier {
     return locations[0];
   }
 
+  @override
   int get size {
     return sizes?[0] ?? 0;
   }
@@ -312,7 +318,7 @@ class Playlist {
         location: location ?? this.location,
         creator: creator ?? this.creator,
         title: title ?? this.title,
-        image: this.image,
+        image: image,
         tracks: tracks ?? this.tracks,
       );
 
@@ -335,7 +341,7 @@ class Playlist {
     if (isNotNullOrEmpty(image)) {
       return image!;
     }
-    if (tracks.length == 0) {
+    if (tracks.isEmpty) {
       return '';
     }
     for (var i = 0; i < 3; i++) {

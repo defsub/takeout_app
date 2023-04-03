@@ -120,16 +120,18 @@ class DirectoryFileCache implements FileCacheProvider {
   Future<void> removeAll() async {
     await _initialized;
     // copy keys to avoid concurrent modification
-    List<String>.from(_entries.keys).forEach((key) {
+    for (var key in List<String>.from(_entries.keys)) {
       _remove(key);
-    });
+    }
   }
 
   @override
   Future<void> retain(Iterable<FileIdentifier> keep) async {
     await _initialized;
     final removal = Set<String>.from(_entries.keys);
-    keep.forEach((e) => removal.remove(e.key));
+    for (var e in keep) {
+      removal.remove(e.key);
+    }
     return Future.forEach<String>(removal, (key) async {
       _remove(key, delete: true);
     });

@@ -26,7 +26,7 @@ class JsonCacheResult {
 
   JsonCacheResult(this.exists, this.expired);
 
-  factory JsonCacheResult.NotFound() => JsonCacheResult(false, false);
+  factory JsonCacheResult.notFound() => JsonCacheResult(false, false);
 
   Future<Map<String, dynamic>> read() async {
     throw UnimplementedError;

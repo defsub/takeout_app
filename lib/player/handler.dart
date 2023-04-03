@@ -46,7 +46,7 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
   final SettingsRepository settingsRepository;
   final OffsetCacheRepository offsetRepository;
 
-  final AudioPlayer _player = new AudioPlayer();
+  final AudioPlayer _player = AudioPlayer();
   final PlayerCallback onPlay;
   final PlayerCallback onPause;
   final StoppedCallback onStop;
@@ -57,7 +57,7 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
   final TrackChangeCallback onTrackChange;
   final TrackEndCallback onTrackEnd;
 
-  final _subscriptions = <StreamSubscription>[];
+  final _subscriptions = <StreamSubscription<dynamic>>[];
 
   Spiff _spiff = Spiff.empty();
   final _queue = <MediaItem>[];
@@ -80,7 +80,7 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
       required this.offsetRepository,
       Duration? skipToBeginningInterval})
       : _skipToBeginningInterval =
-            skipToBeginningInterval ?? Duration(seconds: 10) {
+            skipToBeginningInterval ?? const Duration(seconds: 10) {
     _init();
   }
 
@@ -130,7 +130,7 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
 
   Future<void> _init() async {
     final session = await AudioSession.instance;
-    await session.configure(AudioSessionConfiguration.music());
+    await session.configure(const AudioSessionConfiguration.music());
 
     // index changes
     _subscriptions.add(_player.currentIndexStream.listen((index) {
@@ -145,10 +145,12 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
         // update the spiff
         _spiff = _spiff.copyWith(index: index);
         onIndexChange(_spiff, _player.playing);
-      } else {
-        print(
-            'bad index change $index ${_spiff.playlist.tracks.length}  ${_queue.length}');
       }
+      // else {
+      //   print(
+      //       'bad index change $index ${_spiff.playlist.tracks.length}  ${_queue.length}');
+      //   }
+      // }
     }));
 
     // media duration changes
@@ -237,7 +239,7 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
     // player state changes (playing/paused)
     _subscriptions.add(_player.playerStateStream.distinct().listen((state) {
       if (_player.currentIndex == null) {
-        return null;
+        return;
       }
       if (state.processingState == ProcessingState.ready) {
         if (state.playing) {
@@ -261,19 +263,21 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
   }
 
   void dispose() {
-    _subscriptions.forEach((subscription) => subscription.cancel());
+    for (var subscription in _subscriptions) {
+      subscription.cancel();
+    }
   }
 
   Future<MediaItem> _map(Entry entry) async {
     final endpoint = settingsRepository.settings?.endpoint;
     String image = entry.image;
     if (image.startsWith('/img/')) {
-      image = '${endpoint}$image';
+      image = '$endpoint$image';
     }
     final uri = await trackResolver.resolve(entry);
     String id = uri.toString();
     if (id.startsWith('/api/')) {
-      id = '${endpoint}$id';
+      id = '$endpoint$id';
     }
     return MediaItem(
         id: id,
@@ -300,7 +304,7 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
     if (spiff.isEmpty) {
       return;
     }
-    this._spiff = spiff;
+    _spiff = spiff;
     if (_spiff.index < 0) {
       // TODO server sends -1
       _spiff = _spiff.copyWith(index: 0);
@@ -325,6 +329,7 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
 
     final offset = await offsetRepository.get(_spiff[index]);
     final position = offset?.position() ?? Duration.zero;
+    // print('load setAudioSource $index offset $offset $position');
 
     // setAudioSource triggers events so use the correct index and position even though
     // skipToQueueItem does the same thing next.
@@ -339,6 +344,7 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
   Future<void> skipToQueueItem(int index) async {
     final offset = await offsetRepository.get(_spiff.playlist.tracks[index]);
     var position = offset?.position() ?? Duration.zero;
+    // print('skipToQueueItem $index offset $offset $position');
 
     final currentIndex = _spiff.index;
     if (index == currentIndex - 1) {
@@ -363,10 +369,10 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
   }
 
   @override
-  Future<void> playMediaItem(MediaItem item) async {
-    final index = _queue.indexWhere((e) => e.id == item.id);
+  Future<void> playMediaItem(MediaItem mediaItem) async {
+    final index = _queue.indexWhere((e) => e.id == mediaItem.id);
     if (index != -1) {
-      skipToQueueItem(index);
+      return skipToQueueItem(index);
     }
   }
 

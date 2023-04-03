@@ -43,7 +43,7 @@ class JsonCacheEntry extends JsonCacheResult {
     try {
       return await file
           .readAsBytes()
-          .then((body) => jsonDecode(utf8.decode(body)));
+          .then((body) => jsonDecode(utf8.decode(body)) as Map<String, dynamic>);
     } catch (e) {
       return Future.error(e);
     }
@@ -75,6 +75,7 @@ class DirectoryJsonCache implements JsonCacheProvider {
     return File(path);
   }
 
+  @override
   Future<bool> put(String uri, Uint8List body) async {
     var success = true;
     final file = _jsonFile(uri);
@@ -87,6 +88,7 @@ class DirectoryJsonCache implements JsonCacheProvider {
     return success;
   }
 
+  @override
   Future<JsonCacheResult> get(String uri, {Duration? ttl}) async {
     final file = _jsonFile(uri);
     return file.exists().then((exists) {
@@ -100,7 +102,7 @@ class DirectoryJsonCache implements JsonCacheProvider {
           return JsonCacheEntry(uri, file, lastModified, false);
         }
       } else {
-        return JsonCacheResult.NotFound();
+        return JsonCacheResult.notFound();
       }
     });
   }

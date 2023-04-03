@@ -47,13 +47,15 @@ void main() async {
 
   await appMain();
 
-  runApp(TakeoutApp());
+  runApp(const TakeoutApp());
 }
 
 // TODO what's this for now? snack bar?
 final _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
 class TakeoutApp extends StatelessWidget with AppBloc {
+  const TakeoutApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return appInit(context, child: DynamicColorBuilder(
@@ -62,16 +64,16 @@ class TakeoutApp extends StatelessWidget with AppBloc {
       final dark = ThemeData.dark(useMaterial3: true);
       return MaterialApp(
           onGenerateTitle: (context) => context.strings.takeoutTitle,
-          localizationsDelegates: [
+          localizationsDelegates: const [
             AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          supportedLocales: [
-            const Locale('en', ''),
+          supportedLocales: const [
+            Locale('en', ''),
           ],
-          home: _TakeoutWidget(),
+          home: const _TakeoutWidget(),
           theme: light.copyWith(
               colorScheme: lightDynamic,
               // appBarTheme:
@@ -94,7 +96,7 @@ class TakeoutApp extends StatelessWidget with AppBloc {
 }
 
 class _TakeoutWidget extends StatefulWidget {
-  _TakeoutWidget({Key? key}) : super(key: key);
+  const _TakeoutWidget();
 
   @override
   _TakeoutState createState() => _TakeoutState();
@@ -263,32 +265,31 @@ class _TakeoutState extends State<_TakeoutWidget>
 
       if (context.app.state.index == NavigationIndex.player) {
         // hide fab on player page
-        return EmptyWidget();
+        return const EmptyWidget();
       }
       if (state is PlayerInit ||
           state is PlayerReady ||
           state is PlayerLoad ||
           state is PlayerStop) {
         // hide fab
-        return EmptyWidget();
+        return const EmptyWidget();
       }
       if (state is PlayerPositionState) {
         playing = state.playing;
         progress = state.progress;
       }
-      return Container(
-          child: Stack(alignment: Alignment.center, children: [
+      return Stack(alignment: Alignment.center, children: [
         FloatingActionButton(
-            onPressed: () =>
-                playing ? context.player.pause() : context.player.play(),
-            shape: const CircleBorder(),
-            child: playing ? Icon(Icons.pause) : Icon(Icons.play_arrow)),
+        onPressed: () =>
+            playing ? context.player.pause() : context.player.play(),
+        shape: const CircleBorder(),
+        child: playing ? const Icon(Icons.pause) : const Icon(Icons.play_arrow)),
         IgnorePointer(
-            child: SizedBox(
-                width: 52, // non-mini FAB is 56, progress is 4
-                height: 52,
-                child: CircularProgressIndicator(value: progress))),
-      ]));
+        child: SizedBox(
+            width: 52, // non-mini FAB is 56, progress is 4
+            height: 52,
+            child: CircularProgressIndicator(value: progress))),
+      ]);
     });
   }
 
@@ -303,23 +304,23 @@ class _TakeoutState extends State<_TakeoutWidget>
           type: BottomNavigationBarType.fixed,
           items: <BottomNavigationBarItem>[
             BottomNavigationBarItem(
-              icon: Icon(Icons.home),
+              icon: const Icon(Icons.home),
               label: context.strings.navHome,
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.people_alt),
+              icon: const Icon(Icons.people_alt),
               label: context.strings.navArtists,
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.history),
+              icon: const Icon(Icons.history),
               label: context.strings.navHistory,
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.radio),
+              icon: const Icon(Icons.radio),
               label: context.strings.navRadio,
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.queue_music),
+              icon: const Icon(Icons.queue_music),
               label: context.strings.navPlayer,
             ),
           ],
@@ -333,11 +334,11 @@ class _TakeoutState extends State<_TakeoutWidget>
   Map<String, WidgetBuilder> _pageBuilders() {
     final builders = {
       '/home': (_) => HomeWidget((ctx) => Navigator.push(
-          ctx, MaterialPageRoute(builder: (_) => SearchWidget()))),
+          ctx, MaterialPageRoute<void>(builder: (_) => SearchWidget()))),
       '/artists': (_) => ArtistsWidget(),
       '/history': (_) => HistoryListWidget(),
       '/radio': (_) => RadioWidget(),
-      '/player': (_) => PlayerWidget()
+      '/player': (_) => const PlayerWidget()
     };
     return builders;
   }

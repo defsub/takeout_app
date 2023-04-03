@@ -28,7 +28,7 @@ class NowPlayingState {
   final bool autoplay;
 
   NowPlayingState(this.spiff, {bool? autoplay})
-      : this.autoplay = autoplay ?? false;
+      : autoplay = autoplay ?? false;
 
   factory NowPlayingState.initial() => NowPlayingState(Spiff.empty());
 
@@ -39,7 +39,7 @@ class NowPlayingState {
 }
 
 class NowPlayingChange extends NowPlayingState {
-  NowPlayingChange(super.spiff, {bool? super.autoplay});
+  NowPlayingChange(super.spiff, {super.autoplay});
 }
 
 class NowPlayingIndexChange extends NowPlayingState {
@@ -57,7 +57,7 @@ class NowPlayingCubit extends HydratedCubit<NowPlayingState> {
 
   @override
   NowPlayingState fromJson(Map<String, dynamic> json) =>
-      NowPlayingState.fromJson(json['nowPlaying']);
+      NowPlayingState.fromJson(json['nowPlaying'] as Map<String, dynamic>);
 
   @override
   Map<String, dynamic>? toJson(NowPlayingState state) =>

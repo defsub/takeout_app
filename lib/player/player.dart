@@ -34,7 +34,7 @@ abstract class PlayerState {
   int get lastIndex => spiff.length - 1;
 
   MediaTrack? get currentTrack =>
-      spiff.playlist.tracks.length > 0
+      spiff.playlist.tracks.isNotEmpty
           ? spiff.playlist.tracks[currentIndex]
           : null;
 }

@@ -40,11 +40,11 @@ class ArtworkBuilder {
   Artwork? _artwork;
   ImageProvider? _provider;
 
-  static final ARTWORK_ERRORS = ExpiringSet<String>(Duration(hours: 1));
+  static final artworkErrors = ExpiringSet<String>(const Duration(hours: 1));
 
   static Artwork? _pick(Artwork? primary, Artwork? secondary) {
     if (primary != null) {
-      return ARTWORK_ERRORS.contains(primary.url) ? secondary : primary;
+      return artworkErrors.contains(primary.url) ? secondary : primary;
     }
     return secondary;
   }
@@ -61,7 +61,7 @@ class ArtworkBuilder {
           secondary: coverUrl != null ? Artwork.cover(coverUrl) : null);
 
   Widget _cachedImage(BuildContext context, Artwork artwork) {
-    if (ARTWORK_ERRORS.contains(artwork.url)) {
+    if (artworkErrors.contains(artwork.url)) {
       // TODO not needed due to pick?
       return errorIcon;
     }
@@ -76,7 +76,7 @@ class ArtworkBuilder {
         placeholderBuilder: (_) => artwork.placeholder ?? placeholder,
         errorBuilder: (context, error, stack) {
           log.warning(error);
-          ARTWORK_ERRORS.add(imageProvider.url);
+          artworkErrors.add(imageProvider.url);
           if (imageProvider.url == primary?.url && secondary != null) {
             // primary failed, forget it and use secondary
             _artwork = secondary!;
@@ -97,7 +97,7 @@ class ArtworkBuilder {
     return hero ? Hero(tag: tag, child: image) : image;
   }
 
-  String? get url => _artwork?.url ?? null;
+  String? get url => _artwork?.url;
 
   Widget build(BuildContext context) {
     final a = _artwork;
@@ -152,7 +152,7 @@ String fullUrl(BuildContext context, String url) {
   return url;
 }
 
-final _colorCache = Map<String, Color>();
+final _colorCache = <String, Color>{};
 
 Future<Color> getImageBackgroundColor(BuildContext context, String url) async {
   var color = _colorCache[url];

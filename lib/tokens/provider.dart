@@ -29,18 +29,22 @@ abstract class TokenProvider {
 }
 
 class DefaultTokenProvider implements TokenProvider {
-  TokensCubit _tokens;
+  final TokensCubit _tokens;
 
   DefaultTokenProvider(TokensCubit tokens) : _tokens = tokens;
 
   Tokens get tokens => _tokens.state.tokens;
 
+  @override
   String? get accessToken => _tokens.state.tokens.access;
 
+  @override
   String? get refreshToken => _tokens.state.tokens.refresh;
 
+  @override
   String? get mediaToken => _tokens.state.tokens.media;
 
+  @override
   void add({String? accessToken, String? refreshToken, String? mediaToken}) {
     _tokens.add(_tokens.state.tokens.copyWith(
         access: accessToken, refresh: refreshToken, media: mediaToken));

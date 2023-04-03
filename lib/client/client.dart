@@ -47,14 +47,14 @@ class ClientResult<T> extends ClientState {
   ClientResult(this.result);
 }
 
-typedef Future<T> ClientRequest<T>({Duration? ttl});
+typedef ClientRequest<T> = Future<T> Function({Duration? ttl});
 
 class ClientCubit extends Cubit<ClientState> {
   final ClientRepository repository;
   final Duration _timeout;
 
   ClientCubit(this.repository, {Duration? timeout})
-      : _timeout = timeout ?? Duration(seconds: 10),
+      : _timeout = timeout ?? const Duration(seconds: 10),
         super(ClientReady());
 
   void login(String user, String password) =>
@@ -171,7 +171,7 @@ class ClientCubit extends Cubit<ClientState> {
 
   Future<void> _doit<T>(ClientRequest<T> call, {Duration? ttl}) async {
     emit(ClientLoading());
-    call(ttl: ttl)
+    return call(ttl: ttl)
         .timeout(_timeout)
         .then((T result) => emit(ClientResult<T>(result)))
         .onError((error, stackTrace) {

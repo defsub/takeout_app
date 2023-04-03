@@ -40,7 +40,7 @@ typedef FetchSpiff = void Function(ClientCubit, {Duration? ttl});
 class SpiffWidget extends ClientPage<Spiff> {
   final FetchSpiff? fetch;
 
-  SpiffWidget({super.value, this.fetch});
+  SpiffWidget({super.key, super.value, this.fetch});
 
   @override
   void load(BuildContext context, {Duration? ttl}) {
@@ -62,7 +62,7 @@ class SpiffWidget extends ClientPage<Spiff> {
 
   Widget bottomRight(BuildContext context, Spiff spiff, bool isCached) {
     return isCached
-        ? IconButton(icon: Icon(IconsDownloadDone), onPressed: () => {})
+        ? IconButton(icon: const Icon(iconsDownloadDone), onPressed: () => {})
         : downloadButton(context, spiff, isCached);
   }
 
@@ -77,20 +77,20 @@ class SpiffWidget extends ClientPage<Spiff> {
     return isCached
         ? IconButton(
             color: Theme.of(context).primaryColorLight,
-            icon: Icon(IconsDownload),
+            icon: const Icon(iconsDownload),
             onPressed: () => {})
         : DownloadButton(onPressed: () => context.download(spiff));
   }
 
   @override
-  Widget page(BuildContext context, Spiff spiff) {
+  Widget page(BuildContext context, Spiff state) {
     return scaffold(context,
-        image: spiff.cover,
+        image: state.cover,
         body: (_) => fetch != null
             ? RefreshIndicator(
                 onRefresh: () => reloadPage(context),
-                child: body(context, spiff))
-            : body(context, spiff));
+                child: body(context, state))
+            : body(context, state));
   }
 
   Widget body(BuildContext context, Spiff spiff) {
@@ -112,7 +112,7 @@ class SpiffWidget extends ClientPage<Spiff> {
           flexibleSpace: FlexibleSpaceBar(
               // centerTitle: true,
               // title: Text(release.name, style: TextStyle(fontSize: 15)),
-              stretchModes: [StretchMode.zoomBackground, StretchMode.fadeTitle],
+              stretchModes: const [StretchMode.zoomBackground, StretchMode.fadeTitle],
               background: Stack(fit: StackFit.expand, children: [
                 spiffCover(context, spiff.cover),
                 const DecoratedBox(
@@ -137,7 +137,7 @@ class SpiffWidget extends ClientPage<Spiff> {
         ),
         SliverToBoxAdapter(
             child: Container(
-                padding: EdgeInsets.fromLTRB(0, 16, 0, 0),
+                padding: const EdgeInsets.fromLTRB(0, 16, 0, 0),
                 child: Column(children: [
                   title(context, spiff),
                   subtitle(context, spiff),
@@ -176,7 +176,7 @@ class SpiffWidget extends ClientPage<Spiff> {
   }
 
   void _onDelete(BuildContext context, Spiff spiff) {
-    showDialog(
+    showDialog<void>(
         context: context,
         builder: (ctx) {
           return AlertDialog(
@@ -209,7 +209,7 @@ class SpiffWidget extends ClientPage<Spiff> {
 class SpiffTrackListView extends StatelessWidget {
   final Spiff _spiff;
 
-  const SpiffTrackListView(this._spiff);
+  const SpiffTrackListView(this._spiff, {super.key});
 
   void _onTrack(BuildContext context, int index) {
     if (_spiff.isMusic() || _spiff.isPodcast()) {
@@ -266,7 +266,7 @@ class SpiffTrackListView extends StatelessWidget {
   Widget? _trailing(
       DownloadState downloads, TrackCacheState cache, Entry entry) {
     if (cache.contains(entry)) {
-      return Icon(IconsCached);
+      return const Icon(iconsCached);
     }
     final progress = downloads.progress(entry);
     return progress != null

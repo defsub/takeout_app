@@ -34,7 +34,7 @@ abstract class ClientPageBuilder<T> {
               load(context);
             }
           } else if (state is ClientLoading) {
-            return Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator());
           } else if (state is ClientResult<T>) {
             return page(context, state.result);
           } else if (state is ClientError) {
@@ -68,7 +68,7 @@ abstract class ClientPageBuilder<T> {
 abstract class ClientPage<T> extends StatelessWidget with ClientPageBuilder<T> {
   final T? value;
 
-  ClientPage({this.value});
+  ClientPage({super.key, this.value});
 
   @override
   Widget build(BuildContext context) {
@@ -77,9 +77,7 @@ abstract class ClientPage<T> extends StatelessWidget with ClientPageBuilder<T> {
 }
 
 abstract class NavigatorClientPage<T> extends ClientPage<T> {
-  final Key key;
-
-  NavigatorClientPage(this.key, {T? super.value});
+  NavigatorClientPage({super.key, super.value});
 
   @override
   Widget build(BuildContext context) {

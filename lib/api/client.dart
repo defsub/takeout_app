@@ -41,6 +41,7 @@ class ClientException implements Exception {
       statusCode == HttpStatus.unauthorized ||
       statusCode == HttpStatus.forbidden;
 
+  @override
   String toString() => 'ClientException: $statusCode => $url';
 }
 
@@ -50,6 +51,7 @@ class _ClientError extends Error {
   /// Creates a client error with the provided [message].
   _ClientError([this.message]);
 
+  @override
   String toString() {
     return message != null
         ? 'Client error: ${Error.safeToString(message)}'
@@ -73,7 +75,7 @@ class _ClientWithUserAgent extends http.BaseClient {
   }
 }
 
-typedef Future<T> FutureGenerator<T>();
+typedef FutureGenerator<T> = Future<T> Function();
 
 class TakeoutClient implements ClientProvider {
   static final log = Logger('Client');
@@ -103,6 +105,7 @@ class TakeoutClient implements ClientProvider {
     _client = _ClientWithUserAgent(http.Client(), _userAgent);
   }
 
+  @override
   http.Client get client => _client;
 
   String get userAgent => _userAgent;
@@ -142,7 +145,7 @@ class TakeoutClient implements ClientProvider {
   Future<Map<String, dynamic>> _getJson(String uri,
       {bool cacheable = true, Duration? ttl}) async {
     ttl = ttl ?? defaultTTL;
-    Map<String, dynamic>? cachedJson = null;
+    Map<String, dynamic>? cachedJson;
 
     if (cacheable) {
       final result = await jsonCacheRepository.get(uri, ttl: ttl);
@@ -177,9 +180,9 @@ class TakeoutClient implements ClientProvider {
       }
       log.finest('got response ${response.body}');
       if (cacheable) {
-        jsonCacheRepository.put(uri, response.bodyBytes);
+        await jsonCacheRepository.put(uri, response.bodyBytes);
       }
-      return jsonDecode(utf8.decode(response.bodyBytes));
+      return jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
     } catch (e, stackTrace) {
       if (e is SocketException || e is TimeoutException || e is TlsException) {
         if (cachedJson != null) {
@@ -231,7 +234,7 @@ class TakeoutClient implements ClientProvider {
     if (requireAuth) {
       final token = tokenRepository.accessToken;
       if (token == null) {
-        throw ClientException(
+        throw const ClientException(
           statusCode: HttpStatus.networkAuthenticationRequired,
         );
       }
@@ -252,12 +255,12 @@ class TakeoutClient implements ClientProvider {
             url: response.request?.url.toString());
       }
       if (response.body.isEmpty) {
-        return {
+        return <String, dynamic>{
           'reasonPhrase': response.reasonPhrase,
           'statusCode': response.statusCode
         };
       } else {
-        return jsonDecode(utf8.decode(response.bodyBytes));
+        return jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
       }
     });
   }
@@ -267,14 +270,14 @@ class TakeoutClient implements ClientProvider {
       String uri, List<Map<String, dynamic>> json) async {
     final token = tokenRepository.accessToken;
     if (token == null) {
-      return Future.error(ClientException(
+      return Future.error(const ClientException(
         statusCode: HttpStatus.networkAuthenticationRequired,
       ));
     }
 
     log.fine('$endpoint$uri');
     log.finer(jsonEncode(json));
-    final headers = await _headersWithAccessToken();
+    final headers = _headersWithAccessToken();
     headers[HttpHeaders.contentTypeHeader] = 'application/json-patch+json';
     return _client
         .patch(Uri.parse('$endpoint$uri'),
@@ -283,9 +286,11 @@ class TakeoutClient implements ClientProvider {
       log.fine('response ${response.statusCode}');
       if (response.statusCode == HttpStatus.ok) {
         return PatchResult(
-            HttpStatus.ok, jsonDecode(utf8.decode(response.bodyBytes)));
+            HttpStatus.ok,
+            jsonDecode(utf8.decode(response.bodyBytes))
+                as Map<String, dynamic>);
       } else if (response.statusCode == HttpStatus.noContent) {
-        return PatchResult(HttpStatus.noContent, {});
+        return PatchResult(HttpStatus.noContent, <String, dynamic>{});
       } else {
         return Future.error(ClientException(
             statusCode: response.statusCode,
@@ -295,6 +300,7 @@ class TakeoutClient implements ClientProvider {
   }
 
   /// POST /api/token
+  @override
   Future<bool> login(String user, String pass) async {
     var success = false;
     final json = {'User': user, 'Pass': pass};
@@ -305,9 +311,9 @@ class TakeoutClient implements ClientProvider {
           result.containsKey(fieldMediaToken) &&
           result.containsKey(fieldRefreshToken)) {
         tokenRepository.add(
-            accessToken: result[fieldAccessToken],
-            mediaToken: result[fieldMediaToken],
-            refreshToken: result[fieldRefreshToken]);
+            accessToken: result[fieldAccessToken] as String,
+            mediaToken: result[fieldMediaToken] as String,
+            refreshToken: result[fieldRefreshToken] as String);
         success = true;
       }
       return success;
@@ -318,21 +324,22 @@ class TakeoutClient implements ClientProvider {
 
   /// GET /api/token
   Future<bool> _refreshAccessToken() async {
-    final uri = '/api/token';
+    const uri = '/api/token';
     bool success = false;
     try {
       log.fine('GET $endpoint$uri');
       final response = await _client.get(Uri.parse('$endpoint$uri'),
-          headers: await _headersWithRefreshToken());
+          headers: _headersWithRefreshToken());
       log.fine('got ${response.statusCode}');
       if (response.statusCode == 200) {
-        final result = jsonDecode(utf8.decode(response.bodyBytes));
+        final result =
+            jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
         log.fine(result);
         if (result.containsKey(fieldAccessToken) &&
             result.containsKey(fieldRefreshToken)) {
           tokenRepository.add(
-              accessToken: result[fieldAccessToken],
-              refreshToken: result[fieldRefreshToken]);
+              accessToken: result[fieldAccessToken] as String,
+              refreshToken: result[fieldRefreshToken] as String);
           success = true;
         }
       }
@@ -360,85 +367,101 @@ class TakeoutClient implements ClientProvider {
   }
 
   /// GET /api/search?q=query (no cache by default)
+  @override
   Future<SearchView> search(String q, {Duration? ttl = Duration.zero}) async =>
       _retry<SearchView>(() =>
           _getJson('/api/search?q=${Uri.encodeQueryComponent(q)}', ttl: ttl)
               .then((j) => SearchView.fromJson(j))
-              .catchError((e) => Future<SearchView>.error(e)));
+              .catchError((Object e) => Future<SearchView>.error(e)));
 
   /// GET /api/index
+  @override
   Future<IndexView> index({Duration? ttl}) async =>
       _retry<IndexView>(() => _getJson('/api/index', ttl: ttl)
           .then((j) => IndexView.fromJson(j))
-          .catchError((e) => Future<IndexView>.error(e)));
+          .catchError((Object e) => Future<IndexView>.error(e)));
 
   /// GET /api/home
+  @override
   Future<HomeView> home({Duration? ttl}) async =>
       _retry<HomeView>(() => _getJson('/api/home', ttl: ttl)
           .then((j) => HomeView.fromJson(j))
-          .catchError((e) => Future<HomeView>.error(e)));
+          .catchError((Object e) => Future<HomeView>.error(e)));
 
   /// GET /api/artists
+  @override
   Future<ArtistsView> artists({Duration? ttl}) async =>
       _retry<ArtistsView>(() => _getJson('/api/artists', ttl: ttl)
           .then((j) => ArtistsView.fromJson(j))
-          .catchError((e) => Future<ArtistsView>.error(e)));
+          .catchError((Object e) => Future<ArtistsView>.error(e)));
 
   /// GET /api/artists/1
+  @override
   Future<ArtistView> artist(int id, {Duration? ttl}) async =>
       _retry<ArtistView>(() => _getJson('/api/artists/$id', ttl: ttl)
           .then((j) => ArtistView.fromJson(j))
-          .catchError((e) => Future<ArtistView>.error(e)));
+          .catchError((Object e) => Future<ArtistView>.error(e)));
 
   /// GET /api/artists/1/singles
+  @override
   Future<SinglesView> artistSingles(int id, {Duration? ttl}) async =>
       _retry<SinglesView>(() => _getJson('/api/artists/$id/singles', ttl: ttl)
           .then((j) => SinglesView.fromJson(j))
-          .catchError((e) => Future<SinglesView>.error(e)));
+          .catchError((Object e) => Future<SinglesView>.error(e)));
 
   /// GET /api/artists/1/singles/playlist
+  @override
   Future<Spiff> artistSinglesPlaylist(int id, {Duration? ttl}) async =>
       spiff('/api/artists/$id/singles/playlist', ttl: ttl);
 
   /// GET /api/artists/1/popular
+  @override
   Future<PopularView> artistPopular(int id, {Duration? ttl}) async =>
       _retry<PopularView>(() => _getJson('/api/artists/$id/popular', ttl: ttl)
           .then((j) => PopularView.fromJson(j))
-          .catchError((e) => Future<PopularView>.error(e)));
+          .catchError((Object e) => Future<PopularView>.error(e)));
 
   /// GET /api/artists/1/popular/playlist
+  @override
   Future<Spiff> artistPopularPlaylist(int id, {Duration? ttl}) async =>
       spiff('/api/artists/$id/popular/playlist', ttl: ttl);
 
   /// GET /api/artists/1/playlist
+  @override
   Future<Spiff> artistPlaylist(int id, {Duration? ttl}) async =>
       spiff('/api/artists/$id/playlist', ttl: ttl);
 
   /// GET /api/artists/1/radio/playlist
+  @override
   Future<Spiff> artistRadio(int id, {Duration? ttl}) async =>
       spiff('/api/artists/$id/radio/playlist', ttl: ttl);
 
   /// GET /api/releases/1
+  @override
   Future<ReleaseView> release(int id, {Duration? ttl}) async =>
       _retry<ReleaseView>(() => _getJson('/api/releases/$id', ttl: ttl)
           .then((j) => ReleaseView.fromJson(j))
-          .catchError((e) => Future<ReleaseView>.error(e)));
+          .catchError((Object e) => Future<ReleaseView>.error(e)));
 
   /// GET /api/releases/1/playlist
+  @override
   Future<Spiff> releasePlaylist(int id, {Duration? ttl}) async =>
       spiff('/api/releases/$id/playlist', ttl: ttl);
 
   /// GET /api/playlist
+  @override
   Future<Spiff> playlist({Duration? ttl = playlistTTL}) async =>
       spiff('/api/playlist', ttl: ttl);
 
   /// GET /api/radio
+  @override
   Future<RadioView> radio({Duration? ttl}) async =>
       _retry<RadioView>(() => _getJson('/api/radio', ttl: ttl)
           .then((j) => RadioView.fromJson(j))
-          .catchError((e) => Future<RadioView>.error(e)));
+          .catchError((Object e) => Future<RadioView>.error(e)));
 
   /// GET /api/radio/stations/1
+  @override
   Future<Spiff> station(int id, {Duration? ttl}) async =>
       spiff('/api/radio/stations/$id/playlist', ttl: ttl);
 
@@ -446,8 +469,9 @@ class TakeoutClient implements ClientProvider {
   Future<Spiff> spiff(String path, {Duration? ttl}) async =>
       _retry<Spiff>(() => _getJson(path, ttl: ttl)
           .then((j) => Spiff.fromJson(j))
-          .catchError((e) => Future<Spiff>.error(e)));
+          .catchError((Object e) => Future<Spiff>.error(e)));
 
+  @override
   Future<PatchResult> patch(List<Map<String, dynamic>> body) async =>
       _retry<PatchResult>(() => _patchJson('/api/playlist', body));
 
@@ -455,44 +479,49 @@ class TakeoutClient implements ClientProvider {
   Future<MoviesView> movies({Duration? ttl}) async =>
       _retry<MoviesView>(() => _getJson('/api/movies', ttl: ttl)
           .then((j) => MoviesView.fromJson(j))
-          .catchError((e) => Future<MoviesView>.error(e)));
+          .catchError((Object e) => Future<MoviesView>.error(e)));
 
   /// GET /api/movies
+  @override
   Future<GenreView> moviesGenre(String genre, {Duration? ttl}) async =>
       _retry<GenreView>(() =>
           _getJson('/api/movies/genres/${Uri.encodeComponent(genre)}', ttl: ttl)
               .then((j) => GenreView.fromJson(j))
-              .catchError((e) => Future<GenreView>.error(e)));
+              .catchError((Object e) => Future<GenreView>.error(e)));
 
   /// GET /api/movies/1
+  @override
   Future<MovieView> movie(int id, {Duration? ttl}) async =>
       _retry<MovieView>(() => _getJson('/api/movies/$id', ttl: ttl)
           .then((j) => MovieView.fromJson(j))
-          .catchError((e) => Future<MovieView>.error(e)));
+          .catchError((Object e) => Future<MovieView>.error(e)));
 
   /// GET /api/movies/1/playlist
   Future<Spiff> moviePlaylist(int id, {Duration? ttl}) async =>
       spiff('/api/movies/$id/playlist', ttl: ttl);
 
   /// GET /api/profiles/1
+  @override
   Future<ProfileView> profile(int id, {Duration? ttl}) async =>
       _retry<ProfileView>(() => _getJson('/api/profiles/$id', ttl: ttl)
           .then((j) => ProfileView.fromJson(j))
-          .catchError((e) => Future<ProfileView>.error(e)));
+          .catchError((Object e) => Future<ProfileView>.error(e)));
 
   /// GET /api/podcasts
   Future<PodcastsView> podcasts({Duration? ttl}) async =>
       _retry<PodcastsView>(() => _getJson('/api/podcasts', ttl: ttl)
           .then((j) => PodcastsView.fromJson(j))
-          .catchError((e) => Future<PodcastsView>.error(e)));
+          .catchError((Object e) => Future<PodcastsView>.error(e)));
 
   /// GET /api/series/1
+  @override
   Future<SeriesView> series(int id, {Duration? ttl}) async =>
       _retry<SeriesView>(() => _getJson('/api/series/$id', ttl: ttl)
           .then((j) => SeriesView.fromJson(j))
-          .catchError((e) => Future<SeriesView>.error(e)));
+          .catchError((Object e) => Future<SeriesView>.error(e)));
 
   /// GET /api/series/1/playlist
+  @override
   Future<Spiff> seriesPlaylist(int id, {Duration? ttl}) async =>
       spiff('/api/series/$id/playlist', ttl: ttl);
 
@@ -500,26 +529,28 @@ class TakeoutClient implements ClientProvider {
   Future<EpisodeView> episode(int id, {Duration? ttl}) async =>
       _getJson('/api/episodes/$id', ttl: ttl)
           .then((j) => EpisodeView.fromJson(j))
-          .catchError((e) => Future<EpisodeView>.error(e));
+          .catchError((Object e) => Future<EpisodeView>.error(e));
 
   /// GET /api/episodes/1/playlist
   Future<Spiff> episodePlaylist(int id, {Duration? ttl}) async =>
       spiff('/api/episode/$id/playlist', ttl: ttl);
 
   /// GET /api/progress
+  @override
   Future<ProgressView> progress({Duration? ttl}) async =>
       _retry<ProgressView>(() => _getJson('/api/progress', ttl: ttl)
           .then((j) => ProgressView.fromJson(j))
-          .catchError((e) => Future<ProgressView>.error(e)));
+          .catchError((Object e) => Future<ProgressView>.error(e)));
 
   /// POST /api/progress
+  @override
   Future<int> updateProgress(Offsets offsets) async {
     try {
       log.fine('updateProgress $offsets');
       final result = await _retry(() =>
           _postJson('/api/progress', offsets.toJson(), requireAuth: true));
       log.fine('updateProgress got $result');
-      return result['statusCode'];
+      return result['statusCode'] as int;
     } on ClientException {
       return HttpStatus.badRequest;
     }
@@ -530,33 +561,38 @@ class TakeoutClient implements ClientProvider {
 // }
 
   /// GET /api/activity
+  @override
   Future<ActivityView> activity({Duration? ttl}) async =>
       _retry<ActivityView>(() => _getJson('/api/activity', ttl: ttl)
           .then((j) => ActivityView.fromJson(j))
-          .catchError((e) => Future<ActivityView>.error(e)));
+          .catchError((Object e) => Future<ActivityView>.error(e)));
 
   /// POST /api/activity
+  @override
   Future<int> updateActivity(Events events) async {
     try {
       log.fine('updateActivity $events');
       final result = await _retry(
           () => _postJson('/api/activity', events.toJson(), requireAuth: true));
       log.fine('updateActivity got $result');
-      return result['statusCode'];
+      return result['statusCode'] as int;
     } on ClientException {
       return HttpStatus.badRequest;
     }
   }
 
   /// GET /api/activity/tracks/recent/playlist
+  @override
   Future<Spiff> recentTracks({Duration? ttl}) async =>
       spiff('/api/activity/tracks/recent/playlist', ttl: ttl);
 
   /// GET /api/activity/tracks/popular/playlist
+  @override
   Future<Spiff> popularTracks({Duration? ttl}) async =>
       spiff('/api/activity/tracks/popular/playlist', ttl: ttl);
 
   /// Download uri to a file with optional retries.
+  @override
   Future<int> download(Uri uri, File file, int size,
       {Sink<int>? progress, int retries = 0}) async {
     for (;;) {
@@ -585,10 +621,10 @@ class TakeoutClient implements ClientProvider {
       uri = Uri.parse('$endpoint${uri.toString()}');
     }
 
-    HttpClient()
+    unawaited(HttpClient()
         .getUrl(uri)
         .then((request) async {
-          final headers = await _headersWithMediaToken();
+          final headers = _headersWithMediaToken();
           headers.forEach((k, v) {
             request.headers.set(k, v);
           });
@@ -605,20 +641,20 @@ class TakeoutClient implements ClientProvider {
                   if (size == file.lengthSync()) {
                     completer.complete(size);
                   } else {
-                    throw _ClientError('${size} != ${file.lengthSync()}');
+                    throw _ClientError('$size != ${file.lengthSync()}');
                   }
                 }));
-          }, onError: (err) {
+          }, onError: (Object err) {
             throw err;
           });
         })
         .timeout(downloadTimeout)
-        .catchError((e) {
+        .catchError((Object e) {
           if (file.existsSync()) {
             file.deleteSync();
           }
           completer.completeError(e);
-        });
+        }));
     return completer.future;
   }
 }

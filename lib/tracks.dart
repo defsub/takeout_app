@@ -24,7 +24,7 @@ import 'tiles.dart';
 class TrackListWidget extends StatelessWidget {
   final List<MediaTrack> _tracks;
 
-  const TrackListWidget(this._tracks);
+  const TrackListWidget(this._tracks, {super.key});
 
   void _onPlay(BuildContext context, int index) {
     final spiff = Spiff.fromMediaTracks(_tracks);
@@ -37,7 +37,7 @@ class TrackListWidget extends StatelessWidget {
       ..._tracks.asMap().keys.toList().map((index) =>
           CoverTrackListTile.mediaTrack(context, _tracks[index],
               onTap: () => _onPlay(context, index),
-              trailing: Icon(Icons.play_arrow)))
+              trailing: const Icon(Icons.play_arrow)))
     ]);
   }
 }

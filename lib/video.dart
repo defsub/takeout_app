@@ -44,7 +44,7 @@ import 'util.dart';
 class MovieWidget extends ClientPage<MovieView> {
   final Movie _movie;
 
-  MovieWidget(this._movie);
+  MovieWidget(this._movie, {super.key});
 
   @override
   void load(BuildContext context, {Duration? ttl}) {
@@ -70,7 +70,7 @@ class MovieWidget extends ClientPage<MovieView> {
                   flexibleSpace: FlexibleSpaceBar(
                       // centerTitle: true,
                       // title: Text(release.name, style: TextStyle(fontSize: 15)),
-                      stretchModes: [
+                      stretchModes: const [
                         StretchMode.zoomBackground,
                         StretchMode.fadeTitle
                       ],
@@ -101,7 +101,7 @@ class MovieWidget extends ClientPage<MovieView> {
                 ),
                 SliverToBoxAdapter(
                     child: Container(
-                        padding: EdgeInsets.fromLTRB(4, 16, 4, 4),
+                        padding: const EdgeInsets.fromLTRB(4, 16, 4, 4),
                         child: Column(children: [
                           _title(context),
                           _tagline(context),
@@ -131,15 +131,15 @@ class MovieWidget extends ClientPage<MovieView> {
 
   Widget _progress(BuildContext context) {
     final value = context.offsets.state.value(_movie);
-    print('progress for ${_movie.etag} is $value');
+    // print('progress for ${_movie.etag} is $value');
     return value != null
         ? LinearProgressIndicator(value: value)
-        : EmptyWidget();
+        : const EmptyWidget();
   }
 
   Widget _title(BuildContext context) {
     return Container(
-        padding: EdgeInsets.fromLTRB(10, 0, 10, 0),
+        padding: const EdgeInsets.fromLTRB(10, 0, 10, 0),
         child: Text(_movie.title,
             style: Theme.of(context).textTheme.headlineSmall));
   }
@@ -178,7 +178,7 @@ class MovieWidget extends ClientPage<MovieView> {
     // vote%
     int vote = (10 * (_movie.voteAverage ?? 0)).round();
     if (vote > 0) {
-      fields.add('${vote}%');
+      fields.add('$vote%');
     }
 
     // storage
@@ -192,7 +192,7 @@ class MovieWidget extends ClientPage<MovieView> {
 
   Widget _tagline(BuildContext context) {
     return Container(
-        padding: EdgeInsets.fromLTRB(5, 5, 5, 5),
+        padding: const EdgeInsets.fromLTRB(5, 5, 5, 5),
         child: Text(_movie.tagline,
             style: Theme.of(context).textTheme.titleMedium!));
   }
@@ -210,16 +210,14 @@ class MovieWidget extends ClientPage<MovieView> {
     final pos = offsetCache.state.position(_movie) ?? Duration.zero;
     return isCached
         ? IconButton(
-            icon: Icon(Icons.play_arrow, size: 32),
+            icon: const Icon(Icons.play_arrow, size: 32),
             onPressed: () => _onPlay(context, view, pos))
         : StreamingButton(onPressed: () => _onPlay(context, view, pos));
   }
 
   Widget _downloadButton(BuildContext context, bool isCached) {
     return isCached
-        ? IconButton(
-            icon: Icon(IconsDownloadDone),
-            onPressed: () => {})
+        ? IconButton(icon: const Icon(iconsDownloadDone), onPressed: () => {})
         : DownloadButton(onPressed: () => _onDownload(context));
   }
 
@@ -281,7 +279,7 @@ class _CrewListWidget extends StatelessWidget {
 class ProfileWidget extends ClientPage<ProfileView> {
   final Person _person;
 
-  ProfileWidget(this._person);
+  ProfileWidget(this._person, {super.key});
 
   @override
   void load(BuildContext context, {Duration? ttl}) {
@@ -289,7 +287,7 @@ class ProfileWidget extends ClientPage<ProfileView> {
   }
 
   @override
-  Widget page(BuildContext context, ProfileView view) {
+  Widget page(BuildContext context, ProfileView state) {
     return scaffold(context,
         image: _person.image,
         body: (_) => RefreshIndicator(
@@ -301,7 +299,7 @@ class ProfileWidget extends ClientPage<ProfileView> {
                 flexibleSpace: FlexibleSpaceBar(
                     // centerTitle: true,
                     // title: Text(release.name, style: TextStyle(fontSize: 15)),
-                    stretchModes: [
+                    stretchModes: const [
                       StretchMode.zoomBackground,
                       StretchMode.fadeTitle
                     ],
@@ -323,23 +321,24 @@ class ProfileWidget extends ClientPage<ProfileView> {
               ),
               SliverToBoxAdapter(
                   child: Container(
-                      padding: EdgeInsets.fromLTRB(0, 16, 0, 4),
+                      padding: const EdgeInsets.fromLTRB(0, 16, 0, 4),
                       child: Column(children: [
                         _title(context),
                       ]))),
-              if (view.hasStarring())
+              if (state.hasStarring())
                 SliverToBoxAdapter(
                     child: heading(context.strings.starringLabel)),
-              if (view.hasStarring()) MovieGridWidget(view.starringMovies()),
-              if (view.hasDirecting())
+              if (state.hasStarring()) MovieGridWidget(state.starringMovies()),
+              if (state.hasDirecting())
                 SliverToBoxAdapter(
                     child: heading(context.strings.directingLabel)),
-              if (view.hasDirecting()) MovieGridWidget(view.directingMovies()),
-              if (view.hasWriting())
+              if (state.hasDirecting())
+                MovieGridWidget(state.directingMovies()),
+              if (state.hasWriting())
                 SliverToBoxAdapter(
                   child: heading(context.strings.writingLabel),
                 ),
-              if (view.hasWriting()) MovieGridWidget(view.writingMovies()),
+              if (state.hasWriting()) MovieGridWidget(state.writingMovies()),
             ])));
   }
 
@@ -351,7 +350,7 @@ class ProfileWidget extends ClientPage<ProfileView> {
 class GenreWidget extends ClientPage<GenreView> {
   final String _genre;
 
-  GenreWidget(this._genre);
+  GenreWidget(this._genre, {super.key});
 
   @override
   void load(BuildContext context, {Duration? ttl}) {
@@ -359,14 +358,14 @@ class GenreWidget extends ClientPage<GenreView> {
   }
 
   @override
-  Widget page(BuildContext context, GenreView view) {
+  Widget page(BuildContext context, GenreView state) {
     return Scaffold(
         body: RefreshIndicator(
             onRefresh: () => reloadPage(context),
             child: CustomScrollView(slivers: [
               SliverAppBar(title: Text(_genre)),
-              if (view.movies.isNotEmpty)
-                MovieGridWidget(_sortByTitle(view.movies)),
+              if (state.movies.isNotEmpty)
+                MovieGridWidget(_sortByTitle(state.movies)),
             ])));
   }
 }
@@ -375,7 +374,7 @@ class MovieGridWidget extends StatelessWidget {
   final List<Movie> _movies;
   final bool subtitle;
 
-  const MovieGridWidget(this._movies, {this.subtitle = true});
+  const MovieGridWidget(this._movies, {super.key, this.subtitle = true});
 
   @override
   Widget build(BuildContext context) {
@@ -385,23 +384,22 @@ class MovieGridWidget extends StatelessWidget {
         crossAxisSpacing: 5,
         mainAxisSpacing: 5,
         children: [
-          ..._movies.map((m) => Container(
-              child: GestureDetector(
-                  onTap: () => _onTap(context, m),
-                  child: GridTile(
-                    footer: Material(
-                        color: Colors.transparent,
-                        // shape: RoundedRectangleBorder(
-                        //     borderRadius: BorderRadius.vertical(
-                        //         bottom: Radius.circular(4))),
-                        clipBehavior: Clip.antiAlias,
-                        child: GridTileBar(
-                          backgroundColor: Colors.black26,
-                          // title: Text('${m.rating}'),
-                          // trailing: Text('${m.year}'),
-                        )),
-                    child: gridPoster(context, m.image),
-                  ))))
+          ..._movies.map((m) => GestureDetector(
+              onTap: () => _onTap(context, m),
+              child: GridTile(
+                footer: const Material(
+                    color: Colors.transparent,
+                    // shape: RoundedRectangleBorder(
+                    //     borderRadius: BorderRadius.vertical(
+                    //         bottom: Radius.circular(4))),
+                    clipBehavior: Clip.antiAlias,
+                    child: GridTileBar(
+                      backgroundColor: Colors.black26,
+                      // title: Text('${m.rating}'),
+                      // trailing: Text('${m.year}'),
+                    )),
+                child: gridPoster(context, m.image),
+              )))
         ]);
   }
 
@@ -419,8 +417,9 @@ class MoviePlayer extends StatefulWidget {
   final SettingsRepository settingsRepository;
   final TokenRepository tokenRepository;
 
-  MoviePlayer(this._view,
-      {required this.mediaTrackResolver,
+  const MoviePlayer(this._view,
+      {super.key,
+      required this.mediaTrackResolver,
       required this.settingsRepository,
       required this.tokenRepository,
       this.startOffset = Duration.zero});
@@ -435,26 +434,37 @@ class _MovieMediaTrack implements MediaTrack {
 
   _MovieMediaTrack(this.view);
 
+  @override
   String get creator => '';
 
+  @override
   String get album => '';
 
+  @override
   String get image => view.movie.image;
 
+  @override
   int get year => 0;
 
+  @override
   String get title => view.movie.title;
 
+  @override
   String get etag => view.movie.etag;
 
+  @override
   int get size => view.movie.size;
 
+  @override
   int get number => 0;
 
+  @override
   int get disc => 0;
 
+  @override
   String get date => view.movie.date;
 
+  @override
   String get location => view.location;
 }
 
@@ -466,7 +476,7 @@ class _MoviePlayerState extends State<MoviePlayer> {
   StreamSubscription<MovieState>? _stateSubscription;
   var _showControls = false;
   var _videoInitialized = false;
-  Timer? _controlsTimer = null;
+  Timer? _controlsTimer;
 
   @override
   void initState() {
@@ -490,10 +500,10 @@ class _MoviePlayerState extends State<MoviePlayer> {
       });
     // progress
     _progress = VideoProgressIndicator(controller,
-        colors: VideoProgressColors(
+        colors: const VideoProgressColors(
             playedColor: Colors.orangeAccent, bufferedColor: Colors.green),
         allowScrubbing: true,
-        padding: EdgeInsets.all(32));
+        padding: const EdgeInsets.all(32));
     // events
     controller.addListener(() {
       final value = controller.value;
@@ -518,7 +528,7 @@ class _MoviePlayerState extends State<MoviePlayer> {
         case MovieState.playing:
           Wakelock.enable();
           _controlsTimer?.cancel();
-          _controlsTimer = Timer(Duration(seconds: 2), () {
+          _controlsTimer = Timer(const Duration(seconds: 2), () {
             showControls(false);
           });
           break;
@@ -569,7 +579,7 @@ class _MoviePlayerState extends State<MoviePlayer> {
             }
           },
           child: _controller == null
-              ? EmptyWidget()
+              ? const EmptyWidget()
               : Center(
                   child: _controller!.value.isInitialized
                       ? AspectRatio(
@@ -587,7 +597,7 @@ class _MoviePlayerState extends State<MoviePlayer> {
                                       return Align(
                                           alignment: Alignment.bottomLeft,
                                           child: Container(
-                                              padding: EdgeInsets.all(3),
+                                              padding: const EdgeInsets.all(3),
                                               child: Text(duration != null
                                                   ? _pos(duration)
                                                   : '')));
@@ -599,10 +609,11 @@ class _MoviePlayerState extends State<MoviePlayer> {
                                       final state =
                                           snapshot.data ?? MovieState.none;
                                       return state == MovieState.none
-                                          ? EmptyWidget()
+                                          ? const EmptyWidget()
                                           : Center(
                                               child: IconButton(
-                                                  padding: EdgeInsets.all(0),
+                                                  padding:
+                                                      const EdgeInsets.all(0),
                                                   onPressed: () {
                                                     if (state ==
                                                         MovieState.playing) {
@@ -621,7 +632,7 @@ class _MoviePlayerState extends State<MoviePlayer> {
                                     })
                             ],
                           ))
-                      : EmptyWidget(),
+                      : const EmptyWidget(),
                 )),
     );
   }
@@ -640,7 +651,7 @@ class _MoviePlayerState extends State<MoviePlayer> {
 class MovieListWidget extends StatelessWidget {
   final List<Movie> _movies;
 
-  const MovieListWidget(this._movies);
+  const MovieListWidget(this._movies, {super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -660,7 +671,7 @@ class MovieListWidget extends StatelessWidget {
 }
 
 void showMovie(BuildContext context, MovieView view, {Duration? startOffset}) {
-  Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(
+  Navigator.of(context, rootNavigator: true).push(MaterialPageRoute<void>(
       builder: (_) => MoviePlayer(view,
           settingsRepository: context.read<SettingsRepository>(),
           tokenRepository: context.read<TokenRepository>(),

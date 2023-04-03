@@ -30,7 +30,7 @@ enum MediaType {
 
   static MediaType of(String name) {
     final value = _names[name];
-    return value != null ? value : throw ArgumentError();
+    return value ?? (throw ArgumentError());
   }
 }
 
@@ -91,7 +91,7 @@ class MediaTypeCubit extends HydratedCubit<MediaTypeState> {
 
   @override
   MediaTypeState? fromJson(Map<String, dynamic> json) =>
-      MediaTypeState.fromJson(json['mediaType']);
+      MediaTypeState.fromJson(json['mediaType'] as Map<String, dynamic>);
 
   @override
   Map<String, dynamic>? toJson(MediaTypeState state) =>

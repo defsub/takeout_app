@@ -23,13 +23,13 @@ import 'package:takeout_app/tokens/repository.dart';
 
 import 'handler.dart';
 
-final DummyPlayerCallback = (_, __, ___) {};
-final DummyStoppedCallback = (_) {};
-final DummyTrackChangeCallback = (_, __, {String? title}) {};
-final DummyPositionCallback = (_, __, ___, ____) {};
-final DummyProgressCallback = (_, __, ___, ____) {};
-final DummyIndexCallback = (_, __) {};
-final DummyTrackEndCallback = (_, __, ___, ____, _____) {};
+final dummyPlayerCallback = (_, __, ___) {};
+final dummyStoppedCallback = (_) {};
+final dummyTrackChangeCallback = (_, __, {String? title}) {};
+final dummyPositionCallback = (_, __, ___, ____) {};
+final dummyProgressCallback = (_, __, ___, ____) {};
+final dummyIndexCallback = (_, __) {};
+final dummyTrackEndCallback = (_, __, ___, ____, _____) {};
 
 typedef PlayerCallback = void Function(Spiff, Duration, Duration);
 typedef IndexCallback = void Function(Spiff, bool);
@@ -82,6 +82,7 @@ abstract class PlayerProvider {
 class DefaultPlayerProvider implements PlayerProvider {
   late final TakeoutPlayerHandler handler;
 
+  @override
   Future<void> init(
       {required MediaTrackResolver trackResolver,
       required TokenRepository tokenRepository,
@@ -101,15 +102,15 @@ class DefaultPlayerProvider implements PlayerProvider {
         tokenRepository: tokenRepository,
         settingsRepository: settingsRepository,
         offsetRepository: offsetRepository,
-        onPlay: onPlay ?? DummyPlayerCallback,
-        onPause: onPause ?? DummyPlayerCallback,
-        onStop: onStop ?? DummyStoppedCallback,
-        onIndexChange: onIndexChange ?? DummyIndexCallback,
-        onPositionChange: onPositionChange ?? DummyPositionCallback,
-        onDurationChange: onDurationChange ?? DummyPositionCallback,
-        onProgressChange: onProgressChange ?? DummyProgressCallback,
-        onTrackChange: onTrackChange ?? DummyTrackChangeCallback,
-        onTrackEnd: onTrackEnd ?? DummyTrackEndCallback);
+        onPlay: onPlay ?? dummyPlayerCallback,
+        onPause: onPause ?? dummyPlayerCallback,
+        onStop: onStop ?? dummyStoppedCallback,
+        onIndexChange: onIndexChange ?? dummyIndexCallback,
+        onPositionChange: onPositionChange ?? dummyPositionCallback,
+        onDurationChange: onDurationChange ?? dummyPositionCallback,
+        onProgressChange: onProgressChange ?? dummyProgressCallback,
+        onTrackChange: onTrackChange ?? dummyTrackChangeCallback,
+        onTrackEnd: onTrackEnd ?? dummyTrackEndCallback);
   }
 
   @override

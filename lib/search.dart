@@ -39,11 +39,11 @@ import 'video.dart';
 class SearchWidget extends ClientPage<SearchView> {
   final _query = StringBuffer();
 
-  SearchWidget() : super(value: SearchView.empty());
+  SearchWidget({super.key}) : super(value: SearchView.empty());
 
   void _onPlay(BuildContext context, SearchView view) {
     final List<Track>? tracks = view.tracks;
-    if (tracks != null && tracks.length > 0) {
+    if (tracks != null && tracks.isNotEmpty) {
       final spiff = Spiff.fromMediaTracks(tracks);
       context.play(spiff);
     }
@@ -51,7 +51,7 @@ class SearchWidget extends ClientPage<SearchView> {
 
   void _onDownload(BuildContext context, SearchView view) {
     final List<Track>? tracks = view.tracks;
-    if (tracks != null && tracks.length > 0) {
+    if (tracks != null && tracks.isNotEmpty) {
       final spiff = Spiff.fromMediaTracks(tracks);
       context.download(spiff);
     }
@@ -74,7 +74,7 @@ class SearchWidget extends ClientPage<SearchView> {
       return Scaffold(
           appBar: AppBar(
               leading: IconButton(
-                  icon: Icon(Icons.arrow_back),
+                  icon: const Icon(Icons.arrow_back),
                   onPressed: () => Navigator.pop(context)),
               title: Autocomplete<String>(
                 optionsBuilder: (editValue) {
@@ -95,61 +95,54 @@ class SearchWidget extends ClientPage<SearchView> {
                   _onSubmit(context, value);
                 },
               )),
-          body: Container(
-              child: Column(children: [
+          body: Column(children: [
             Flexible(
-                child: ListView(children: [
-              if (view.artists != null && view.artists!.isNotEmpty)
-                Container(
-                    child: Column(children: [
-                  heading(context.strings.artistsLabel),
-                  _ArtistResultsWidget(view.artists!),
-                ])),
-              if (view.releases != null && view.releases!.isNotEmpty)
-                Container(
-                    child: Column(children: [
-                  heading(context.strings.releasesLabel),
-                  ReleaseListWidget(view.releases!),
-                ])),
-              if (view.tracks != null && view.tracks!.isNotEmpty)
-                Container(
-                    child: Column(children: [
-                  heading(context.strings.tracksLabel),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      OutlinedButton.icon(
-                          label: Text(context.strings.playLabel),
-                          icon: Icon(Icons.play_arrow),
-                          onPressed: () => _onPlay(context, view)),
-                      OutlinedButton.icon(
-                          label: Text(context.strings.downloadLabel),
-                          icon: Icon(Icons.radio),
-                          onPressed: () => _onDownload(context, view)),
-                    ],
-                  ),
-                  TrackListWidget(view.tracks!),
-                ])),
-              if (view.movies != null && view.movies!.isNotEmpty)
-                Container(
-                    child: Column(children: [
-                  heading(context.strings.moviesLabel),
-                  MovieListWidget(view.movies!),
-                ])),
-              if (view.series != null && view.series!.isNotEmpty)
-                Container(
-                    child: Column(children: [
-                  heading(context.strings.seriesLabel),
-                  SeriesListWidget(view.series!),
-                ])),
-              if (view.episodes != null && view.episodes!.isNotEmpty)
-                Container(
-                    child: Column(children: [
-                  heading(context.strings.episodesLabel),
-                  EpisodeListWidget(view.episodes!),
-                ])),
+            child: ListView(children: [
+          if (view.artists != null && view.artists!.isNotEmpty)
+            Column(children: [
+              heading(context.strings.artistsLabel),
+              _ArtistResultsWidget(view.artists!),
+            ]),
+          if (view.releases != null && view.releases!.isNotEmpty)
+            Column(children: [
+              heading(context.strings.releasesLabel),
+              ReleaseListWidget(view.releases!),
+            ]),
+          if (view.tracks != null && view.tracks!.isNotEmpty)
+            Column(children: [
+              heading(context.strings.tracksLabel),
+              Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              OutlinedButton.icon(
+                  label: Text(context.strings.playLabel),
+                  icon: const Icon(Icons.play_arrow),
+                  onPressed: () => _onPlay(context, view)),
+              OutlinedButton.icon(
+                  label: Text(context.strings.downloadLabel),
+                  icon: const Icon(Icons.radio),
+                  onPressed: () => _onDownload(context, view)),
+            ],
+              ),
+              TrackListWidget(view.tracks!),
+            ]),
+          if (view.movies != null && view.movies!.isNotEmpty)
+            Column(children: [
+              heading(context.strings.moviesLabel),
+              MovieListWidget(view.movies!),
+            ]),
+          if (view.series != null && view.series!.isNotEmpty)
+            Column(children: [
+              heading(context.strings.seriesLabel),
+              SeriesListWidget(view.series!),
+            ]),
+          if (view.episodes != null && view.episodes!.isNotEmpty)
+            Column(children: [
+              heading(context.strings.episodesLabel),
+              EpisodeListWidget(view.episodes!),
+            ]),
             ]))
-          ])));
+          ]));
     });
   }
 
@@ -171,9 +164,8 @@ class _ArtistResultsWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(children: [
-      ..._artists.map((a) => Container(
-          child: ListTile(
-              onTap: () => _onTapped(context, a), title: Text(a.name))))
+      ..._artists.map((a) => ListTile(
+          onTap: () => _onTapped(context, a), title: Text(a.name)))
     ]);
   }
 

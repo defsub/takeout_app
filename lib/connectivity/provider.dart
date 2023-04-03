@@ -28,10 +28,12 @@ abstract class ConnectivityProvider {
 class DefaultConnectivityProvider implements ConnectivityProvider {
   final Connectivity _connectivity = Connectivity();
 
+  @override
   Future<ConnectivityType> check() async {
     return map(await _connectivity.checkConnectivity());
   }
 
+  @override
   Stream<ConnectivityType> get stream {
     return _connectivity.onConnectivityChanged.map((result) => map(result));
   }

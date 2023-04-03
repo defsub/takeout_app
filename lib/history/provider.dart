@@ -39,6 +39,7 @@ class JsonHistoryProvider implements HistoryProvider {
   JsonHistoryProvider(this.directory)
       : _file = File('${directory.path}/history.json');
 
+  @override
   Future<History> add({String? search, Spiff? spiff, MediaTrack? track}) async {
     final history = await _checkLoaded();
     if (search != null) {
@@ -75,18 +76,17 @@ class JsonHistoryProvider implements HistoryProvider {
               entry.copyWith(count: entry.count + 1, dateTime: DateTime.now());
     }
     _prune(history);
-    _save(_file, history);
+    await _save(_file, history);
     return history;
   }
 
+  @override
   Future<History> get() async {
     return _checkLoaded();
   }
 
   Future<History> _checkLoaded() async {
-    if (_history == null) {
-      _history = await _load(_file);
-    }
+    _history ??= await _load(_file);
     return Future.value(_history);
   }
 
@@ -95,13 +95,12 @@ class JsonHistoryProvider implements HistoryProvider {
       return History(spiffs: [], searches: [], tracks: {});
     }
 
-    final json =
-        await file.readAsBytes().then((body) => jsonDecode(utf8.decode(body)));
-    if (json is Map<String, dynamic>) {
-      // Allow for older version w/o tracks
-      if (json.containsKey('Tracks') == false) {
-        json['Tracks'] = <String, TrackHistory>{};
-      }
+    final json = await file
+        .readAsBytes()
+        .then((body) => jsonDecode(utf8.decode(body)) as Map<String, dynamic>);
+    // Allow for older version w/o tracks
+    if (json.containsKey('Tracks') == false) {
+      json['Tracks'] = <String, TrackHistory>{};
     }
 
     final history = History.fromJson(json);
@@ -142,6 +141,7 @@ class JsonHistoryProvider implements HistoryProvider {
     }
   }
 
+  @override
   Future<History> remove() async {
     final history = await _checkLoaded();
     history.searches.clear();

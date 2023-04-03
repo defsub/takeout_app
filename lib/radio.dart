@@ -35,7 +35,7 @@ const radioCreator = 'Radio';
 const radioStream = 'stream';
 
 class RadioWidget extends NavigatorClientPage<RadioView> {
-  RadioWidget() : super(radioKey);
+  RadioWidget() : super(key: radioKey);
 
   List<Spiff> _radioFilter(Iterable<Spiff> entries) {
     final list = List<Spiff>.from(entries);
@@ -108,9 +108,9 @@ class RadioWidget extends NavigatorClientPage<RadioView> {
           return isStream
               ? StreamingTile(
                   onTap: () => _onRadioStream(context, stations[index]),
-                  leading: Icon(Icons.radio),
+                  leading: const Icon(Icons.radio),
                   title: Text(stations[index].name),
-                  trailing: Icon(Icons.play_arrow))
+                  trailing: const Icon(Icons.play_arrow))
               : ListTile(
                   title: Text(stations[index].name),
                   onTap: () => _onStation(context, stations[index]),

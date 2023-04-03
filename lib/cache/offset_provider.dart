@@ -85,7 +85,7 @@ class OffsetFileCache implements OffsetCache {
 
   Offset? _decode(File file) {
     try {
-      return Offset.fromJson(jsonDecode(file.readAsStringSync()));
+      return Offset.fromJson(jsonDecode(file.readAsStringSync()) as Map<String, dynamic>);
     } on FormatException {
       log.warning(
           '_decode failed to parse $file with "${file.readAsStringSync()}"');
@@ -159,7 +159,7 @@ class OffsetFileCache implements OffsetCache {
       final local = await get(remote);
       if (local != null && local.newerThan(remote)) {
         newer.add(local);
-      } else if (contains(remote) == false) {
+      } else if (await contains(remote) == false) {
         await put(remote);
       }
     });
@@ -182,7 +182,9 @@ class OffsetFileCache implements OffsetCache {
 
   void removeAll() async {
     await _initialized;
-    _entries.keys.forEach((key) => _remove(key));
+    for (var key in _entries.keys) {
+      _remove(key);
+    }
   }
 
   @override

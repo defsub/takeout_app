@@ -38,7 +38,7 @@ import 'util.dart';
 class ReleaseWidget extends ClientPage<ReleaseView> {
   final Release _release;
 
-  ReleaseWidget(this._release);
+  ReleaseWidget(this._release, {super.key});
 
   @override
   void load(BuildContext context, {Duration? ttl}) {
@@ -96,7 +96,7 @@ class ReleaseWidget extends ClientPage<ReleaseView> {
                   flexibleSpace: FlexibleSpaceBar(
                       // centerTitle: true,
                       // title: Text(release.name, style: TextStyle(fontSize: 15)),
-                      stretchModes: [
+                      stretchModes: const [
                         StretchMode.zoomBackground,
                         StretchMode.fadeTitle
                       ],
@@ -124,7 +124,7 @@ class ReleaseWidget extends ClientPage<ReleaseView> {
                 ),
                 SliverToBoxAdapter(
                     child: Container(
-                        padding: EdgeInsets.fromLTRB(0, 16, 0, 4),
+                        padding: const EdgeInsets.fromLTRB(0, 16, 0, 4),
                         child: Column(children: [
                           GestureDetector(
                               onTap: () => _onArtist(context, view),
@@ -159,7 +159,7 @@ class ReleaseWidget extends ClientPage<ReleaseView> {
   Widget _playButton(BuildContext context, bool isCached) {
     return isCached
         ? IconButton(
-            icon: Icon(Icons.play_arrow, size: 32),
+            icon: const Icon(Icons.play_arrow, size: 32),
             onPressed: () => _onPlay(context))
         : StreamingButton(onPressed: () => _onPlay(context));
   }
@@ -167,7 +167,7 @@ class ReleaseWidget extends ClientPage<ReleaseView> {
   Widget _downloadButton(
       BuildContext context, ReleaseView view, bool isCached) {
     return isCached
-        ? IconButton(icon: Icon(IconsDownloadDone), onPressed: () => {})
+        ? IconButton(icon: const Icon(iconsDownloadDone), onPressed: () => {})
         : DownloadButton(onPressed: () => _onDownload(context, view));
   }
 }
@@ -193,7 +193,7 @@ class _ReleaseTracksWidget extends StatelessWidget {
         final e = _view.tracks[i];
         if (discs > 1 && e.discNum != d) {
           if (e.discNum > 1) {
-            children.add(Divider());
+            children.add(const Divider());
           }
           children.add(smallHeading(
               context, context.strings.discLabel(e.discNum, discs)));
@@ -211,7 +211,7 @@ class _ReleaseTracksWidget extends StatelessWidget {
   Widget? _trailing(BuildContext context, DownloadState downloadState,
       TrackCacheState trackCache, Track t) {
     if (trackCache.contains(t)) {
-      return Icon(IconsCached);
+      return const Icon(iconsCached);
     }
     final progress = downloadState.progress(t);
     return (progress != null)
@@ -224,7 +224,7 @@ class AlbumGridWidget extends StatelessWidget {
   final List<MediaAlbum> _albums;
   final bool subtitle;
 
-  const AlbumGridWidget(this._albums, {this.subtitle = true});
+  const AlbumGridWidget(this._albums, {super.key, this.subtitle = true});
 
   @override
   Widget build(BuildContext context) {
@@ -233,23 +233,22 @@ class AlbumGridWidget extends StatelessWidget {
         crossAxisSpacing: 5,
         mainAxisSpacing: 5,
         children: [
-          ..._albums.map((a) => Container(
-              child: GestureDetector(
-                  onTap: () => _onTap(context, a),
-                  child: GridTile(
-                    footer: Material(
-                        color: Colors.transparent,
-                        // shape: RoundedRectangleBorder(
-                        //     borderRadius: BorderRadius.vertical(
-                        //         bottom: Radius.circular(4))),
-                        clipBehavior: Clip.antiAlias,
-                        child: GridTileBar(
-                          backgroundColor: Colors.black26,
-                          title: Text(a.album),
-                          subtitle: subtitle ? Text(a.creator) : null,
-                        )),
-                    child: gridCover(context, a.image),
-                  ))))
+          ..._albums.map((a) => GestureDetector(
+              onTap: () => _onTap(context, a),
+              child: GridTile(
+                footer: Material(
+                    color: Colors.transparent,
+                    // shape: RoundedRectangleBorder(
+                    //     borderRadius: BorderRadius.vertical(
+                    //         bottom: Radius.circular(4))),
+                    clipBehavior: Clip.antiAlias,
+                    child: GridTileBar(
+                      backgroundColor: Colors.black26,
+                      title: Text(a.album),
+                      subtitle: subtitle ? Text(a.creator) : null,
+                    )),
+                child: gridCover(context, a.image),
+              )))
         ]);
   }
 
@@ -306,23 +305,22 @@ class AlbumGridWidget extends StatelessWidget {
 class ReleaseListWidget extends StatelessWidget {
   final List<Release> _releases;
 
-  const ReleaseListWidget(this._releases);
+  const ReleaseListWidget(this._releases, {super.key});
 
   @override
   Widget build(BuildContext context) {
     return Column(children: [
-      ..._releases.map((e) => Container(
-          child: ListTile(
-              leading: tileCover(context, e.image),
-              onTap: () => _onTap(context, e),
-              // trailing: IconButton(
-              //     icon: Icon(Icons.playlist_add),
-              //     onPressed: () => _onAppend(e)),
-              trailing: IconButton(
-                  icon: Icon(Icons.play_arrow),
-                  onPressed: () => _onPlay(context, e)),
-              title: Text(e.nameWithDisambiguation),
-              subtitle: Text(year(e.date)))))
+      ..._releases.map((e) => ListTile(
+          leading: tileCover(context, e.image),
+          onTap: () => _onTap(context, e),
+          // trailing: IconButton(
+          //     icon: Icon(Icons.playlist_add),
+          //     onPressed: () => _onAppend(e)),
+          trailing: IconButton(
+              icon: const Icon(Icons.play_arrow),
+              onPressed: () => _onPlay(context, e)),
+          title: Text(e.nameWithDisambiguation),
+          subtitle: Text(year(e.date))))
     ]);
   }
 

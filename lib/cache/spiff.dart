@@ -126,7 +126,8 @@ class DirectorySpiffCache implements SpiffCache {
 
   Spiff? _decode(File file) {
     try {
-      return Spiff.fromJson(jsonDecode(file.readAsStringSync()))
+      return Spiff.fromJson(
+              jsonDecode(file.readAsStringSync()) as Map<String, dynamic>)
           .copyWith(lastModified: file.lastModifiedSync());
     } on FormatException {
       log.warning('failed parsing $file with "${file.readAsStringSync()}"');
@@ -135,7 +136,7 @@ class DirectorySpiffCache implements SpiffCache {
   }
 
   File _cacheFile(String key) {
-    return File('${directory.path}/${key}.json');
+    return File('${directory.path}/$key.json');
   }
 
   String _md5(String input) {

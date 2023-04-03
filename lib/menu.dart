@@ -30,91 +30,91 @@ class PopupItem {
 
   bool get isDivider => divider;
 
-  factory PopupItem.divider() => PopupItem(null, '', null, divider: true);
+  factory PopupItem.divider() => const PopupItem(null, '', null, divider: true);
 
   const PopupItem(this.icon, this.title, this.onSelected, {this.divider = false});
 
   PopupItem.music(BuildContext context, MenuCallback onSelected) :
-      this(Icon(Icons.music_note), context.strings.musicSwitchLabel, onSelected);
+      this(const Icon(Icons.music_note), context.strings.musicSwitchLabel, onSelected);
 
   PopupItem.video(BuildContext context, MenuCallback onSelected) :
-        this(Icon(Icons.movie), context.strings.videoSwitchLabel, onSelected);
+        this(const Icon(Icons.movie), context.strings.videoSwitchLabel, onSelected);
 
   PopupItem.podcasts(BuildContext context, MenuCallback onSelected) :
-        this(Icon(Icons.podcasts), context.strings.podcastsSwitchLabel, onSelected);
+        this(const Icon(Icons.podcasts), context.strings.podcastsSwitchLabel, onSelected);
 
   PopupItem.downloads(BuildContext context, MenuCallback onSelected)
-      : this(Icon(IconsDownload),
+      : this(const Icon(iconsDownload),
             context.strings.downloadsLabel, onSelected);
 
   PopupItem.download(BuildContext context, MenuCallback onSelected)
-      : this(Icon(IconsDownload),
+      : this(const Icon(iconsDownload),
             context.strings.downloadsLabel, onSelected);
 
   PopupItem.play(BuildContext context, MenuCallback onSelected)
-      : this(Icon(Icons.play_arrow), context.strings.playLabel,
+      : this(const Icon(Icons.play_arrow), context.strings.playLabel,
             onSelected);
 
   PopupItem.reload(BuildContext context, MenuCallback onSelected)
-      : this(Icon(Icons.refresh_sharp),
+      : this(const Icon(Icons.refresh_sharp),
             context.strings.refreshLabel, onSelected);
 
   PopupItem.logout(BuildContext context, MenuCallback onSelected)
-      : this(Icon(Icons.logout), context.strings.logoutLabel,
+      : this(const Icon(Icons.logout), context.strings.logoutLabel,
             onSelected);
 
   PopupItem.link(BuildContext context, String text, MenuCallback onSelected)
-      : this(Icon(Icons.link), text, onSelected);
+      : this(const Icon(Icons.link), text, onSelected);
 
   PopupItem.about(BuildContext context, MenuCallback onSelected)
-      : this(Icon(Icons.info_outline), context.strings.aboutLabel,
+      : this(const Icon(Icons.info_outline), context.strings.aboutLabel,
             onSelected);
 
   PopupItem.settings(BuildContext context, MenuCallback onSelected)
-      : this(Icon(Icons.settings), context.strings.settingsLabel,
+      : this(const Icon(Icons.settings), context.strings.settingsLabel,
             onSelected);
 
   PopupItem.delete(BuildContext context, String text, MenuCallback onSelected)
-      : this(Icon(Icons.delete), text, onSelected);
+      : this(const Icon(Icons.delete), text, onSelected);
 
   PopupItem.singles(BuildContext context, MenuCallback onSelected)
-      : this(Icon(Icons.audiotrack_outlined),
+      : this(const Icon(Icons.audiotrack_outlined),
             context.strings.singlesLabel, onSelected);
 
   PopupItem.popular(BuildContext context, MenuCallback onSelected)
-      : this(Icon(Icons.audiotrack_outlined),
+      : this(const Icon(Icons.audiotrack_outlined),
             context.strings.popularLabel, onSelected);
 
   PopupItem.genre(BuildContext context, String genre, MenuCallback onSelected)
-      : this(Icon(Icons.people), genre, onSelected);
+      : this(const Icon(Icons.people), genre, onSelected);
 
   PopupItem.area(BuildContext context, String area, MenuCallback onSelected)
-      : this(Icon(Icons.location_pin), area, onSelected);
+      : this(const Icon(Icons.location_pin), area, onSelected);
 
   PopupItem.artist(BuildContext context, String name, MenuCallback onSelected)
-      : this(Icon(Icons.people), name, onSelected);
+      : this(const Icon(Icons.people), name, onSelected);
 
   PopupItem.shuffle(BuildContext context, MenuCallback onSelected)
-      : this(Icon(Icons.shuffle_sharp),
+      : this(const Icon(Icons.shuffle_sharp),
             context.strings.shuffleLabel, onSelected);
 
   PopupItem.radio(BuildContext context, MenuCallback onSelected)
-      : this(Icon(Icons.radio), context.strings.radioLabel,
+      : this(const Icon(Icons.radio), context.strings.radioLabel,
             onSelected);
 
   PopupItem.playlist(BuildContext context, MenuCallback onSelected)
-      : this(Icon(Icons.playlist_play_sharp),
+      : this(const Icon(Icons.playlist_play_sharp),
       context.strings.recentlyPlayed, onSelected);
 }
 
 Widget popupMenu(BuildContext context, List<PopupItem> items) {
-  return PopupMenuButton<dynamic>(
-      icon: Icon(Icons.more_vert),
+  return PopupMenuButton<int>(
+      icon: const Icon(Icons.more_vert),
       itemBuilder: (_) {
-        List<PopupMenuEntry<dynamic>> entries = [];
+        List<PopupMenuEntry<int>> entries = [];
         for (var index = 0; index < items.length; index++) {
           if (items[index].isDivider) {
-            entries.add(PopupMenuDivider());
+            entries.add(const PopupMenuDivider());
           } else {
             entries.add(PopupMenuItem<int>(
                 value: index,

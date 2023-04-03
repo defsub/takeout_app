@@ -47,9 +47,9 @@ class TokensCubit extends HydratedCubit<TokensState> {
 
   @override
   TokensState fromJson(Map<String, dynamic> json) =>
-      TokensState.fromJson(json['tokens']);
+      TokensState.fromJson(json['tokens'] as Map<String, dynamic>);
 
   @override
-  Map<String, dynamic>? toJson(TokensState tokensState) =>
-      {'tokens': tokensState.toJson()};
+  Map<String, dynamic>? toJson(TokensState state) =>
+      {'tokens': state.toJson()};
 }

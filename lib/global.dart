@@ -27,7 +27,7 @@ final radioKey = GlobalKey<NavigatorState>();
 final playerKey = GlobalKey<NavigatorState>();
 final searchKey = GlobalKey<NavigatorState>();
 
-final bottomNavKey = new GlobalKey();
+final bottomNavKey = GlobalKey();
 
 // class SnackBarState {
 //   final Widget content;
@@ -56,7 +56,7 @@ Future<String?> prefsString(String key) async {
 }
 
 void showErrorDialog(BuildContext context, String message) {
-  showDialog(
+  showDialog<void>(
     context: context,
     builder: (BuildContext ctx) {
       return AlertDialog(

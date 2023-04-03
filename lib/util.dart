@@ -34,7 +34,7 @@ extension TakeoutDuration on Duration {
 }
 
 String twoDigits(int n) {
-  return n >= 10 ? '${n}' : '0${n}';
+  return n >= 10 ? '$n' : '0$n';
 }
 
 String ymd(dynamic date) {
@@ -46,7 +46,7 @@ String ymd(dynamic date) {
   final y = twoDigits(t.year);
   final m = twoDigits(t.month);
   final d = twoDigits(t.day);
-  return '${y}-${m}-${d}';
+  return '$y-$m-$d';
 }
 
 bool isNullOrEmpty(String? s) => s?.trim().isEmpty ?? true;

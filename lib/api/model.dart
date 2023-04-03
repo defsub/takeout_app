@@ -44,7 +44,7 @@ class PostResult {
 class PatchResult extends PostResult {
   final Map<String, dynamic> body;
 
-  PatchResult(statusCode, this.body) : super(statusCode);
+  PatchResult(int statusCode, this.body) : super(statusCode);
 
   bool get isModified => statusCode == HttpStatus.ok;
 
@@ -72,9 +72,9 @@ class IndexView {
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
 class HomeView {
-  @JsonKey(name: "AddedReleases")
+  @JsonKey(name: 'AddedReleases')
   final List<Release> added;
-  @JsonKey(name: "NewReleases")
+  @JsonKey(name: 'NewReleases')
   final List<Release> released;
   final List<Movie> addedMovies;
   final List<Movie> newMovies;
@@ -202,11 +202,11 @@ class ArtistsView {
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
 class Artist {
-  @JsonKey(name: "ID")
+  @JsonKey(name: 'ID')
   final int id;
   final String name;
   final String sortName;
-  @JsonKey(name: "ARID")
+  @JsonKey(name: 'ARID')
   final String? arid;
   final String? disambiguation;
   final String? country;
@@ -234,13 +234,13 @@ class Artist {
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
 class Release implements MediaAlbum {
-  @JsonKey(name: "ID")
+  @JsonKey(name: 'ID')
   final int id;
   final String name;
   final String artist;
-  @JsonKey(name: "RGID")
+  @JsonKey(name: 'RGID')
   final String? rgid;
-  @JsonKey(name: "REID")
+  @JsonKey(name: 'REID')
   final String? reid;
   final String? disambiguation;
   final String? type;
@@ -307,31 +307,35 @@ class Release implements MediaAlbum {
     return isNotNullOrEmpty(disambiguation) ? '$name ($disambiguation)' : name;
   }
 
-  String get reference => '/music/releases/${id}/tracks';
+  String get reference => '/music/releases/$id/tracks';
 }
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
 class Track extends DownloadIdentifier implements MediaTrack, OffsetIdentifier {
-  @JsonKey(name: "ID")
+  @JsonKey(name: 'ID')
   final int id;
-  @JsonKey(name: "UUID")
+  @JsonKey(name: 'UUID')
   final String uuid;
   final String artist;
   final String release;
+  @override
   final String date;
   final int trackNum;
   final int discNum;
+  @override
   final String title;
+  @override
   final int size;
-  @JsonKey(name: "RGID")
+  @JsonKey(name: 'RGID')
   final String? rgid;
-  @JsonKey(name: "REID")
+  @JsonKey(name: 'REID')
   final String? reid;
-  @JsonKey(name: "RID")
+  @JsonKey(name: 'RID')
   final String? rid;
   final String releaseTitle;
   final String trackArtist;
-  @JsonKey(name: "ETag")
+  @override
+  @JsonKey(name: 'ETag')
   final String etag;
   final bool artwork;
   final bool frontArtwork;
@@ -345,7 +349,7 @@ class Track extends DownloadIdentifier implements MediaTrack, OffsetIdentifier {
       required this.uuid,
       required this.artist,
       required this.release,
-      this.date = "",
+      this.date = '',
       required this.trackNum,
       required this.discNum,
       required this.title,
@@ -414,11 +418,11 @@ class Track extends DownloadIdentifier implements MediaTrack, OffsetIdentifier {
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
 class Location {
-  @JsonKey(name: "ID")
+  @JsonKey(name: 'ID')
   final int id;
   final String url;
   final int size;
-  @JsonKey(name: "ETag")
+  @JsonKey(name: 'ETag')
   final String etag;
 
   Location(
@@ -458,7 +462,7 @@ class RadioView {
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
 class Station {
-  @JsonKey(name: "ID")
+  @JsonKey(name: 'ID')
   final int id;
   final String name;
   final String type;
@@ -470,7 +474,7 @@ class Station {
 
   Map<String, dynamic> toJson() => _$StationToJson(this);
 
-  String get reference => '/music/radio/stations/${id}';
+  String get reference => '/music/radio/stations/$id';
 }
 
 abstract class ArtistTracksView {
@@ -481,11 +485,13 @@ abstract class ArtistTracksView {
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
 class SinglesView implements ArtistTracksView {
+  @override
   final Artist artist;
   final List<Track> singles;
 
   SinglesView({required this.artist, this.singles = const []});
 
+  @override
   List<Track> get tracks => singles;
 
   factory SinglesView.fromJson(Map<String, dynamic> json) =>
@@ -496,11 +502,13 @@ class SinglesView implements ArtistTracksView {
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
 class PopularView implements ArtistTracksView {
+  @override
   final Artist artist;
   final List<Track> popular;
 
   PopularView({required this.artist, this.popular = const []});
 
+  @override
   List<Track> get tracks => popular;
 
   factory PopularView.fromJson(Map<String, dynamic> json) =>
@@ -614,9 +622,9 @@ class MovieView {
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
 class Person {
-  @JsonKey(name: "ID")
+  @JsonKey(name: 'ID')
   final int id;
-  @JsonKey(name: "PEID")
+  @JsonKey(name: 'PEID')
   final int peid;
   final String name;
   final String? profilePath;
@@ -648,11 +656,11 @@ class Person {
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
 class Cast {
-  @JsonKey(name: "ID")
+  @JsonKey(name: 'ID')
   final int id;
-  @JsonKey(name: "TMID")
+  @JsonKey(name: 'TMID')
   final int tmid;
-  @JsonKey(name: "PEID")
+  @JsonKey(name: 'PEID')
   final int peid;
   final String character;
   final Person person;
@@ -671,11 +679,11 @@ class Cast {
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
 class Crew {
-  @JsonKey(name: "ID")
+  @JsonKey(name: 'ID')
   final int id;
-  @JsonKey(name: "TMID")
+  @JsonKey(name: 'TMID')
   final int tmid;
-  @JsonKey(name: "PEID")
+  @JsonKey(name: 'PEID')
   final int peid;
   final String department;
   final String job;
@@ -696,11 +704,11 @@ class Crew {
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
 class Collection {
-  @JsonKey(name: "ID")
+  @JsonKey(name: 'ID')
   final int id;
   final String name;
   final String sortName;
-  @JsonKey(name: "TMID")
+  @JsonKey(name: 'TMID')
   final int tmid;
 
   Collection(
@@ -774,14 +782,16 @@ class Recommend {
 @JsonSerializable(fieldRename: FieldRename.pascal)
 class Movie extends DownloadIdentifier
     implements MediaTrack, MediaAlbum, OffsetIdentifier {
-  @JsonKey(name: "ID")
+  @JsonKey(name: 'ID')
   final int id;
-  @JsonKey(name: "TMID")
+  @JsonKey(name: 'TMID')
   final int tmid;
-  @JsonKey(name: "IMID")
+  @JsonKey(name: 'IMID')
   final String imid;
+  @override
   final String title;
   final String sortTitle;
+  @override
   final String date;
   final String rating;
   final String tagline;
@@ -793,8 +803,10 @@ class Movie extends DownloadIdentifier
   final int? voteCount;
   final String backdropPath;
   final String posterPath;
-  @JsonKey(name: "ETag")
+  @override
+  @JsonKey(name: 'ETag')
   final String etag;
+  @override
   final int size;
   final int _year;
 
@@ -860,18 +872,20 @@ class Movie extends DownloadIdentifier
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
 class Series with MediaAlbum {
-  @JsonKey(name: "ID")
+  @JsonKey(name: 'ID')
   final int id;
-  @JsonKey(name: "SID")
+  @JsonKey(name: 'SID')
   final String sid;
   final String title;
   final String author;
   final String description;
+  @override
   final String date;
   final String link;
+  @override
   final String image;
   final String copyright;
-  @JsonKey(name: "TTL")
+  @JsonKey(name: 'TTL')
   final int ttl;
   final int _year;
 
@@ -905,30 +919,35 @@ class Series with MediaAlbum {
 
   int get number => 0;
 
-  String get reference => '/podcasts/series/${id}';
+  String get reference => '/podcasts/series/$id';
 }
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
 class Episode extends DownloadIdentifier
     implements MediaTrack, OffsetIdentifier {
-  @JsonKey(name: "ID")
+  @JsonKey(name: 'ID')
   final int id;
-  @JsonKey(name: "SID")
+  @JsonKey(name: 'SID')
   final String sid;
-  @JsonKey(name: "EID")
+  @JsonKey(name: 'EID')
   final String eid;
+  @override
   final String title;
   final String author;
   final String description;
+  @override
   final String date;
   final String link;
-  @JsonKey(name: "URL")
+  @JsonKey(name: 'URL')
   final String url; // needed?
+  @override
   final int size;
   final int _year;
 
+  @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   final String album;
+  @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   final String image; // set from series
 
@@ -955,16 +974,16 @@ class Episode extends DownloadIdentifier
   Episode copyWith({String? album, String? image}) => Episode(
       album: album ?? this.album,
       image: image ?? this.image,
-      id: this.id,
-      sid: this.sid,
-      eid: this.eid,
-      title: this.title,
-      author: this.author,
-      description: this.description,
-      date: this.date,
-      link: this.link,
-      url: this.url,
-      size: this.size);
+      id: id,
+      sid: sid,
+      eid: eid,
+      title: title,
+      author: author,
+      description: description,
+      date: date,
+      link: link,
+      url: url,
+      size: size);
 
   @override
   String get key {
@@ -996,7 +1015,7 @@ class Episode extends DownloadIdentifier
   @override
   int get number => 0;
 
-  String get reference => '/podcasts/episodes/${id}';
+  String get reference => '/podcasts/episodes/$id';
 }
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
@@ -1038,9 +1057,10 @@ class EpisodeView {
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
 class Offset implements OffsetIdentifier {
-  @JsonKey(name: "ID")
+  @JsonKey(name: 'ID')
   final int? id;
-  @JsonKey(name: "ETag")
+  @override
+  @JsonKey(name: 'ETag')
   final String etag;
   final int duration;
   final int offset;
@@ -1054,8 +1074,8 @@ class Offset implements OffsetIdentifier {
       required this.date});
 
   Offset copyWith({int? offset, int? duration, String? date}) => Offset(
-      id: this.id,
-      etag: this.etag,
+      id: id,
+      etag: etag,
       duration: duration ?? this.duration,
       offset: offset ?? this.offset,
       date: date ?? this.date);
@@ -1103,6 +1123,9 @@ class Offset implements OffsetIdentifier {
     }
     return false;
   }
+
+  @override
+  int get hashCode => Object.hash(etag, offset, duration);
 }
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
@@ -1191,15 +1214,15 @@ class ActivityView {
 @JsonSerializable(fieldRename: FieldRename.pascal)
 class MovieEvent {
   final String date;
-  @JsonKey(name: "TMID")
+  @JsonKey(name: 'TMID')
   final String tmid;
-  @JsonKey(name: "IMID")
+  @JsonKey(name: 'IMID')
   final String imid;
-  @JsonKey(name: "ETag")
+  @JsonKey(name: 'ETag')
   final String etag;
 
   MovieEvent(
-      {required this.date, this.tmid = "", this.imid = "", this.etag = ""});
+      {required this.date, this.tmid = '', this.imid = '', this.etag = ''});
 
   factory MovieEvent.now(String etag) {
     final date = Events._eventDate();
@@ -1215,12 +1238,12 @@ class MovieEvent {
 @JsonSerializable(fieldRename: FieldRename.pascal)
 class ReleaseEvent {
   final String date;
-  @JsonKey(name: "RGID")
+  @JsonKey(name: 'RGID')
   final String rgid;
-  @JsonKey(name: "REID")
+  @JsonKey(name: 'REID')
   final String reid;
 
-  ReleaseEvent({required this.date, this.rgid = "", this.reid = ""});
+  ReleaseEvent({required this.date, this.rgid = '', this.reid = ''});
 
   factory ReleaseEvent.now(Release release) {
     final date = Events._eventDate();
@@ -1237,15 +1260,15 @@ class ReleaseEvent {
 @JsonSerializable(fieldRename: FieldRename.pascal)
 class TrackEvent {
   final String date;
-  @JsonKey(name: "RGID")
+  @JsonKey(name: 'RGID')
   final String rgid;
-  @JsonKey(name: "RID")
+  @JsonKey(name: 'RID')
   final String rid;
-  @JsonKey(name: "ETag")
+  @JsonKey(name: 'ETag')
   final String etag;
 
   TrackEvent(
-      {required this.date, this.rgid = "", this.rid = "", this.etag = ""});
+      {required this.date, this.rgid = '', this.rid = '', this.etag = ''});
 
   factory TrackEvent.now(String etag) {
     final date = Events._eventDate();

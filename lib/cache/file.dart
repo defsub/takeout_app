@@ -39,8 +39,10 @@ class FileCacheState {
   }
 
   bool containsAll(Iterable<FileIdentifier> ids) {
-    final set = Set<String>();
-    ids.forEach((e) => set.add(e.key));
+    final set = <String>{};
+    for (var e in ids) {
+      set.add(e.key);
+    }
     return keys.containsAll(set);
   }
 }

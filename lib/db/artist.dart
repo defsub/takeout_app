@@ -51,6 +51,7 @@ class DefaultArtistProvider extends ArtistProvider {
     _load();
   }
 
+  @override
   void reload() {
     _load(ttl: Duration.zero);
   }
@@ -61,14 +62,14 @@ class DefaultArtistProvider extends ArtistProvider {
       names.clear();
       genres.clear();
       countries.clear();
-      view.artists.forEach((artist) {
+      for (var artist in view.artists) {
         artists.add(artist);
         names.add(artist.name);
         _updateMap(artist.genre, genres, artist);
         _updateMap(artist.country, countries, artist);
-      });
+      }
     }).onError((error, stackTrace) {
-      Future.delayed(Duration(minutes: 3), () => _load());
+      Future.delayed(const Duration(minutes: 3), () => _load());
     });
   }
 
@@ -81,6 +82,7 @@ class DefaultArtistProvider extends ArtistProvider {
     }
   }
 
+  @override
   Iterable<String> findByName(String query) {
     final result = <String>[];
     query = query.toLowerCase();

@@ -44,7 +44,7 @@ class IndexCubit extends Cubit<IndexState> {
           music: view.hasMusic,
           podcasts: view.hasPodcasts));
     }).onError((error, stackTrace) {
-      Future.delayed(Duration(minutes: 3), () => _load());
+      Future.delayed(const Duration(minutes: 3), () => _load());
     });
   }
 

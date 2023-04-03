@@ -35,14 +35,14 @@ class History {
   factory History.empty() => History();
 
   History unmodifiableCopy() => History(
-      searches: List.unmodifiable(this.searches),
-      spiffs: List.unmodifiable(this.spiffs),
-      tracks: Map.unmodifiable(this.tracks));
+      searches: List.unmodifiable(searches),
+      spiffs: List.unmodifiable(spiffs),
+      tracks: Map.unmodifiable(tracks));
 
   History copy() => History(
-      searches: List.from(this.searches),
-      spiffs: List.from(this.spiffs),
-      tracks: Map.from(this.tracks));
+      searches: List.from(searches),
+      spiffs: List.from(spiffs),
+      tracks: Map.from(tracks));
 
   factory History.fromJson(Map<String, dynamic> json) =>
       _$HistoryFromJson(json);
@@ -105,6 +105,6 @@ class TrackHistory {
   Map<String, dynamic> toJson() => _$TrackHistoryToJson(this);
 
   TrackHistory copyWith({required int count, required DateTime dateTime}) =>
-      TrackHistory(this.creator, this.album, this.title, this.image, this.etag,
+      TrackHistory(creator, album, title, image, etag,
           count, dateTime);
 }

@@ -21,5 +21,5 @@ class ETag {
   ETag(this.value);
 
   /// Remove any quotes when using as a (cache) key
-  String get key => value.replaceAll(new RegExp(r'"'), '');
+  String get key => value.replaceAll(RegExp(r'"'), '');
 }

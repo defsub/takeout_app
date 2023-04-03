@@ -29,6 +29,8 @@ import 'nav.dart';
 import 'tiles.dart';
 
 class DownloadsWidget extends StatelessWidget {
+  const DownloadsWidget({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -44,14 +46,14 @@ class DownloadsWidget extends StatelessWidget {
             ]),
         body: SingleChildScrollView(
             child: Column(
-          children: [
-            Container(child: DownloadListWidget()),
+          children: const [
+            DownloadListWidget(),
           ],
         )));
   }
 
   void _onDeleteAll(BuildContext context) {
-    showDialog(
+    showDialog<void>(
         context: context,
         builder: (ctx) {
           return AlertDialog(
@@ -87,11 +89,11 @@ class DownloadListWidget extends StatefulWidget {
   final DownloadSortType sortType;
   final List<Spiff> Function(List<Spiff>)? filter;
 
-  DownloadListWidget(
-      {this.sortType = DownloadSortType.name, this.limit = -1, this.filter});
+  const DownloadListWidget(
+      {super.key, this.sortType = DownloadSortType.name, this.limit = -1, this.filter});
 
   @override
-  DownloadListState createState() => DownloadListState(sortType, limit, filter);
+  DownloadListState createState() => DownloadListState();
 }
 
 enum DownloadSortType { oldest, newest, name, size }
@@ -118,32 +120,26 @@ void downloadsSort(DownloadSortType sortType, List<Spiff> entries) {
 }
 
 class DownloadListState extends State<DownloadListWidget> {
-  int _limit;
-  DownloadSortType _sortType;
-  final List<Spiff> Function(List<Spiff>)? _filter;
-
-  DownloadListState(this._sortType, this._limit, this._filter);
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<SpiffCacheCubit, SpiffCacheState>(
         builder: (context, state) {
       var entries = List<Spiff>.from(state.spiffs ?? <Spiff>[]);
-      if (_filter != null) {
-        entries = _filter!(entries);
+      if (widget.filter != null) {
+        entries = widget.filter!(entries);
       }
-      downloadsSort(_sortType, entries);
+      downloadsSort(widget.sortType, entries);
       return Column(children: [
         ...entries
             .sublist(
-                0, _limit == -1 ? entries.length : min(_limit, entries.length))
-            .map((entry) => Container(
-                child: AlbumListTile(
-                    context, entry.creator, entry.title, entry.cover,
-                    trailing: IconButton(
-                        icon: Icon(Icons.play_arrow),
-                        onPressed: () => _onPlay(context, entry)),
-                    onTap: () => _onTap(context, entry))))
+                0, widget.limit == -1 ? entries.length : min(widget.limit, entries.length))
+            .map((entry) => AlbumListTile(
+                context, entry.creator, entry.title, entry.cover,
+                trailing: IconButton(
+                    icon: const Icon(Icons.play_arrow),
+                    onPressed: () => _onPlay(context, entry)),
+                onTap: () => _onTap(context, entry)))
       ]);
     });
   }

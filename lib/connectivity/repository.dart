@@ -20,7 +20,7 @@ import 'dart:async';
 import 'provider.dart';
 
 class ConnectivityRepository {
-  ConnectivityProvider _provider;
+  final ConnectivityProvider _provider;
   StreamSubscription<ConnectivityType>? _subscription;
   ConnectivityType? _connectivityType;
 

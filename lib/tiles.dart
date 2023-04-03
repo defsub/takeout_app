@@ -40,7 +40,8 @@ class AlbumListTile extends StatelessWidget {
   final bool selected;
 
   AlbumListTile(BuildContext context, this.artist, this.album, this.cover,
-      {Widget? leading,
+      {super.key,
+      Widget? leading,
       this.onTap,
       this.onLongPress,
       this.trailing,
@@ -77,7 +78,8 @@ class TrackListTile extends StatelessWidget {
   final bool selected;
 
   const TrackListTile(this.artist, this.album, this.title,
-      {this.leading,
+      {super.key,
+      this.leading,
       this.onTap,
       this.onLongPress,
       this.trailing,
@@ -111,13 +113,17 @@ class NumberedTrackListTile extends StatelessWidget {
   final bool selected;
 
   const NumberedTrackListTile(this.track,
-      {this.onTap, this.onLongPress, this.trailing, this.selected = false});
+      {super.key,
+      this.onTap,
+      this.onLongPress,
+      this.trailing,
+      this.selected = false});
 
   @override
   Widget build(BuildContext context) {
     final trackNumStyle = Theme.of(context).textTheme.bodySmall;
     final leading = Container(
-        padding: EdgeInsets.fromLTRB(12, 12, 0, 0),
+        padding: const EdgeInsets.fromLTRB(12, 12, 0, 0),
         child: Text('${track.trackNum}', style: trackNumStyle));
     // only show artist if different from album artist
     final artist = track.trackArtist != track.artist ? track.trackArtist : '';
@@ -133,7 +139,11 @@ class NumberedTrackListTile extends StatelessWidget {
 class CoverTrackListTile extends TrackListTile {
   CoverTrackListTile(BuildContext context, super.artist, super.album,
       super.title, String? cover,
-      {super.onTap, super.onLongPress, super.trailing, super.selected})
+      {super.key,
+      super.onTap,
+      super.onLongPress,
+      super.trailing,
+      super.selected})
       : super(leading: cover != null ? tileCover(context, cover) : null);
 
   factory CoverTrackListTile.mediaTrack(BuildContext context, MediaTrack track,
@@ -182,8 +192,13 @@ abstract class _ConnectivityTile extends StatelessWidget {
   final Widget? title;
   final Widget? subtitle;
 
-  _ConnectivityTile(
-      {this.onTap, this.leading, this.trailing, this.title, this.subtitle});
+  const _ConnectivityTile(
+      {super.key,
+      this.onTap,
+      this.leading,
+      this.trailing,
+      this.title,
+      this.subtitle});
 
   bool _enabled(BuildContext context, ConnectivityState state);
 
@@ -203,13 +218,15 @@ abstract class _ConnectivityTile extends StatelessWidget {
 }
 
 class StreamingTile extends _ConnectivityTile {
-  StreamingTile(
-      {super.onTap,
+  const StreamingTile(
+      {super.key,
+      super.onTap,
       super.leading,
       super.trailing,
       super.title,
       super.subtitle});
 
+  @override
   bool _enabled(BuildContext context, ConnectivityState state) {
     final settings = context.settings.state.settings;
     final allow = settings.allowMobileStreaming;
@@ -224,9 +241,10 @@ class RelativeDateWidget extends StatelessWidget {
   final String separator;
 
   const RelativeDateWidget(this.dateTime,
-      {String this.prefix = '',
-      String this.suffix = '',
-      String this.separator = textSeparator});
+      {super.key,
+      this.prefix = '',
+      this.suffix = '',
+      this.separator = textSeparator});
 
   factory RelativeDateWidget.from(String date,
       {String prefix = '',
@@ -245,14 +263,14 @@ class RelativeDateWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     if (dateTime.year == 1 && dateTime.month == 1 && dateTime.day == 1) {
       // don't bother zero dates from the server
-      return Text('');
+      return const Text('');
     }
     final now = DateTime.now();
     final diff = now.difference(dateTime);
     if (diff.inDays == 0) {
       // less than 1 day, refresh faster if less than 1 hour
       final refreshRate =
-          diff.inHours > 0 ? Duration(hours: 1) : Duration(minutes: 1);
+          diff.inHours > 0 ? const Duration(hours: 1) : const Duration(minutes: 1);
       return Timeago(
           refreshRate: refreshRate,
           date: dateTime,
