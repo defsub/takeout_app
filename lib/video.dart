@@ -52,14 +52,14 @@ class MovieWidget extends ClientPage<MovieView> {
   }
 
   @override
-  Widget page(BuildContext context, MovieView view) {
+  Widget page(BuildContext context, MovieView state) {
     return scaffold(context,
         image: _movie.image,
         body: (_) => RefreshIndicator(
             onRefresh: () => reloadPage(context),
             child: BlocBuilder<TrackCacheCubit, TrackCacheState>(
-                builder: (context, state) {
-              final isCached = state.contains(_movie);
+                builder: (context, cacheState) {
+              final isCached = cacheState.contains(_movie);
               final screen = MediaQuery.of(context).size;
               final expandedHeight = screen.height / 2;
               return CustomScrollView(slivers: [
@@ -90,7 +90,7 @@ class MovieWidget extends ClientPage<MovieView> {
                         ),
                         Align(
                             alignment: Alignment.bottomLeft,
-                            child: _playButton(context, view, isCached)),
+                            child: _playButton(context, state, isCached)),
                         Align(
                             alignment: Alignment.bottomCenter,
                             child: _progress(context)),
@@ -106,25 +106,25 @@ class MovieWidget extends ClientPage<MovieView> {
                           _title(context),
                           _tagline(context),
                           _details(context),
-                          if (view.hasGenres()) _genres(context, view),
+                          if (state.hasGenres()) _genres(context, state),
                           // GestureDetector(
                           //     onTap: () => _onArtist(), child: _title()),
                           // GestureDetector(
                           //     onTap: () => _onArtist(), child: _artist()),
                         ]))),
-                if (view.hasCast())
+                if (state.hasCast())
                   SliverToBoxAdapter(child: heading(context.strings.castLabel)),
-                if (view.hasCast())
-                  SliverToBoxAdapter(child: _CastListWidget(view)),
-                if (view.hasCrew())
+                if (state.hasCast())
+                  SliverToBoxAdapter(child: _CastListWidget(state)),
+                if (state.hasCrew())
                   SliverToBoxAdapter(child: heading(context.strings.crewLabel)),
-                if (view.hasCrew())
-                  SliverToBoxAdapter(child: _CrewListWidget(view)),
-                if (view.hasRelated())
+                if (state.hasCrew())
+                  SliverToBoxAdapter(child: _CrewListWidget(state)),
+                if (state.hasRelated())
                   SliverToBoxAdapter(
                     child: heading(context.strings.relatedLabel),
                   ),
-                if (view.hasRelated()) MovieGridWidget(view.other!),
+                if (state.hasRelated()) MovieGridWidget(state.other!),
               ]);
             })));
   }
@@ -216,17 +216,18 @@ class MovieWidget extends ClientPage<MovieView> {
   }
 
   Widget _downloadButton(BuildContext context, bool isCached) {
+    // TODO show download progress
     return isCached
         ? IconButton(icon: const Icon(iconsDownloadDone), onPressed: () => {})
         : DownloadButton(onPressed: () => _onDownload(context));
   }
 
   void _onPlay(BuildContext context, MovieView view, Duration startOffset) {
-    showMovie(context, view, startOffset: startOffset);
+    playMovie(context, _MovieMediaTrack(view), startOffset: startOffset);
   }
 
   void _onDownload(BuildContext context) {
-    // Downloads.downloadMovie(context, _movie);
+    context.downloadMovie(_movie);
   }
 
   void _onGenre(BuildContext context, String genre) {
@@ -411,13 +412,13 @@ class MovieGridWidget extends StatelessWidget {
 enum MovieState { buffering, playing, paused, none }
 
 class MoviePlayer extends StatefulWidget {
-  final MovieView _view;
+  final MediaTrack movie;
   final Duration? startOffset;
   final MediaTrackResolver mediaTrackResolver;
   final SettingsRepository settingsRepository;
   final TokenRepository tokenRepository;
 
-  const MoviePlayer(this._view,
+  const MoviePlayer(this.movie,
       {super.key,
       required this.mediaTrackResolver,
       required this.settingsRepository,
@@ -488,16 +489,15 @@ class _MoviePlayerState extends State<MoviePlayer> {
   Future<void> prepareController() async {
     // controller
     final uri =
-        await widget.mediaTrackResolver.resolve(_MovieMediaTrack(widget._view));
+        await widget.mediaTrackResolver.resolve(widget.movie);
     String url = uri.toString();
     if (url.startsWith('/api/')) {
       url = '${widget.settingsRepository.settings?.endpoint}$url';
     }
     final headers = widget.tokenRepository.addMediaToken();
-    final controller = VideoPlayerController.network(url, httpHeaders: headers)
-      ..initialize().then((_) {
-        setState(() {}); // see example
-      });
+    final controller = VideoPlayerController.network(url, httpHeaders: headers);
+    // TODO not sure what this does
+    unawaited(controller.initialize().then((_) => setState(() {})));
     // progress
     _progress = VideoProgressIndicator(controller,
         colors: const VideoProgressColors(
@@ -564,7 +564,7 @@ class _MoviePlayerState extends State<MoviePlayer> {
   void _saveState(BuildContext context) {
     final position = _controller?.value.position ?? Duration.zero;
     final duration = _controller?.value.duration;
-    context.updateProgress(widget._view.movie.etag,
+    context.updateProgress(widget.movie.etag,
         position: position, duration: duration);
   }
 
@@ -670,9 +670,9 @@ class MovieListWidget extends StatelessWidget {
   }
 }
 
-void showMovie(BuildContext context, MovieView view, {Duration? startOffset}) {
+void playMovie(BuildContext context, MediaTrack movie, {Duration? startOffset}) {
   Navigator.of(context, rootNavigator: true).push(MaterialPageRoute<void>(
-      builder: (_) => MoviePlayer(view,
+      builder: (_) => MoviePlayer(movie,
           settingsRepository: context.read<SettingsRepository>(),
           tokenRepository: context.read<TokenRepository>(),
           mediaTrackResolver: context.read<MediaTrackResolver>(),

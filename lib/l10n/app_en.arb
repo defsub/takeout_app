@@ -80,6 +80,7 @@
   "seriesLabel": "Series",
   "episodesLabel": "Episodes",
   "variousArtists": "Various Artists",
+  "wantList": "Want List",
   "deleteTitle": "Really delete {title}?",
   "@deleteTitle": {
     "placeholders": {

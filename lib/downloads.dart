@@ -79,8 +79,7 @@ class DownloadsWidget extends StatelessWidget {
   }
 
   void _onDeleteConfirmed(BuildContext context) {
-    context.spiffCache.removeAll();
-    context.trackCache.removeAll();
+    context.removeDownloads();
   }
 }
 

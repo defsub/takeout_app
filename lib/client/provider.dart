@@ -42,6 +42,8 @@ abstract class ClientProvider {
 
   Future<Spiff> artistSinglesPlaylist(int id, {Duration? ttl});
 
+  Future<WantListView> artistWantList(int id, {Duration? ttl});
+
   Future<SearchView> search(String q, {Duration? ttl = Duration.zero});
 
   Future<Spiff> station(int id, {Duration? ttl = Duration.zero});
@@ -51,6 +53,8 @@ abstract class ClientProvider {
   Future<HomeView> home({Duration? ttl});
 
   Future<MovieView> movie(int id, {Duration? ttl});
+
+  Future<Spiff> moviePlaylist(int id, {Duration? ttl});
 
   Future<GenreView> moviesGenre(String genre, {Duration? ttl});
 
@@ -65,6 +69,8 @@ abstract class ClientProvider {
   Future<SeriesView> series(int id, {Duration? ttl});
 
   Future<Spiff> seriesPlaylist(int id, {Duration? ttl});
+
+  Future<Spiff> episodePlaylist(int id, {Duration? ttl});
 
   Future<Spiff> recentTracks({Duration? ttl});
 

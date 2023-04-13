@@ -49,5 +49,5 @@ Widget gridPoster(BuildContext context, String url) {
 }
 
 Widget playerCover(BuildContext context, String url) {
-  return ArtworkBuilder(Artwork.cover(url), hero: true).build(context);
+  return ArtworkBuilder(Artwork.playerCover(url), hero: false).build(context);
 }

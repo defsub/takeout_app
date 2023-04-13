@@ -58,7 +58,7 @@ class ReleaseWidget extends ClientPage<ReleaseView> {
   }
 
   @override
-  Widget page(BuildContext context, ReleaseView view) {
+  Widget page(BuildContext context, ReleaseView state) {
     final releaseUrl = 'https://musicbrainz.org/release/${_release.reid}';
     final releaseGroupUrl =
         'https://musicbrainz.org/release-group/${_release.rgid}';
@@ -71,8 +71,8 @@ class ReleaseWidget extends ClientPage<ReleaseView> {
         body: (_) => RefreshIndicator(
             onRefresh: () => reloadPage(context),
             child: BlocBuilder<TrackCacheCubit, TrackCacheState>(
-                builder: (context, state) {
-              final isCached = state.containsAll(view.tracks);
+                builder: (context, cacheState) {
+              final isCached = cacheState.containsAll(state.tracks);
               return CustomScrollView(slivers: [
                 SliverAppBar(
                   // floating: true,
@@ -83,7 +83,7 @@ class ReleaseWidget extends ClientPage<ReleaseView> {
                     popupMenu(context, [
                       PopupItem.play(context, (_) => _onPlay(context)),
                       PopupItem.download(
-                          context, (_) => _onDownload(context, view)),
+                          context, (_) => _onDownload(context, state)),
                       PopupItem.divider(),
                       PopupItem.link(context, 'MusicBrainz Release',
                           (_) => launchUrl(Uri.parse(releaseUrl))),
@@ -119,7 +119,7 @@ class ReleaseWidget extends ClientPage<ReleaseView> {
                             child: _playButton(context, isCached)),
                         Align(
                             alignment: Alignment.bottomRight,
-                            child: _downloadButton(context, view, isCached)),
+                            child: _downloadButton(context, state, isCached)),
                       ])),
                 ),
                 SliverToBoxAdapter(
@@ -127,18 +127,18 @@ class ReleaseWidget extends ClientPage<ReleaseView> {
                         padding: const EdgeInsets.fromLTRB(0, 16, 0, 4),
                         child: Column(children: [
                           GestureDetector(
-                              onTap: () => _onArtist(context, view),
+                              onTap: () => _onArtist(context, state),
                               child: _title(context)),
                           GestureDetector(
-                              onTap: () => _onArtist(context, view),
+                              onTap: () => _onArtist(context, state),
                               child: _artist(context)),
                         ]))),
-                SliverToBoxAdapter(child: _ReleaseTracksWidget(view)),
-                if (view.similar.isNotEmpty)
+                SliverToBoxAdapter(child: _ReleaseTracksWidget(state)),
+                if (state.similar.isNotEmpty)
                   SliverToBoxAdapter(
                     child: heading(context.strings.similarReleasesLabel),
                   ),
-                if (view.similar.isNotEmpty) AlbumGridWidget(view.similar),
+                if (state.similar.isNotEmpty) AlbumGridWidget(state.similar),
               ]);
             })));
   }
@@ -177,7 +177,7 @@ class _ReleaseTracksWidget extends StatelessWidget {
 
   const _ReleaseTracksWidget(this._view);
 
-  void _onTap(BuildContext context, int index) {
+  void _onPlay(BuildContext context, int index) {
     context.playlist.replace(_view.release.reference, index: index);
   }
 
@@ -200,7 +200,7 @@ class _ReleaseTracksWidget extends StatelessWidget {
           d = e.discNum;
         }
         children.add(NumberedTrackListTile(e,
-            onTap: () => _onTap(context, i),
+            onTap: () => _onPlay(context, i),
             trailing:
                 _trailing(context, downloads.state, trackCache.state, e)));
       }

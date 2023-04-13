@@ -79,6 +79,10 @@ class ClientRepository {
     return _provider.artistSinglesPlaylist(id, ttl: ttl);
   }
 
+  Future<WantListView> artistWantList(int id, {Duration? ttl}) async {
+    return _provider.artistWantList(id, ttl: ttl);
+  }
+
   Future<SearchView> search(String q, {Duration? ttl = Duration.zero}) async {
     return _provider.search(q, ttl: ttl);
   }
@@ -89,6 +93,10 @@ class ClientRepository {
 
   Future<Spiff> seriesPlaylist(int id, {Duration? ttl = Duration.zero}) async {
     return _provider.seriesPlaylist(id, ttl: ttl);
+  }
+
+  Future<Spiff> episodePlaylist(int id, {Duration? ttl = Duration.zero}) async {
+    return _provider.episodePlaylist(id, ttl: ttl);
   }
 
   Future<Spiff> station(int id, {Duration? ttl = Duration.zero}) async {
@@ -105,6 +113,10 @@ class ClientRepository {
 
   Future<MovieView> movie(int id, {Duration? ttl = Duration.zero}) async {
     return _provider.movie(id, ttl: ttl);
+  }
+
+  Future<Spiff> moviePlaylist(int id, {Duration? ttl = Duration.zero}) async {
+    return _provider.moviePlaylist(id, ttl: ttl);
   }
 
   Future<GenreView> moviesGenre(String genre, {Duration? ttl = Duration.zero}) async {

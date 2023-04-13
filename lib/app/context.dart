@@ -39,6 +39,7 @@ import 'package:takeout_app/settings/settings.dart';
 import 'package:takeout_app/spiff/model.dart';
 import 'package:takeout_app/tokens/repository.dart';
 import 'package:takeout_app/tokens/tokens.dart';
+import 'package:takeout_app/video.dart';
 
 import 'app.dart';
 
@@ -86,6 +87,10 @@ extension AppContext on BuildContext {
     clientRepository.seriesPlaylist(series.id).then((spiff) => download(spiff));
   }
 
+  void downloadEpisode(Episode episode) {
+    clientRepository.episodePlaylist(episode.id).then((spiff) => download(spiff));
+  }
+
   void downloadEpisodes(Iterable<Episode> episodes) {
     final events =
         episodes.map((t) => DownloadEvent(t, Uri.parse(t.location), t.size));
@@ -98,8 +103,12 @@ extension AppContext on BuildContext {
         .then((spiff) => download(spiff));
   }
 
+  void downloadMovie(Movie movie) {
+    clientRepository.moviePlaylist(movie.id).then((spiff) => download(spiff));
+  }
+
   void showMovie(MediaTrack movie) {
-    // app.showMovie(movie);
+    playMovie(this, movie);
   }
 
   void showArtist(String artist) {
@@ -110,6 +119,11 @@ extension AppContext on BuildContext {
     index.reload();
     search.reload();
     offsets.reload();
+  }
+
+  void removeDownloads() {
+    spiffCache.removeAll();
+    trackCache.removeAll();
   }
 
   Future<void> updateProgress(String etag,

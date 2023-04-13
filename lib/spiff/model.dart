@@ -15,7 +15,6 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
-import 'dart:collection';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
@@ -379,7 +378,7 @@ String _playlistCreator(Spiff spiff) {
     return spiff.playlist.creator!;
   }
   // use track creator(s)
-  final list = LinkedHashSet<String>()
+  final list = <String>{}
     ..addAll(spiff.playlist.tracks.map((e) => e.creator));
   // TODO localize, need context
   return list.length > 2 ? 'Various Artists' : list.join(', ');

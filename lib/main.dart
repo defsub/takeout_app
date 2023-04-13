@@ -40,6 +40,7 @@ void main() async {
   // setup the logger
   Logger.root.level = Level.FINE;
   Logger.root.onRecord.listen((record) {
+    // ignore: avoid_print
     print('${record.loggerName}: ${record.message}');
   });
 

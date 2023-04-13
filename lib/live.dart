@@ -56,12 +56,17 @@ class EventPlaybackState {
 
 @JsonSerializable(fieldRename: FieldRename.pascal, includeIfNull: false)
 class EventTrack implements MediaTrack {
+  @override
   final String creator;
+  @override
   final String album;
+  @override
   final String title;
+  @override
   final String image;
+  @override
   final String location;
-  final String key;
+  @override
   final String etag;
 
   EventTrack({
@@ -70,7 +75,6 @@ class EventTrack implements MediaTrack {
     required this.title,
     this.image = '',
     required this.location,
-    required this.key,
     this.etag = '',
   });
 
@@ -81,7 +85,6 @@ class EventTrack implements MediaTrack {
         title: item.title,
         image: item.artUri.toString(),
         location: item.extras?['TODO'],
-        key: item.extras?['TODO'],
         etag: item.extras?['TODO']);
   }
 
@@ -127,7 +130,7 @@ class Event {
 }
 
 class Latency {
-  final size;
+  final int size;
   final q = Queue<int>();
 
   Latency({this.size = 3});
@@ -144,7 +147,7 @@ class Latency {
   }
 
   double get value {
-    return q.length > 0 ? q.average : 0;
+    return q.isNotEmpty ? q.average : 0;
   }
 }
 
@@ -159,9 +162,8 @@ class LiveClient {
   Timer? latencyTimer;
   bool _allowReconnect = true;
 
-  LiveClient(String host, String token)
-      : uri = Uri.parse('wss://$host/live'),
-        this.token = token;
+  LiveClient(String host, this.token)
+      : uri = Uri.parse('wss://$host/live');
 
   void connect() {
     Wakelock.enable();
@@ -213,11 +215,11 @@ class LiveClient {
   }
 
   void listen() async {
-    final latencyPingDuration = Duration(seconds: 15);
+    const latencyPingDuration = Duration(seconds: 15);
     latencyTimer?.cancel();
     latency = Latency();
 
-    final doPing = (Timer) {
+    final doPing = (_) {
       sendPing(DateTime.now().millisecondsSinceEpoch);
     };
     latencyTimer = Timer.periodic(latencyPingDuration, doPing);

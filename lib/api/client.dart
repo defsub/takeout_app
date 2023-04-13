@@ -436,6 +436,13 @@ class TakeoutClient implements ClientProvider {
   Future<Spiff> artistRadio(int id, {Duration? ttl}) async =>
       spiff('/api/artists/$id/radio/playlist', ttl: ttl);
 
+  /// GET /api/artists/1/wantlist
+  @override
+  Future<WantListView> artistWantList(int id, {Duration? ttl}) async =>
+      _retry<WantListView>(() => _getJson('/api/artists/$id/wantlist', ttl: ttl)
+          .then((j) => WantListView.fromJson(j))
+          .catchError((Object e) => Future<WantListView>.error(e)));
+
   /// GET /api/releases/1
   @override
   Future<ReleaseView> release(int id, {Duration? ttl}) async =>
@@ -497,6 +504,7 @@ class TakeoutClient implements ClientProvider {
           .catchError((Object e) => Future<MovieView>.error(e)));
 
   /// GET /api/movies/1/playlist
+  @override
   Future<Spiff> moviePlaylist(int id, {Duration? ttl}) async =>
       spiff('/api/movies/$id/playlist', ttl: ttl);
 
@@ -532,6 +540,7 @@ class TakeoutClient implements ClientProvider {
           .catchError((Object e) => Future<EpisodeView>.error(e));
 
   /// GET /api/episodes/1/playlist
+  @override
   Future<Spiff> episodePlaylist(int id, {Duration? ttl}) async =>
       spiff('/api/episode/$id/playlist', ttl: ttl);
 

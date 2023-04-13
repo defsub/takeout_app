@@ -22,9 +22,9 @@ import 'package:takeout_app/art/scaffold.dart';
 import 'player.dart';
 
 class PlayerScaffold extends StatelessWidget {
-  final Widget? body;
+  final ScaffoldBodyFunc? body;
 
-  PlayerScaffold({super.key, this.body});
+  const PlayerScaffold({super.key, this.body});
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +35,7 @@ class PlayerScaffold extends StatelessWidget {
       if (state is PlayerLoad || state is PlayerIndexChange) {
         image = state.currentTrack?.image;
       }
-      return scaffold(context, image: image, body: (_) => body);
+      return scaffold(context, image: image, body: body);
     });
   }
 }

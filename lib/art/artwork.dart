@@ -51,6 +51,10 @@ class Artwork {
       Artwork(url, coverGridWidth, coverGridHeight, BoxFit.fitHeight,
           placeholder: const Icon(Icons.album));
 
+  factory Artwork.playerCover(String url) =>
+      Artwork(url, coverGridWidth, coverGridHeight, BoxFit.fitHeight,
+          placeholder: const Icon(Icons.album));
+
   factory Artwork.tileCover(String url) => Artwork(url, null, null, null,
       borderRadius: BorderRadius.circular(4),
       placeholder: const Icon(Icons.album, size: listTileIconHeight));
@@ -68,7 +72,8 @@ class Artwork {
 
   factory Artwork.coverGrid(String url) =>
       Artwork(url, coverGridWidth, coverGridHeight, BoxFit.fill,
-          aspectRatio: coverAspectRatio, placeholder: const Icon(Icons.album));
+          aspectRatio: coverAspectRatio,
+          placeholder: const Icon(Icons.album, size: coverGridHeight/3));
 
   factory Artwork.posterGrid(String url) =>
       Artwork(url, posterGridWidth, posterGridHeight, BoxFit.fill,

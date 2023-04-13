@@ -462,7 +462,7 @@ abstract class _HomeGrid extends StatelessWidget {
   }
 
   void _onSettings(BuildContext context) {
-    push(context, builder: (_) => SettingsWidget());
+    push(context, builder: (_) => const SettingsWidget());
   }
 
   void _onRecentTracks(BuildContext context) {

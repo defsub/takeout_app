@@ -49,10 +49,10 @@ class RadioWidget extends NavigatorClientPage<RadioView> {
   }
 
   @override
-  Widget page(BuildContext context, RadioView view) {
+  Widget page(BuildContext context, RadioView state) {
     return BlocBuilder<SpiffCacheCubit, SpiffCacheState>(
-        builder: (context, state) {
-      final entries = _radioFilter(state.spiffs ?? <Spiff>[]);
+        builder: (context, cacheState) {
+      final entries = _radioFilter(cacheState.spiffs ?? <Spiff>[]);
       bool haveDownloads = entries.isNotEmpty;
       // haveDownloads = false;
       return DefaultTabController(
@@ -82,11 +82,11 @@ class RadioWidget extends NavigatorClientPage<RadioView> {
                       )),
                   body: TabBarView(
                     children: [
-                      if (view.genre != null) _stations(view.genre!),
-                      if (view.period != null) _stations(view.period!),
-                      _stations(_merge(view.series != null ? view.series! : [],
-                          view.other != null ? view.other! : [])),
-                      if (view.stream != null) _stations(view.stream!),
+                      if (state.genre != null) _stations(state.genre!),
+                      if (state.period != null) _stations(state.period!),
+                      _stations(_merge(state.series != null ? state.series! : [],
+                          state.other != null ? state.other! : [])),
+                      if (state.stream != null) _stations(state.stream!),
                       if (haveDownloads)
                         DownloadListWidget(filter: _radioFilter)
                     ],

@@ -69,7 +69,7 @@ class SpiffWidget extends ClientPage<Spiff> {
   Widget subtitle(BuildContext context, Spiff spiff) {
     final text = spiff.playlist.creator;
     return text == null
-        ? EmptyWidget()
+        ? const EmptyWidget()
         : Text(text, style: Theme.of(context).textTheme.titleMedium);
   }
 

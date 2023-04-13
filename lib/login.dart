@@ -25,7 +25,7 @@ class LoginWidget extends ClientPage<bool> {
   final TextEditingController _userText = TextEditingController();
   final TextEditingController _passwordText = TextEditingController();
 
-  LoginWidget() : super(value: false);
+  LoginWidget({super.key}) : super(value: false);
 
   @override
   void load(BuildContext context, {Duration? ttl}) {
@@ -44,10 +44,10 @@ class LoginWidget extends ClientPage<bool> {
   }
 
   @override
-  Widget page(BuildContext context, bool success) {
-    if (success) {
+  Widget page(BuildContext context, bool state) {
+    if (state) {
       context.app.authenticated();
-      return EmptyWidget();
+      return const EmptyWidget();
     }
 
     return Scaffold(
@@ -55,59 +55,59 @@ class LoginWidget extends ClientPage<bool> {
           title: Text(context.strings.takeoutTitle),
         ),
         body: Padding(
-            padding: EdgeInsets.all(10),
+            padding: const EdgeInsets.all(10),
             child: ListView(
               children: <Widget>[
                 Container(
                     alignment: Alignment.center,
-                    padding: EdgeInsets.all(10),
+                    padding: const EdgeInsets.all(10),
                     child: Text(
                       context.strings.hostLabel,
                       style:
-                          TextStyle(fontWeight: FontWeight.w500, fontSize: 30),
+                          const TextStyle(fontWeight: FontWeight.w500, fontSize: 30),
                     )),
                 Container(
-                  padding: EdgeInsets.all(10),
+                  padding: const EdgeInsets.all(10),
                   child: TextFormField(
                     controller: _hostText,
                     decoration: InputDecoration(
-                      border: OutlineInputBorder(),
+                      border: const OutlineInputBorder(),
                       labelText: context.strings.hostLabel,
                     ),
                   ),
                 ),
                 Container(
                     alignment: Alignment.center,
-                    padding: EdgeInsets.all(10),
+                    padding: const EdgeInsets.all(10),
                     child: Text(
                       context.strings.loginLabel,
                       style:
-                          TextStyle(fontWeight: FontWeight.w500, fontSize: 30),
+                          const TextStyle(fontWeight: FontWeight.w500, fontSize: 30),
                     )),
                 Container(
-                  padding: EdgeInsets.all(10),
+                  padding: const EdgeInsets.all(10),
                   child: TextFormField(
                     controller: _userText,
                     decoration: InputDecoration(
-                      border: OutlineInputBorder(),
+                      border: const OutlineInputBorder(),
                       labelText: context.strings.userLabel,
                     ),
                   ),
                 ),
                 Container(
-                  padding: EdgeInsets.all(10),
+                  padding: const EdgeInsets.all(10),
                   child: TextFormField(
                     obscureText: true,
                     controller: _passwordText,
                     decoration: InputDecoration(
-                      border: OutlineInputBorder(),
+                      border: const OutlineInputBorder(),
                       labelText: context.strings.passwordLabel,
                     ),
                   ),
                 ),
                 Container(
                     height: 70,
-                    padding: EdgeInsets.all(10),
+                    padding: const EdgeInsets.all(10),
                     child: OutlinedButton(
                       child: Text(context.strings.loginLabel),
                       onPressed: () {

@@ -32,6 +32,7 @@ import 'menu.dart';
 import 'nav.dart';
 import 'release.dart';
 import 'style.dart';
+import 'want.dart';
 import 'util.dart';
 
 class ArtistsWidget extends NavigatorClientPage<ArtistsView> {
@@ -176,6 +177,10 @@ class ArtistWidget extends ClientPage<ArtistView> with ArtistPage {
     push(context, builder: (_) => ArtistsWidget(area: area));
   }
 
+  void _onWantList(BuildContext context) {
+    push(context, builder: (_) => ArtistWantListWidget(_artist));
+  }
+
   @override
   List<Widget> actions(BuildContext context, ArtistView view) {
     final artistUrl = 'https://musicbrainz.org/artist/${_artist.arid}';
@@ -198,6 +203,7 @@ class ArtistWidget extends ClientPage<ArtistView> with ArtistPage {
         PopupItem.link(context, 'MusicBrainz Artist',
             (_) => launchUrl(Uri.parse(artistUrl))),
         PopupItem.divider(),
+        PopupItem.wantList(context, (_) => _onWantList(context)),
         PopupItem.reload(context, (_) => reloadPage(context)),
       ])
     ];

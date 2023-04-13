@@ -47,14 +47,14 @@ class SeriesWidget extends ClientPage<SeriesView> {
   }
 
   @override
-  Widget page(BuildContext context, SeriesView view) {
+  Widget page(BuildContext context, SeriesView state) {
     return scaffold(context,
         image: _series.image,
         body: (color) => RefreshIndicator(
             onRefresh: () => reloadPage(context),
             child: BlocBuilder<TrackCacheCubit, TrackCacheState>(
-                builder: (context, state) {
-              final isCached = state.containsAll(view.episodes);
+                builder: (context, cacheState) {
+              final isCached = cacheState.containsAll(state.episodes);
               final screen = MediaQuery.of(context).size;
               final expandedHeight = screen.height / 2;
               return CustomScrollView(slivers: [
@@ -87,7 +87,7 @@ class SeriesWidget extends ClientPage<SeriesView> {
                             child: _playButton(context, isCached)),
                         Align(
                             alignment: Alignment.bottomRight,
-                            child: _downloadButton(context, view, isCached)),
+                            child: _downloadButton(context, state, isCached)),
                       ])),
                 ),
                 SliverToBoxAdapter(
@@ -97,7 +97,7 @@ class SeriesWidget extends ClientPage<SeriesView> {
                           _title(context),
                         ]))),
                 SliverToBoxAdapter(
-                    child: _SeriesEpisodeListWidget(view, color)),
+                    child: _SeriesEpisodeListWidget(state, color)),
               ]);
             })));
   }
@@ -224,6 +224,7 @@ class _EpisodeWidget extends StatelessWidget {
           actions: [
             popupMenu(context, [
               // TODO this shows delete when there's nothing to delete
+              // consider removing since this can be removed in downloads
               PopupItem.delete(
                   context, context.strings.deleteItem, (ctx) => _onDelete(ctx)),
             ])
@@ -334,7 +335,7 @@ class _EpisodeWidget extends StatelessWidget {
   }
 
   void _onDownload(BuildContext context) {
-    context.downloadEpisodes([episode]);
+    context.downloadEpisode(episode);
   }
 
   Widget _playButton(BuildContext context, bool isCached) {

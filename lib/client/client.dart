@@ -93,8 +93,16 @@ class ClientCubit extends Cubit<ClientState> {
       _doit<Spiff>(({Duration? ttl}) => repository.artistRadio(id, ttl: ttl),
           ttl: ttl);
 
+  void artistWantList(int id, {Duration? ttl}) => _doit<WantListView>(
+      ({Duration? ttl}) => repository.artistWantList(id, ttl: ttl),
+      ttl: ttl);
+
   void movie(int id, {Duration? ttl}) =>
       _doit<MovieView>(({Duration? ttl}) => repository.movie(id, ttl: ttl),
+          ttl: ttl);
+
+  void moviePlaylist(int id, {Duration? ttl}) =>
+      _doit<Spiff>(({Duration? ttl}) => repository.moviePlaylist(id, ttl: ttl),
           ttl: ttl);
 
   void moviesGenre(String genre, {Duration? ttl}) => _doit<GenreView>(
@@ -128,6 +136,10 @@ class ClientCubit extends Cubit<ClientState> {
   void seriesPlaylist(int id, {Duration? ttl}) =>
       _doit<Spiff>(({Duration? ttl}) => repository.seriesPlaylist(id, ttl: ttl),
           ttl: ttl);
+
+  void episodePlaylist(int id, {Duration? ttl}) => _doit<Spiff>(
+      ({Duration? ttl}) => repository.episodePlaylist(id, ttl: ttl),
+      ttl: ttl);
 
   void station(int id, {Duration? ttl}) =>
       _doit<Spiff>(({Duration? ttl}) => repository.station(id, ttl: ttl),

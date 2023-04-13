@@ -15,22 +15,18 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
-import 'dart:collection';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:takeout_app/api/model.dart';
 import 'package:takeout_app/app/context.dart';
 import 'package:takeout_app/history/history.dart';
 import 'package:takeout_app/history/model.dart';
-import 'package:takeout_app/media_type/media_type.dart';
 import 'package:takeout_app/page/page.dart';
 import 'package:takeout_app/spiff/model.dart';
 import 'package:takeout_app/podcasts.dart';
 import 'package:takeout_app/release.dart';
 
 import 'artists.dart';
-import 'model.dart';
 import 'nav.dart';
 import 'style.dart';
 import 'tracks.dart';
@@ -65,7 +61,7 @@ class SearchWidget extends ClientPage<SearchView> {
   }
 
   @override
-  Widget page(BuildContext context, SearchView view) {
+  Widget page(BuildContext context, SearchView state) {
     return Builder(builder: (context) {
       final history = context.watch<HistoryCubit>().state.history;
       final searches = List<SearchHistory>.from(history.searches);
@@ -83,7 +79,7 @@ class SearchWidget extends ClientPage<SearchView> {
                     return words;
                   } else {
                     final s = text.toLowerCase();
-                    final options = LinkedHashSet<String>()
+                    final options = <String>{}
                       ..add(text)
                       ..addAll(
                           words.where((e) => e.toLowerCase().startsWith(s)))
@@ -98,17 +94,17 @@ class SearchWidget extends ClientPage<SearchView> {
           body: Column(children: [
             Flexible(
             child: ListView(children: [
-          if (view.artists != null && view.artists!.isNotEmpty)
+          if (state.artists != null && state.artists!.isNotEmpty)
             Column(children: [
               heading(context.strings.artistsLabel),
-              _ArtistResultsWidget(view.artists!),
+              _ArtistResultsWidget(state.artists!),
             ]),
-          if (view.releases != null && view.releases!.isNotEmpty)
+          if (state.releases != null && state.releases!.isNotEmpty)
             Column(children: [
               heading(context.strings.releasesLabel),
-              ReleaseListWidget(view.releases!),
+              ReleaseListWidget(state.releases!),
             ]),
-          if (view.tracks != null && view.tracks!.isNotEmpty)
+          if (state.tracks != null && state.tracks!.isNotEmpty)
             Column(children: [
               heading(context.strings.tracksLabel),
               Row(
@@ -117,29 +113,29 @@ class SearchWidget extends ClientPage<SearchView> {
               OutlinedButton.icon(
                   label: Text(context.strings.playLabel),
                   icon: const Icon(Icons.play_arrow),
-                  onPressed: () => _onPlay(context, view)),
+                  onPressed: () => _onPlay(context, state)),
               OutlinedButton.icon(
                   label: Text(context.strings.downloadLabel),
                   icon: const Icon(Icons.radio),
-                  onPressed: () => _onDownload(context, view)),
+                  onPressed: () => _onDownload(context, state)),
             ],
               ),
-              TrackListWidget(view.tracks!),
+              TrackListWidget(state.tracks!),
             ]),
-          if (view.movies != null && view.movies!.isNotEmpty)
+          if (state.movies != null && state.movies!.isNotEmpty)
             Column(children: [
               heading(context.strings.moviesLabel),
-              MovieListWidget(view.movies!),
+              MovieListWidget(state.movies!),
             ]),
-          if (view.series != null && view.series!.isNotEmpty)
+          if (state.series != null && state.series!.isNotEmpty)
             Column(children: [
               heading(context.strings.seriesLabel),
-              SeriesListWidget(view.series!),
+              SeriesListWidget(state.series!),
             ]),
-          if (view.episodes != null && view.episodes!.isNotEmpty)
+          if (state.episodes != null && state.episodes!.isNotEmpty)
             Column(children: [
               heading(context.strings.episodesLabel),
-              EpisodeListWidget(view.episodes!),
+              EpisodeListWidget(state.episodes!),
             ]),
             ]))
           ]));

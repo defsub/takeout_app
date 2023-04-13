@@ -40,7 +40,7 @@ abstract class ClientPageBuilder<T> {
           } else if (state is ClientError) {
             return errorPage(context, state);
           }
-          return EmptyWidget();
+          return const EmptyWidget();
         }));
     return builder;
   }

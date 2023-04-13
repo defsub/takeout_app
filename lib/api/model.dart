@@ -103,7 +103,7 @@ class HomeView {
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
 class ArtistView {
-  late final Artist artist;
+  final Artist artist;
   final String? image;
   final String? background;
   final List<Release> releases;
@@ -124,6 +124,19 @@ class ArtistView {
       _$ArtistViewFromJson(json);
 
   Map<String, dynamic> toJson() => _$ArtistViewToJson(this);
+}
+
+@JsonSerializable(fieldRename: FieldRename.pascal)
+class WantListView {
+  final Artist artist;
+  final List<Release> releases;
+
+  WantListView({required this.artist, this.releases = const []});
+
+  factory WantListView.fromJson(Map<String, dynamic> json) =>
+      _$WantListViewFromJson(json);
+
+  Map<String, dynamic> toJson() => _$WantListViewToJson(this);
 }
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
@@ -243,6 +256,8 @@ class Release implements MediaAlbum {
   @JsonKey(name: 'REID')
   final String? reid;
   final String? disambiguation;
+  final String? country;
+  final String? asin;
   final String? type;
   final String _date;
   final String? releaseDate;
@@ -260,6 +275,8 @@ class Release implements MediaAlbum {
       this.rgid,
       this.reid,
       this.disambiguation,
+      this.country,
+      this.asin,
       this.type,
       String? date,
       this.releaseDate,
