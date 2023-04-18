@@ -15,15 +15,12 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:logging/logging.dart';
 import 'package:octo_image/octo_image.dart';
 import 'package:palette_generator/palette_generator.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:takeout_app/app/context.dart';
-import 'package:takeout_app/client/repository.dart';
 import 'package:takeout_app/util.dart';
 
 import 'artwork.dart';
@@ -51,9 +48,9 @@ class ArtworkBuilder {
 
   ArtworkBuilder(this.primary,
       {this.secondary,
-        this.placeholder = const Icon(Icons.image_outlined, size: 40),
-        this.errorIcon = const Icon(Icons.broken_image_outlined, size: 40),
-        this.hero = false})
+      this.placeholder = const Icon(Icons.image_outlined, size: 40),
+      this.errorIcon = const Icon(Icons.broken_image_outlined, size: 40),
+      this.hero = false})
       : _artwork = _pick(primary, secondary);
 
   factory ArtworkBuilder.artist(String? artistUrl, String? coverUrl) =>
@@ -66,7 +63,7 @@ class ArtworkBuilder {
       return errorIcon;
     }
     urlStream.add(artwork.url);
-    final imageProvider = _imageProvider(context, artwork.url);
+    final imageProvider = context.imageProvider.get(artwork.url);
     //CachedNetworkImage.logLevel = CacheManagerLogLevel.verbose;
     final image = OctoImage(
         image: imageProvider,
@@ -88,8 +85,8 @@ class ArtworkBuilder {
     _provider = imageProvider;
     return artwork.borderRadius != null
         ? ClipRRect(
-        borderRadius: artwork.borderRadius,
-        child: _hero(image, artwork.tag))
+            borderRadius: artwork.borderRadius,
+            child: _hero(image, artwork.tag))
         : _hero(image, artwork.tag);
   }
 
@@ -118,40 +115,6 @@ class ArtworkBuilder {
   }
 }
 
-
-// redo of DefaultCacheManager to use the takeout client
-class _CoverCacheManager extends CacheManager with ImageCacheManager {
-  static const key = 'libCachedImageData'; // same as DefaultCacheManager
-
-  // static final _CoverCacheManager _instance = _CoverCacheManager._();
-  static _CoverCacheManager? _instance;
-
-  factory _CoverCacheManager(BuildContext context) {
-    if (_instance == null) {
-      final clientRepository = context.clientRepository;
-      _instance = _CoverCacheManager._(clientRepository);
-    }
-    return _instance!;
-  }
-
-  _CoverCacheManager._(ClientRepository clientRepository)
-      : super(Config(key,
-      fileService: HttpFileService(httpClient: clientRepository.client)));
-}
-
-// TODO consider putting this provider and cache in the context; fullUrl
-CachedNetworkImageProvider _imageProvider(BuildContext context, String url) {
-  return CachedNetworkImageProvider(fullUrl(context, url), cacheManager: _CoverCacheManager(context));
-}
-
-String fullUrl(BuildContext context, String url) {
-  final endpoint = context.settings.state.settings.endpoint;
-  if (url.startsWith('/img/')) {
-    return '$endpoint$url';
-  }
-  return url;
-}
-
 final _colorCache = <String, Color>{};
 
 Future<Color> getImageBackgroundColor(BuildContext context, String url) async {
@@ -159,13 +122,14 @@ Future<Color> getImageBackgroundColor(BuildContext context, String url) async {
   if (color != null) {
     return color;
   }
-  final provider = _imageProvider(context, url);
+  final provider = context.imageProvider.get(url);
   color = await _backgroundColor(context, provider);
   _colorCache[url] = color;
   return color;
 }
 
-Future<Color> _backgroundColor(BuildContext context, ImageProvider imageProvider) async {
+Future<Color> _backgroundColor(
+    BuildContext context, ImageProvider imageProvider) async {
   final paletteGenerator =
       await PaletteGenerator.fromImageProvider(imageProvider);
   final brightness = MediaQuery.of(context).platformBrightness;

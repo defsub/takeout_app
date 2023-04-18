@@ -26,7 +26,6 @@ import 'package:takeout_app/spiff/model.dart';
 import 'package:takeout_app/tiles.dart';
 
 import 'downloads.dart';
-import 'global.dart';
 import 'menu.dart';
 import 'nav.dart';
 import 'style.dart';
@@ -35,7 +34,7 @@ const radioCreator = 'Radio';
 const radioStream = 'stream';
 
 class RadioWidget extends NavigatorClientPage<RadioView> {
-  RadioWidget() : super(key: radioKey);
+  RadioWidget({super.key});
 
   List<Spiff> _radioFilter(Iterable<Spiff> entries) {
     final list = List<Spiff>.from(entries);

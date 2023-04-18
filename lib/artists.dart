@@ -27,7 +27,6 @@ import 'package:takeout_app/connectivity/connectivity.dart';
 import 'package:takeout_app/page/page.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import 'global.dart';
 import 'menu.dart';
 import 'nav.dart';
 import 'release.dart';
@@ -39,7 +38,7 @@ class ArtistsWidget extends NavigatorClientPage<ArtistsView> {
   final String? genre;
   final String? area;
 
-  ArtistsWidget({this.genre, this.area}) : super(key: artistsKey);
+  ArtistsWidget({this.genre, this.area, super.key});
 
   @override
   void load(BuildContext context, {Duration? ttl}) {
@@ -273,6 +272,9 @@ mixin ArtistPage {
   static final Random _random = Random();
 
   String? _randomCover(ArtistView view) {
+    if (view.releases.isEmpty) {
+      return null;
+    }
     for (var i = 0; i < 3; i++) {
       final pick = _random.nextInt(view.releases.length);
       if (isNotNullOrEmpty(view.releases[pick].image)) {

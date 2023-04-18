@@ -29,7 +29,7 @@ import 'history.dart';
 import 'model.dart';
 
 class HistoryListWidget extends StatelessWidget {
-  HistoryListWidget() : super(key: historyKey);
+  const HistoryListWidget({super.key});
 
   @override
   Widget build(BuildContext context) {

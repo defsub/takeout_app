@@ -16,44 +16,8 @@
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 const textSeparator = ' \u2022 ';
-
-final homeKey = GlobalKey<NavigatorState>();
-final artistsKey = GlobalKey<NavigatorState>();
-final historyKey = GlobalKey<NavigatorState>();
-final radioKey = GlobalKey<NavigatorState>();
-final playerKey = GlobalKey<NavigatorState>();
-final searchKey = GlobalKey<NavigatorState>();
-
-final bottomNavKey = GlobalKey();
-
-// class SnackBarState {
-//   final Widget content;
-//
-//   SnackBarState(this.content);
-// }
-//
-// final snackBarStateSubject = PublishSubject<SnackBarState>();
-//
-// void showSnackBar(String text) {
-//   snackBarStateSubject.add(SnackBarState(Text(text)));
-// }
-
-Future<SharedPreferences> prefs = SharedPreferences.getInstance();
-
-Future<String?> prefsString(String key) async {
-  return await prefs.then((p) async {
-    await p.reload();
-    var val = p.getString(key);
-    if (val == 'null') {
-      // TODO why did this happen?
-      val = null;
-    }
-    return val;
-  });
-}
 
 void showErrorDialog(BuildContext context, String message) {
   showDialog<void>(

@@ -19,6 +19,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:takeout_app/api/model.dart';
+import 'package:takeout_app/art/provider.dart';
 import 'package:takeout_app/cache/offset.dart';
 import 'package:takeout_app/cache/spiff.dart';
 import 'package:takeout_app/cache/track.dart';
@@ -138,6 +139,8 @@ extension AppContext on BuildContext {
   }
 
   AppCubit get app => read<AppCubit>();
+
+  ArtProvider get imageProvider => read<ArtProvider>();
 
   ClientCubit get client => read<ClientCubit>();
 

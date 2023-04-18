@@ -71,6 +71,10 @@ class SettingsCubit extends HydratedCubit<SettingsState> {
         state.settings.copyWith(allowMobileArtistArtwork: value)));
   }
 
+  set homeGridType(HomeGridType value) {
+    emit(SettingsState(state.settings.copyWith(homeGridType: value)));
+  }
+
   @override
   SettingsState fromJson(Map<String, dynamic> json) =>
       SettingsState.fromJson(json['settings'] as Map<String, dynamic>);

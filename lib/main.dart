@@ -30,7 +30,6 @@ import 'package:takeout_app/player/widget.dart';
 import 'package:takeout_app/empty.dart';
 
 import 'artists.dart';
-import 'global.dart';
 import 'home.dart';
 import 'login.dart';
 import 'radio.dart';
@@ -51,8 +50,13 @@ void main() async {
   runApp(const TakeoutApp());
 }
 
-// TODO what's this for now? snack bar?
-final _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+final homeKey = GlobalKey<NavigatorState>();
+final artistsKey = GlobalKey<NavigatorState>();
+final historyKey = GlobalKey<NavigatorState>();
+final radioKey = GlobalKey<NavigatorState>();
+final playerKey = GlobalKey<NavigatorState>();
+final searchKey = GlobalKey<NavigatorState>();
+final bottomNavKey = GlobalKey();
 
 class TakeoutApp extends StatelessWidget with AppBloc {
   const TakeoutApp({super.key});
@@ -223,6 +227,8 @@ class _TakeoutState extends State<_TakeoutWidget>
       NavigatorState? navState = _navigatorState(context.app.state.index);
       if (navState != null && navState.canPop()) {
         navState.popUntil((route) => route.isFirst);
+      } else {
+        context.selectedMediaType.next();
       }
     } else {
       context.app.goto(index);
@@ -251,7 +257,6 @@ class _TakeoutState extends State<_TakeoutWidget>
             return false;
           },
           child: Scaffold(
-              key: _scaffoldMessengerKey,
               floatingActionButton: _fab(context),
               body: IndexedStack(
                   index: state.navigationBarIndex, children: pages),
@@ -281,15 +286,17 @@ class _TakeoutState extends State<_TakeoutWidget>
       }
       return Stack(alignment: Alignment.center, children: [
         FloatingActionButton(
-        onPressed: () =>
-            playing ? context.player.pause() : context.player.play(),
-        shape: const CircleBorder(),
-        child: playing ? const Icon(Icons.pause) : const Icon(Icons.play_arrow)),
+            onPressed: () =>
+                playing ? context.player.pause() : context.player.play(),
+            shape: const CircleBorder(),
+            child: playing
+                ? const Icon(Icons.pause)
+                : const Icon(Icons.play_arrow)),
         IgnorePointer(
-        child: SizedBox(
-            width: 52, // non-mini FAB is 56, progress is 4
-            height: 52,
-            child: CircularProgressIndicator(value: progress))),
+            child: SizedBox(
+                width: 52, // non-mini FAB is 56, progress is 4
+                height: 52,
+                child: CircularProgressIndicator(value: progress))),
       ]);
     });
   }
@@ -334,12 +341,16 @@ class _TakeoutState extends State<_TakeoutWidget>
 
   Map<String, WidgetBuilder> _pageBuilders() {
     final builders = {
-      '/home': (_) => HomeWidget((ctx) => Navigator.push(
-          ctx, MaterialPageRoute<void>(builder: (_) => SearchWidget()))),
-      '/artists': (_) => ArtistsWidget(),
-      '/history': (_) => HistoryListWidget(),
-      '/radio': (_) => RadioWidget(),
-      '/player': (_) => const PlayerWidget()
+      '/home': (_) => HomeWidget(
+          (ctx) => Navigator.push(
+              ctx,
+              MaterialPageRoute<void>(
+                  builder: (_) => SearchWidget(key: searchKey))),
+          key: homeKey),
+      '/artists': (_) => ArtistsWidget(key: artistsKey),
+      '/history': (_) => HistoryListWidget(key: historyKey),
+      '/radio': (_) => RadioWidget(key: radioKey),
+      '/player': (_) => PlayerWidget(key: playerKey)
     };
     return builders;
   }

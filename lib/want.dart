@@ -123,10 +123,10 @@ class WantReleaseCard extends StatelessWidget {
     launchUrl(Uri.parse(uri), mode: LaunchMode.externalApplication);
   }
 
-  void _onWikipedia() {
-    final uri =
-        'https://en.wikipedia.org/w/index.php?title=Special:Search&search=${Uri
-        .encodeQueryComponent(release.name + " by " + artist.name)}';
-    launchUrl(Uri.parse(uri), mode: LaunchMode.externalApplication);
-  }
+  // void _onWikipedia() {
+  //   final uri =
+  //       'https://en.wikipedia.org/w/index.php?title=Special:Search&search=${Uri
+  //       .encodeQueryComponent(release.name + " by " + artist.name)}';
+  //   launchUrl(Uri.parse(uri), mode: LaunchMode.externalApplication);
+  // }
 }

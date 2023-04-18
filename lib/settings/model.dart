@@ -19,6 +19,8 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'model.g.dart';
 
+enum HomeGridType { mix, downloads, released, added }
+
 @JsonSerializable()
 class Settings {
   final String user;
@@ -26,35 +28,45 @@ class Settings {
   final bool allowMobileStreaming;
   final bool allowMobileDownload;
   final bool allowMobileArtistArtwork;
+  final HomeGridType homeGridType;
 
-  Settings(
-      {required this.user,
-        required this.host,
-        required this.allowMobileStreaming,
-        required this.allowMobileDownload,
-        required this.allowMobileArtistArtwork});
+  Settings({
+    required this.user,
+    required this.host,
+    required this.allowMobileStreaming,
+    required this.allowMobileDownload,
+    required this.allowMobileArtistArtwork,
+    this.homeGridType = HomeGridType.mix,
+  });
 
   factory Settings.initial() => Settings(
-      user: 'takeout',
-      host: 'https://example.com',
-      allowMobileArtistArtwork: true,
-      allowMobileDownload: true,
-      allowMobileStreaming: true);
+        user: 'takeout',
+        host: 'https://example.com',
+        allowMobileArtistArtwork: true,
+        allowMobileDownload: true,
+        allowMobileStreaming: true,
+        homeGridType: HomeGridType.mix,
+      );
 
   String get endpoint => host;
 
-  Settings copyWith(
-      {String? user,
-        String? host,
-        bool? allowMobileStreaming,
-        bool? allowMobileDownload,
-        bool? allowMobileArtistArtwork}) =>
+  Settings copyWith({
+    String? user,
+    String? host,
+    bool? allowMobileStreaming,
+    bool? allowMobileDownload,
+    bool? allowMobileArtistArtwork,
+    HomeGridType? homeGridType,
+  }) =>
       Settings(
-          user: user ?? this.user,
-          host: host ?? this.host,
-          allowMobileStreaming: allowMobileStreaming ?? this.allowMobileStreaming,
-          allowMobileDownload: allowMobileDownload ?? this.allowMobileDownload,
-          allowMobileArtistArtwork: allowMobileArtistArtwork ?? this.allowMobileArtistArtwork);
+        user: user ?? this.user,
+        host: host ?? this.host,
+        allowMobileStreaming: allowMobileStreaming ?? this.allowMobileStreaming,
+        allowMobileDownload: allowMobileDownload ?? this.allowMobileDownload,
+        allowMobileArtistArtwork:
+            allowMobileArtistArtwork ?? this.allowMobileArtistArtwork,
+        homeGridType: homeGridType ?? this.homeGridType,
+      );
 
   factory Settings.fromJson(Map<String, dynamic> json) =>
       _$SettingsFromJson(json);

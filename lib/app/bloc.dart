@@ -20,6 +20,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:takeout_app/art/provider.dart';
 import 'package:takeout_app/cache/json_repository.dart';
 import 'package:takeout_app/cache/offset.dart';
 import 'package:takeout_app/cache/offset_repository.dart';
@@ -98,6 +99,8 @@ mixin AppBloc {
     final trackResolver =
         MediaTrackResolver(trackCacheRepository: trackCacheRepository);
 
+    final artProvider = ArtProvider(settingsRepository, clientRepository);
+
     return MultiRepositoryProvider(providers: [
       RepositoryProvider(create: (_) => search),
       RepositoryProvider(create: (_) => settingsRepository),
@@ -110,6 +113,7 @@ mixin AppBloc {
       RepositoryProvider(create: (_) => connectivityRepository),
       RepositoryProvider(create: (_) => tokenRepository),
       RepositoryProvider(create: (_) => trackResolver),
+      RepositoryProvider(create: (_) => artProvider),
     ], child: child);
   }
 
