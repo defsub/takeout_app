@@ -15,18 +15,18 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
-import 'dart:convert';
 import 'dart:async';
 import 'dart:collection';
-import 'package:collection/collection.dart';
-import 'package:rxdart/rxdart.dart';
-import 'package:takeout_app/schema.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
-import 'package:json_annotation/json_annotation.dart';
+import 'dart:convert';
+
 import 'package:audio_service/audio_service.dart';
+import 'package:collection/collection.dart';
+import 'package:json_annotation/json_annotation.dart';
 import 'package:logging/logging.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:wakelock/wakelock.dart';
-import 'playlist.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
+
 import 'model.dart';
 
 part 'live.g.dart';
@@ -55,13 +55,18 @@ class EventPlaybackState {
 }
 
 @JsonSerializable(fieldRename: FieldRename.pascal, includeIfNull: false)
-class EventTrack implements MediaLocatable {
+class EventTrack implements MediaTrack {
+  @override
   final String creator;
+  @override
   final String album;
+  @override
   final String title;
+  @override
   final String image;
+  @override
   final String location;
-  final String key;
+  @override
   final String etag;
 
   EventTrack({
@@ -70,7 +75,6 @@ class EventTrack implements MediaLocatable {
     required this.title,
     this.image = '',
     required this.location,
-    required this.key,
     this.etag = '',
   });
 
@@ -80,9 +84,8 @@ class EventTrack implements MediaLocatable {
         album: item.album ?? '',
         title: item.title,
         image: item.artUri.toString(),
-        location: item.extras?[ExtraLocation],
-        key: item.extras?[ExtraKey],
-        etag: item.extras?[ExtraETag]);
+        location: item.extras?['TODO'],
+        etag: item.extras?['TODO']);
   }
 
   factory EventTrack.fromJson(Map<String, dynamic> json) =>
@@ -99,11 +102,6 @@ class EventTrack implements MediaLocatable {
   int get disc => throw UnimplementedError;
 
   String get date => '1970';
-
-  @override
-  Reference get reference {
-    throw UnimplementedError;
-  }
 }
 
 @JsonSerializable(fieldRename: FieldRename.pascal, includeIfNull: false)
@@ -132,7 +130,7 @@ class Event {
 }
 
 class Latency {
-  final size;
+  final int size;
   final q = Queue<int>();
 
   Latency({this.size = 3});
@@ -149,7 +147,7 @@ class Latency {
   }
 
   double get value {
-    return q.length > 0 ? q.average : 0;
+    return q.isNotEmpty ? q.average : 0;
   }
 }
 
@@ -164,9 +162,8 @@ class LiveClient {
   Timer? latencyTimer;
   bool _allowReconnect = true;
 
-  LiveClient(String host, String token)
-      : uri = Uri.parse('wss://$host/live'),
-        this.token = token;
+  LiveClient(String host, this.token)
+      : uri = Uri.parse('wss://$host/live');
 
   void connect() {
     Wakelock.enable();
@@ -218,11 +215,11 @@ class LiveClient {
   }
 
   void listen() async {
-    final latencyPingDuration = Duration(seconds: 15);
+    const latencyPingDuration = Duration(seconds: 15);
     latencyTimer?.cancel();
     latency = Latency();
 
-    final doPing = (Timer) {
+    final doPing = (_) {
       sendPing(DateTime.now().millisecondsSinceEpoch);
     };
     latencyTimer = Timer.periodic(latencyPingDuration, doPing);
@@ -315,19 +312,19 @@ class LiveFollow {
   void _enqueueNextTrack(EventTrack track) async {
     final index = _trackQueueIndex(track);
     if (index == -1) {
-      final mediaItem = await MediaQueue.trackMediaItem(track);
-      audioHandler.addQueueItem(mediaItem);
+      // final mediaItem = await MediaQueue.trackMediaItem(track);
+      // audioHandler.addQueueItem(mediaItem);
     }
   }
 
   bool _isTrackCurrentItem(EventTrack track) {
     final currentItem = audioHandler.mediaItem.value;
-    return currentItem?.extras?[ExtraKey] == track.key;
+    return currentItem?.extras?['TODO'] == track.key;
   }
 
   int _trackQueueIndex(EventTrack track) {
     final queue = audioHandler.queue.value;
-    return queue.indexWhere((item) => item.extras?[ExtraKey] == track.key);
+    return queue.indexWhere((item) => item.extras?['TODO'] == track.key);
   }
 
   void stop() {
@@ -349,10 +346,10 @@ class LiveFollow {
             audioHandler.skipToQueueItem(index);
           } else {
             // start with a new queue
-            MediaQueue.playTracks(<MediaLocatable>[
-              event.track!,
-              if (event.hasNextTrack()) event.nextTrack!
-            ]);
+            // MediaQueue.playTracks(<MediaLocatable>[
+            //   event.track!,
+            //   if (event.hasNextTrack()) event.nextTrack!
+            // ]);
           }
         }
         if (event.hasNextTrack()) {

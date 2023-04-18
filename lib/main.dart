@@ -15,389 +15,164 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
-// The navigation stack and routing code is heavily based on example code.
-// Still looking for the original reference.
-
-import 'dart:async';
-import 'dart:io';
-
-import 'package:audio_service/audio_service.dart';
-
-import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_settings_screens/flutter_settings_screens.dart';
-import 'package:rxdart/rxdart.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:logging/logging.dart';
 import 'package:dynamic_color/dynamic_color.dart';
-import 'package:takeout_app/cover.dart';
-import 'package:takeout_app/history_widget.dart';
-import 'package:takeout_app/model.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:logging/logging.dart';
+import 'package:takeout_app/app/app.dart';
+import 'package:takeout_app/app/bloc.dart';
+import 'package:takeout_app/app/context.dart';
+import 'package:takeout_app/history/widget.dart';
+import 'package:takeout_app/player/player.dart';
+import 'package:takeout_app/player/widget.dart';
+import 'package:takeout_app/empty.dart';
 
 import 'artists.dart';
-import 'client.dart';
 import 'home.dart';
 import 'login.dart';
-import 'schema.dart';
-import 'player.dart';
-import 'player_handler.dart';
-import 'playlist.dart';
 import 'radio.dart';
 import 'search.dart';
-import 'global.dart';
-import 'downloads.dart';
-import 'cache.dart';
-import 'settings.dart';
-import 'progress.dart';
-import 'live.dart';
-import 'activity.dart';
-import 'history.dart';
 
-late AudioPlayerHandler audioPlayerHandler;
-
-void main() {
+void main() async {
   // setup the logger
   Logger.root.level = Level.FINE;
   Logger.root.onRecord.listen((record) {
+    // ignore: avoid_print
     print('${record.loggerName}: ${record.message}');
   });
 
-  Settings.init().then((_) async {
-    audioPlayerHandler = AudioPlayerHandler();
-    audioHandler = await AudioService.init(
-      builder: () => audioPlayerHandler,
-      config: const AudioServiceConfig(
-        androidNotificationIcon: 'drawable/ic_stat_name',
-        androidNotificationChannelId: 'com.defsub.takeout.channel.audio',
-        androidNotificationChannelName: 'Audio playback',
-        androidNotificationOngoing: true,
-        fastForwardInterval: Duration(seconds: 30),
-        rewindInterval: Duration(seconds: 10),
-      ),
-    );
-    WidgetsFlutterBinding.ensureInitialized();
-    runApp(MyApp());
-  });
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await appMain();
+
+  runApp(const TakeoutApp());
 }
 
-final _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+class TakeoutApp extends StatelessWidget with AppBloc {
+  const TakeoutApp({super.key});
 
-class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return DynamicColorBuilder(
+    return appInit(context, child: DynamicColorBuilder(
         builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
+      final light = ThemeData.light(useMaterial3: true);
+      final dark = ThemeData.dark(useMaterial3: true);
       return MaterialApp(
-          onGenerateTitle: (context) {
-            return AppLocalizations.of(context)!.takeoutTitle;
-          },
-          localizationsDelegates: [
+          onGenerateTitle: (context) => context.strings.takeoutTitle,
+          localizationsDelegates: const [
             AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          supportedLocales: [
-            const Locale('en', ''),
+          supportedLocales: const [
+            Locale('en', ''),
           ],
-          home: _TakeoutWidget(),
-          theme: ThemeData.light()
-              .copyWith(useMaterial3: true, colorScheme: lightDynamic),
-          darkTheme: ThemeData.dark()
-              .copyWith(useMaterial3: true, colorScheme: darkDynamic));
-    });
+          home: const _TakeoutWidget(),
+          theme: light.copyWith(
+              colorScheme: lightDynamic,
+              // appBarTheme:
+              //     light.appBarTheme.copyWith(iconTheme: light.iconTheme),
+              // iconButtonTheme: IconButtonThemeData(
+              //     style: IconButton.styleFrom(
+              //         foregroundColor: light.iconTheme.color)),
+              listTileTheme: light.listTileTheme
+                  .copyWith(iconColor: light.iconTheme.color)),
+          darkTheme: dark.copyWith(
+              colorScheme: darkDynamic,
+              // appBarTheme: dark.appBarTheme.copyWith(iconTheme: dark.iconTheme),
+              // iconButtonTheme: IconButtonThemeData(
+              //     style: IconButton.styleFrom(
+              //         foregroundColor: dark.iconTheme.color)),
+              listTileTheme: dark.listTileTheme
+                  .copyWith(iconColor: dark.iconTheme.color)));
+    }));
   }
-
-// ThemeData _darkTheme() {
-//   final ThemeData base = ThemeData.dark();
-//   return base.copyWith(
-//     colorScheme: ColorScheme.dark().copyWith(
-//         primary: Colors.orangeAccent,
-//         primaryContainer: Colors.orangeAccent,
-//         secondary: Colors.orangeAccent,
-//         secondaryContainer: Colors.orangeAccent),
-//     indicatorColor: Colors.orangeAccent,
-//   );
-// }
 }
 
 class _TakeoutWidget extends StatefulWidget {
-  _TakeoutWidget({Key? key}) : super(key: key);
+  const _TakeoutWidget();
 
   @override
-  TakeoutState createState() => TakeoutState();
+  _TakeoutState createState() => _TakeoutState();
 }
 
-class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
-  static final log = Logger('TakeoutState');
-  static final _loginStream = BehaviorSubject<bool>();
-
-  static Stream<bool> get loginStream => _loginStream.stream;
-
-  static bool get isLoggedIn =>
-      _loginStream.hasValue ? _loginStream.value : false;
-
-  static Future<void> logout() async {
-    await Client().logout();
-    _loginStream.add(false);
-  }
-
-  static void login() => _loginStream.add(true);
-
-  StreamSubscription<bool>? _loginSubscription;
-  bool? _loggedIn;
-
-  static final _connectivityStream = BehaviorSubject<ConnectivityResult>();
-
-  static ValueStream<ConnectivityResult> get connectivityStream =>
-      _connectivityStream.stream;
-
-  final Connectivity _connectivity = Connectivity();
-  StreamSubscription<ConnectivityResult>? _connectivitySubscription;
-
-  int _selectedIndex = 0;
-  IndexView? _indexView;
-  HomeView? _homeView;
-  ArtistsView? _artistsView;
-  RadioView? _radioView;
-  PlayerWidget? _playerWidget;
-
+class _TakeoutState extends State<_TakeoutWidget>
+    with AppBlocState, WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
-
     WidgetsBinding.instance.addObserver(this);
-
-    _loginSubscription = _loginStream.listen(_onLogin);
-
-    _initConnectivity();
-    _connectivitySubscription = _connectivity.onConnectivityChanged
-        .distinct()
-        .listen(_updateConnectionStatus);
-
-    audioPlayerHandler.considerPlayedStream.listen((mediaItem) {
-      // add to history
-      log.info(
-          'consider played: ${mediaItem.artist}/${mediaItem.album}/${mediaItem.title}');
-      History.instance.then((history) => history.add(
-          track: MediaAdapter(
-              creator: mediaItem.artist ?? '',
-              album: mediaItem.album ?? '',
-              title: mediaItem.title,
-              image: mediaItem.artUri.toString(),
-              etag: mediaItem.etag)));
-      // send activity event
-      if (mediaItem.isMusic()) {
-        Activity.sendTrackEvent(mediaItem.etag);
-      } else if (mediaItem.isPodcast()) {
-        // TODO
-      }
-    });
-
-    Client().loggedIn().then((success) => success ? login() : logout());
+    appInitState(context);
   }
 
   @override
   void dispose() {
+    appDispose();
     WidgetsBinding.instance.removeObserver(this);
-    snackBarStateSubject.close();
-    _connectivitySubscription?.cancel();
-    _loginSubscription?.cancel();
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    switch (state) {
-      case AppLifecycleState.resumed:
-        // check connectivity after being away
-        _connectivity
-            .checkConnectivity()
-            .then((value) => _updateConnectionStatus(value));
-        break;
-      case AppLifecycleState.inactive:
-        break;
-      case AppLifecycleState.paused:
-        break;
-      case AppLifecycleState.detached:
-        break;
-    }
-  }
-
-  static bool _allowOrWifi(String key, ConnectivityResult? result) {
-    final allow = Settings.getValue<bool>(key, defaultValue: false) ?? false;
-    return allow || result == ConnectivityResult.wifi;
-  }
-
-  static bool allowStreaming(ConnectivityResult? result) {
-    return _allowOrWifi(settingAllowStreaming, result);
-  }
-
-  static bool allowDownload(ConnectivityResult? result) {
-    return _allowOrWifi(settingAllowDownload, result);
-  }
-
-  static bool allowArtistArtwork(ConnectivityResult? result) {
-    return _allowOrWifi(settingAllowArtistArtwork, result);
-  }
-
-  Future<void> _initConnectivity() async {
-    ConnectivityResult result;
-    try {
-      result = await _connectivity.checkConnectivity();
-    } catch (e) {
-      log.warning(e);
-      return Future.value();
-    }
-
-    if (!mounted) {
-      return Future.value();
-    }
-
-    return _updateConnectionStatus(result);
-  }
-
-  Future<void> _updateConnectionStatus(ConnectivityResult result) async {
-    switch (result) {
-      case ConnectivityResult.wifi:
-      case ConnectivityResult.mobile:
-      case ConnectivityResult.none:
-        _connectivityStream.add(result);
-        log.finer('connectivity state $result');
-        break;
-      default:
-        log.warning('connectivity state failed');
-        break;
-    }
-  }
-
-  void _onLogin(bool loggedIn) {
-    setState(() {
-      _loggedIn = loggedIn;
-      if (loggedIn) {
-        _load();
-        _live();
-      }
-    });
-  }
-
-  void _onIndexUpdated(IndexView view) {
-    if (mounted) {
-      setState(() {
-        _indexView = view;
-      });
-    }
-  }
-
-  void _onHomeUpdated(HomeView view) {
-    if (mounted) {
-      setState(() {
-        _homeView = view;
-      });
-    }
-  }
-
-  void _onArtistsUpdated(ArtistsView view) {
-    if (mounted) {
-      setState(() {
-        loadArtistMap(view.artists);
-        _artistsView = view;
-      });
-    }
-  }
-
-  void _onRadioUpdated(RadioView view) {
-    if (mounted) {
-      setState(() {
-        _radioView = view;
-      });
+    if (state == AppLifecycleState.resumed) {
+      context.connectivity.check();
     }
   }
 
   // This will auto-pause playback for remote media when streaming is disabled.
-  void _onMediaItem(MediaItem? mediaItem) {
-    if (audioHandler.playbackState.hasValue &&
-        audioHandler.playbackState.value == true) {
-      final streaming = mediaItem?.isRemote() ?? false;
-      if (streaming && allowStreaming(connectivityStream.value) == false) {
-        log.finer('mediaItem pause due to loss of wifi');
-        audioHandler.pause();
-      }
-    }
-  }
+  // void _onMediaItem(MediaItem? mediaItem) {
+  //   if (audioHandler.playbackState.hasValue &&
+  //       audioHandler.playbackState.value == true) {
+  //     final streaming = mediaItem?.isRemote() ?? false;
+  //     if (streaming && allowStreaming(connectivityStream.value) == false) {
+  //       log.finer('mediaItem pause due to loss of wifi');
+  //       audioHandler.pause();
+  //     }
+  //   }
+  // }
 
-  Future<LiveClient> _createLiveClient(Client client) async {
-    final token = await client.getAccessToken();
-    final url = await client.getEndpoint();
-    final uri = Uri.parse(url);
-    return LiveClient('${uri.host}:${uri.port}', token!);
-  }
-
-  LiveFollow? _liveFollow;
-  LiveShare? _liveShare;
-
-  void _onLiveChange(LiveType liveType) async {
-    _liveFollow?.stop();
-    _liveFollow = null;
-    _liveShare?.stop();
-    _liveShare = null;
-    if (liveType == LiveType.none) {
-      return;
-    }
-    final client = Client();
-    final live = await _createLiveClient(client);
-    if (liveType == LiveType.follow) {
-      _liveFollow = LiveFollow(live, audioHandler);
-      _liveFollow!.start();
-    } else if (settingsLiveType() == LiveType.share) {
-      _liveShare = LiveShare(live, audioHandler);
-      _liveShare!.start();
-    }
-  }
-
-  void _live() async {
-    // start with the current value
-    _onLiveChange(settingsLiveType());
-    // listen for changes
-    settingsChangeSubject.listen((setting) {
-      if (setting == settingLiveMode) {
-        _onLiveChange(settingsLiveType());
-      }
-    });
-  }
-
-  void _load() async {
-    Artwork.endpoint = await Client().getEndpoint();
-
-    audioHandler.mediaItem
-        .distinct()
-        .listen((mediaItem) => _onMediaItem(mediaItem));
-
-    await TrackCache.init();
-    await OffsetCache.init();
-    await Downloads.prune().whenComplete(() => Downloads.load());
-    try {
-      final client = Client();
-      client.index().then((view) => _onIndexUpdated(view));
-      client.home().then((view) => _onHomeUpdated(view));
-      client.artists().then((view) => _onArtistsUpdated(view));
-      client.radio().then((view) => _onRadioUpdated(view));
-      await Progress.sync();
-      await MediaQueue.sync();
-      if (audioHandler.playbackState.hasValue == false ||
-          (audioHandler.playbackState.hasValue &&
-              audioHandler.playbackState.value.playing == false)) {
-        MediaQueue.restore();
-      }
-    } on ClientException catch (e) {
-      if (e.authenticationFailed) {
-        logout();
-      }
-    } on TlsException catch (e) {
-      showErrorDialog(context, e.message);
-    }
-  }
+  // Future<LiveClient> _createLiveClient(Client client) async {
+  //   final token = await client.getAccessToken();
+  //   final url = await client.getEndpoint();
+  //   final uri = Uri.parse(url);
+  //   return LiveClient('${uri.host}:${uri.port}', token!);
+  // }
+  //
+  // LiveFollow? _liveFollow;
+  // LiveShare? _liveShare;
+  //
+  // void _onLiveChange(LiveType liveType) async {
+  //   _liveFollow?.stop();
+  //   _liveFollow = null;
+  //   _liveShare?.stop();
+  //   _liveShare = null;
+  //   if (liveType == LiveType.none) {
+  //     return;
+  //   }
+  //   final client = Client();
+  //   final live = await _createLiveClient(client);
+  //   if (liveType == LiveType.follow) {
+  //     _liveFollow = LiveFollow(live, audioHandler);
+  //     _liveFollow!.start();
+  //   } else if (settingsLiveType() == LiveType.share) {
+  //     _liveShare = LiveShare(live, audioHandler);
+  //     _liveShare!.start();
+  //   }
+  // }
+  //
+  // void _live() async {
+  //   // start with the current value
+  //   _onLiveChange(settingsLiveType());
+  //   // listen for changes
+  //   settingsChangeSubject.listen((setting) {
+  //     if (setting == settingLiveMode) {
+  //       _onLiveChange(settingsLiveType());
+  //     }
+  //   });
+  // }
 
   static final _routes = [
     '/home',
@@ -406,263 +181,149 @@ class TakeoutState extends State<_TakeoutWidget> with WidgetsBindingObserver {
     '/radio',
     '/player',
   ];
-  final _navIndexStream = BehaviorSubject<int>.seeded(0);
 
-  NavigatorState? _navigatorState(int index) {
-    NavigatorState? navState;
-    switch (index) {
-      case 0:
-        navState = homeKey.currentState;
-        break;
-      case 1:
-        navState = artistsKey.currentState;
-        break;
-      case 2:
-        navState = historyKey.currentState;
-        break;
-      case 3:
-        navState = radioKey.currentState;
-        break;
-      case 4:
-        navState = playerKey.currentState;
-        break;
-    }
-    return navState;
-  }
+  static final _navigatorKeys = {
+    NavigationIndex.home: GlobalKey<NavigatorState>(),
+    NavigationIndex.artists: GlobalKey<NavigatorState>(),
+    NavigationIndex.history: GlobalKey<NavigatorState>(),
+    NavigationIndex.radio: GlobalKey<NavigatorState>(),
+    NavigationIndex.player: GlobalKey<NavigatorState>(),
+  };
 
-  void _onNavTapped(int index) {
-    if (_selectedIndex == index) {
-      NavigatorState? navState = _navigatorState(index);
+  NavigatorState? _navigatorState(NavigationIndex index) =>
+      _navigatorKeys[index]?.currentState;
+
+  void _onNavTapped(BuildContext context, int index) {
+    final currentIndex = context.app.state.navigationBarIndex;
+    if (currentIndex == index) {
+      NavigatorState? navState = _navigatorState(context.app.state.index);
       if (navState != null && navState.canPop()) {
         navState.popUntil((route) => route.isFirst);
+      } else {
+        context.selectedMediaType.next();
       }
     } else {
-      _selectedIndex = index;
-      _navIndexStream.add(index);
+      context.app.goto(index);
     }
   }
-
-  StreamSubscription<SnackBarState>? snackBarSubscription;
 
   @override
   Widget build(final BuildContext context) {
-    snackBarSubscription?.cancel();
-    snackBarSubscription = snackBarStateSubject.listen((e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: e.content));
-    });
-
-    final builders = _pageBuilders();
-    final pages = List.generate(
-        _routes.length, (index) => builders[_routes[index]]!(context));
-
-    return WillPopScope(
-        onWillPop: () async {
-          NavigatorState? navState = _navigatorState(_selectedIndex);
-          if (navState != null) {
-            final handled = await navState.maybePop();
-            if (!handled && _selectedIndex == 0) {
-              // allow pop and app to exit
-              return true;
+    return BlocBuilder<AppCubit, AppState>(builder: (context, state) {
+      if (state.authenticated == false) {
+        return LoginWidget();
+      }
+      final builders = _pageBuilders();
+      final pages = List.generate(
+          _routes.length, (index) => builders[_routes[index]]!(context));
+      return WillPopScope(
+          onWillPop: () async {
+            NavigatorState? navState = _navigatorState(context.app.state.index);
+            if (navState != null) {
+              final handled = await navState.maybePop();
+              if (!handled && context.app.state.index == NavigationIndex.home) {
+                // allow pop and app to exit
+                return true;
+              }
             }
-          }
-          return false;
-        },
-        child: _loggedIn == null
-            ? Center(child: CircularProgressIndicator())
-            : _loggedIn == false
-                ? LoginWidget(() => login())
-                : Scaffold(
-                    key: _scaffoldMessengerKey,
-                    floatingActionButton: _fab(),
-                    body: StreamBuilder<int>(
-                        stream: _navIndexStream,
-                        builder: (context, snapshot) {
-                          final index = snapshot.data ?? 0;
-                          return IndexedStack(index: index, children: pages);
-                        }),
-                    bottomNavigationBar: _bottomNavigation()));
+            return false;
+          },
+          child: Scaffold(
+              floatingActionButton: _fab(context),
+              body: IndexedStack(
+                  index: state.navigationBarIndex, children: pages),
+              bottomNavigationBar: _bottomNavigation()));
+    });
   }
 
-  // bool _showingPlayer() {
-  //   return _selectedIndex == 4;
-  // }
+  Widget _fab(BuildContext context) {
+    return BlocBuilder<Player, PlayerState>(builder: (context, state) {
+      bool playing = false;
+      double? progress;
 
-  Widget _fab() {
-    final stream = Rx.combineLatest4<PlaybackState?, MediaItem?, Duration?, int,
-            _FabState>(
-        audioHandler.playbackState.distinct(),
-        audioHandler.mediaItem,
-        audioPlayerHandler.periodicPositionStream,
-        _navIndexStream,
-        (a, b, c, d) => _FabState(a, b, c, d));
-    final builder = StreamBuilder<_FabState>(
-        stream: stream,
-        builder: (context, snapshot) {
-          final fabState = snapshot.data ?? _FabState.empty();
-          if (fabState.showFab) {
-            final playing = fabState.playing == true;
-            return Container(
-                child: Stack(alignment: Alignment.center, children: [
-              FloatingActionButton(
-                  onPressed: () =>
-                      playing ? audioHandler.pause() : audioHandler.play(),
-                  shape: const CircleBorder(),
-                  child: playing ? Icon(Icons.pause) : Icon(Icons.play_arrow)),
-              IgnorePointer(
-                  child: SizedBox(
-                      width: 52, // non-mini FAB is 56, progress is 4
-                      height: 52,
-                      child: CircularProgressIndicator(value: fabState.progress))),
-            ]));
-          }
-          return SizedBox.shrink();
-        });
-    return builder;
+      if (context.app.state.index == NavigationIndex.player) {
+        // hide fab on player page
+        return const EmptyWidget();
+      }
+      if (state is PlayerInit ||
+          state is PlayerReady ||
+          state is PlayerLoad ||
+          state is PlayerStop) {
+        // hide fab
+        return const EmptyWidget();
+      }
+      if (state is PlayerPositionState) {
+        playing = state.playing;
+        progress = state.progress;
+      }
+      return Stack(alignment: Alignment.center, children: [
+        FloatingActionButton(
+            onPressed: () =>
+                playing ? context.player.pause() : context.player.play(),
+            shape: const CircleBorder(),
+            child: playing
+                ? const Icon(Icons.pause)
+                : const Icon(Icons.play_arrow)),
+        IgnorePointer(
+            child: SizedBox(
+                width: 52, // non-mini FAB is 56, progress is 4
+                height: 52,
+                child: CircularProgressIndicator(value: progress))),
+      ]);
+    });
   }
 
   Widget _bottomNavigation() {
     return Stack(children: [
-      StreamBuilder<int>(
-          stream: _navIndexStream,
-          builder: (context, snapshot) {
-            final index = snapshot.data ?? 0;
-            return BottomNavigationBar(
-              key: bottomNavKey,
-              showUnselectedLabels: false,
-              showSelectedLabels: false,
-              type: BottomNavigationBarType.fixed,
-              items: <BottomNavigationBarItem>[
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.home),
-                  label: AppLocalizations.of(context)!.navHome,
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.people_alt),
-                  label: AppLocalizations.of(context)!.navArtists,
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.history),
-                  label: AppLocalizations.of(context)!.navHistory,
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.radio),
-                  label: AppLocalizations.of(context)!.navRadio,
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.queue_music),
-                  label: AppLocalizations.of(context)!.navPlayer,
-                ),
-              ],
-              currentIndex: index,
-              onTap: _onNavTapped,
-            );
-          }),
-      // if (!_showingPlayer())
-      //   StreamBuilder<Duration>(
-      //       stream: audioPlayerHandler.positionStream(),
-      //       builder: (context, snapshot) {
-      //         final position = snapshot.data?.inSeconds.toDouble() ?? 0;
-      //         final mediaItem = audioPlayerHandler.currentItem;
-      //         final duration = mediaItem?.duration?.inSeconds.toDouble() ?? 0;
-      //         if (duration > 0 && position > 0) {
-      //           return LinearProgressIndicator(value: position / duration);
-      //         }
-      //         return SizedBox.shrink();
-      //       })
+      BlocBuilder<AppCubit, AppState>(builder: (context, state) {
+        final index = state.navigationBarIndex;
+        return BottomNavigationBar(
+          showUnselectedLabels: false,
+          showSelectedLabels: false,
+          type: BottomNavigationBarType.fixed,
+          items: <BottomNavigationBarItem>[
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.home),
+              label: context.strings.navHome,
+            ),
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.people_alt),
+              label: context.strings.navArtists,
+            ),
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.history),
+              label: context.strings.navHistory,
+            ),
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.radio),
+              label: context.strings.navRadio,
+            ),
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.queue_music),
+              label: context.strings.navPlayer,
+            ),
+          ],
+          currentIndex: index,
+          onTap: (index) => _onNavTapped(context, index),
+        );
+      }),
     ]);
   }
 
   Map<String, WidgetBuilder> _pageBuilders() {
     final builders = {
-      '/home': (context) {
-        return _homeView == null || _indexView == null
-            ? Center(child: CircularProgressIndicator())
-            : HomeWidget(
-                _indexView!,
-                _homeView!,
-                (ctx) => Navigator.push(
-                    ctx, MaterialPageRoute(builder: (_) => SearchWidget())));
-      },
-      '/artists': (context) {
-        return _artistsView == null
-            ? Center(child: CircularProgressIndicator())
-            : ArtistsWidget(_artistsView!);
-      },
-      '/history': (context) {
-        return HistoryListWidget();
-      },
-      '/radio': (context) {
-        return _radioView == null
-            ? Center(child: CircularProgressIndicator())
-            : RadioWidget(_radioView!);
-      },
-      '/player': (context) {
-        if (_playerWidget == null) {
-          _playerWidget = PlayerWidget();
-        }
-        return _playerWidget!;
-      },
+      '/home': (_) => HomeWidget(
+          (ctx) => Navigator.push(
+              ctx, MaterialPageRoute<void>(builder: (_) => SearchWidget())),
+          key: _navigatorKeys[NavigationIndex.home]),
+      '/artists': (_) =>
+          ArtistsWidget(key: _navigatorKeys[NavigationIndex.artists]),
+      '/history': (_) =>
+          HistoryListWidget(key: _navigatorKeys[NavigationIndex.history]),
+      '/radio': (_) => RadioWidget(key: _navigatorKeys[NavigationIndex.radio]),
+      '/player': (_) =>
+          PlayerWidget(key: _navigatorKeys[NavigationIndex.player])
     };
     return builders;
   }
-}
-
-class _FabState {
-  final PlaybackState? playbackState;
-  final MediaItem? mediaItem;
-  final Duration? position;
-  final int navIndex;
-
-  _FabState(this.playbackState, this.mediaItem, this.position, this.navIndex);
-
-  factory _FabState.empty() {
-    return _FabState(
-        PlaybackState(), MediaItem(id: "", title: ""), Duration.zero, -1);
-  }
-
-  bool get playing => playbackState?.playing == true;
-
-  double get duration => mediaItem?.duration?.inSeconds.toDouble() ?? 0.0;
-
-  double get progress {
-    final pos = position?.inSeconds.toDouble() ?? 0.0;
-    return duration > 0 ? pos / duration : 0.0;
-  }
-
-  bool get showFab =>
-      navIndex != 4 &&
-      playbackState?.processingState == AudioProcessingState.ready;
-}
-
-Color overlayIconColor(BuildContext context) {
-  // Theme.of(context).colorScheme.onBackground
-  return Colors.white;
-}
-
-Widget allowStreamingIconButton(
-    BuildContext context, Icon icon, VoidCallback onPressed) {
-  return StreamBuilder<ConnectivityResult>(
-      stream: TakeoutState.connectivityStream.distinct(),
-      builder: (context, snapshot) {
-        final result = snapshot.data;
-        return IconButton(
-            color: overlayIconColor(context),
-            icon: icon,
-            onPressed:
-                TakeoutState.allowStreaming(result) ? () => onPressed() : null);
-      });
-}
-
-Widget allowDownloadIconButton(
-    BuildContext context, Icon icon, VoidCallback onPressed) {
-  return StreamBuilder<ConnectivityResult>(
-      stream: TakeoutState.connectivityStream.distinct(),
-      builder: (context, snapshot) {
-        final result = snapshot.data;
-        return IconButton(
-            color: overlayIconColor(context),
-            icon: icon,
-            onPressed:
-                TakeoutState.allowDownload(result) ? () => onPressed() : null);
-      });
 }

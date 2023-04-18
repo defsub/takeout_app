@@ -1,4 +1,3 @@
-
 // Copyright (C) 2020 The Takeout Authors.
 //
 // This file is part of Takeout.
@@ -18,15 +17,15 @@
 
 import 'package:flutter/material.dart';
 
-const IconsDownload = Icons.cloud_download_outlined;
-const IconsDownloadDone = Icons.cloud_done_outlined;
-const IconsCached = Icons.download_done_outlined;
+const iconsDownload = Icons.cloud_download_outlined;
+const iconsDownloadDone = Icons.cloud_done_outlined;
+const iconsCached = Icons.download_done_outlined;
 
 Widget header(String text) {
   return Container(
       child: Text(text.toUpperCase(),
-          style: TextStyle(fontWeight: FontWeight.w500, fontSize: 15)),
-      padding: EdgeInsets.fromLTRB(0, 11, 0, 11));
+          style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 15)),
+      padding: const EdgeInsets.fromLTRB(0, 11, 0, 11));
 }
 
 Widget heading(String text) {
@@ -36,8 +35,9 @@ Widget heading(String text) {
           child: Align(
               alignment: Alignment.centerLeft,
               child: Text(text.toUpperCase(),
-                  style: TextStyle(fontWeight: FontWeight.w500, fontSize: 15))),
-          padding: EdgeInsets.fromLTRB(11, 22, 0, 11)));
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w500, fontSize: 15))),
+          padding: const EdgeInsets.fromLTRB(11, 22, 0, 11)));
 }
 
 Widget headingButton(String text, VoidCallback onPressed) {
@@ -51,9 +51,9 @@ Widget headingButton(String text, VoidCallback onPressed) {
               children: [
                 Text(text.toUpperCase(),
                     textAlign: TextAlign.justify,
-                    style:
-                        TextStyle(fontWeight: FontWeight.w500, fontSize: 15)),
-                Icon(Icons.chevron_right)
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w500, fontSize: 15)),
+                const Icon(Icons.chevron_right)
               ],
             )),
         onPressed: onPressed,
@@ -66,7 +66,7 @@ Widget smallHeading(BuildContext context, String text) {
       child: Container(
           child: Align(
               alignment: Alignment.centerLeft,
-              child: Text(text, style: Theme.of(context).textTheme.caption)),
+              child: Text(text, style: Theme.of(context).textTheme.bodySmall)),
           // style: TextStyle(fontWeight: FontWeight.w300, fontSize: 12))),
-          padding: EdgeInsets.fromLTRB(17, 11, 0, 11)));
+          padding: const EdgeInsets.fromLTRB(17, 11, 0, 11)));
 }

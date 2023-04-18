@@ -1,263 +1,237 @@
+// Copyright (C) 2023 The Takeout Authors.
+//
+// This file is part of Takeout.
+//
+// Takeout is free software: you can redistribute it and/or modify it under the
+// terms of the GNU Affero General Public License as published by the Free
+// Software Foundation, either version 3 of the License, or (at your option)
+// any later version.
+//
+// Takeout is distributed in the hope that it will be useful, but WITHOUT ANY
+// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+// FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public License for
+// more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
+
 import 'dart:async';
 
-import 'package:flutter/services.dart';
-import 'package:rxdart/rxdart.dart';
-import 'package:video_player/video_player.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:rxdart/rxdart.dart';
+import 'package:takeout_app/api/model.dart';
+import 'package:takeout_app/app/context.dart';
+import 'package:takeout_app/art/artwork.dart';
+import 'package:takeout_app/art/cover.dart';
+import 'package:takeout_app/art/scaffold.dart';
+import 'package:takeout_app/cache/track.dart';
+import 'package:takeout_app/client/resolver.dart';
+import 'package:takeout_app/page/page.dart';
+import 'package:takeout_app/settings/repository.dart';
+import 'package:takeout_app/tokens/repository.dart';
+import 'package:takeout_app/empty.dart';
+import 'package:video_player/video_player.dart';
 import 'package:wakelock/wakelock.dart';
 
-import 'client.dart';
-import 'schema.dart';
-import 'cover.dart';
+import 'buttons.dart';
+import 'model.dart';
+import 'nav.dart';
 import 'style.dart';
-import 'main.dart';
-import 'downloads.dart';
-import 'cache.dart';
-import 'progress.dart';
 import 'util.dart';
 
-class MovieWidget extends StatefulWidget {
+class MovieWidget extends ClientPage<MovieView> {
   final Movie _movie;
 
-  MovieWidget(this._movie);
+  MovieWidget(this._movie, {super.key});
 
   @override
-  _MovieWidgetState createState() => _MovieWidgetState();
-}
-
-class _MovieWidgetState extends State<MovieWidget> {
-  MovieView? _view;
-
-  @override
-  void initState() {
-    super.initState();
-    final client = Client();
-    client.movie(widget._movie.id).then((v) => _onMovieUpdated(v));
-  }
-
-  void _onMovieUpdated(MovieView view) {
-    if (mounted) {
-      setState(() {
-        _view = view;
-      });
-    }
-  }
-
-  Future<void> _onRefresh() async {
-    final client = Client();
-    await client
-        .movie(widget._movie.id, ttl: Duration.zero)
-        .then((v) => _onMovieUpdated(v));
+  void load(BuildContext context, {Duration? ttl}) {
+    context.client.movie(_movie.id, ttl: ttl);
   }
 
   @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<Color?>(
-        future: getImageBackgroundColor(context, widget._movie.image),
-        builder: (context, snapshot) {
-          final backgroundColor = snapshot.data;
-          final screen = MediaQuery.of(context).size;
-          final expandedHeight = screen.height / 2;
-          return Scaffold(
-              backgroundColor: backgroundColor,
-              body: RefreshIndicator(
-                  onRefresh: () => _onRefresh(),
-                  child: _view == null
-                      ? Center(child: CircularProgressIndicator())
-                      : StreamBuilder<CacheSnapshot>(
-                          stream: MediaCache.stream(),
-                          builder: (context, snapshot) {
-                            final cacheSnapshot =
-                                snapshot.data ?? CacheSnapshot.empty();
-                            final isCached =
-                                cacheSnapshot.containsAll([_view!]);
-                            return CustomScrollView(slivers: [
-                              SliverAppBar(
-                                // actions: [ ],
-                                foregroundColor: overlayIconColor(context),
-                                backgroundColor: Colors.black,
-                                expandedHeight: expandedHeight,
-                                flexibleSpace: FlexibleSpaceBar(
-                                    // centerTitle: true,
-                                    // title: Text(release.name, style: TextStyle(fontSize: 15)),
-                                    stretchModes: [
-                                      StretchMode.zoomBackground,
-                                      StretchMode.fadeTitle
-                                    ],
-                                    background:
-                                        Stack(fit: StackFit.expand, children: [
-                                      releaseSmallCover(widget._movie.image),
-                                      const DecoratedBox(
-                                        decoration: BoxDecoration(
-                                          gradient: LinearGradient(
-                                            begin: Alignment(0.0, 0.75),
-                                            end: Alignment(0.0, 0.0),
-                                            colors: <Color>[
-                                              Color(0x60000000),
-                                              Color(0x00000000),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                      Align(
-                                          alignment: Alignment.bottomLeft,
-                                          child: _playButton(context,
-                                              cacheSnapshot, isCached)),
-                                      Align(
-                                          alignment: Alignment.bottomCenter,
-                                          child: _progress(cacheSnapshot)),
-                                      Align(
-                                          alignment: Alignment.bottomRight,
-                                          child: _downloadButton(
-                                              context, isCached)),
-                                    ])),
-                              ),
-                              SliverToBoxAdapter(
-                                  child: Container(
-                                      padding: EdgeInsets.fromLTRB(4, 16, 4, 4),
-                                      child: Column(children: [
-                                        _title(),
-                                        _tagline(),
-                                        _details(context, cacheSnapshot),
-                                        if (_view != null && _view!.hasGenres())
-                                          _genres(),
-                                        // GestureDetector(
-                                        //     onTap: () => _onArtist(), child: _title()),
-                                        // GestureDetector(
-                                        //     onTap: () => _onArtist(), child: _artist()),
-                                      ]))),
-                              if (_view != null && _view!.hasCast())
-                                SliverToBoxAdapter(
-                                    child: heading(AppLocalizations.of(context)!
-                                        .castLabel)),
-                              if (_view != null && _view!.hasCast())
-                                SliverToBoxAdapter(
-                                    child: _CastListWidget(_view!)),
-                              if (_view != null && _view!.hasCrew())
-                                SliverToBoxAdapter(
-                                    child: heading(AppLocalizations.of(context)!
-                                        .crewLabel)),
-                              if (_view != null && _view!.hasCrew())
-                                SliverToBoxAdapter(
-                                    child: _CrewListWidget(_view!)),
-                              if (_view != null && _view!.hasRelated())
-                                SliverToBoxAdapter(
-                                  child: heading(AppLocalizations.of(context)!
-                                      .relatedLabel),
-                                ),
-                              if (_view != null && _view!.hasRelated())
-                                MovieGridWidget(_view!.other!),
-                            ]);
-                          })));
-        });
+  Widget page(BuildContext context, MovieView state) {
+    return scaffold(context,
+        image: _movie.image,
+        body: (_) => RefreshIndicator(
+            onRefresh: () => reloadPage(context),
+            child: BlocBuilder<TrackCacheCubit, TrackCacheState>(
+                builder: (context, cacheState) {
+              final isCached = cacheState.contains(_movie);
+              final screen = MediaQuery.of(context).size;
+              final expandedHeight = screen.height / 2;
+              return CustomScrollView(slivers: [
+                SliverAppBar(
+                  // actions: [ ],
+                  backgroundColor: Colors.black,
+                  expandedHeight: expandedHeight,
+                  flexibleSpace: FlexibleSpaceBar(
+                      // centerTitle: true,
+                      // title: Text(release.name, style: TextStyle(fontSize: 15)),
+                      stretchModes: const [
+                        StretchMode.zoomBackground,
+                        StretchMode.fadeTitle
+                      ],
+                      background: Stack(fit: StackFit.expand, children: [
+                        releaseSmallCover(context, _movie.image),
+                        const DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment(0.0, 0.75),
+                              end: Alignment(0.0, 0.0),
+                              colors: <Color>[
+                                Color(0x60000000),
+                                Color(0x00000000),
+                              ],
+                            ),
+                          ),
+                        ),
+                        Align(
+                            alignment: Alignment.bottomLeft,
+                            child: _playButton(context, state, isCached)),
+                        Align(
+                            alignment: Alignment.bottomCenter,
+                            child: _progress(context)),
+                        Align(
+                            alignment: Alignment.bottomRight,
+                            child: _downloadButton(context, isCached)),
+                      ])),
+                ),
+                SliverToBoxAdapter(
+                    child: Container(
+                        padding: const EdgeInsets.fromLTRB(4, 16, 4, 4),
+                        child: Column(children: [
+                          _title(context),
+                          _tagline(context),
+                          _details(context),
+                          if (state.hasGenres()) _genres(context, state),
+                          // GestureDetector(
+                          //     onTap: () => _onArtist(), child: _title()),
+                          // GestureDetector(
+                          //     onTap: () => _onArtist(), child: _artist()),
+                        ]))),
+                if (state.hasCast())
+                  SliverToBoxAdapter(child: heading(context.strings.castLabel)),
+                if (state.hasCast())
+                  SliverToBoxAdapter(child: _CastListWidget(state)),
+                if (state.hasCrew())
+                  SliverToBoxAdapter(child: heading(context.strings.crewLabel)),
+                if (state.hasCrew())
+                  SliverToBoxAdapter(child: _CrewListWidget(state)),
+                if (state.hasRelated())
+                  SliverToBoxAdapter(
+                    child: heading(context.strings.relatedLabel),
+                  ),
+                if (state.hasRelated()) MovieGridWidget(state.other!),
+              ]);
+            })));
   }
 
-  Widget _progress(CacheSnapshot snapshot) {
-    final value = snapshot.value(_view!);
-    return value != null ? LinearProgressIndicator(value: value) : SizedBox.shrink();
+  Widget _progress(BuildContext context) {
+    final value = context.offsets.state.value(_movie);
+    // print('progress for ${_movie.etag} is $value');
+    return value != null
+        ? LinearProgressIndicator(value: value)
+        : const EmptyWidget();
   }
 
-  Widget _title() {
+  Widget _title(BuildContext context) {
     return Container(
-        padding: EdgeInsets.fromLTRB(10, 0, 10, 0),
-        child:
-            Text(widget._movie.title, style: Theme.of(context).textTheme.headline5));
+        padding: const EdgeInsets.fromLTRB(10, 0, 10, 0),
+        child: Text(_movie.title,
+            style: Theme.of(context).textTheme.headlineSmall));
   }
 
   Widget _rating(BuildContext context) {
-    final boxColor = Theme.of(context).textTheme.bodyText1?.color ??
+    final boxColor = Theme.of(context).textTheme.bodyLarge?.color ??
         Theme.of(context).colorScheme.outline;
     return Container(
       margin: const EdgeInsets.all(15.0),
       padding: const EdgeInsets.all(3.0),
       decoration: BoxDecoration(border: Border.all(color: boxColor)),
-      child: Text(widget._movie.rating),
+      child: Text(_movie.rating),
     );
   }
 
-  Widget _details(BuildContext context, CacheSnapshot snapshot) {
+  Widget _details(BuildContext context) {
     var list = <Widget>[];
-    if (widget._movie.rating.isNotEmpty) {
+    if (_movie.rating.isNotEmpty) {
       list.add(_rating(context));
     }
 
     final fields = <String>[];
 
     // runtime
-    if (widget._movie.runtime > 0) {
-      var hours = (widget._movie.runtime / 60).floor();
-      var min = (widget._movie.runtime % 60).floor();
+    if (_movie.runtime > 0) {
+      var hours = (_movie.runtime / 60).floor();
+      var min = (_movie.runtime % 60).floor();
       fields.add('${hours}h ${min}m');
     }
 
     // year
-    if (widget._movie.year > 1) {
-      fields.add(widget._movie.year.toString());
+    if (_movie.year > 1) {
+      fields.add(_movie.year.toString());
     }
 
     // vote%
-    int vote = (10 * (widget._movie.voteAverage ?? 0)).round();
+    int vote = (10 * (_movie.voteAverage ?? 0)).round();
     if (vote > 0) {
-      fields.add('${vote}%');
+      fields.add('$vote%');
     }
 
     // storage
-    fields.add(storage(widget._movie.size));
+    fields.add(storage(_movie.size));
 
-    list.add(Text(merge(fields), style: Theme.of(context).textTheme.subtitle2));
+    list.add(
+        Text(merge(fields), style: Theme.of(context).textTheme.titleSmall));
 
     return Row(mainAxisAlignment: MainAxisAlignment.center, children: list);
   }
 
-  Widget _tagline() {
+  Widget _tagline(BuildContext context) {
     return Container(
-        padding: EdgeInsets.fromLTRB(5, 5, 5, 5),
-        child: Text(widget._movie.tagline,
-            style: Theme.of(context).textTheme.subtitle1!));
+        padding: const EdgeInsets.fromLTRB(5, 5, 5, 5),
+        child: Text(_movie.tagline,
+            style: Theme.of(context).textTheme.titleMedium!));
   }
 
-  Widget _genres() {
+  Widget _genres(BuildContext context, MovieView view) {
     return Center(
         child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-      ..._view!.genres!.map((g) =>
+      ...view.genres!.map((g) =>
           OutlinedButton(onPressed: () => _onGenre(context, g), child: Text(g)))
     ]));
   }
 
-  Widget _playButton(
-      BuildContext context, CacheSnapshot snapshot, bool isCached) {
-    final pos = snapshot.position(_view!) ?? Duration.zero;
+  Widget _playButton(BuildContext context, MovieView view, bool isCached) {
+    final offsetCache = context.offsets;
+    final pos = offsetCache.state.position(_movie) ?? Duration.zero;
     return isCached
         ? IconButton(
-            color: overlayIconColor(context),
-            icon: Icon(Icons.play_arrow, size: 32),
-            onPressed: () => _onPlay(pos))
-        : allowStreamingIconButton(
-            context, Icon(Icons.play_arrow, size: 32), () => _onPlay(pos));
+            icon: const Icon(Icons.play_arrow, size: 32),
+            onPressed: () => _onPlay(context, view, pos))
+        : StreamingButton(onPressed: () => _onPlay(context, view, pos));
   }
 
   Widget _downloadButton(BuildContext context, bool isCached) {
+    // TODO show download progress
     return isCached
-        ? IconButton(
-            color: overlayIconColor(context),
-            icon: Icon(IconsDownloadDone),
-            onPressed: () => {})
-        : allowDownloadIconButton(
-            context, Icon(IconsDownload), () => _onDownload(context));
+        ? IconButton(icon: const Icon(iconsDownloadDone), onPressed: () => {})
+        : DownloadButton(onPressed: () => _onDownload(context));
   }
 
-  void _onPlay(Duration startOffset) {
-    showMovie(context, _view!, startOffset: startOffset);
+  void _onPlay(BuildContext context, MovieView view, Duration startOffset) {
+    playMovie(context, _MovieMediaTrack(view), startOffset: startOffset);
   }
 
   void _onDownload(BuildContext context) {
-    Downloads.downloadMovie(context, widget._movie);
+    context.downloadMovie(_movie);
   }
 
   void _onGenre(BuildContext context, String genre) {
-    Navigator.push(
-        context, MaterialPageRoute(builder: (_) => GenreWidget(genre)));
+    push(context, builder: (_) => GenreWidget(genre));
   }
 }
 
@@ -278,8 +252,7 @@ class _CastListWidget extends StatelessWidget {
   }
 
   void _onCast(BuildContext context, Cast cast) {
-    Navigator.push(context,
-        MaterialPageRoute(builder: (_) => ProfileWidget(cast.person)));
+    push(context, builder: (_) => ProfileWidget(cast.person));
   }
 }
 
@@ -300,162 +273,100 @@ class _CrewListWidget extends StatelessWidget {
   }
 
   void _onCrew(BuildContext context, Crew crew) {
-    Navigator.push(context,
-        MaterialPageRoute(builder: (_) => ProfileWidget(crew.person)));
+    push(context, builder: (_) => ProfileWidget(crew.person));
   }
 }
 
-class ProfileWidget extends StatefulWidget {
+class ProfileWidget extends ClientPage<ProfileView> {
   final Person _person;
 
-  ProfileWidget(this._person);
+  ProfileWidget(this._person, {super.key});
 
   @override
-  _ProfileWidgetState createState() => _ProfileWidgetState();
-}
-
-class _ProfileWidgetState extends State<ProfileWidget> {
-  ProfileView? _view;
-
-  @override
-  void initState() {
-    super.initState();
-    final client = Client();
-    client.profile(widget._person.id).then((v) => _onProfileUpdated(v));
-  }
-
-  void _onProfileUpdated(ProfileView view) {
-    if (mounted) {
-      setState(() {
-        _view = view;
-      });
-    }
-  }
-
-  Future<void> _onRefresh() async {
-    final client = Client();
-    await client
-        .profile(widget._person.id, ttl: Duration.zero)
-        .then((v) => _onProfileUpdated(v));
+  void load(BuildContext context, {Duration? ttl}) {
+    context.client.profile(_person.id, ttl: ttl);
   }
 
   @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<Color?>(
-        future: getImageBackgroundColor(context, widget._person.image),
-        builder: (context, snapshot) {
-          final backgroundColor = snapshot.data;
-          final screen = MediaQuery.of(context).size;
-          final expandedHeight = screen.height / 2;
-          return Scaffold(
-              backgroundColor: backgroundColor,
-              body: RefreshIndicator(
-                  onRefresh: () => _onRefresh(),
-                  child: CustomScrollView(slivers: [
-                    SliverAppBar(
-                      // actions: [ ],
-                      foregroundColor: overlayIconColor(context),
-                      expandedHeight: expandedHeight,
-                      flexibleSpace: FlexibleSpaceBar(
-                          // centerTitle: true,
-                          // title: Text(release.name, style: TextStyle(fontSize: 15)),
-                          stretchModes: [
-                            StretchMode.zoomBackground,
-                            StretchMode.fadeTitle
-                          ],
-                          background: Stack(fit: StackFit.expand, children: [
-                            releaseSmallCover(widget._person.image),
-                            const DecoratedBox(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment(0.0, 0.75),
-                                  end: Alignment(0.0, 0.0),
-                                  colors: <Color>[
-                                    Color(0x60000000),
-                                    Color(0x00000000),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ])),
-                    ),
-                    SliverToBoxAdapter(
-                        child: Container(
-                            padding: EdgeInsets.fromLTRB(0, 16, 0, 4),
-                            child: Column(children: [
-                              _title(),
-                            ]))),
-                    if (_view != null && _view!.hasStarring())
-                      SliverToBoxAdapter(
-                          child: heading(
-                              AppLocalizations.of(context)!.starringLabel)),
-                    if (_view != null && _view!.hasStarring())
-                      MovieGridWidget(_view!.starringMovies()),
-                    if (_view != null && _view!.hasDirecting())
-                      SliverToBoxAdapter(
-                          child: heading(
-                              AppLocalizations.of(context)!.directingLabel)),
-                    if (_view != null && _view!.hasDirecting())
-                      MovieGridWidget(_view!.directingMovies()),
-                    if (_view != null && _view!.hasWriting())
-                      SliverToBoxAdapter(
-                        child:
-                            heading(AppLocalizations.of(context)!.writingLabel),
+  Widget page(BuildContext context, ProfileView state) {
+    return scaffold(context,
+        image: _person.image,
+        body: (_) => RefreshIndicator(
+            onRefresh: () => reloadPage(context),
+            child: CustomScrollView(slivers: [
+              SliverAppBar(
+                // actions: [ ],
+                expandedHeight: MediaQuery.of(context).size.height / 2,
+                flexibleSpace: FlexibleSpaceBar(
+                    // centerTitle: true,
+                    // title: Text(release.name, style: TextStyle(fontSize: 15)),
+                    stretchModes: const [
+                      StretchMode.zoomBackground,
+                      StretchMode.fadeTitle
+                    ],
+                    background: Stack(fit: StackFit.expand, children: [
+                      releaseSmallCover(context, _person.image),
+                      const DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment(0.0, 0.75),
+                            end: Alignment(0.0, 0.0),
+                            colors: <Color>[
+                              Color(0x60000000),
+                              Color(0x00000000),
+                            ],
+                          ),
+                        ),
                       ),
-                    if (_view != null && _view!.hasWriting())
-                      MovieGridWidget(_view!.writingMovies()),
-                  ])));
-        });
+                    ])),
+              ),
+              SliverToBoxAdapter(
+                  child: Container(
+                      padding: const EdgeInsets.fromLTRB(0, 16, 0, 4),
+                      child: Column(children: [
+                        _title(context),
+                      ]))),
+              if (state.hasStarring())
+                SliverToBoxAdapter(
+                    child: heading(context.strings.starringLabel)),
+              if (state.hasStarring()) MovieGridWidget(state.starringMovies()),
+              if (state.hasDirecting())
+                SliverToBoxAdapter(
+                    child: heading(context.strings.directingLabel)),
+              if (state.hasDirecting())
+                MovieGridWidget(state.directingMovies()),
+              if (state.hasWriting())
+                SliverToBoxAdapter(
+                  child: heading(context.strings.writingLabel),
+                ),
+              if (state.hasWriting()) MovieGridWidget(state.writingMovies()),
+            ])));
   }
 
-  Widget _title() {
-    return Text(widget._person.name, style: Theme.of(context).textTheme.headline5);
+  Widget _title(BuildContext context) {
+    return Text(_person.name, style: Theme.of(context).textTheme.headlineSmall);
   }
 }
 
-class GenreWidget extends StatefulWidget {
+class GenreWidget extends ClientPage<GenreView> {
   final String _genre;
 
-  GenreWidget(this._genre);
+  GenreWidget(this._genre, {super.key});
 
   @override
-  _GenreWidgetState createState() => _GenreWidgetState();
-}
-
-class _GenreWidgetState extends State<GenreWidget> {
-  GenreView? _view;
-
-  @override
-  void initState() {
-    super.initState();
-    final client = Client();
-    client.moviesGenre(widget._genre).then((v) => _onViewUpdated(v));
-  }
-
-  void _onViewUpdated(GenreView view) {
-    if (mounted) {
-      setState(() {
-        _view = view;
-      });
-    }
-  }
-
-  Future<void> _onRefresh() async {
-    final client = Client();
-    await client
-        .moviesGenre(widget._genre, ttl: Duration.zero)
-        .then((v) => _onViewUpdated(v));
+  void load(BuildContext context, {Duration? ttl}) {
+    context.client.moviesGenre(_genre, ttl: ttl);
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget page(BuildContext context, GenreView state) {
     return Scaffold(
         body: RefreshIndicator(
-            onRefresh: () => _onRefresh(),
+            onRefresh: () => reloadPage(context),
             child: CustomScrollView(slivers: [
-              SliverAppBar(title: Text(widget._genre)),
-              if (_view != null && _view!.movies.isNotEmpty)
-                MovieGridWidget(_sortByTitle(_view!.movies)),
+              SliverAppBar(title: Text(_genre)),
+              if (state.movies.isNotEmpty)
+                MovieGridWidget(_sortByTitle(state.movies)),
             ])));
   }
 }
@@ -464,7 +375,7 @@ class MovieGridWidget extends StatelessWidget {
   final List<Movie> _movies;
   final bool subtitle;
 
-  const MovieGridWidget(this._movies, {this.subtitle = true});
+  const MovieGridWidget(this._movies, {super.key, this.subtitle = true});
 
   @override
   Widget build(BuildContext context) {
@@ -474,55 +385,99 @@ class MovieGridWidget extends StatelessWidget {
         crossAxisSpacing: 5,
         mainAxisSpacing: 5,
         children: [
-          ..._movies.map((m) => Container(
-              child: GestureDetector(
-                  onTap: () => _onTap(context, m),
-                  child: GridTile(
-                    footer: Material(
-                        color: Colors.transparent,
-                        // shape: RoundedRectangleBorder(
-                        //     borderRadius: BorderRadius.vertical(
-                        //         bottom: Radius.circular(4))),
-                        clipBehavior: Clip.antiAlias,
-                        child: GridTileBar(
-                          backgroundColor: Colors.black26,
-                          // title: Text('${m.rating}'),
-                          // trailing: Text('${m.year}'),
-                        )),
-                    child: gridPoster(m.image),
-                  ))))
+          ..._movies.map((m) => GestureDetector(
+              onTap: () => _onTap(context, m),
+              child: GridTile(
+                footer: const Material(
+                    color: Colors.transparent,
+                    // shape: RoundedRectangleBorder(
+                    //     borderRadius: BorderRadius.vertical(
+                    //         bottom: Radius.circular(4))),
+                    clipBehavior: Clip.antiAlias,
+                    child: GridTileBar(
+                      backgroundColor: Colors.black26,
+                      // title: Text('${m.rating}'),
+                      // trailing: Text('${m.year}'),
+                    )),
+                child: gridPoster(context, m.image),
+              )))
         ]);
   }
 
   void _onTap(BuildContext context, Movie movie) {
-    Navigator.push(context, MaterialPageRoute(builder: (context) {
-      return MovieWidget(movie);
-    }));
+    push(context, builder: (_) => MovieWidget(movie));
   }
 }
 
 enum MovieState { buffering, playing, paused, none }
 
 class MoviePlayer extends StatefulWidget {
-  final Locatable _movie;
+  final MediaTrack movie;
   final Duration? startOffset;
+  final MediaTrackResolver mediaTrackResolver;
+  final SettingsRepository settingsRepository;
+  final TokenRepository tokenRepository;
 
-  MoviePlayer(this._movie, {this.startOffset = Duration.zero});
+  const MoviePlayer(this.movie,
+      {super.key,
+      required this.mediaTrackResolver,
+      required this.settingsRepository,
+      required this.tokenRepository,
+      this.startOffset = Duration.zero});
 
   @override
-  _MoviePlayerState createState() =>
-      _MoviePlayerState();
+  _MoviePlayerState createState() => _MoviePlayerState();
+}
+
+// TODO add location back to movie to avoid this hassle?
+class _MovieMediaTrack implements MediaTrack {
+  MovieView view;
+
+  _MovieMediaTrack(this.view);
+
+  @override
+  String get creator => '';
+
+  @override
+  String get album => '';
+
+  @override
+  String get image => view.movie.image;
+
+  @override
+  int get year => 0;
+
+  @override
+  String get title => view.movie.title;
+
+  @override
+  String get etag => view.movie.etag;
+
+  @override
+  int get size => view.movie.size;
+
+  @override
+  int get number => 0;
+
+  @override
+  int get disc => 0;
+
+  @override
+  String get date => view.movie.date;
+
+  @override
+  String get location => view.location;
 }
 
 class _MoviePlayerState extends State<MoviePlayer> {
   late final _stateStream = BehaviorSubject<MovieState>();
   late final _positionStream = BehaviorSubject<Duration>();
-  late final VideoPlayerController? _controller;
-  late final VideoProgressIndicator? _progress;
-  late final StreamSubscription<MovieState> _stateSubscription;
+  VideoPlayerController? _controller;
+  VideoProgressIndicator? _progress;
+  StreamSubscription<MovieState>? _stateSubscription;
   var _showControls = false;
   var _videoInitialized = false;
-  Timer? _controlsTimer = null;
+  Timer? _controlsTimer;
 
   @override
   void initState() {
@@ -531,22 +486,24 @@ class _MoviePlayerState extends State<MoviePlayer> {
     prepareController();
   }
 
-  void prepareController() async {
+  Future<void> prepareController() async {
     // controller
-    final client = Client();
-    final uri = await client.locate(widget._movie);
-    final headers = await client.headersWithMediaToken();
-    final controller =
-        VideoPlayerController.network(uri.toString(), httpHeaders: headers)
-          ..initialize().then((_) {
-            setState(() {}); // see example
-          });
+    final uri =
+        await widget.mediaTrackResolver.resolve(widget.movie);
+    String url = uri.toString();
+    if (url.startsWith('/api/')) {
+      url = '${widget.settingsRepository.settings?.endpoint}$url';
+    }
+    final headers = widget.tokenRepository.addMediaToken();
+    final controller = VideoPlayerController.network(url, httpHeaders: headers);
+    // TODO not sure what this does
+    unawaited(controller.initialize().then((_) => setState(() {})));
     // progress
     _progress = VideoProgressIndicator(controller,
-        colors: VideoProgressColors(
+        colors: const VideoProgressColors(
             playedColor: Colors.orangeAccent, bufferedColor: Colors.green),
         allowScrubbing: true,
-        padding: EdgeInsets.all(32));
+        padding: const EdgeInsets.all(32));
     // events
     controller.addListener(() {
       final value = controller.value;
@@ -571,7 +528,7 @@ class _MoviePlayerState extends State<MoviePlayer> {
         case MovieState.playing:
           Wakelock.enable();
           _controlsTimer?.cancel();
-          _controlsTimer = Timer(Duration(seconds: 2), () {
+          _controlsTimer = Timer(const Duration(seconds: 2), () {
             showControls(false);
           });
           break;
@@ -604,9 +561,11 @@ class _MoviePlayerState extends State<MoviePlayer> {
     return '${pos.hhmmss} ~ ${(_controller?.value.duration ?? Duration.zero).hhmmss}';
   }
 
-  void _saveState() {
-    Progress.update(widget._movie.key, _controller?.value.position ?? Duration.zero,
-        _controller?.value.duration ?? Duration.zero);
+  void _saveState(BuildContext context) {
+    final position = _controller?.value.position ?? Duration.zero;
+    final duration = _controller?.value.duration;
+    context.updateProgress(widget.movie.etag,
+        position: position, duration: duration);
   }
 
   @override
@@ -620,7 +579,7 @@ class _MoviePlayerState extends State<MoviePlayer> {
             }
           },
           child: _controller == null
-              ? SizedBox.shrink()
+              ? const EmptyWidget()
               : Center(
                   child: _controller!.value.isInitialized
                       ? AspectRatio(
@@ -638,7 +597,7 @@ class _MoviePlayerState extends State<MoviePlayer> {
                                       return Align(
                                           alignment: Alignment.bottomLeft,
                                           child: Container(
-                                              padding: EdgeInsets.all(3),
+                                              padding: const EdgeInsets.all(3),
                                               child: Text(duration != null
                                                   ? _pos(duration)
                                                   : '')));
@@ -650,15 +609,16 @@ class _MoviePlayerState extends State<MoviePlayer> {
                                       final state =
                                           snapshot.data ?? MovieState.none;
                                       return state == MovieState.none
-                                          ? SizedBox.shrink()
+                                          ? const EmptyWidget()
                                           : Center(
                                               child: IconButton(
-                                                  padding: EdgeInsets.all(0),
+                                                  padding:
+                                                      const EdgeInsets.all(0),
                                                   onPressed: () {
                                                     if (state ==
                                                         MovieState.playing) {
                                                       _controller!.pause();
-                                                      _saveState();
+                                                      _saveState(context);
                                                     } else {
                                                       _controller!.play();
                                                     }
@@ -672,7 +632,7 @@ class _MoviePlayerState extends State<MoviePlayer> {
                                     })
                             ],
                           ))
-                      : SizedBox.shrink(),
+                      : const EmptyWidget(),
                 )),
     );
   }
@@ -684,21 +644,21 @@ class _MoviePlayerState extends State<MoviePlayer> {
         overlays: [SystemUiOverlay.top, SystemUiOverlay.bottom]);
     super.dispose();
     _controller?.dispose();
-    _stateSubscription.cancel();
+    _stateSubscription?.cancel();
   }
 }
 
 class MovieListWidget extends StatelessWidget {
   final List<Movie> _movies;
 
-  const MovieListWidget(this._movies);
+  const MovieListWidget(this._movies, {super.key});
 
   @override
   Widget build(BuildContext context) {
     return Column(children: [
       ..._movies.asMap().keys.toList().map((index) => ListTile(
           onTap: () => _onTapped(context, _movies[index]),
-          leading: tilePoster(_movies[index].image),
+          leading: tilePoster(context, _movies[index].image),
           subtitle: Text(
               merge([_movies[index].year.toString(), _movies[index].rating])),
           title: Text(_movies[index].title)))
@@ -706,14 +666,17 @@ class MovieListWidget extends StatelessWidget {
   }
 
   void _onTapped(BuildContext context, Movie movie) {
-    Navigator.push(
-        context, MaterialPageRoute(builder: (_) => MovieWidget(movie)));
+    push(context, builder: (_) => MovieWidget(movie));
   }
 }
 
-void showMovie(BuildContext context, Locatable movie, {Duration? startOffset}) {
-  Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(
-      builder: (_) => MoviePlayer(movie, startOffset: startOffset)));
+void playMovie(BuildContext context, MediaTrack movie, {Duration? startOffset}) {
+  Navigator.of(context, rootNavigator: true).push(MaterialPageRoute<void>(
+      builder: (_) => MoviePlayer(movie,
+          settingsRepository: context.read<SettingsRepository>(),
+          tokenRepository: context.read<TokenRepository>(),
+          mediaTrackResolver: context.read<MediaTrackResolver>(),
+          startOffset: startOffset)));
 }
 
 // Note this modifies the original list.

@@ -16,87 +16,11 @@
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
 import 'package:flutter/material.dart';
-import 'package:rxdart/rxdart.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:audio_service/audio_service.dart';
-
-import 'schema.dart';
-import 'artists.dart'; // TODO remove
-
-const appVersion = '0.9.6';
-const appSource = 'https://github.com/defsub/takeout_app';
-const appHome = 'https://defsub.github.io';
 
 const textSeparator = ' \u2022 ';
 
-late AudioHandler audioHandler;
-
-final homeKey = GlobalKey<NavigatorState>();
-final artistsKey = GlobalKey<NavigatorState>();
-final historyKey = GlobalKey<NavigatorState>();
-final radioKey = GlobalKey<NavigatorState>();
-final playerKey = GlobalKey<NavigatorState>();
-final searchKey = GlobalKey<NavigatorState>();
-
-final bottomNavKey = new GlobalKey();
-
-void navigate(int index) {
-  BottomNavigationBar navBar =
-      bottomNavKey.currentWidget as BottomNavigationBar;
-  navBar.onTap!(index);
-}
-
-Map<String, Artist> artistMap = {};
-
-void loadArtistMap(List<Artist> artists) {
-  artistMap.clear();
-  artists.forEach((a) {
-    artistMap[a.name] = a;
-  });
-}
-
-void showPlayer() {
-  navigate(4);
-}
-
-void showArtist(String name) async {
-  Artist? artist = artistMap[name];
-  if (artist != null) {
-    final route = MaterialPageRoute(builder: (_) => ArtistWidget(artist));
-    Navigator.push(artistsKey.currentContext!, route);
-    await route.didPush();
-    navigate(1);
-  }
-}
-
-class SnackBarState {
-  final Widget content;
-
-  SnackBarState(this.content);
-}
-
-final snackBarStateSubject = PublishSubject<SnackBarState>();
-
-void showSnackBar(String text) {
-  snackBarStateSubject.add(SnackBarState(Text(text)));
-}
-
-Future<SharedPreferences> prefs = SharedPreferences.getInstance();
-
-Future<String?> prefsString(String key) async {
-  return await prefs.then((p) async {
-    await p.reload();
-    var val = p.getString(key);
-    if (val == 'null') {
-      // TODO why did this happen?
-      val = null;
-    }
-    return val;
-  });
-}
-
 void showErrorDialog(BuildContext context, String message) {
-  showDialog(
+  showDialog<void>(
     context: context,
     builder: (BuildContext ctx) {
       return AlertDialog(

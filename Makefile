@@ -21,7 +21,7 @@ ADB = adb
 
 GIT_VERSION ?= $(shell git log --format="%h" -n 1)
 
-SOURCES = $(wildcard lib/*.dart)
+SOURCES = $(wildcard lib/*.dart lib/*/*.dart)
 
 RESOURCES = $(wildcard lib/l10n/*.arb)
 

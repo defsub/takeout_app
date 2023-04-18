@@ -16,120 +16,102 @@
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:takeout_app/app/context.dart';
+import 'package:takeout_app/page/page.dart';
+import 'package:takeout_app/empty.dart';
 
-import 'client.dart';
-import 'global.dart';
+class LoginWidget extends ClientPage<bool> {
+  final TextEditingController _hostText = TextEditingController();
+  final TextEditingController _userText = TextEditingController();
+  final TextEditingController _passwordText = TextEditingController();
 
-class LoginWidget extends StatefulWidget {
-  final Function _onSuccess;
-
-  LoginWidget(this._onSuccess);
-
-  @override
-  State<StatefulWidget> createState() => _LoginState();
-}
-
-class _LoginState extends State<LoginWidget> {
-
-  TextEditingController _hostText = TextEditingController();
-  TextEditingController _userText = TextEditingController();
-  TextEditingController _passwordText = TextEditingController();
-
-  static const settingHost = 'login_host';
-  static const settingUser = 'login_user';
+  LoginWidget({super.key}) : super(value: false);
 
   @override
-  void initState() {
-    super.initState();
-    _load();
-  }
+  void load(BuildContext context, {Duration? ttl}) {
+    final host = _hostText.text.trim();
+    if (host.isNotEmpty) {
+      context.settings.host = host;
+    }
 
-  void _load() async {
-    final host = await prefsString(settingHost);
-    final user = await prefsString(settingUser);
-    setState(() {
-      _hostText.text = host ?? 'https://yourhost';
-      _userText.text = user ?? '';
-    });
+    // TODO assume host is emitted into settings repo for login below
+
+    final user = _userText.text.trim();
+    final password = _passwordText.text.trim();
+    if (user.isNotEmpty && password.isNotEmpty) {
+      context.client.login(user, password);
+    }
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget page(BuildContext context, bool state) {
+    if (state) {
+      context.app.authenticated();
+      return const EmptyWidget();
+    }
+
     return Scaffold(
         appBar: AppBar(
-          title: Text(AppLocalizations.of(context)!.takeoutTitle),
+          title: Text(context.strings.takeoutTitle),
         ),
         body: Padding(
-            padding: EdgeInsets.all(10),
+            padding: const EdgeInsets.all(10),
             child: ListView(
               children: <Widget>[
                 Container(
                     alignment: Alignment.center,
-                    padding: EdgeInsets.all(10),
+                    padding: const EdgeInsets.all(10),
                     child: Text(
-                      AppLocalizations.of(context)!.hostLabel,
+                      context.strings.hostLabel,
                       style:
-                          TextStyle(fontWeight: FontWeight.w500, fontSize: 30),
+                          const TextStyle(fontWeight: FontWeight.w500, fontSize: 30),
                     )),
                 Container(
-                  padding: EdgeInsets.all(10),
+                  padding: const EdgeInsets.all(10),
                   child: TextFormField(
                     controller: _hostText,
                     decoration: InputDecoration(
-                      border: OutlineInputBorder(),
-                      labelText: AppLocalizations.of(context)!.hostLabel,
+                      border: const OutlineInputBorder(),
+                      labelText: context.strings.hostLabel,
                     ),
                   ),
                 ),
                 Container(
                     alignment: Alignment.center,
-                    padding: EdgeInsets.all(10),
+                    padding: const EdgeInsets.all(10),
                     child: Text(
-                      AppLocalizations.of(context)!.loginLabel,
+                      context.strings.loginLabel,
                       style:
-                          TextStyle(fontWeight: FontWeight.w500, fontSize: 30),
+                          const TextStyle(fontWeight: FontWeight.w500, fontSize: 30),
                     )),
                 Container(
-                  padding: EdgeInsets.all(10),
+                  padding: const EdgeInsets.all(10),
                   child: TextFormField(
                     controller: _userText,
                     decoration: InputDecoration(
-                      border: OutlineInputBorder(),
-                      labelText: AppLocalizations.of(context)!.userLabel,
+                      border: const OutlineInputBorder(),
+                      labelText: context.strings.userLabel,
                     ),
                   ),
                 ),
                 Container(
-                  padding: EdgeInsets.all(10),
+                  padding: const EdgeInsets.all(10),
                   child: TextFormField(
                     obscureText: true,
                     controller: _passwordText,
                     decoration: InputDecoration(
-                      border: OutlineInputBorder(),
-                      labelText: AppLocalizations.of(context)!.passwordLabel,
+                      border: const OutlineInputBorder(),
+                      labelText: context.strings.passwordLabel,
                     ),
                   ),
                 ),
                 Container(
                     height: 70,
-                    padding: EdgeInsets.all(10),
+                    padding: const EdgeInsets.all(10),
                     child: OutlinedButton(
-                      child: Text(AppLocalizations.of(context)!.loginLabel),
-                      onPressed: () async {
-                        final client = Client();
-                        await client.setEndpoint(_hostText.text);
-                        client
-                            .login(_userText.text, _passwordText.text)
-                            .then((result) {
-                          if (result == true) {
-                            prefs.then((p) {
-                              p.setString(settingHost, _hostText.text);
-                              p.setString(settingUser, _userText.text);
-                            });
-                            widget._onSuccess();
-                          }
-                        });
+                      child: Text(context.strings.loginLabel),
+                      onPressed: () {
+                        reloadPage(context);
                       },
                     )),
               ],

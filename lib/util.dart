@@ -17,6 +17,8 @@
 
 import 'dart:collection';
 
+import 'package:takeout_app/global.dart';
+
 extension TakeoutDuration on Duration {
   String get inHoursMinutes {
     var mins = inMinutes.remainder(60);
@@ -32,7 +34,7 @@ extension TakeoutDuration on Duration {
 }
 
 String twoDigits(int n) {
-  return n >= 10 ? '${n}' : '0${n}';
+  return n >= 10 ? '$n' : '0$n';
 }
 
 String ymd(dynamic date) {
@@ -44,7 +46,7 @@ String ymd(dynamic date) {
   final y = twoDigits(t.year);
   final m = twoDigits(t.month);
   final d = twoDigits(t.day);
-  return '${y}-${m}-${d}';
+  return '$y-$m-$d';
 }
 
 bool isNullOrEmpty(String? s) => s?.trim().isEmpty ?? true;
@@ -84,12 +86,11 @@ int parseYear(String date) {
   return year;
 }
 
-String merge(List<String> args, {String separator = ' \u2022 '}) {
+String merge(List<String> args, {String separator = textSeparator}) {
   args.retainWhere((s) => s.toString().isNotEmpty);
   return args.join(separator);
 }
 
-// TODO move below to util, global or other
 String year(String date) {
   var d = DateTime.parse(date);
   // year 1 is a Go zero value date
@@ -113,11 +114,11 @@ class ExpiringMap<K, V> {
     return _map.containsKey(key);
   }
 
-  Iterable<K> keys() {
+  Iterable<K> get keys {
     return _map.keys;
   }
 
-  Iterable<V> values() {
+  Iterable<V> get values {
     return _map.values;
   }
 
@@ -128,7 +129,7 @@ class ExpiringMap<K, V> {
 
 class ExpiringSet<V> {
   final Duration duration;
-  final Set<V> _set = HashSet<V>();
+  final _set = HashSet<V>();
 
   ExpiringSet(this.duration);
 

@@ -16,107 +16,81 @@
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
 import 'package:flutter/material.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:logging/logging.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:takeout_app/api/model.dart';
+import 'package:takeout_app/app/context.dart';
+import 'package:takeout_app/buttons.dart';
+import 'package:takeout_app/cache/spiff.dart';
+import 'package:takeout_app/page/page.dart';
+import 'package:takeout_app/spiff/model.dart';
+import 'package:takeout_app/tiles.dart';
 
-import 'schema.dart';
-import 'main.dart';
-import 'playlist.dart';
-import 'client.dart';
 import 'downloads.dart';
-import 'spiff.dart';
-import 'style.dart';
-import 'cache.dart';
 import 'menu.dart';
-import 'global.dart';
-import 'widget.dart';
+import 'nav.dart';
+import 'style.dart';
 
-class RadioWidget extends StatefulWidget {
-  final RadioView _view;
+const radioCreator = 'Radio';
+const radioStream = 'stream';
 
-  RadioWidget(this._view);
+class RadioWidget extends NavigatorClientPage<RadioView> {
+  RadioWidget({super.key});
 
-  @override
-  RadioState createState() => RadioState(_view);
-}
-
-class RadioState extends State<RadioWidget> {
-  static final log = Logger('RadioState');
-
-  RadioView _view;
-
-  RadioState(this._view);
-
-  List<DownloadEntry> _radioFilter(List<DownloadEntry> entries) {
-    final list = List<DownloadEntry>.from(entries);
-    list.retainWhere(
-        (e) => e is SpiffDownloadEntry && e.spiff.playlist.creator == 'Radio');
+  List<Spiff> _radioFilter(Iterable<Spiff> entries) {
+    final list = List<Spiff>.from(entries);
+    list.retainWhere((spiff) => spiff.creator == radioCreator);
     return list;
   }
 
   @override
-  Widget build(BuildContext context) {
-    final builder = (_) => StreamBuilder<List<DownloadEntry>>(
-        stream: Downloads.downloadsSubject,
-        builder: (context, snapshot) {
-          List<DownloadEntry> entries = snapshot.data ?? [];
-          entries = _radioFilter(entries);
-          bool haveDownloads = entries.isNotEmpty;
-          haveDownloads = false;
-          return DefaultTabController(
-              length: haveDownloads ? 5 : 4, // TODO FIXME
-              child: RefreshIndicator(
-                  onRefresh: () => _onRefresh(),
-                  child: Scaffold(
-                      appBar: AppBar(
-                          title:
-                              header(AppLocalizations.of(context)!.radioLabel),
-                          actions: [
-                            popupMenu(context, [
-                              PopupItem.refresh(context, (_) => _onRefresh()),
-                            ]),
-                          ],
-                          bottom: TabBar(
-                            tabs: [
-                              Tab(
-                                  text: AppLocalizations.of(context)!
-                                      .genresLabel),
-                              Tab(
-                                  text: AppLocalizations.of(context)!
-                                      .decadesLabel),
-                              Tab(
-                                  text:
-                                      AppLocalizations.of(context)!.otherLabel),
-                              Tab(
-                                  text: AppLocalizations.of(context)!
-                                      .streamsLabel),
-                              if (haveDownloads)
-                                Tab(
-                                    text: AppLocalizations.of(context)!
-                                        .downloadsLabel)
-                            ],
-                          )),
-                      body: TabBarView(
-                        children: [
-                          if (_view.genre != null) _stations(_view.genre!),
-                          if (_view.period != null) _stations(_view.period!),
-                          _stations(_merge(
-                              _view.series != null ? _view.series! : [],
-                              _view.other != null ? _view.other! : [])),
-                          if (_view.stream != null) _stations(_view.stream!),
+  void load(BuildContext context, {Duration? ttl}) {
+    context.client.radio(ttl: ttl);
+  }
+
+  @override
+  Widget page(BuildContext context, RadioView state) {
+    return BlocBuilder<SpiffCacheCubit, SpiffCacheState>(
+        builder: (context, cacheState) {
+      final entries = _radioFilter(cacheState.spiffs ?? <Spiff>[]);
+      bool haveDownloads = entries.isNotEmpty;
+      // haveDownloads = false;
+      return DefaultTabController(
+          length: haveDownloads ? 5 : 4, // TODO FIXME
+          child: RefreshIndicator(
+              onRefresh: () => reloadPage(context),
+              child: Scaffold(
+                  appBar: AppBar(
+                      title: header(context.strings.radioLabel),
+                      actions: [
+                        popupMenu(context, [
+                          PopupItem.reload(
+                              context, (_) => reloadPage(context)),
+                        ]),
+                      ],
+                      bottom: TabBar(
+                        tabs: [
+                          Tab(text: context.strings.genresLabel),
+                          Tab(text: context.strings.decadesLabel),
+                          Tab(text: context.strings.otherLabel),
+                          Tab(text: context.strings.streamsLabel),
                           if (haveDownloads)
-                            DownloadListWidget(filter: _radioFilter)
+                            Tab(
+                                text: context.strings
+                                    .downloadsLabel)
                         ],
-                      ))));
-        });
-    return Navigator(
-        key: radioKey,
-        initialRoute: '/',
-        observers: [heroController()],
-        onGenerateRoute: (RouteSettings settings) {
-          return MaterialPageRoute(builder: builder, settings: settings);
-        });
+                      )),
+                  body: TabBarView(
+                    children: [
+                      if (state.genre != null) _stations(state.genre!),
+                      if (state.period != null) _stations(state.period!),
+                      _stations(_merge(state.series != null ? state.series! : [],
+                          state.other != null ? state.other! : [])),
+                      if (state.stream != null) _stations(state.stream!),
+                      if (haveDownloads)
+                        DownloadListWidget(filter: _radioFilter)
+                    ],
+                  ))));
+    });
   }
 
   List<Station> _merge(List<Station> a, List<Station> b) {
@@ -129,169 +103,33 @@ class RadioState extends State<RadioWidget> {
     return ListView.builder(
         itemCount: stations.length,
         itemBuilder: (context, index) {
-          return StreamBuilder<ConnectivityResult>(
-              stream: TakeoutState.connectivityStream.distinct(),
-              builder: (context, snapshot) {
-                final result = snapshot.data;
-                final isStream =
-                    stations[index].type == 'stream'; // enum for station types
-                return ListTile(
-                    enabled:
-                        isStream ? TakeoutState.allowStreaming(result) : true,
-                    onTap: () => isStream
-                        ? _onStream(stations[index])
-                        : _onStation(context, stations[index]),
-                    leading: Icon(Icons.radio),
-                    title: Text(stations[index].name),
-                    trailing: isStream
-                        ? Icon(Icons.play_arrow)
-                        : IconButton(
-                            icon: Icon(IconsDownload),
-                            onPressed: TakeoutState.allowDownload(result)
-                                ? () => _onDownload(context, stations[index])
-                                : null));
-              });
+          final isStream = stations[index].type == radioStream;
+          return isStream
+              ? StreamingTile(
+                  onTap: () => _onRadioStream(context, stations[index]),
+                  leading: const Icon(Icons.radio),
+                  title: Text(stations[index].name),
+                  trailing: const Icon(Icons.play_arrow))
+              : ListTile(
+                  title: Text(stations[index].name),
+                  onTap: () => _onStation(context, stations[index]),
+                  trailing: DownloadButton(
+                      onPressed: () => _onDownload(context, stations[index])));
         });
   }
 
-  void _onStream(Station station) async {
-    final client = Client();
-    client.station(station.id, ttl: Duration.zero).then((spiff) {
-      MediaQueue.playSpiff(spiff);
-      showPlayer();
-    });
+  void _onRadioStream(BuildContext context, Station station) {
+    context.stream(station.id);
   }
 
   void _onStation(BuildContext context, Station station) {
-    Navigator.push(
+    pushSpiff(
         context,
-        MaterialPageRoute(
-            builder: (_) => RefreshSpiffWidget(
-                () => Client().station(station.id, ttl: Duration.zero))));
+        (client, {Duration? ttl}) =>
+            client.station(station.id, ttl: Duration.zero));
   }
 
   void _onDownload(BuildContext context, Station station) {
-    Downloads.downloadStation(context, station);
-  }
-
-  Future<void> _onRefresh() async {
-    try {
-      final client = Client();
-      final result = await client.radio(ttl: Duration.zero);
-      if (mounted) {
-        setState(() {
-          _view = result;
-        });
-      }
-    } catch (error) {
-      log.warning(error);
-    }
-  }
-}
-
-class RefreshSpiffWidget extends StatefulWidget {
-  final Future<Spiff> Function() _fetchSpiff;
-
-  RefreshSpiffWidget(this._fetchSpiff);
-
-  @override
-  _RefreshSpiffState createState() => _RefreshSpiffState();
-}
-
-class _RefreshSpiffState extends State<RefreshSpiffWidget> {
-  static final log = Logger('RefreshSpiffState');
-
-  Spiff? _spiff;
-
-  @override
-  void initState() {
-    super.initState();
-    _onRefresh();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-        appBar: AppBar(
-          title: header(_spiff?.playlist.title ?? ''),
-          actions: [
-            popupMenu(context, [
-              PopupItem.refresh(context, (_) => _onRefresh()),
-            ]),
-          ],
-        ),
-        body: RefreshIndicator(
-            onRefresh: () => _onRefresh(),
-            child: StreamBuilder<ConnectivityResult>(
-                stream: TakeoutState.connectivityStream.distinct(),
-                builder: (context, snapshot) {
-                  final result = snapshot.data;
-                  return (_spiff == null)
-                      ? Center(child: CircularProgressIndicator())
-                      : SingleChildScrollView(
-                          child: StreamBuilder<CacheSnapshot>(
-                              stream: MediaCache.stream(),
-                              builder: (context, snapshot) {
-                                final cacheSnapshot =
-                                    snapshot.data ?? CacheSnapshot.empty();
-                                final isCached = _spiff != null
-                                    ? cacheSnapshot
-                                        .containsAll(_spiff!.playlist.tracks)
-                                    : false;
-                                return Column(children: [
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceEvenly,
-                                    children: [
-                                      OutlinedButton.icon(
-                                          label: Text(
-                                              AppLocalizations.of(context)!
-                                                  .playLabel),
-                                          icon: Icon(Icons.play_arrow),
-                                          onPressed:
-                                              TakeoutState.allowStreaming(
-                                                      result)
-                                                  ? () => _onPlay()
-                                                  : null),
-                                      OutlinedButton.icon(
-                                          label: Text(isCached
-                                              ? AppLocalizations.of(context)!
-                                                  .completeLabel
-                                              : AppLocalizations.of(context)!
-                                                  .downloadLabel),
-                                          icon: Icon(IconsDownload),
-                                          onPressed:
-                                              TakeoutState.allowDownload(result)
-                                                  ? () => _onDownload(context)
-                                                  : null),
-                                    ],
-                                  ),
-                                  Divider(),
-                                  SpiffTrackListView(_spiff!),
-                                ]);
-                              }));
-                })));
-  }
-
-  void _onPlay() {
-    MediaQueue.playSpiff(_spiff!);
-    showPlayer();
-  }
-
-  void _onDownload(BuildContext context) {
-    Downloads.downloadSpiff(context, _spiff!);
-  }
-
-  Future<void> _onRefresh() async {
-    try {
-      final result = await widget._fetchSpiff!();
-      if (mounted) {
-        setState(() {
-          _spiff = result;
-        });
-      }
-    } catch (error) {
-      log.warning(error);
-    }
+    context.downloadStation(station);
   }
 }
