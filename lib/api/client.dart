@@ -182,7 +182,8 @@ class TakeoutClient implements ClientProvider {
       if (cacheable) {
         await jsonCacheRepository.put(uri, response.bodyBytes);
       }
-      return jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+      return jsonDecode(utf8.decode(response.bodyBytes))
+          as Map<String, dynamic>;
     } catch (e, stackTrace) {
       if (e is SocketException || e is TimeoutException || e is TlsException) {
         if (cachedJson != null) {
@@ -260,7 +261,8 @@ class TakeoutClient implements ClientProvider {
           'statusCode': response.statusCode
         };
       } else {
-        return jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+        return jsonDecode(utf8.decode(response.bodyBytes))
+            as Map<String, dynamic>;
       }
     });
   }
@@ -542,7 +544,7 @@ class TakeoutClient implements ClientProvider {
   /// GET /api/episodes/1/playlist
   @override
   Future<Spiff> episodePlaylist(int id, {Duration? ttl}) async =>
-      spiff('/api/episode/$id/playlist', ttl: ttl);
+      spiff('/api/episodes/$id/playlist', ttl: ttl);
 
   /// GET /api/progress
   @override
@@ -647,10 +649,16 @@ class TakeoutClient implements ClientProvider {
           }, onDone: () {
             if (progress != null) progress.close();
             sink.flush().whenComplete(() => sink.close().whenComplete(() {
-                  if (size == file.lengthSync()) {
+                  final fileSize = file.lengthSync();
+                  if (size == fileSize) {
                     completer.complete(size);
+                  } else if (fileSize > size) {
+                    // unfortunately podcasts can be larger than expected
+                    // TODO only allow this for podcasts
+                    completer.complete(fileSize);
                   } else {
-                    throw _ClientError('$size != ${file.lengthSync()}');
+                    throw _ClientError(
+                        '$size (expected) != $fileSize (actual)');
                   }
                 }));
           }, onError: (Object err) {

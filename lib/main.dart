@@ -50,14 +50,6 @@ void main() async {
   runApp(const TakeoutApp());
 }
 
-final homeKey = GlobalKey<NavigatorState>();
-final artistsKey = GlobalKey<NavigatorState>();
-final historyKey = GlobalKey<NavigatorState>();
-final radioKey = GlobalKey<NavigatorState>();
-final playerKey = GlobalKey<NavigatorState>();
-final searchKey = GlobalKey<NavigatorState>();
-final bottomNavKey = GlobalKey();
-
 class TakeoutApp extends StatelessWidget with AppBloc {
   const TakeoutApp({super.key});
 
@@ -125,17 +117,8 @@ class _TakeoutState extends State<_TakeoutWidget>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    final connectivity = context.connectivity;
-    switch (state) {
-      case AppLifecycleState.resumed:
-        connectivity.check();
-        break;
-      case AppLifecycleState.inactive:
-        break;
-      case AppLifecycleState.paused:
-        break;
-      case AppLifecycleState.detached:
-        break;
+    if (state == AppLifecycleState.resumed) {
+      context.connectivity.check();
     }
   }
 
@@ -199,27 +182,16 @@ class _TakeoutState extends State<_TakeoutWidget>
     '/player',
   ];
 
-  NavigatorState? _navigatorState(NavigationIndex index) {
-    NavigatorState? navState;
-    switch (index) {
-      case NavigationIndex.home:
-        navState = homeKey.currentState;
-        break;
-      case NavigationIndex.artists:
-        navState = artistsKey.currentState;
-        break;
-      case NavigationIndex.history:
-        navState = historyKey.currentState;
-        break;
-      case NavigationIndex.radio:
-        navState = radioKey.currentState;
-        break;
-      case NavigationIndex.player:
-        navState = playerKey.currentState;
-        break;
-    }
-    return navState;
-  }
+  static final _navigatorKeys = {
+    NavigationIndex.home: GlobalKey<NavigatorState>(),
+    NavigationIndex.artists: GlobalKey<NavigatorState>(),
+    NavigationIndex.history: GlobalKey<NavigatorState>(),
+    NavigationIndex.radio: GlobalKey<NavigatorState>(),
+    NavigationIndex.player: GlobalKey<NavigatorState>(),
+  };
+
+  NavigatorState? _navigatorState(NavigationIndex index) =>
+      _navigatorKeys[index]?.currentState;
 
   void _onNavTapped(BuildContext context, int index) {
     final currentIndex = context.app.state.navigationBarIndex;
@@ -306,7 +278,6 @@ class _TakeoutState extends State<_TakeoutWidget>
       BlocBuilder<AppCubit, AppState>(builder: (context, state) {
         final index = state.navigationBarIndex;
         return BottomNavigationBar(
-          key: bottomNavKey,
           showUnselectedLabels: false,
           showSelectedLabels: false,
           type: BottomNavigationBarType.fixed,
@@ -343,14 +314,15 @@ class _TakeoutState extends State<_TakeoutWidget>
     final builders = {
       '/home': (_) => HomeWidget(
           (ctx) => Navigator.push(
-              ctx,
-              MaterialPageRoute<void>(
-                  builder: (_) => SearchWidget(key: searchKey))),
-          key: homeKey),
-      '/artists': (_) => ArtistsWidget(key: artistsKey),
-      '/history': (_) => HistoryListWidget(key: historyKey),
-      '/radio': (_) => RadioWidget(key: radioKey),
-      '/player': (_) => PlayerWidget(key: playerKey)
+              ctx, MaterialPageRoute<void>(builder: (_) => SearchWidget())),
+          key: _navigatorKeys[NavigationIndex.home]),
+      '/artists': (_) =>
+          ArtistsWidget(key: _navigatorKeys[NavigationIndex.artists]),
+      '/history': (_) =>
+          HistoryListWidget(key: _navigatorKeys[NavigationIndex.history]),
+      '/radio': (_) => RadioWidget(key: _navigatorKeys[NavigationIndex.radio]),
+      '/player': (_) =>
+          PlayerWidget(key: _navigatorKeys[NavigationIndex.player])
     };
     return builders;
   }

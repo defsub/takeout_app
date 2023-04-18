@@ -78,8 +78,7 @@ class DownloadProgress {
   DownloadProgress(this.offset, this.size, {this.error});
 
   DownloadProgress copyWith({int? offset, Object? error}) =>
-      DownloadProgress(offset ?? this.offset, size,
-          error: error ?? this.error);
+      DownloadProgress(offset ?? this.offset, size, error: error ?? this.error);
 
   // Value used for progress display.
   double get value {
@@ -96,8 +95,10 @@ class DownloadAdd extends DownloadState {
 
   /// Download added but not yet in progress
   factory DownloadAdd.from(DownloadState state, Download download) {
-    final downloads = Map<DownloadIdentifier, Download>.from(state._downloads);
-    final failed = Map<DownloadIdentifier, Object?>.from(state._failed);
+    final downloads =
+        Map<DownloadIdentifier, Download>.fromEntries(state._downloads.entries);
+    final failed =
+        Map<DownloadIdentifier, Object?>.fromEntries(state._failed.entries);
 
     downloads[download.id] = download;
     failed.remove(download.id);
@@ -114,8 +115,10 @@ class DownloadStart extends DownloadState {
   /// Download started
   factory DownloadStart.from(
       DownloadState state, DownloadIdentifier id, File file) {
-    final downloads = Map<DownloadIdentifier, Download>.from(state._downloads);
-    final failed = Map<DownloadIdentifier, Object?>.from(state._failed);
+    final downloads =
+        Map<DownloadIdentifier, Download>.fromEntries(state._downloads.entries);
+    final failed =
+        Map<DownloadIdentifier, Object?>.fromEntries(state._failed.entries);
 
     final download = downloads[id];
     if (download != null) {
@@ -135,8 +138,10 @@ class DownloadUpdate extends DownloadState {
   /// Download progress updated
   factory DownloadUpdate.from(
       DownloadState state, DownloadIdentifier id, int offset) {
-    final downloads = Map<DownloadIdentifier, Download>.from(state._downloads);
-    final failed = Map<DownloadIdentifier, Object?>.from(state._failed);
+    final downloads =
+        Map<DownloadIdentifier, Download>.fromEntries(state._downloads.entries);
+    final failed =
+        Map<DownloadIdentifier, Object?>.fromEntries(state._failed.entries);
 
     final download = downloads[id];
     if (download != null) {
@@ -156,8 +161,10 @@ class DownloadComplete extends DownloadState {
   /// Download completed
   factory DownloadComplete.from(
       DownloadState state, DownloadIdentifier id, int offset) {
-    final downloads = Map<DownloadIdentifier, Download>.from(state._downloads);
-    final failed = Map<DownloadIdentifier, Object?>.from(state._failed);
+    final downloads =
+        Map<DownloadIdentifier, Download>.fromEntries(state._downloads.entries);
+    final failed =
+        Map<DownloadIdentifier, Object?>.fromEntries(state._failed.entries);
 
     final download = downloads[id];
     if (download != null) {
@@ -177,8 +184,10 @@ class DownloadError extends DownloadState {
   /// Download failed with error
   factory DownloadError.from(
       DownloadState state, DownloadIdentifier id, Object? error) {
-    final downloads = Map<DownloadIdentifier, Download>.from(state._downloads);
-    final failed = Map<DownloadIdentifier, Object?>.from(state._failed);
+    final downloads =
+        Map<DownloadIdentifier, Download>.fromEntries(state._downloads.entries);
+    final failed =
+        Map<DownloadIdentifier, Object?>.fromEntries(state._failed.entries);
 
     downloads.remove(id);
     failed[id] = error;
@@ -214,10 +223,12 @@ class DownloadState {
       .fold(0, (count, d) => d.downloading ? count + 1 : count);
 
   Download? get next {
-    final queue =
-        List<Download>.from(_downloads.values.where((d) => d.pending));
-    queue.sort((a, b) => a.date.compareTo(b.date));
-    return queue.isNotEmpty ? queue.first : null;
+    try {
+      // LinkedHashMap retains order
+      return _downloads.values.firstWhere((d) => d.pending);
+    } on StateError {
+      return null;
+    }
   }
 }
 

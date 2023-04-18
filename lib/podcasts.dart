@@ -31,7 +31,6 @@ import 'package:takeout_app/util.dart';
 import 'package:takeout_app/empty.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
-import 'menu.dart';
 import 'nav.dart';
 import 'style.dart';
 import 'tiles.dart';
@@ -207,7 +206,7 @@ class _SeriesEpisodeListWidget extends StatelessWidget {
   }
 }
 
-class _EpisodeWidget extends StatelessWidget {
+class _EpisodeWidget extends StatefulWidget {
   final Episode episode;
   final String title;
   final Color? backgroundColor;
@@ -215,22 +214,51 @@ class _EpisodeWidget extends StatelessWidget {
   const _EpisodeWidget(this.episode, this.title, {this.backgroundColor});
 
   @override
+  State<_EpisodeWidget> createState() => _EpisodeWidgetState();
+}
+
+class _EpisodeWidgetState extends State<_EpisodeWidget> {
+  late final WebViewController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+
+    final controller = WebViewController()
+    ..setJavaScriptMode(JavaScriptMode.disabled)
+    ..setBackgroundColor(Colors.white)
+    ..setNavigationDelegate(
+      NavigationDelegate(
+        onNavigationRequest: (NavigationRequest request) {
+          return NavigationDecision.navigate;
+        },
+      ),
+    );
+
+    // TODO consider changing CSS font colors based on theme
+    controller.loadHtmlString("""<!DOCTYPE html>
+    <html>
+      <head><meta name='viewport' content='width=device-width, initial-scale=1.0'></head>
+      <body style='margin: 48;'>
+        <div>
+          ${widget.episode.description}
+        </div>
+      </body>
+    </html>""");
+
+    _controller = controller;
+  }
+
+  @override
   Widget build(BuildContext context) {
     const padding = EdgeInsets.all(16);
     return Scaffold(
-        backgroundColor: backgroundColor,
+        backgroundColor: widget.backgroundColor,
         appBar: AppBar(
-          title: Text(title),
-          actions: [
-            popupMenu(context, [
-              // TODO this shows delete when there's nothing to delete
-              // consider removing since this can be removed in downloads
-              PopupItem.delete(
-                  context, context.strings.deleteItem, (ctx) => _onDelete(ctx)),
-            ])
-          ],
+          title: Text(widget.title),
         ),
         body: Builder(builder: (context) {
+          final episode = widget.episode;
           final offsetCache = context.watch<OffsetCacheCubit>().state;
           final trackCache = context.watch<TrackCacheCubit>().state;
           final when = offsetCache.when(episode);
@@ -255,11 +283,10 @@ class _EpisodeWidget extends StatelessWidget {
                 trailing: _downloadButton(context),
               ),
               _progress(offsetCache) ?? const EmptyWidget(),
-              Expanded(child: _episodeDetail()),
+              Expanded(child: WebViewWidget(controller: _controller)),
               ListTile(
                 title: remaining != null
-                    ? Text(
-                        '${remaining.inHoursMinutes} remaining') // TODO intl
+                    ? Text('${remaining.inHoursMinutes} remaining') // TODO intl
                     : const EmptyWidget(),
                 subtitle: when != null
                     ? RelativeDateWidget(when)
@@ -272,6 +299,7 @@ class _EpisodeWidget extends StatelessWidget {
   }
 
   Widget? _progress(OffsetCacheState state) {
+    final episode = widget.episode;
     final remaining = state.remaining(episode);
     if (remaining != null && remaining.inSeconds > 0) {
       final value = state.value(episode);
@@ -282,42 +310,8 @@ class _EpisodeWidget extends StatelessWidget {
     return null;
   }
 
-  Widget _episodeDetail() {
-    final controller = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.disabled)
-      ..setBackgroundColor(Colors.white)
-      ..setNavigationDelegate(
-        NavigationDelegate(
-          onProgress: (int progress) {
-          },
-          onPageStarted: (String url) {
-          },
-          onPageFinished: (String url) {
-          },
-          onWebResourceError: (WebResourceError error) {
-          },
-          onNavigationRequest: (NavigationRequest request) {
-            return NavigationDecision.navigate;
-          },
-        ),
-      );
-
-    final view = WebViewWidget(controller: controller);
-    // TODO consider changing CSS font colors based on theme
-    controller.loadHtmlString("""<!DOCTYPE html>
-    <html>
-      <head><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-      <body style='"margin: 0; padding: 0;'>
-        <div>
-          ${episode.description}
-        </div>
-      </body>
-    </html>""");
-
-    return view;
-  }
-
   Widget _downloadButton(BuildContext context) {
+    final episode = widget.episode;
     return Builder(builder: (context) {
       final downloads = context.watch<DownloadCubit>().state;
       final trackCache = context.watch<TrackCacheCubit>().state;
@@ -335,7 +329,7 @@ class _EpisodeWidget extends StatelessWidget {
   }
 
   void _onDownload(BuildContext context) {
-    context.downloadEpisode(episode);
+    context.downloadEpisode(widget.episode);
   }
 
   Widget _playButton(BuildContext context, bool isCached) {
@@ -345,36 +339,7 @@ class _EpisodeWidget extends StatelessWidget {
   }
 
   void _onPlay(BuildContext context) {
-    context.playlist.replace(episode.reference, mediaType: MediaType.podcast);
-  }
-
-  void _onDelete(BuildContext context) {
-    showDialog<void>(
-        context: context,
-        builder: (ctx) {
-          return AlertDialog(
-            title: Text(context.strings.confirmDelete),
-            content: Text(context.strings.deleteEpisode),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child:
-                    Text(MaterialLocalizations.of(context).cancelButtonLabel),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  _onDeleteConfirmed();
-                },
-                child: Text(MaterialLocalizations.of(context).okButtonLabel),
-              ),
-            ],
-          );
-        });
-  }
-
-  void _onDeleteConfirmed() {
-    // Downloads.deleteEpisode(episode);
+    context.playlist.replace(widget.episode.reference, mediaType: MediaType.podcast);
   }
 }
 
