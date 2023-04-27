@@ -23,7 +23,8 @@ import 'package:takeout_app/tokens/repository.dart';
 
 import 'handler.dart';
 
-final dummyPlayerCallback = (_, __, ___) {};
+final dummyPlayCallback = (_, __, ___, ____) {};
+final dummyPauseCallback = (_, __, ___) {};
 final dummyStoppedCallback = (_) {};
 final dummyTrackChangeCallback = (_, __, {String? title}) {};
 final dummyPositionCallback = (_, __, ___, ____) {};
@@ -31,7 +32,8 @@ final dummyProgressCallback = (_, __, ___, ____) {};
 final dummyIndexCallback = (_, __) {};
 final dummyTrackEndCallback = (_, __, ___, ____, _____) {};
 
-typedef PlayerCallback = void Function(Spiff, Duration, Duration);
+typedef PlayCallback = void Function(Spiff, Duration, Duration, bool);
+typedef PauseCallback = void Function(Spiff, Duration, Duration);
 typedef IndexCallback = void Function(Spiff, bool);
 typedef PositionCallback = void Function(Spiff, Duration, Duration, bool);
 typedef ProgressCallback = void Function(Spiff, Duration, Duration, bool);
@@ -46,8 +48,8 @@ abstract class PlayerProvider {
       required TokenRepository tokenRepository,
       required SettingsRepository settingsRepository,
       required OffsetCacheRepository offsetRepository,
-      PlayerCallback? onPlay,
-      PlayerCallback? onPause,
+      PlayCallback? onPlay,
+      PauseCallback? onPause,
       StoppedCallback? onStop,
       IndexCallback? onIndexChange,
       PositionCallback? onPositionChange,
@@ -88,8 +90,8 @@ class DefaultPlayerProvider implements PlayerProvider {
       required TokenRepository tokenRepository,
       required SettingsRepository settingsRepository,
       required OffsetCacheRepository offsetRepository,
-      PlayerCallback? onPlay,
-      PlayerCallback? onPause,
+      PlayCallback? onPlay,
+      PauseCallback? onPause,
       StoppedCallback? onStop,
       IndexCallback? onIndexChange,
       PositionCallback? onPositionChange,
@@ -102,8 +104,8 @@ class DefaultPlayerProvider implements PlayerProvider {
         tokenRepository: tokenRepository,
         settingsRepository: settingsRepository,
         offsetRepository: offsetRepository,
-        onPlay: onPlay ?? dummyPlayerCallback,
-        onPause: onPause ?? dummyPlayerCallback,
+        onPlay: onPlay ?? dummyPlayCallback,
+        onPause: onPause ?? dummyPauseCallback,
         onStop: onStop ?? dummyStoppedCallback,
         onIndexChange: onIndexChange ?? dummyIndexCallback,
         onPositionChange: onPositionChange ?? dummyPositionCallback,

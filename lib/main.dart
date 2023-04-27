@@ -255,6 +255,9 @@ class _TakeoutState extends State<_TakeoutWidget>
       if (state is PlayerPositionState) {
         playing = state.playing;
         progress = state.progress;
+        if (state.buffering) {
+          progress = null;
+        }
       }
       return Stack(alignment: Alignment.center, children: [
         FloatingActionButton(

@@ -131,13 +131,13 @@ class PlayerWidget extends StatelessWidget {
 
   Widget playerControls(BuildContext context) {
     return BlocBuilder<Player, PlayerState>(
-        buildWhen: (_, state) => state is PlayerPositionState,
+        buildWhen: (_, state) => state is PlayerPlay || state is PlayerPause,
         builder: (context, state) {
           if (state.spiff.isEmpty) {
             return const EmptyWidget();
           }
-          if (state is PlayerPositionState) {
-            return _controlButtons(context, state, state.playing);
+          if (state is PlayerPlay || state is PlayerPause) {
+            return _controlButtons(context, state as PlayerPositionState);
           }
           return const EmptyWidget();
         });
@@ -192,11 +192,12 @@ class PlayerWidget extends StatelessWidget {
             onChangeEnd: (newPosition) => player.seek(newPosition)));
   }
 
-  Widget _controlButtons(
-      BuildContext context, PlayerState state, bool playing) {
+  Widget _controlButtons(BuildContext context, PlayerPositionState state) {
     final player = context.player;
     final isPodcast = state.spiff.isPodcast();
     final isStream = state.spiff.isStream();
+    final playing = state.playing;
+    final buffering = state.buffering;
     return Container(
         padding: const EdgeInsets.fromLTRB(0, 0, 0, 0),
         child: Row(
@@ -215,7 +216,13 @@ class PlayerWidget extends StatelessWidget {
                 iconSize: 36,
                 onPressed: () => player.skipBackward(),
               ),
-            if (playing)
+            if (buffering)
+              // CircularProgressIndicator is 64 by default
+              // 22 padding keeps the screen in-place
+              Container(
+                  padding: const EdgeInsets.all(22.0),
+                  child: const CircularProgressIndicator())
+            else if (playing)
               IconButton(
                 icon: const Icon(Icons.pause),
                 iconSize: 64.0,

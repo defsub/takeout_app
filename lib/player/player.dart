@@ -43,9 +43,11 @@ abstract class PlayerPositionState extends PlayerState {
   final Duration duration;
   final Duration position;
   final bool playing;
+  final bool buffering;
 
   PlayerPositionState(super.spiff,
-      {required this.duration, required this.position, required this.playing});
+      {required this.duration, required this.position, required this.playing,
+        this.buffering = false});
 
   bool get considerPlayed {
     final d = duration * 0.5;
@@ -79,7 +81,8 @@ class PlayerReady extends PlayerState {
 
 class PlayerPlay extends PlayerPositionState {
   PlayerPlay(super.spiff,
-      {required super.duration, required super.position, super.playing = true});
+      {required super.duration, required super.position, super.playing = true,
+        super.buffering = false});
 }
 
 class PlayerPause extends PlayerPositionState {
@@ -156,8 +159,9 @@ class Player extends Cubit<PlayerState> {
         settingsRepository: settingsRepository,
         trackResolver: trackResolver,
         offsetRepository: offsetRepository,
-        onPlay: (spiff, duration, position) =>
-            emit(PlayerPlay(spiff, duration: duration, position: position)),
+        onPlay: (spiff, duration, position, buffering) =>
+            emit(PlayerPlay(spiff, duration: duration, position: position,
+                buffering: buffering)),
         onPause: (spiff, duration, position) =>
             emit(
                 PlayerPause(spiff, duration: duration, position: position)),

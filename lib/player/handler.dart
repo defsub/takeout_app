@@ -47,8 +47,8 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
   final OffsetCacheRepository offsetRepository;
 
   final AudioPlayer _player = AudioPlayer();
-  final PlayerCallback onPlay;
-  final PlayerCallback onPause;
+  final PlayCallback onPlay;
+  final PauseCallback onPause;
   final StoppedCallback onStop;
   final IndexCallback onIndexChange;
   final PositionCallback onPositionChange;
@@ -89,8 +89,8 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
       required TokenRepository tokenRepository,
       required SettingsRepository settingsRepository,
       required OffsetCacheRepository offsetRepository,
-      required PlayerCallback onPlay,
-      required PlayerCallback onPause,
+      required PlayCallback onPlay,
+      required PauseCallback onPause,
       required StoppedCallback onStop,
       required IndexCallback onIndexChange,
       required PositionCallback onPositionChange,
@@ -241,12 +241,17 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
       if (_player.currentIndex == null) {
         return;
       }
-      if (state.processingState == ProcessingState.ready) {
-        if (state.playing) {
-          onPlay(_spiff, _player.duration ?? Duration.zero, _player.position);
-        } else {
-          onPause(_spiff, _player.duration ?? Duration.zero, _player.position);
-        }
+      if (state.playing) {
+        onPlay(
+            _spiff,
+            _player.duration ?? Duration.zero,
+            _player.position,
+            state.processingState == ProcessingState.loading ||
+                state.processingState == ProcessingState.buffering);
+      } else if (state.processingState == ProcessingState.ready ||
+          state.processingState == ProcessingState.completed) {
+        // only send pause (ready to play) if ready or completed
+        onPause(_spiff, _player.duration ?? Duration.zero, _player.position);
       }
     }));
 
@@ -257,8 +262,10 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
             minPeriod: const Duration(seconds: 1),
             maxPeriod: const Duration(seconds: 5))
         .listen((position) {
-      onProgressChange(_spiff, _player.duration ?? Duration.zero,
-          _player.position, _player.playing);
+      if (_player.processingState == ProcessingState.ready) {
+        onProgressChange(_spiff, _player.duration ?? Duration.zero,
+            _player.position, _player.playing);
+      }
     }));
   }
 
