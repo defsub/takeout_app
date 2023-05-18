@@ -63,60 +63,81 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
   final _queue = <MediaItem>[];
 
   final Duration _skipToBeginningInterval;
+  final int _positionSteps;
+  final Duration _minPositionPeriod;
+  final Duration _maxPositionPeriod;
 
-  TakeoutPlayerHandler._(
-      {required this.onPlay,
-      required this.onPause,
-      required this.onStop,
-      required this.onIndexChange,
-      required this.onPositionChange,
-      required this.onDurationChange,
-      required this.onProgressChange,
-      required this.onTrackChange,
-      required this.onTrackEnd,
-      required this.trackResolver,
-      required this.tokenRepository,
-      required this.settingsRepository,
-      required this.offsetRepository,
-      Duration? skipToBeginningInterval})
-      : _skipToBeginningInterval =
-            skipToBeginningInterval ?? const Duration(seconds: 10) {
+  TakeoutPlayerHandler._({
+    required this.onPlay,
+    required this.onPause,
+    required this.onStop,
+    required this.onIndexChange,
+    required this.onPositionChange,
+    required this.onDurationChange,
+    required this.onProgressChange,
+    required this.onTrackChange,
+    required this.onTrackEnd,
+    required this.trackResolver,
+    required this.tokenRepository,
+    required this.settingsRepository,
+    required this.offsetRepository,
+    Duration? skipToBeginningInterval,
+    int? positionSteps,
+    Duration? minPositionPeriod,
+    Duration? maxPositionPeriod,
+  })  : _skipToBeginningInterval = skipToBeginningInterval ??
+            const Duration(
+              seconds: 10,
+            ),
+        _positionSteps = positionSteps ?? 800,
+        _minPositionPeriod =
+            minPositionPeriod ?? const Duration(milliseconds: 16),
+        _maxPositionPeriod =
+            maxPositionPeriod ?? const Duration(milliseconds: 200) {
     _init();
   }
 
-  static Future<TakeoutPlayerHandler> create(
-      {required MediaTrackResolver trackResolver,
-      required TokenRepository tokenRepository,
-      required SettingsRepository settingsRepository,
-      required OffsetCacheRepository offsetRepository,
-      required PlayCallback onPlay,
-      required PauseCallback onPause,
-      required StoppedCallback onStop,
-      required IndexCallback onIndexChange,
-      required PositionCallback onPositionChange,
-      required PositionCallback onDurationChange,
-      required ProgressCallback onProgressChange,
-      required TrackChangeCallback onTrackChange,
-      required TrackEndCallback onTrackEnd,
-      Duration? skipBeginningInterval,
-      Duration? fastForwardInterval,
-      Duration? rewindInterval}) async {
+  static Future<TakeoutPlayerHandler> create({
+    required MediaTrackResolver trackResolver,
+    required TokenRepository tokenRepository,
+    required SettingsRepository settingsRepository,
+    required OffsetCacheRepository offsetRepository,
+    required PlayCallback onPlay,
+    required PauseCallback onPause,
+    required StoppedCallback onStop,
+    required IndexCallback onIndexChange,
+    required PositionCallback onPositionChange,
+    required PositionCallback onDurationChange,
+    required ProgressCallback onProgressChange,
+    required TrackChangeCallback onTrackChange,
+    required TrackEndCallback onTrackEnd,
+    Duration? skipBeginningInterval,
+    Duration? fastForwardInterval,
+    Duration? rewindInterval,
+    int? positionSteps,
+    Duration? minPositionPeriod,
+    Duration? maxPositionPeriod,
+  }) async {
     return await AudioService.init(
         builder: () => TakeoutPlayerHandler._(
-            onPlay: onPlay,
-            onPause: onPause,
-            onStop: onStop,
-            onIndexChange: onIndexChange,
-            onPositionChange: onPositionChange,
-            onDurationChange: onDurationChange,
-            onProgressChange: onProgressChange,
-            onTrackChange: onTrackChange,
-            onTrackEnd: onTrackEnd,
-            trackResolver: trackResolver,
-            tokenRepository: tokenRepository,
-            settingsRepository: settingsRepository,
-            offsetRepository: offsetRepository,
-            skipToBeginningInterval: skipBeginningInterval),
+              onPlay: onPlay,
+              onPause: onPause,
+              onStop: onStop,
+              onIndexChange: onIndexChange,
+              onPositionChange: onPositionChange,
+              onDurationChange: onDurationChange,
+              onProgressChange: onProgressChange,
+              onTrackChange: onTrackChange,
+              onTrackEnd: onTrackEnd,
+              trackResolver: trackResolver,
+              tokenRepository: tokenRepository,
+              settingsRepository: settingsRepository,
+              offsetRepository: offsetRepository,
+              skipToBeginningInterval: skipBeginningInterval,
+              positionSteps: positionSteps,
+              minPositionPeriod: minPositionPeriod,
+              maxPositionPeriod: maxPositionPeriod,
+            ),
         config: AudioServiceConfig(
           androidNotificationIcon: 'drawable/ic_stat_name',
           androidNotificationChannelId: 'com.defsub.takeout.channel.audio',
@@ -173,14 +194,27 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
     }));
 
     // player position changes
-    // TODO consider reducing position update frequency
-    _subscriptions.add(_player.positionStream.listen((position) {
+    _subscriptions.add(_player
+        .createPositionStream(
+            steps: _positionSteps,
+            minPeriod: _minPositionPeriod,
+            maxPeriod: _maxPositionPeriod)
+        .listen((position) {
       if (_player.currentIndex == null) {
         return;
       }
       onPositionChange(_spiff, _player.duration ?? Duration.zero,
           _player.position, _player.playing);
     }));
+
+    // use default positionStream
+    // _subscriptions.add(_player.positionStream.listen((position) {
+    //   if (_player.currentIndex == null) {
+    //     return;
+    //   }
+    //   onPositionChange(_spiff, _player.duration ?? Duration.zero,
+    //       _player.position, _player.playing);
+    // }));
 
     // TODO onTrackEnd isn't called right now
     // FIXME: discontinuity doesn't work due to:
@@ -256,17 +290,17 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
     }));
 
     // create a stream to update progress less frequently than position updates
-    _subscriptions.add(_player
-        .createPositionStream(
-            steps: 100,
-            minPeriod: const Duration(seconds: 1),
-            maxPeriod: const Duration(seconds: 5))
-        .listen((position) {
-      if (_player.processingState == ProcessingState.ready) {
-        onProgressChange(_spiff, _player.duration ?? Duration.zero,
-            _player.position, _player.playing);
-      }
-    }));
+    // _subscriptions.add(_player
+    //     .createPositionStream(
+    //         steps: 100,
+    //         minPeriod: const Duration(seconds: 1),
+    //         maxPeriod: const Duration(seconds: 5))
+    //     .listen((position) {
+    //   if (_player.processingState == ProcessingState.ready) {
+    //     onProgressChange(_spiff, _player.duration ?? Duration.zero,
+    //         _player.position, _player.playing);
+    //   }
+    // }));
   }
 
   void dispose() {

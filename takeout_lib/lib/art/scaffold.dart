@@ -21,11 +21,18 @@ import 'builder.dart';
 
 typedef ScaffoldBodyFunc = Widget? Function(Color?);
 
-Widget scaffold(BuildContext context, {String? image, ScaffoldBodyFunc? body}) {
+Widget scaffold(BuildContext context,
+    {String? image,
+    ScaffoldBodyFunc? body,
+    Widget? drawer,
+    Widget? bottomSheet}) {
   return FutureBuilder<Color?>(
       future: image != null ? getImageBackgroundColor(context, image) : null,
       builder: (context, snapshot) {
         return Scaffold(
-            backgroundColor: snapshot.data, body: body?.call(snapshot.data));
+            bottomSheet: bottomSheet,
+            drawer: drawer,
+            backgroundColor: snapshot.data,
+            body: body?.call(snapshot.data));
       });
 }

@@ -150,6 +150,7 @@ class Player extends Cubit<PlayerState> {
     required this.tokenRepository,
     required this.settingsRepository,
     required this.offsetRepository,
+    PositionInterval? positionInterval,
     PlayerProvider? provider})
       : _provider = provider ?? DefaultPlayerProvider(),
         super(PlayerInit()) {
@@ -159,6 +160,7 @@ class Player extends Cubit<PlayerState> {
         settingsRepository: settingsRepository,
         trackResolver: trackResolver,
         offsetRepository: offsetRepository,
+        positionInterval: positionInterval,
         onPlay: (spiff, duration, position, buffering) =>
             emit(PlayerPlay(spiff, duration: duration, position: position,
                 buffering: buffering)),

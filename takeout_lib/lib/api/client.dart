@@ -59,6 +59,9 @@ class _ClientError extends Error {
   }
 }
 
+class CodeError extends Error {}
+class InvalidCodeError extends CodeError {}
+
 class _ClientWithUserAgent extends http.BaseClient {
   static final log = Logger('HttpClient');
 
@@ -322,6 +325,73 @@ class TakeoutClient implements ClientProvider {
     } on ClientException {
       return false;
     }
+  }
+
+  /// GET /api/code
+  /// Request a code for external authorization. This returns a code and access token.
+  /// After extern authorization, POST the code with access token to authorize.
+  Future<AccessCode> code() async {
+    const uri = '/api/code';
+    try {
+      log.fine('GET $endpoint$uri');
+      final response = await _client.get(Uri.parse('$endpoint$uri'));
+      log.fine('got ${response.statusCode}');
+      if (response.statusCode == 200) {
+        final result =
+            jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+        return AccessCode.fromJson(result);
+      }
+      return Future.error(CodeError());
+    } catch (e) {
+      return Future.error(e);
+    }
+  }
+
+  /// POST /api/code
+  /// Send the code with access token to complete authorization.
+  /// If this successful, the resulting tokens are stored and client is authorized.
+  /// If not successful, try again.
+  /// InvalidCodeError is returned if the code is invalid or expired.
+  Future<bool> checkCode(AccessCode accessCode) async {
+    const uri = '/api/code';
+    bool success = false;
+    try {
+      log.fine('POST $endpoint$uri');
+      final headers = {
+        HttpHeaders.contentTypeHeader: ContentType.json.toString(),
+        HttpHeaders.authorizationHeader: 'Bearer ${accessCode.accessToken}',
+      };
+      final body = jsonEncode(Code(code: accessCode.code).toJson());
+      final response = await _client.post(
+        Uri.parse('$endpoint$uri'),
+        body: body,
+        headers: headers,
+      );
+      log.fine('got ${response.statusCode}');
+      if (response.statusCode == 200) {
+        final result =
+            jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+        log.fine(result);
+        if (result.containsKey(fieldAccessToken) &&
+            result.containsKey(fieldMediaToken) &&
+            result.containsKey(fieldRefreshToken)) {
+          tokenRepository.add(
+              accessToken: result[fieldAccessToken] as String,
+              mediaToken: result[fieldMediaToken] as String,
+              refreshToken: result[fieldRefreshToken] as String);
+          success = true;
+        }
+      } else if (response.statusCode == 403) {
+        // 403 code not linked yet, can try again
+        success = false;
+      } else {
+        // 401 code is bad or expired
+        return Future.error(InvalidCodeError());
+      }
+    } on TlsException catch (e) {
+      return Future.error(e);
+    }
+    return success;
   }
 
   /// GET /api/token

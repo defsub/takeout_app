@@ -23,8 +23,10 @@ import 'player.dart';
 
 class PlayerScaffold extends StatelessWidget {
   final ScaffoldBodyFunc? body;
+  final Widget? drawer;
+  final Widget? bottomSheet;
 
-  const PlayerScaffold({super.key, this.body});
+  const PlayerScaffold({super.key, this.body, this.drawer, this.bottomSheet});
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +37,13 @@ class PlayerScaffold extends StatelessWidget {
       if (state is PlayerLoad || state is PlayerIndexChange) {
         image = state.currentTrack?.image;
       }
-      return scaffold(context, image: image, body: body);
+      return scaffold(
+        context,
+        image: image,
+        body: body,
+        drawer: drawer,
+        bottomSheet: bottomSheet,
+      );
     });
   }
 }

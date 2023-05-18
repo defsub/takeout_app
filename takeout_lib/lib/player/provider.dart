@@ -42,12 +42,28 @@ typedef TrackChangeCallback = void Function(Spiff, int index, {String? title});
 typedef TrackEndCallback = void Function(
     Spiff, int index, Duration, Duration, bool);
 
+class PositionInterval {
+  final int steps;
+  final Duration minPeriod;
+  final Duration maxPeriod;
+
+  /// from just_audio:
+  /// The stream will aim to emit [steps] position updates from the
+  /// beginning to the end of the current audio source, at intervals of
+  /// [duration] / [steps]. This interval will be clipped between [minPeriod]
+  /// and [maxPeriod]. This stream will not emit values while audio playback is
+  /// paused or stalled.
+  PositionInterval(
+      {required this.steps, required this.minPeriod, required this.maxPeriod});
+}
+
 abstract class PlayerProvider {
   Future<void> init(
       {required MediaTrackResolver trackResolver,
       required TokenRepository tokenRepository,
       required SettingsRepository settingsRepository,
       required OffsetCacheRepository offsetRepository,
+      PositionInterval? positionInterval,
       PlayCallback? onPlay,
       PauseCallback? onPause,
       StoppedCallback? onStop,
@@ -90,6 +106,7 @@ class DefaultPlayerProvider implements PlayerProvider {
       required TokenRepository tokenRepository,
       required SettingsRepository settingsRepository,
       required OffsetCacheRepository offsetRepository,
+      PositionInterval? positionInterval,
       PlayCallback? onPlay,
       PauseCallback? onPause,
       StoppedCallback? onStop,
@@ -104,6 +121,9 @@ class DefaultPlayerProvider implements PlayerProvider {
         tokenRepository: tokenRepository,
         settingsRepository: settingsRepository,
         offsetRepository: offsetRepository,
+        positionSteps: positionInterval?.steps,
+        minPositionPeriod: positionInterval?.minPeriod,
+        maxPositionPeriod: positionInterval?.maxPeriod,
         onPlay: onPlay ?? dummyPlayCallback,
         onPause: onPause ?? dummyPauseCallback,
         onStop: onStop ?? dummyStoppedCallback,

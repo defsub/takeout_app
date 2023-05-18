@@ -25,7 +25,7 @@ typedef VoidContextCallback = void Function(BuildContext);
 
 extension TakeoutDuration on Duration {
   String get inHoursMinutes {
-    var mins = inMinutes.remainder(60);
+    final mins = inMinutes.remainder(60);
     return inHours > 0 ? '${inHours}h ${mins}m' : '${mins}m';
   }
 

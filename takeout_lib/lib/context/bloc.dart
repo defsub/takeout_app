@@ -40,6 +40,7 @@ import 'package:takeout_lib/media_type/media_type.dart';
 import 'package:takeout_lib/player/player.dart';
 import 'package:takeout_lib/player/playing.dart';
 import 'package:takeout_lib/player/playlist.dart';
+import 'package:takeout_lib/player/provider.dart';
 import 'package:takeout_lib/settings/repository.dart';
 import 'package:takeout_lib/settings/settings.dart';
 import 'package:takeout_lib/spiff/model.dart';
@@ -101,6 +102,8 @@ class TakeoutBloc {
 
     final historyRepository = HistoryRepository(directory: directory);
 
+    final artProvider = ArtProvider(settingsRepository, clientRepository);
+
     return [
       RepositoryProvider(create: (_) => search),
       RepositoryProvider(create: (_) => settingsRepository),
@@ -113,8 +116,7 @@ class TakeoutBloc {
       RepositoryProvider(create: (_) => tokenRepository),
       RepositoryProvider(create: (_) => trackResolver),
       RepositoryProvider(create: (_) => historyRepository),
-      RepositoryProvider(
-          create: (_) => ArtProvider(settingsRepository, clientRepository)),
+      RepositoryProvider(create: (_) => artProvider),
     ];
   }
 
@@ -139,12 +141,7 @@ class TakeoutBloc {
         context.read<TokenRepository>().init(tokens);
         return tokens;
       }),
-      BlocProvider(
-          create: (context) => Player(
-              offsetRepository: context.read<OffsetCacheRepository>(),
-              settingsRepository: context.read<SettingsRepository>(),
-              tokenRepository: context.read<TokenRepository>(),
-              trackResolver: context.read<MediaTrackResolver>())),
+      BlocProvider(create: (context) => createPlayer(context)),
       BlocProvider(
           create: (context) =>
               SpiffCacheCubit(context.read<SpiffCacheRepository>())),
@@ -220,6 +217,16 @@ class TakeoutBloc {
             _onDownloadChange(context, state);
           }),
     ];
+  }
+
+  Player createPlayer(BuildContext context,
+      {PositionInterval? positionInterval}) {
+    return Player(
+        positionInterval: positionInterval,
+        offsetRepository: context.read<OffsetCacheRepository>(),
+        settingsRepository: context.read<SettingsRepository>(),
+        tokenRepository: context.read<TokenRepository>(),
+        trackResolver: context.read<MediaTrackResolver>());
   }
 
   /// NowPlaying manages the playlist that should be playing.

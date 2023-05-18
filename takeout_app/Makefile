@@ -21,9 +21,7 @@ ADB = adb
 
 GIT_VERSION ?= $(shell git log --format="%h" -n 1)
 
-APP_SOURCES = $(wildcard lib/*.dart lib/*/*.dart)
-LIB_SOURCES = $(wildcard takeout_lib/lib/*.dart takeout_lib/lib/*/*.dart)
-SOURCES = ${APP_SOURCES} ${LIB_SOURCES}
+SOURCES = $(wildcard lib/*.dart lib/*/*.dart)
 
 RESOURCES = $(wildcard lib/l10n/*.arb)
 
@@ -33,7 +31,7 @@ RELEASE_APK = ./build/app/outputs/flutter-apk/app-release.apk
 
 DEBUG_APK = ./build/app/outputs/flutter-apk/app-debug.apk
 
-.PHONY: build
+.PHONY: build apk
 
 all: apk
 

@@ -47,6 +47,14 @@ class ClientRepository {
     return _provider.login(user, password);
   }
 
+  Future<AccessCode> code() async {
+    return _provider.code();
+  }
+
+  Future<bool> checkCode(AccessCode accessCode) async {
+    return _provider.checkCode(accessCode);
+  }
+
   Future<ArtistsView> artists({Duration? ttl}) async {
     return _provider.artists(ttl: ttl);
   }

@@ -15,19 +15,28 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
-import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:takeout_lib/context/context.dart';
+import 'package:takeout_watch/player.dart';
 
-import 'model.dart';
-import 'settings.dart';
+import 'app.dart';
 
-class SettingsRepository {
-  SettingsCubit? cubit;
+export 'package:takeout_lib/context/context.dart';
 
-  void init(SettingsCubit cubit) {
-    this.cubit = cubit;
+extension AppContext on BuildContext {
+  // AppLocalizations get strings => AppLocalizations.of(this)!;
+
+  void logout() {
+    tokens.removeAll();
+    app.logout();
   }
 
-  Settings? get settings {
-    return cubit?.state.settings;
+  AppCubit get app => read<AppCubit>();
+
+  void showPlayer(BuildContext context) {
+    Scaffold.of(context).showBottomSheet<void>((context) {
+      return const PlayerPage();
+    });
   }
 }

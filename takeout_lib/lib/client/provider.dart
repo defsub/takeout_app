@@ -26,6 +26,10 @@ abstract class ClientProvider {
 
   Future<bool> login(String user, String password);
 
+  Future<AccessCode> code();
+
+  Future<bool> checkCode(AccessCode accessCode);
+
   Future<ArtistsView> artists({Duration? ttl});
 
   Future<ArtistView> artist(int id, {Duration? ttl});

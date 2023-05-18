@@ -51,3 +51,15 @@ Widget gridPoster(BuildContext context, String url) {
 Widget playerCover(BuildContext context, String url) {
   return ArtworkBuilder(Artwork.playerCover(url), hero: false).build(context);
 }
+
+Widget? circleCover(
+  BuildContext context,
+  String url, {
+  required double radius,
+  double? width,
+  double? height,
+}) {
+  return ArtworkBuilder(
+          Artwork.circleCover(url, radius: radius, height: height))
+      .build(context);
+}

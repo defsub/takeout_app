@@ -61,6 +61,13 @@ class ClientCubit extends Cubit<ClientState> {
       _doit<bool>(({Duration? ttl}) => repository.login(user, password),
           ttl: Duration.zero);
 
+  void code() => _doit<AccessCode>(({Duration? ttl}) => repository.code(),
+      ttl: Duration.zero);
+
+  void checkCode(AccessCode accessCode) =>
+      _doit<bool>(({Duration? ttl}) => repository.checkCode(accessCode),
+          ttl: Duration.zero);
+
   void artists({Duration? ttl}) =>
       _doit<ArtistsView>(({Duration? ttl}) => repository.artists(ttl: ttl),
           ttl: ttl);

@@ -52,6 +52,31 @@ class PatchResult extends PostResult {
 }
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
+class Code {
+  final String code;
+
+  Code({required this.code});
+
+  factory Code.fromJson(Map<String, dynamic> json) =>
+      _$CodeFromJson(json);
+
+  Map<String, dynamic> toJson() => _$CodeToJson(this);
+}
+
+@JsonSerializable(fieldRename: FieldRename.pascal)
+class AccessCode {
+  final String code;
+  final String accessToken;
+
+  AccessCode({required this.code, required this.accessToken});
+
+  factory AccessCode.fromJson(Map<String, dynamic> json) =>
+      _$AccessCodeFromJson(json);
+
+  Map<String, dynamic> toJson() => _$AccessCodeToJson(this);
+}
+
+@JsonSerializable(fieldRename: FieldRename.pascal)
 class IndexView {
   final int time;
   final bool hasMusic;
@@ -415,6 +440,8 @@ class Track extends DownloadIdentifier implements MediaTrack, OffsetIdentifier {
 
   @override
   int get year => _year;
+
+  int get trackIndex => trackNum - 1;
 
   String _trackCoverUrl() {
     final url = groupArtwork ? '/img/mb/rg/$rgid' : '/img/mb/re/$reid';

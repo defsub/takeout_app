@@ -117,6 +117,8 @@ extension TakeoutContext on BuildContext {
     }
   }
 
+  ArtProvider get imageProvider => read<ArtProvider>();
+
   ClientCubit get client => read<ClientCubit>();
 
   ClientRepository get clientRepository => read<ClientRepository>();
@@ -125,13 +127,13 @@ extension TakeoutContext on BuildContext {
 
   DownloadCubit get downloads => read<DownloadCubit>();
 
-  ArtProvider get imageProvider => read<ArtProvider>();
-
   HistoryCubit get history => read<HistoryCubit>();
 
   IndexCubit get index => read<IndexCubit>();
 
   MediaTrackResolver get resolver => read<MediaTrackResolver>();
+
+  MediaTypeCubit get selectedMediaType => read<MediaTypeCubit>();
 
   NowPlayingCubit get nowPlaying => read<NowPlayingCubit>();
 
@@ -143,15 +145,13 @@ extension TakeoutContext on BuildContext {
 
   Search get search => read<Search>();
 
-  MediaTypeCubit get selectedMediaType => read<MediaTypeCubit>();
-
   SettingsCubit get settings => read<SettingsCubit>();
 
   SpiffCacheCubit get spiffCache => read<SpiffCacheCubit>();
 
-  TokensCubit get tokens => read<TokensCubit>();
-
   TokenRepository get tokenRepository => read<TokenRepository>();
+
+  TokensCubit get tokens => read<TokensCubit>();
 
   TrackCacheCubit get trackCache => read<TrackCacheCubit>();
 }

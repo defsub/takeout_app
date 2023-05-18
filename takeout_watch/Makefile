@@ -23,6 +23,8 @@ GIT_VERSION ?= $(shell git log --format="%h" -n 1)
 
 SOURCES = $(wildcard lib/*.dart lib/*/*.dart)
 
+RESOURCES = $(wildcard lib/l10n/*.arb)
+
 TARGET_PLATFORM = android-arm64,android-arm
 
 RELEASE_APK = ./build/app/outputs/flutter-apk/app-release.apk
@@ -51,12 +53,12 @@ generate:
 
 release: ${RELEASE_APK}
 
-${RELEASE_APK}: ${SOURCES}
+${RELEASE_APK}: ${SOURCES} ${RESOURCES}
 	${FLUTTER} build apk --release --target-platform ${TARGET_PLATFORM}
 
 debug: ${DEBUG_APK}
 
-${DEBUG_APK}: ${SOURCES}
+${DEBUG_APK}: ${SOURCES} ${RESOURCES}
 	${FLUTTER} build apk --debug --target-platform ${TARGET_PLATFORM}
 
 bundle: release
