@@ -18,11 +18,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:takeout_lib/api/model.dart';
-import 'package:takeout_lib/art/cover.dart';
 import 'package:takeout_lib/cache/offset.dart';
 import 'package:takeout_lib/page/page.dart';
 import 'package:takeout_lib/util.dart';
 import 'package:takeout_watch/app/context.dart';
+import 'package:takeout_watch/list.dart';
+import 'package:takeout_watch/media.dart';
 import 'package:takeout_watch/player.dart';
 
 class PodcastsPage extends StatelessWidget {
@@ -32,61 +33,16 @@ class PodcastsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SeriesGrid(state.newSeries ?? []);
+    final series = state.newSeries ?? [];
+
+    return MediaGrid(series,
+        onMediaEntry: (context, entry) => _onSeries(context, entry as Series));
   }
 }
 
-class SeriesGrid extends StatelessWidget {
-  final List<Series> series;
-
-  const SeriesGrid(this.series, {super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return GridView.builder(
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 1,
-      ),
-      itemCount: series.length,
-      itemBuilder: (context, index) {
-        return SeriesGridTile(series[index]);
-      },
-    );
-  }
-}
-
-class SeriesGridTile extends StatelessWidget {
-  final Series series;
-
-  const SeriesGridTile(this.series, {super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final media = MediaQuery.of(context);
-    return GestureDetector(
-        onTap: () => onSeries(context),
-        child: GridTile(
-            footer: Material(
-                color: Colors.transparent,
-                clipBehavior: Clip.antiAlias,
-                child: GridTileBar(
-                  backgroundColor: Colors.black26,
-                  title: Center(
-                      child:
-                          Text(series.title, overflow: TextOverflow.ellipsis)),
-                  subtitle: Center(
-                      child: Text(series.creator,
-                          overflow: TextOverflow.ellipsis)),
-                )),
-            child:
-                circleCover(context, series.image, radius: media.size.width) ??
-                    const SizedBox.shrink()));
-  }
-
-  void onSeries(BuildContext context) {
-    Navigator.push(
-        context, MaterialPageRoute<void>(builder: (_) => SeriesPage(series)));
-  }
+void _onSeries(BuildContext context, Series series) {
+  Navigator.push(
+      context, MaterialPageRoute<void>(builder: (_) => SeriesPage(series)));
 }
 
 class SeriesPage extends ClientPage<SeriesView> {
@@ -106,23 +62,9 @@ class SeriesPage extends ClientPage<SeriesView> {
     return Scaffold(
         body: RefreshIndicator(
             onRefresh: () => reloadPage(context),
-            child: CustomScrollView(
-              slivers: [
-                SliverAppBar(
-                    automaticallyImplyLeading: false,
-                    floating: true,
-                    title: Center(
-                        child: Text(series.title,
-                            overflow: TextOverflow.ellipsis))),
-                SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) =>
-                        episodeTile(context, episodes[index], offsets),
-                    childCount: episodes.length,
-                  ),
-                )
-              ],
-            )));
+            child: RotaryList<Episode>(episodes,
+                tileBuilder: (context, episode) =>
+                    episodeTile(context, episode, offsets))));
   }
 
   Widget episodeTile(
@@ -136,13 +78,40 @@ class SeriesPage extends ClientPage<SeriesView> {
     return ListTile(
         title:
             Center(child: Text(episode.title, overflow: TextOverflow.ellipsis)),
-        subtitle:
-            Center(child: Text(merge(subtitle), overflow: TextOverflow.ellipsis)),
+        subtitle: Center(
+            child: Text(merge(subtitle), overflow: TextOverflow.ellipsis)),
         onTap: () => onEpisode(context, episode));
   }
 
   void onEpisode(BuildContext context, Episode episode) {
     context.playlist.replace(episode.reference);
     showPlayer(context);
+  }
+}
+
+typedef EpisodeCallback = void Function(BuildContext, Episode);
+
+class EpisodeTile extends StatelessWidget {
+  final Episode episode;
+  final EpisodeCallback onEpisodeSelected;
+  final OffsetCacheState offsets;
+
+  const EpisodeTile(this.episode,
+      {required this.onEpisodeSelected, required this.offsets, super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    List<String> subtitle = [];
+    final remaining = offsets.remaining(episode);
+    if (remaining != null) {
+      subtitle.add('${remaining.inHoursMinutes} remaining');
+    }
+    subtitle.add(ymd(episode.date));
+    return ListTile(
+        onTap: () => onEpisodeSelected(context, episode),
+        title:
+            Center(child: Text(episode.title, overflow: TextOverflow.ellipsis)),
+        subtitle: Center(
+            child: Text(merge(subtitle), overflow: TextOverflow.ellipsis)));
   }
 }

@@ -17,9 +17,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:takeout_lib/api/model.dart';
-import 'package:takeout_lib/art/cover.dart';
 import 'package:takeout_lib/page/page.dart';
 import 'package:takeout_watch/app/context.dart';
+import 'package:takeout_watch/list.dart';
+import 'package:takeout_watch/media.dart';
 import 'package:takeout_watch/player.dart';
 
 class MusicPage extends StatelessWidget {
@@ -31,76 +32,11 @@ class MusicPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final releases = state.added; // TODO assuming added
     return PageView(children: [
-      ReleasesPage(releases),
+      MediaPage(releases,
+          onMediaEntry: (context, entry) =>
+              _onRelease(context, entry as Release)),
       ArtistsPage(),
     ]);
-  }
-
-  void onRelease(BuildContext context, Release release) {
-    Navigator.push(
-        context, MaterialPageRoute<void>(builder: (_) => ReleasePage(release)));
-  }
-}
-
-class ReleasesPage extends StatelessWidget {
-  final List<Release> releases;
-
-  const ReleasesPage(this.releases, {super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return ReleasesGrid(releases);
-  }
-}
-
-class ReleasesGrid extends StatelessWidget {
-  final List<Release> releases;
-
-  const ReleasesGrid(this.releases, {super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return GridView.builder(
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 1,
-      ),
-      itemCount: releases.length,
-      itemBuilder: (context, index) {
-        return ReleaseGridTile(releases[index]);
-      },
-    );
-  }
-}
-
-class ReleaseGridTile extends StatelessWidget {
-  final Release release;
-
-  const ReleaseGridTile(this.release, {super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final r = release;
-    final media = MediaQuery.of(context);
-    return GestureDetector(
-        onTap: () => onRelease(context, r),
-        child: GridTile(
-            footer: Material(
-                color: Colors.transparent,
-                clipBehavior: Clip.antiAlias,
-                child: GridTileBar(
-                  backgroundColor: Colors.black26,
-                  title: Center(
-                      child: Text(r.name, overflow: TextOverflow.ellipsis)),
-                  subtitle: Center(
-                      child: Text(r.artist, overflow: TextOverflow.ellipsis)),
-                )),
-            child: circleCover(context, r.image, radius: media.size.width) ??
-                const SizedBox.shrink()));
-  }
-
-  void onRelease(BuildContext context, Release release) {
-    Navigator.push(
-        context, MaterialPageRoute<void>(builder: (_) => ReleasePage(release)));
   }
 }
 
@@ -126,8 +62,8 @@ class ArtistsPage extends ClientPage<ArtistsView> {
                       child: Text('Artists', overflow: TextOverflow.ellipsis))),
               SliverList(
                   delegate: SliverChildBuilderDelegate((context, index) {
-                    return artistTile(context, artists[index]);
-                  }, childCount: artists.length)),
+                return artistTile(context, artists[index]);
+              }, childCount: artists.length)),
             ])));
   }
 
@@ -169,10 +105,14 @@ class ArtistPage extends ClientPage<ArtistView> {
                             overflow: TextOverflow.ellipsis))),
                 SliverGrid(
                     gridDelegate:
-                    const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 1),
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 1),
                     delegate: SliverChildBuilderDelegate((context, index) {
-                      return ReleaseGridTile(releases[index]);
+                      return MediaGridTile(
+                        releases[index],
+                        onMediaEntry: (context, entry) =>
+                            _onRelease(context, entry as Release),
+                      );
                     }, childCount: releases.length))
               ],
             )));
@@ -189,29 +129,13 @@ class ReleasePage extends ClientPage<ReleaseView> {
     context.client.release(release.id);
   }
 
-  // foobar
   @override
   Widget page(BuildContext context, ReleaseView state) {
     final tracks = state.tracks;
     return Scaffold(
         body: RefreshIndicator(
             onRefresh: () => reloadPage(context),
-            child: CustomScrollView(
-              slivers: [
-                SliverAppBar(
-                    automaticallyImplyLeading: false,
-                    floating: true,
-                    title: Center(
-                        child: Text(release.name,
-                            overflow: TextOverflow.ellipsis))),
-                SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                        (context, index) => trackTile(context, tracks[index]),
-                    childCount: tracks.length,
-                  ),
-                )
-              ],
-            )));
+            child: RotaryList<Track>(tracks, tileBuilder: trackTile)));
   }
 
   Widget trackTile(BuildContext context, Track t) {
@@ -240,4 +164,9 @@ class ReleasePage extends ClientPage<ReleaseView> {
     context.playlist.replace(release.reference, index: t.trackIndex);
     showPlayer(context);
   }
+}
+
+void _onRelease(BuildContext context, Release release) {
+  Navigator.push(
+      context, MaterialPageRoute<void>(builder: (_) => ReleasePage(release)));
 }

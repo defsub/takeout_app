@@ -17,13 +17,15 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'package:takeout_lib/art/cover.dart';
 import 'package:takeout_lib/empty.dart';
 import 'package:takeout_lib/player/player.dart';
 import 'package:takeout_lib/player/scaffold.dart';
 import 'package:takeout_watch/app/context.dart';
 import 'package:takeout_watch/queue.dart';
-import 'package:percent_indicator/circular_percent_indicator.dart';
+
+import 'button.dart';
 
 void showPlayer(BuildContext context) {
   Scaffold.of(context).showBottomSheet<void>((context) {
@@ -160,21 +162,6 @@ class PlayerPage extends StatelessWidget {
         });
   }
 
-  Widget _controlButton({
-    required Widget icon,
-    void Function()? onPressed,
-    double? iconSize,
-  }) {
-    return Material(
-        shape: const CircleBorder(),
-        color: Colors.black54,
-        child: IconButton(
-          icon: icon,
-          iconSize: iconSize,
-          onPressed: onPressed,
-        ));
-  }
-
   Widget _controlButtons(BuildContext context, PlayerPositionState state) {
     final player = context.player;
     final isPodcast = state.spiff.isPodcast();
@@ -188,7 +175,7 @@ class PlayerPage extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             if (!isStream)
-              _controlButton(
+              CircleButton(
                 icon: const Icon(Icons.skip_previous),
                 iconSize: iconSize,
                 onPressed: state.currentIndex == 0
@@ -196,7 +183,7 @@ class PlayerPage extends StatelessWidget {
                     : () => player.skipToPrevious(),
               ),
             if (isPodcast)
-              _controlButton(
+              CircleButton(
                 icon: const Icon(Icons.replay_10_outlined),
                 iconSize: iconSize,
                 onPressed: () => player.skipBackward(),
@@ -204,25 +191,25 @@ class PlayerPage extends StatelessWidget {
             if (buffering)
               const CircularProgressIndicator()
             else if (playing)
-              _controlButton(
+              CircleButton(
                 icon: const Icon(Icons.pause),
                 iconSize: 36,
                 onPressed: () => player.pause(),
               )
             else
-              _controlButton(
+              CircleButton(
                 icon: const Icon(Icons.play_arrow),
                 iconSize: 36,
                 onPressed: () => player.play(),
               ),
             if (isPodcast)
-              _controlButton(
+              CircleButton(
                 iconSize: iconSize,
                 icon: const Icon(Icons.forward_30_outlined),
                 onPressed: () => player.skipForward(),
               ),
             if (!isStream)
-              _controlButton(
+              CircleButton(
                 iconSize: iconSize,
                 icon: const Icon(Icons.skip_next),
                 onPressed: state.currentIndex == state.lastIndex
@@ -240,34 +227,32 @@ class AmbientPlayer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     String? title, artist;
-    return BlocBuilder<Player, PlayerState>(
-        buildWhen: (_, state) =>
-            state.currentTrack?.title != title ||
-            state.currentTrack?.creator != artist,
-        builder: (context, state) {
-          if (state.currentTrack?.title != title ||
-              state.currentTrack?.creator != artist) {
-            final currentTrack = state.currentTrack;
-            title = currentTrack?.title;
-            artist = currentTrack?.creator;
-            return Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ListTile(
-                    title: Center(
-                        child: Text(
-                      title ?? 'Takeout',
-                      overflow: TextOverflow.ellipsis,
-                    )),
-                    subtitle: Center(
-                        child: Text(
-                      artist ?? 'Ready',
-                      overflow: TextOverflow.ellipsis,
-                    ))),
-              ],
-            );
-          }
-          return const EmptyWidget();
-        });
+    buildWhen(PlayerState state) =>
+        state.currentTrack?.title != title ||
+        state.currentTrack?.creator != artist;
+    return Scaffold(
+        body: BlocBuilder<Player, PlayerState>(
+            buildWhen: (_, state) => buildWhen(state),
+            builder: (context, state) {
+              if (buildWhen(state)) {
+                final currentTrack = state.currentTrack;
+                print('curr is $currentTrack');
+                final t = currentTrack?.title ?? 'Takeout';
+                final a = currentTrack?.creator ?? '';
+                print('title is $t, artist is $a');
+                return Center(
+                    child: ListView(
+                  shrinkWrap: true,
+                  children: [
+                    ListTile(
+                        title: Center(
+                            child: Text(t, overflow: TextOverflow.ellipsis)),
+                        subtitle: Center(
+                            child: Text(a, overflow: TextOverflow.ellipsis))),
+                  ],
+                ));
+              }
+              return const EmptyWidget();
+            }));
   }
 }

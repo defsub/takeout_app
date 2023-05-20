@@ -21,6 +21,15 @@ import 'package:takeout_lib/page/page.dart';
 import 'package:takeout_watch/app/context.dart';
 import 'package:takeout_watch/player.dart';
 
+import 'list.dart';
+
+class RadioEntry {
+  final String title;
+  final List<Station> Function() stations;
+
+  RadioEntry(this.title, this.stations);
+}
+
 class RadioPage extends ClientPage<RadioView> {
   RadioPage({super.key});
 
@@ -31,51 +40,32 @@ class RadioPage extends ClientPage<RadioView> {
 
   @override
   Widget page(BuildContext context, RadioView state) {
+    final entries = [
+      RadioEntry('Genres', () => state.genre ?? []),
+      RadioEntry('Decades', () => state.period ?? []),
+      RadioEntry('Other', () => state.other ?? []),
+      RadioEntry('Streams', () => state.stream ?? []),
+    ];
     return Scaffold(
-        appBar: AppBar(
-            automaticallyImplyLeading: false,
-            title: const Center(
-                child: Text('Radio', overflow: TextOverflow.ellipsis))),
         body: RefreshIndicator(
             onRefresh: () => reloadPage(context),
-            child: Center(
-                child: ListView(shrinkWrap: true, children: [
-                  if (state.genre != null)
-                    tile(context, 'Genres', state.genre ?? []),
-                  if (state.period != null)
-                    tile(context, 'Decades', state.period ?? []),
-                  if (state.other != null)
-                    tile(context, 'Other', state.other ?? []),
-                  if (state.stream != null)
-                    tile(context, 'Streams', state.stream ?? []),
-                ]))));
+            child: RotaryList<RadioEntry>(entries, tileBuilder: radioTile)));
   }
 
-  Widget tile(BuildContext context, String title, List<Station> stations) {
+  Widget radioTile(BuildContext context, RadioEntry entry) {
     return ListTile(
-        title: Center(child: Text(title)),
+        title: Center(child: Text(entry.title)),
         onTap: () {
           Navigator.push(
               context,
               MaterialPageRoute<void>(
-                  builder: (_) => stationsPage(title, stations)));
+                  builder: (_) => stationsPage(entry.title, entry.stations())));
         });
   }
 
   Widget stationsPage(String title, List<Station> stations) {
     return Scaffold(
-        body: CustomScrollView(
-          slivers: [
-            SliverAppBar(
-                automaticallyImplyLeading: false,
-                floating: true,
-                title: Center(child: Text(title, overflow: TextOverflow.ellipsis))),
-            SliverList(
-                delegate: SliverChildBuilderDelegate((context, index) {
-                  return stationTile(context, stations[index]);
-                }, childCount: stations.length))
-          ],
-        ));
+        body: RotaryList<Station>(stations, tileBuilder: stationTile));
   }
 
   Widget stationTile(BuildContext context, Station station) {

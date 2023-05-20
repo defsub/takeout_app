@@ -25,11 +25,13 @@ import 'package:takeout_lib/page/page.dart';
 import 'package:takeout_watch/app/app.dart';
 import 'package:takeout_watch/app/bloc.dart';
 import 'package:takeout_watch/app/context.dart';
-import 'package:takeout_watch/player.dart';
-import 'package:takeout_watch/podcasts.dart';
 import 'package:takeout_watch/music.dart';
+import 'package:takeout_watch/podcasts.dart';
 import 'package:takeout_watch/radio.dart';
 import 'package:wear/wear.dart';
+
+import 'button.dart';
+import 'player.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -57,10 +59,7 @@ class WatchApp extends StatelessWidget {
                   ),
                   home: const MainPage(),
                 )
-              : MaterialApp(
-                  theme: ThemeData.dark(useMaterial3: true)
-                      .copyWith(visualDensity: VisualDensity.compact),
-                  home: const AmbientPlayer());
+              : const EmptyWidget();
         },
         onUpdate: () {
           print('ambient onUpdate');
@@ -114,6 +113,13 @@ class _MainPageState extends State<MainPage>
   }
 }
 
+class HomeEntry {
+  final String title;
+  final void Function(BuildContext, HomeView) onSelected;
+
+  HomeEntry(this.title, this.onSelected);
+}
+
 class HomePage extends ClientPage<HomeView> {
   HomePage({super.key});
 
@@ -130,37 +136,44 @@ class HomePage extends ClientPage<HomeView> {
 
   @override
   Widget page(BuildContext context, HomeView state) {
-    return Scaffold(body: Builder(builder: (context) {
-      return RefreshIndicator(
-          onRefresh: () => reloadPage(context),
-          child: PageView.builder(
-              scrollDirection: Axis.vertical,
-              itemCount: 2,
-              itemBuilder: (context, index) {
-                if (index == 0) {
-                  return Center(
-                    child: ListView(
-                      shrinkWrap: true,
-                      children: [
-                        ListTile(
-                            onTap: () => onMusic(context, state),
-                            title: const Center(child: Text('Music'))),
-                        ListTile(
-                            onTap: () => onPodcasts(context, state),
-                            title: const Center(child: Text('Podcasts'))),
-                        ListTile(
-                            onTap: () => onRadio(context),
-                            title: const Center(child: Text('Radio'))),
-                      ],
-                    ),
-                  );
-                } else if (index == 1) {
-                  return const PlayerPage();
-                } else {
-                  return const EmptyWidget();
-                }
-              }));
-    }));
+    return Scaffold(
+        body: Builder(
+            builder: (context) => RefreshIndicator(
+                onRefresh: () => reloadPage(context),
+                // TODO refresh not working
+                child: Stack(
+                  children: [
+                    Align(
+                        alignment: Alignment.center,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            CircleButton(
+                                icon: const Icon(Icons.podcasts),
+                                onPressed: () => onPodcasts(context, state)),
+                            CircleButton(
+                              icon: const Icon(Icons.radio),
+                              onPressed: () => onRadio(context, state),
+                            ),
+                          ],
+                        )),
+                    Align(
+                        alignment: Alignment.center,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            CircleButton(
+                              icon: const Icon(Icons.music_note),
+                              onPressed: () => onMusic(context, state),
+                            ),
+                            CircleButton(
+                              icon: const Icon(Icons.queue_music),
+                              onPressed: () => onPlayer(context, state),
+                            ),
+                          ],
+                        ))
+                  ],
+                ))));
   }
 
   void onMusic(BuildContext context, HomeView state) {
@@ -173,9 +186,14 @@ class HomePage extends ClientPage<HomeView> {
         context, MaterialPageRoute<void>(builder: (_) => PodcastsPage(state)));
   }
 
-  void onRadio(BuildContext context) {
+  void onRadio(BuildContext context, HomeView _) {
     Navigator.push(
         context, MaterialPageRoute<void>(builder: (_) => RadioPage()));
+  }
+
+  void onPlayer(BuildContext context, HomeView _) {
+    Navigator.push(
+        context, MaterialPageRoute<void>(builder: (_) => const PlayerPage()));
   }
 }
 
