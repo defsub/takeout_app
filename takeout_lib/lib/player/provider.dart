@@ -24,7 +24,7 @@ import 'package:takeout_lib/tokens/repository.dart';
 import 'handler.dart';
 
 final dummyPlayCallback = (_, __, ___, ____) {};
-final dummyPauseCallback = (_, __, ___) {};
+final dummyPauseCallback = (_, __, ___, ____) {};
 final dummyStoppedCallback = (_) {};
 final dummyTrackChangeCallback = (_, __, {String? title}) {};
 final dummyPositionCallback = (_, __, ___, ____) {};
@@ -32,8 +32,9 @@ final dummyProgressCallback = (_, __, ___, ____) {};
 final dummyIndexCallback = (_, __) {};
 final dummyTrackEndCallback = (_, __, ___, ____, _____) {};
 
+typedef LoadCallback = void Function(Spiff, Duration, bool, bool);
 typedef PlayCallback = void Function(Spiff, Duration, Duration, bool);
-typedef PauseCallback = void Function(Spiff, Duration, Duration);
+typedef PauseCallback = void Function(Spiff, Duration, Duration, bool);
 typedef IndexCallback = void Function(Spiff, bool);
 typedef PositionCallback = void Function(Spiff, Duration, Duration, bool);
 typedef ProgressCallback = void Function(Spiff, Duration, Duration, bool);
@@ -74,7 +75,7 @@ abstract class PlayerProvider {
       TrackChangeCallback? onTrackChange,
       TrackEndCallback? onTrackEnd});
 
-  Future<void> load(Spiff spiff);
+  void load(Spiff spiff, {LoadCallback? onLoad});
 
   void play();
 
@@ -136,7 +137,9 @@ class DefaultPlayerProvider implements PlayerProvider {
   }
 
   @override
-  Future<void> load(Spiff spiff) => handler.load(spiff);
+  void load(Spiff spiff, {LoadCallback? onLoad}) {
+    handler.load(spiff, onLoad: onLoad);
+  }
 
   @override
   void play() => handler.play();

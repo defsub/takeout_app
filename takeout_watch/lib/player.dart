@@ -21,7 +21,6 @@ import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'package:takeout_lib/art/cover.dart';
 import 'package:takeout_lib/empty.dart';
 import 'package:takeout_lib/player/player.dart';
-import 'package:takeout_lib/player/scaffold.dart';
 import 'package:takeout_watch/app/context.dart';
 import 'package:takeout_watch/queue.dart';
 
@@ -38,26 +37,22 @@ class PlayerPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    print('player build');
-    return PlayerScaffold(
-      body: (backgroundColor) {
-        return Stack(fit: StackFit.expand, children: [
-          Center(child: playerImage(context)),
-          Positioned.fill(child: playerProgress(context)),
-          Positioned.fill(
-              child: Center(
-                  child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                playerTitle(context),
-                playerArtist(context),
-                const SizedBox(height: 24),
-                playerControls(context),
-              ]))),
-          const Align(alignment: Alignment.bottomCenter, child: PlayerQueue())
-        ]);
-      },
-    );
+    return Scaffold(
+        body: Stack(fit: StackFit.expand, children: [
+      Center(child: playerImage(context)),
+      Positioned.fill(child: playerProgress(context)),
+      Positioned.fill(
+          child: Center(
+              child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+            playerTitle(context),
+            playerArtist(context),
+            const SizedBox(height: 24),
+            playerControls(context),
+          ]))),
+      const Align(alignment: Alignment.bottomCenter, child: PlayerQueue())
+    ]));
   }
 
   Widget playerImage(BuildContext context) {
@@ -67,7 +62,6 @@ class PlayerPage extends StatelessWidget {
     return BlocBuilder<Player, PlayerState>(
         buildWhen: (_, state) => state.currentTrack?.image != image,
         builder: (context, state) {
-          print('playerImage state is ${state.runtimeType.toString()}');
           if (state.currentTrack?.image != image) {
             image = state.currentTrack?.image;
             final cover = image;
@@ -78,6 +72,8 @@ class PlayerPage extends StatelessWidget {
                         cover,
                         radius: width / 2,
                         height: width,
+                        color: Colors.black45,
+                        blendMode: BlendMode.darken,
                       ) ??
                       const EmptyWidget());
             }
@@ -109,19 +105,21 @@ class PlayerPage extends StatelessWidget {
 
   Widget playerTitle(BuildContext context) {
     String? title;
+    final media = MediaQuery.of(context);
     return BlocBuilder<Player, PlayerState>(
         buildWhen: (_, state) => state.currentTrack?.title != title,
         builder: (context, state) {
-          print('playerTitle state is ${state.runtimeType.toString()}');
           if (state.currentTrack?.title != title) {
             final currentTrack = state.currentTrack;
             if (currentTrack == null) {
               return const EmptyWidget();
             }
             title = currentTrack.title;
-            return Text(currentTrack.title,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodyMedium);
+            return ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: media.size.width - 72),
+                child: Text(currentTrack.title,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodyMedium));
           }
           return const EmptyWidget();
         });
@@ -129,19 +127,21 @@ class PlayerPage extends StatelessWidget {
 
   Widget playerArtist(BuildContext context) {
     String? artist;
+    final media = MediaQuery.of(context);
     return BlocBuilder<Player, PlayerState>(
         buildWhen: (_, state) => state.currentTrack?.creator != artist,
         builder: (context, state) {
-          print('playerArtist state is ${state.runtimeType.toString()}');
           if (state.currentTrack?.creator != artist) {
             final currentTrack = state.currentTrack;
             if (currentTrack == null) {
               return const EmptyWidget();
             }
             artist = currentTrack.creator;
-            return Text(currentTrack.creator,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodySmall);
+            return ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: media.size.width - 72),
+                child: Text(currentTrack.creator,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall));
           }
           return const EmptyWidget();
         });
@@ -149,26 +149,22 @@ class PlayerPage extends StatelessWidget {
 
   Widget playerControls(BuildContext context) {
     return BlocBuilder<Player, PlayerState>(
-        buildWhen: (_, state) => state is PlayerPositionState,
+        buildWhen: (_, state) => state is PlayerProcessingState,
         builder: (context, state) {
-          print('playerControls state is ${state.runtimeType.toString()}');
-          if (state.spiff.isEmpty) {
-            return const EmptyWidget();
-          }
-          if (state is PlayerPositionState) {
+          if (state is PlayerProcessingState) {
             return _controlButtons(context, state);
           }
           return const EmptyWidget();
         });
   }
 
-  Widget _controlButtons(BuildContext context, PlayerPositionState state) {
+  Widget _controlButtons(BuildContext context, PlayerProcessingState state) {
     final player = context.player;
     final isPodcast = state.spiff.isPodcast();
     final isStream = state.spiff.isStream();
     final playing = state.playing;
     final buffering = state.buffering;
-    const iconSize = 24.0;
+    const iconSize = 18.0;
     return Container(
         padding: const EdgeInsets.fromLTRB(0, 0, 0, 0),
         child: Row(
@@ -176,45 +172,36 @@ class PlayerPage extends StatelessWidget {
           children: [
             if (!isStream)
               CircleButton(
-                icon: const Icon(Icons.skip_previous),
-                iconSize: iconSize,
-                onPressed: state.currentIndex == 0
-                    ? null
-                    : () => player.skipToPrevious(),
+                icon: const Icon(Icons.skip_previous, size: iconSize),
+                onPressed:
+                    state.hasPrevious ? () => player.skipToPrevious() : null,
               ),
             if (isPodcast)
               CircleButton(
-                icon: const Icon(Icons.replay_10_outlined),
-                iconSize: iconSize,
+                icon: const Icon(Icons.replay_10_outlined, size: iconSize),
                 onPressed: () => player.skipBackward(),
               ),
             if (buffering)
               const CircularProgressIndicator()
             else if (playing)
               CircleButton(
-                icon: const Icon(Icons.pause),
-                iconSize: 36,
+                icon: const Icon(Icons.pause, size: 24),
                 onPressed: () => player.pause(),
               )
             else
               CircleButton(
-                icon: const Icon(Icons.play_arrow),
-                iconSize: 36,
+                icon: const Icon(Icons.play_arrow, size: 24),
                 onPressed: () => player.play(),
               ),
             if (isPodcast)
               CircleButton(
-                iconSize: iconSize,
-                icon: const Icon(Icons.forward_30_outlined),
+                icon: const Icon(Icons.forward_30_outlined, size: iconSize),
                 onPressed: () => player.skipForward(),
               ),
             if (!isStream)
               CircleButton(
-                iconSize: iconSize,
-                icon: const Icon(Icons.skip_next),
-                onPressed: state.currentIndex == state.lastIndex
-                    ? null
-                    : () => player.skipToNext(),
+                icon: const Icon(Icons.skip_next, size: iconSize),
+                onPressed: state.hasNext ? () => player.skipToNext() : null,
               ),
           ],
         ));
@@ -235,20 +222,17 @@ class AmbientPlayer extends StatelessWidget {
             buildWhen: (_, state) => buildWhen(state),
             builder: (context, state) {
               if (buildWhen(state)) {
-                final currentTrack = state.currentTrack;
-                print('curr is $currentTrack');
-                final t = currentTrack?.title ?? 'Takeout';
-                final a = currentTrack?.creator ?? '';
-                print('title is $t, artist is $a');
                 return Center(
                     child: ListView(
                   shrinkWrap: true,
                   children: [
                     ListTile(
                         title: Center(
-                            child: Text(t, overflow: TextOverflow.ellipsis)),
+                            child: Text(title ?? '',
+                                overflow: TextOverflow.ellipsis)),
                         subtitle: Center(
-                            child: Text(a, overflow: TextOverflow.ellipsis))),
+                            child: Text(artist ?? '',
+                                overflow: TextOverflow.ellipsis))),
                   ],
                 ));
               }

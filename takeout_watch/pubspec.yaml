@@ -2,8 +2,6 @@ name: takeout_watch
 description: A new Flutter project.
 publish_to: 'none'
 
-version: 1.0.0+1
-
 environment:
   sdk: '>=2.19.6 <3.0.0'
 
@@ -14,7 +12,7 @@ dependencies:
   takeout_lib:
     path: ../takeout_lib/
 
-  flutter_bloc: ^8.1.1
+  flutter_bloc: ^8.1.3
   cupertino_icons: ^1.0.2
   marquee: ^2.2.3
   percent_indicator: ^4.2.3

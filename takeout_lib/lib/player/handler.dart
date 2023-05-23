@@ -275,17 +275,16 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
       if (_player.currentIndex == null) {
         return;
       }
+      final buffering = state.processingState == ProcessingState.loading ||
+          state.processingState == ProcessingState.buffering;
+      final duration = _player.duration ?? Duration.zero;
       if (state.playing) {
-        onPlay(
-            _spiff,
-            _player.duration ?? Duration.zero,
-            _player.position,
-            state.processingState == ProcessingState.loading ||
-                state.processingState == ProcessingState.buffering);
-      } else if (state.processingState == ProcessingState.ready ||
-          state.processingState == ProcessingState.completed) {
-        // only send pause (ready to play) if ready or completed
-        onPause(_spiff, _player.duration ?? Duration.zero, _player.position);
+        onPlay(_spiff, duration, _player.position, buffering);
+      } else {
+      // } else if (state.processingState == ProcessingState.ready ||
+      //           state.processingState == ProcessingState.completed) {
+      //         // only send pause (ready to play) if ready or completed
+        onPause(_spiff, duration, _player.position, buffering);
       }
     }));
 
@@ -341,7 +340,7 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
     return AudioSource.uri(Uri.parse(item.id), headers: headers);
   }
 
-  Future<void> load(Spiff spiff) async {
+  Future<void> load(Spiff spiff, {LoadCallback? onLoad}) async {
     if (spiff.isEmpty) {
       return;
     }
@@ -378,7 +377,14 @@ class TakeoutPlayerHandler extends BaseAudioHandler with QueueHandler {
     await _player.setAudioSource(source,
         initialIndex: index, initialPosition: position);
 
-    return skipToQueueItem(index);
+    await skipToQueueItem(index);
+
+    onLoad?.call(
+        _spiff,
+        _player.position,
+        _player.playing,
+        _player.processingState == ProcessingState.loading ||
+            _player.processingState == ProcessingState.buffering);
   }
 
   @override

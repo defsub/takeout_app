@@ -58,8 +58,10 @@ Widget? circleCover(
   required double radius,
   double? width,
   double? height,
+  Color? color,
+  BlendMode? blendMode,
 }) {
-  return ArtworkBuilder(
-          Artwork.circleCover(url, radius: radius, height: height))
+  return ArtworkBuilder(Artwork.circleCover(url,
+          radius: radius, height: height, color: color, blendMode: blendMode))
       .build(context);
 }

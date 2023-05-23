@@ -22,6 +22,7 @@ import 'package:takeout_lib/api/model.dart';
 import 'package:takeout_lib/context/bloc.dart';
 import 'package:takeout_lib/empty.dart';
 import 'package:takeout_lib/page/page.dart';
+import 'package:takeout_lib/player/player.dart';
 import 'package:takeout_watch/app/app.dart';
 import 'package:takeout_watch/app/bloc.dart';
 import 'package:takeout_watch/app/context.dart';
@@ -137,43 +138,71 @@ class HomePage extends ClientPage<HomeView> {
   @override
   Widget page(BuildContext context, HomeView state) {
     return Scaffold(
-        body: Builder(
-            builder: (context) => RefreshIndicator(
-                onRefresh: () => reloadPage(context),
-                // TODO refresh not working
-                child: Stack(
-                  children: [
-                    Align(
-                        alignment: Alignment.center,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            CircleButton(
-                                icon: const Icon(Icons.podcasts),
-                                onPressed: () => onPodcasts(context, state)),
-                            CircleButton(
-                              icon: const Icon(Icons.radio),
-                              onPressed: () => onRadio(context, state),
-                            ),
-                          ],
-                        )),
-                    Align(
-                        alignment: Alignment.center,
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            CircleButton(
-                              icon: const Icon(Icons.music_note),
-                              onPressed: () => onMusic(context, state),
-                            ),
-                            CircleButton(
-                              icon: const Icon(Icons.queue_music),
-                              onPressed: () => onPlayer(context, state),
-                            ),
-                          ],
-                        ))
-                  ],
-                ))));
+        body: RefreshIndicator(
+      onRefresh: () => reloadPage(context),
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: SizedBox(
+          height: MediaQuery.of(context).size.height,
+          child: Stack(
+            children: [
+              Align(
+                  alignment: Alignment.center,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      CircleButton(
+                          icon: const Icon(Icons.podcasts),
+                          onPressed: () => onPodcasts(context, state)),
+                      playerButton(),
+                      CircleButton(
+                        icon: const Icon(Icons.radio),
+                        onPressed: () => onRadio(context, state),
+                      ),
+                    ],
+                  )),
+              // Align(alignment: Alignment.center, child: playerButton()),
+              Align(
+                  alignment: Alignment.center,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      CircleButton(
+                        icon: const Icon(Icons.music_note),
+                        onPressed: () => onMusic(context, state),
+                      ),
+                      CircleButton(
+                        icon: const Icon(Icons.queue_music),
+                        onPressed: () => onPlayer(context, state),
+                      ),
+                    ],
+                  )),
+            ],
+          ),
+        ),
+      ),
+    ));
+  }
+
+  Widget playerButton() {
+    return BlocBuilder<Player, PlayerState>(
+        buildWhen: (_, state) => state is PlayerProcessingState,
+        builder: (context, state) {
+          if (state is PlayerProcessingState) {
+            if (state.buffering) {
+              return const CircularProgressIndicator();
+            } else if (state.playing) {
+              return CircleButton(
+                  icon: const Icon(Icons.pause),
+                  onPressed: () => context.player.pause());
+            } else {
+              return CircleButton(
+                  icon: const Icon(Icons.play_arrow),
+                  onPressed: () => context.player.play());
+            }
+          }
+          return const EmptyWidget();
+        });
   }
 
   void onMusic(BuildContext context, HomeView state) {

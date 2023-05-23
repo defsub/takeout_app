@@ -205,9 +205,8 @@ class PlayerWidget extends StatelessWidget {
             if (!isStream)
               IconButton(
                 icon: const Icon(Icons.skip_previous),
-                onPressed: state.currentIndex == 0
-                    ? null
-                    : () => player.skipToPrevious(),
+                onPressed:
+                    state.hasPrevious ? () => player.skipToPrevious() : null,
               ),
             if (isPodcast)
               IconButton(
@@ -243,9 +242,7 @@ class PlayerWidget extends StatelessWidget {
             if (!isStream)
               IconButton(
                 icon: const Icon(Icons.skip_next),
-                onPressed: state.currentIndex == state.lastIndex
-                    ? null
-                    : () => player.skipToNext(),
+                onPressed: state.hasNext ? () => player.skipToNext() : null,
               ),
           ],
         ));

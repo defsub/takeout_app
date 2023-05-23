@@ -32,6 +32,9 @@ abstract class ClientPageBuilder<T> {
               return page(context, value);
             } else {
               load(context);
+              // TODO upon first load ClientLoading is delayed so show some
+              //  progress now
+              return const Center(child: CircularProgressIndicator());
             }
           } else if (state is ClientLoading) {
             return const Center(child: CircularProgressIndicator());

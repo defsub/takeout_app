@@ -34,19 +34,15 @@ class DownloadsWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-            title: Text(context.strings.downloadsLabel),
-            actions: [
-              popupMenu(context, [
-                PopupItem.delete(
-                    context,
-                    context.strings.deleteAll,
-                    (ctx) => _onDeleteAll(ctx)),
-              ])
-            ]),
-        body: SingleChildScrollView(
+        appBar: AppBar(title: Text(context.strings.downloadsLabel), actions: [
+          popupMenu(context, [
+            PopupItem.delete(
+                context, context.strings.deleteAll, (ctx) => _onDeleteAll(ctx)),
+          ])
+        ]),
+        body: const SingleChildScrollView(
             child: Column(
-          children: const [
+          children: [
             DownloadListWidget(),
           ],
         )));
@@ -89,7 +85,10 @@ class DownloadListWidget extends StatefulWidget {
   final List<Spiff> Function(List<Spiff>)? filter;
 
   const DownloadListWidget(
-      {super.key, this.sortType = DownloadSortType.name, this.limit = -1, this.filter});
+      {super.key,
+      this.sortType = DownloadSortType.name,
+      this.limit = -1,
+      this.filter});
 
   @override
   DownloadListState createState() => DownloadListState();
@@ -119,7 +118,6 @@ void downloadsSort(DownloadSortType sortType, List<Spiff> entries) {
 }
 
 class DownloadListState extends State<DownloadListWidget> {
-
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<SpiffCacheCubit, SpiffCacheState>(
@@ -132,7 +130,10 @@ class DownloadListState extends State<DownloadListWidget> {
       return Column(children: [
         ...entries
             .sublist(
-                0, widget.limit == -1 ? entries.length : min(widget.limit, entries.length))
+                0,
+                widget.limit == -1
+                    ? entries.length
+                    : min(widget.limit, entries.length))
             .map((entry) => AlbumListTile(
                 context, entry.creator, entry.title, entry.cover,
                 trailing: IconButton(

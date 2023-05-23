@@ -17,6 +17,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:takeout_lib/api/model.dart';
+import 'package:takeout_lib/media_type/media_type.dart';
 import 'package:takeout_lib/page/page.dart';
 import 'package:takeout_watch/app/context.dart';
 import 'package:takeout_watch/player.dart';
@@ -75,7 +76,10 @@ class RadioPage extends ClientPage<RadioView> {
   }
 
   void onStation(BuildContext context, Station station) {
-    context.playlist.replace(station.reference);
+    final mediaType = station.type == MediaType.stream.name
+        ? MediaType.stream
+        : MediaType.music;
+    context.playlist.replace(station.reference, mediaType: mediaType);
     showPlayer(context);
   }
 }

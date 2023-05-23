@@ -69,6 +69,8 @@ class ArtworkBuilder {
         image: imageProvider,
         width: artwork.width,
         height: artwork.height,
+        color: artwork.color,
+        colorBlendMode: artwork.blendMode,
         fit: artwork.fit,
         placeholderBuilder: (_) => artwork.placeholder ?? placeholder,
         errorBuilder: (context, error, stack) {

@@ -33,21 +33,38 @@ abstract class PlayerState {
 
   int get lastIndex => spiff.length - 1;
 
+  bool get isFirst => currentIndex == 0;
+
+  bool get isLast => currentIndex == lastIndex;
+
+  bool get hasPrevious => currentIndex != 0;
+
+  bool get hasNext => currentIndex != lastIndex;
+
   MediaTrack? get currentTrack =>
       spiff.playlist.tracks.isNotEmpty
           ? spiff.playlist.tracks[currentIndex]
           : null;
 }
 
-abstract class PlayerPositionState extends PlayerState {
-  final Duration duration;
-  final Duration position;
+abstract class PlayerProcessingState extends PlayerState {
   final bool playing;
   final bool buffering;
 
-  PlayerPositionState(super.spiff,
-      {required this.duration, required this.position, required this.playing,
+  PlayerProcessingState(super.spiff,
+      {this.playing = false,
         this.buffering = false});
+}
+
+abstract class PlayerPositionState extends PlayerProcessingState {
+  final Duration duration;
+  final Duration position;
+
+  PlayerPositionState(super.spiff,
+      {required this.duration,
+        required this.position,
+        required super.playing,
+        super.buffering = false});
 
   bool get considerPlayed {
     final d = duration * 0.5;
@@ -65,10 +82,10 @@ abstract class PlayerPositionState extends PlayerState {
   }
 }
 
-class PlayerLoad extends PlayerState {
+class PlayerLoad extends PlayerProcessingState {
   final bool autoplay;
 
-  PlayerLoad(super.spiff, this.autoplay);
+  PlayerLoad(super.spiff, this.autoplay, {super.buffering, super.playing});
 }
 
 class PlayerInit extends PlayerState {
@@ -81,7 +98,9 @@ class PlayerReady extends PlayerState {
 
 class PlayerPlay extends PlayerPositionState {
   PlayerPlay(super.spiff,
-      {required super.duration, required super.position, super.playing = true,
+      {required super.duration,
+        required super.position,
+        super.playing = true,
         super.buffering = false});
 }
 
@@ -89,7 +108,8 @@ class PlayerPause extends PlayerPositionState {
   PlayerPause(super.spiff,
       {required super.duration,
         required super.position,
-        super.playing = false});
+        super.playing = false,
+        super.buffering = false});
 }
 
 class PlayerStop extends PlayerState {
@@ -162,11 +182,11 @@ class Player extends Cubit<PlayerState> {
         offsetRepository: offsetRepository,
         positionInterval: positionInterval,
         onPlay: (spiff, duration, position, buffering) =>
-            emit(PlayerPlay(spiff, duration: duration, position: position,
-                buffering: buffering)),
-        onPause: (spiff, duration, position) =>
-            emit(
-                PlayerPause(spiff, duration: duration, position: position)),
+            emit(PlayerPlay(spiff,
+              duration: duration, position: position, buffering: buffering,)),
+        onPause: (spiff, duration, position, buffering) =>
+            emit(PlayerPause(spiff,
+              duration: duration, position: position, buffering: buffering,)),
         onStop: (spiff) => emit(PlayerStop(spiff)),
         onIndexChange: (spiff, playing) =>
             emit(PlayerIndexChange(spiff, playing)),
@@ -185,15 +205,15 @@ class Player extends Cubit<PlayerState> {
         onTrackChange: (spiff, index, {String? title}) =>
             emit(PlayerTrackChange(spiff, index, title: title)),
         onTrackEnd: (spiff, index, duration, position, playing) =>
-            emit(
-                PlayerTrackEnd(spiff, index, duration: duration,
-                    position: position,
-                    playing: playing)))
+            emit(PlayerTrackEnd(spiff, index, duration: duration,
+                position: position,
+                playing: playing)))
         .whenComplete(() => emit(PlayerReady()));
   }
 
   void load(Spiff spiff, {bool autoplay = false}) {
-    _provider.load(spiff).whenComplete(() => emit(PlayerLoad(spiff, autoplay)));
+    _provider.load(spiff, onLoad: (spiff, position, playing, buffering) =>
+      emit(PlayerLoad(spiff, autoplay, buffering: buffering, playing: playing)));
   }
 
   void play() => _provider.play();

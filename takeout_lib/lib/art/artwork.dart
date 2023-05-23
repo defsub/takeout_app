@@ -37,11 +37,22 @@ class Artwork {
   final BoxFit? fit;
   final BorderRadius? borderRadius;
   final Icon? placeholder;
+  final Color? color;
+  final BlendMode? blendMode;
 
   String get url => _url;
 
-  Artwork(this._url, this.width, this.height, this.fit,
-      {this.aspectRatio = 1.0, this.borderRadius, this.placeholder});
+  Artwork(
+    this._url,
+    this.width,
+    this.height,
+    this.fit, {
+    this.aspectRatio = 1.0,
+    this.borderRadius,
+    this.placeholder,
+    this.color,
+    this.blendMode,
+  });
 
   factory Artwork.artist(String url) =>
       Artwork(url, 1000, 1000, BoxFit.fitHeight,
@@ -56,8 +67,14 @@ class Artwork {
           placeholder: const Icon(Icons.album));
 
   factory Artwork.circleCover(String url,
-          {required double radius, double? width, double? height}) =>
+          {required double radius,
+          double? width,
+          double? height,
+          Color? color,
+          BlendMode? blendMode}) =>
       Artwork(url, width, height, BoxFit.cover,
+          color: color,
+          blendMode: blendMode,
           borderRadius: BorderRadius.circular(radius),
           placeholder: const Icon(Icons.album, size: listTileIconHeight));
 
