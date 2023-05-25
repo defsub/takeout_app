@@ -23,21 +23,25 @@ typedef MediaEntryCallback = void Function(BuildContext, MediaEntry);
 
 class MediaPage extends StatelessWidget {
   final List<MediaEntry> entries;
-  final MediaEntryCallback onMediaEntry;
+  final MediaEntryCallback onTap;
+  final MediaEntryCallback? onLongPress;
 
-  const MediaPage(this.entries, {required this.onMediaEntry, super.key});
+  const MediaPage(this.entries,
+      {required this.onTap, this.onLongPress, super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MediaGrid(entries, onMediaEntry: onMediaEntry);
+    return MediaGrid(entries, onTap: onTap, onLongPress: onLongPress);
   }
 }
 
 class MediaGrid extends StatelessWidget {
   final List<MediaEntry> entries;
-  final MediaEntryCallback onMediaEntry;
+  final MediaEntryCallback onTap;
+  final MediaEntryCallback? onLongPress;
 
-  const MediaGrid(this.entries, {required this.onMediaEntry, super.key});
+  const MediaGrid(this.entries,
+      {required this.onTap, this.onLongPress, super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -47,7 +51,8 @@ class MediaGrid extends StatelessWidget {
       ),
       itemCount: entries.length,
       itemBuilder: (context, index) {
-        return MediaGridTile(entries[index], onMediaEntry: onMediaEntry);
+        return MediaGridTile(entries[index],
+            onTap: onTap, onLongPress: onLongPress);
       },
     );
   }
@@ -55,15 +60,18 @@ class MediaGrid extends StatelessWidget {
 
 class MediaGridTile extends StatelessWidget {
   final MediaEntry entry;
-  final MediaEntryCallback onMediaEntry;
+  final MediaEntryCallback onTap;
+  final MediaEntryCallback? onLongPress;
 
-  const MediaGridTile(this.entry, {required this.onMediaEntry, super.key});
+  const MediaGridTile(this.entry,
+      {required this.onTap, this.onLongPress, super.key});
 
   @override
   Widget build(BuildContext context) {
     final media = MediaQuery.of(context);
     return GestureDetector(
-        onTap: () => onMediaEntry(context, entry),
+        onTap: () => onTap(context, entry),
+        onLongPress: () => onLongPress?.call(context, entry),
         child: GridTile(
             footer: Material(
                 color: Colors.transparent,

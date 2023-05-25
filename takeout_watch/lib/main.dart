@@ -31,7 +31,9 @@ import 'package:takeout_watch/podcasts.dart';
 import 'package:takeout_watch/radio.dart';
 import 'package:wear/wear.dart';
 
-import 'button.dart';
+import 'downloads.dart';
+import 'history.dart';
+import 'list.dart';
 import 'player.dart';
 
 void main() async {
@@ -61,9 +63,6 @@ class WatchApp extends StatelessWidget {
                   home: const MainPage(),
                 )
               : const EmptyWidget();
-        },
-        onUpdate: () {
-          print('ambient onUpdate');
         },
       );
     }));
@@ -115,10 +114,12 @@ class _MainPageState extends State<MainPage>
 }
 
 class HomeEntry {
-  final String title;
-  final void Function(BuildContext, HomeView) onSelected;
+  final Widget title;
+  final Widget? subtitle;
+  final Widget? icon;
+  final void Function(BuildContext, HomeView)? onSelected;
 
-  HomeEntry(this.title, this.onSelected);
+  HomeEntry(this.title, {this.icon, this.subtitle, this.onSelected});
 }
 
 class HomePage extends ClientPage<HomeView> {
@@ -137,51 +138,44 @@ class HomePage extends ClientPage<HomeView> {
 
   @override
   Widget page(BuildContext context, HomeView state) {
+    final entries = [
+      HomeEntry(const PlayerTitle(),
+          // icon: playerButton(),
+          subtitle: const PlayerArtist(),
+          onSelected: (context, state) => onPlayer(context, state)),
+      HomeEntry(const Text('Music'),
+          // icon: const Icon(Icons.music_note),
+          onSelected: (context, state) => onMusic(context, state)),
+      HomeEntry(const Text('Podcasts'),
+          // icon: const Icon(Icons.podcasts),
+          onSelected: (context, state) => onPodcasts(context, state)),
+      HomeEntry(const Text('History'),
+          // icon: const Icon(Icons.history),
+          onSelected: (context, state) => onHistory(context, state)),
+      HomeEntry(const Text('Radio'),
+          // icon: const Icon(Icons.radio),
+          onSelected: (context, state) => onRadio(context, state)),
+      HomeEntry(const Text('Downloads'),
+          // icon: const Icon(Icons.cloud_download_outlined),
+          onSelected: (context, state) => onDownloads(context, state)),
+      HomeEntry(const Text('About'),
+          // icon: const Icon(Icons.info_outline),
+          onSelected: (context, state) => onAbout(context, state)),
+    ];
     return Scaffold(
         body: RefreshIndicator(
-      onRefresh: () => reloadPage(context),
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        child: SizedBox(
-          height: MediaQuery.of(context).size.height,
-          child: Stack(
-            children: [
-              Align(
-                  alignment: Alignment.center,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      CircleButton(
-                          icon: const Icon(Icons.podcasts),
-                          onPressed: () => onPodcasts(context, state)),
-                      playerButton(),
-                      CircleButton(
-                        icon: const Icon(Icons.radio),
-                        onPressed: () => onRadio(context, state),
-                      ),
-                    ],
-                  )),
-              // Align(alignment: Alignment.center, child: playerButton()),
-              Align(
-                  alignment: Alignment.center,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      CircleButton(
-                        icon: const Icon(Icons.music_note),
-                        onPressed: () => onMusic(context, state),
-                      ),
-                      CircleButton(
-                        icon: const Icon(Icons.queue_music),
-                        onPressed: () => onPlayer(context, state),
-                      ),
-                    ],
-                  )),
-            ],
-          ),
-        ),
-      ),
-    ));
+            onRefresh: () => reloadPage(context),
+            child: RotaryList<HomeEntry>(entries,
+                tileBuilder: (context, entry) =>
+                    homeTile(context, entry, state))));
+  }
+
+  Widget homeTile(BuildContext context, HomeEntry entry, HomeView state) {
+    return ListTile(
+        leading: entry.icon,
+        title: Center(child: entry.title),
+        subtitle: entry.subtitle != null ? Center(child: entry.subtitle) : null,
+        onTap: () => entry.onSelected?.call(context, state));
   }
 
   Widget playerButton() {
@@ -190,13 +184,16 @@ class HomePage extends ClientPage<HomeView> {
         builder: (context, state) {
           if (state is PlayerProcessingState) {
             if (state.buffering) {
-              return const CircularProgressIndicator();
+              return const SizedBox.square(
+                  dimension: 24, child: CircularProgressIndicator());
             } else if (state.playing) {
-              return CircleButton(
+              return IconButton(
+                  padding: EdgeInsets.zero,
                   icon: const Icon(Icons.pause),
                   onPressed: () => context.player.pause());
             } else {
-              return CircleButton(
+              return IconButton(
+                  padding: EdgeInsets.zero,
                   icon: const Icon(Icons.play_arrow),
                   onPressed: () => context.player.play());
             }
@@ -216,6 +213,21 @@ class HomePage extends ClientPage<HomeView> {
   }
 
   void onRadio(BuildContext context, HomeView _) {
+    Navigator.push(
+        context, MaterialPageRoute<void>(builder: (_) => RadioPage()));
+  }
+
+  void onHistory(BuildContext context, HomeView _) {
+    Navigator.push(
+        context, MaterialPageRoute<void>(builder: (_) => const HistoryPage()));
+  }
+
+  void onDownloads(BuildContext context, HomeView _) {
+    Navigator.push(
+        context, MaterialPageRoute<void>(builder: (_) => const DownloadsPage()));
+  }
+
+  void onAbout(BuildContext context, HomeView _) {
     Navigator.push(
         context, MaterialPageRoute<void>(builder: (_) => RadioPage()));
   }

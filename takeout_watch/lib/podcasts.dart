@@ -17,6 +17,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:percent_indicator/linear_percent_indicator.dart';
 import 'package:takeout_lib/api/model.dart';
 import 'package:takeout_lib/cache/offset.dart';
 import 'package:takeout_lib/page/page.dart';
@@ -25,6 +26,8 @@ import 'package:takeout_watch/app/context.dart';
 import 'package:takeout_watch/list.dart';
 import 'package:takeout_watch/media.dart';
 import 'package:takeout_watch/player.dart';
+
+import 'dialog.dart';
 
 class PodcastsPage extends StatelessWidget {
   final HomeView state;
@@ -36,7 +39,7 @@ class PodcastsPage extends StatelessWidget {
     final series = state.newSeries ?? [];
 
     return MediaGrid(series,
-        onMediaEntry: (context, entry) => _onSeries(context, entry as Series));
+        onTap: (context, entry) => _onSeries(context, entry as Series));
   }
 }
 
@@ -63,29 +66,24 @@ class SeriesPage extends ClientPage<SeriesView> {
         body: RefreshIndicator(
             onRefresh: () => reloadPage(context),
             child: RotaryList<Episode>(episodes,
-                tileBuilder: (context, episode) =>
-                    episodeTile(context, episode, offsets))));
+                tileBuilder: (context, episode) => EpisodeTile(episode,
+                    onTap: onEpisode,
+                    onLongPress: onDownload,
+                    offsets: offsets))));
   }
-
-  Widget episodeTile(
-      BuildContext context, Episode episode, OffsetCacheState offsets) {
-    List<String> subtitle = [];
-    final remaining = offsets.remaining(episode);
-    if (remaining != null) {
-      subtitle.add('${remaining.inHoursMinutes} remaining');
-    }
-    subtitle.add(ymd(episode.date));
-    return ListTile(
-        title:
-            Center(child: Text(episode.title, overflow: TextOverflow.ellipsis)),
-        subtitle: Center(
-            child: Text(merge(subtitle), overflow: TextOverflow.ellipsis)),
-        onTap: () => onEpisode(context, episode));
-  }
-
+  
   void onEpisode(BuildContext context, Episode episode) {
     context.playlist.replace(episode.reference);
     showPlayer(context);
+  }
+
+  void onDownload(BuildContext context, Episode episode) {
+    confirmDialog(context, title: 'Download?', body: episode.title)
+        .then((confirmed) {
+      if (confirmed != null && confirmed) {
+        context.downloadEpisode(episode);
+      }
+    });
   }
 }
 
@@ -93,25 +91,37 @@ typedef EpisodeCallback = void Function(BuildContext, Episode);
 
 class EpisodeTile extends StatelessWidget {
   final Episode episode;
-  final EpisodeCallback onEpisodeSelected;
+  final EpisodeCallback onTap;
+  final EpisodeCallback? onLongPress;
   final OffsetCacheState offsets;
 
   const EpisodeTile(this.episode,
-      {required this.onEpisodeSelected, required this.offsets, super.key});
+      {required this.onTap,
+      required this.offsets,
+      this.onLongPress,
+      super.key});
 
   @override
   Widget build(BuildContext context) {
-    List<String> subtitle = [];
+    final children = <Widget>[];
+    children.add(Text(ymd(episode.date)));
     final remaining = offsets.remaining(episode);
     if (remaining != null) {
-      subtitle.add('${remaining.inHoursMinutes} remaining');
+      children.add(LinearPercentIndicator(
+          lineHeight: 20.0,
+          progressColor: Colors.blueAccent,
+          backgroundColor: Colors.grey.shade800,
+          barRadius: const Radius.circular(10),
+          center: Text('${remaining.inHoursMinutes} remaining'),
+          percent: offsets.value(episode) ?? 0.0));
     }
-    subtitle.add(ymd(episode.date));
+
     return ListTile(
-        onTap: () => onEpisodeSelected(context, episode),
+        onTap: () => onTap(context, episode),
+        onLongPress: () => onLongPress?.call(context, episode),
         title:
             Center(child: Text(episode.title, overflow: TextOverflow.ellipsis)),
-        subtitle: Center(
-            child: Text(merge(subtitle), overflow: TextOverflow.ellipsis)));
+        subtitle: Column(
+            mainAxisAlignment: MainAxisAlignment.center, children: children));
   }
 }

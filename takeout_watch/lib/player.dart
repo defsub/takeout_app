@@ -37,6 +37,8 @@ class PlayerPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final media = MediaQuery.of(context);
+    final constraints = BoxConstraints(maxWidth: media.size.width - 72);
     return Scaffold(
         body: Stack(fit: StackFit.expand, children: [
       Center(child: playerImage(context)),
@@ -46,8 +48,12 @@ class PlayerPage extends StatelessWidget {
               child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-            playerTitle(context),
-            playerArtist(context),
+            PlayerTitle(
+                boxConstraints: constraints,
+                style: Theme.of(context).textTheme.bodyMedium),
+            PlayerArtist(
+                boxConstraints: constraints,
+                style: Theme.of(context).textTheme.bodySmall),
             const SizedBox(height: 24),
             playerControls(context),
           ]))),
@@ -98,50 +104,6 @@ class PlayerPage extends StatelessWidget {
               progressColor: Colors.blueAccent,
               backgroundColor: Colors.grey.shade800,
             );
-          }
-          return const EmptyWidget();
-        });
-  }
-
-  Widget playerTitle(BuildContext context) {
-    String? title;
-    final media = MediaQuery.of(context);
-    return BlocBuilder<Player, PlayerState>(
-        buildWhen: (_, state) => state.currentTrack?.title != title,
-        builder: (context, state) {
-          if (state.currentTrack?.title != title) {
-            final currentTrack = state.currentTrack;
-            if (currentTrack == null) {
-              return const EmptyWidget();
-            }
-            title = currentTrack.title;
-            return ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: media.size.width - 72),
-                child: Text(currentTrack.title,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodyMedium));
-          }
-          return const EmptyWidget();
-        });
-  }
-
-  Widget playerArtist(BuildContext context) {
-    String? artist;
-    final media = MediaQuery.of(context);
-    return BlocBuilder<Player, PlayerState>(
-        buildWhen: (_, state) => state.currentTrack?.creator != artist,
-        builder: (context, state) {
-          if (state.currentTrack?.creator != artist) {
-            final currentTrack = state.currentTrack;
-            if (currentTrack == null) {
-              return const EmptyWidget();
-            }
-            artist = currentTrack.creator;
-            return ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: media.size.width - 72),
-                child: Text(currentTrack.creator,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodySmall));
           }
           return const EmptyWidget();
         });
@@ -238,5 +200,65 @@ class AmbientPlayer extends StatelessWidget {
               }
               return const EmptyWidget();
             }));
+  }
+}
+
+class PlayerArtist extends StatelessWidget {
+  final BoxConstraints? boxConstraints;
+  final TextStyle? style;
+
+  const PlayerArtist({super.key, this.boxConstraints, this.style});
+
+  @override
+  Widget build(BuildContext context) {
+    String? artist;
+    return BlocBuilder<Player, PlayerState>(
+        buildWhen: (_, state) => state.currentTrack?.creator != artist,
+        builder: (context, state) {
+          if (state.currentTrack?.creator != artist) {
+            final currentTrack = state.currentTrack;
+            if (currentTrack == null) {
+              return const EmptyWidget();
+            }
+            artist = currentTrack.creator;
+            final child = Text(currentTrack.creator,
+                overflow: TextOverflow.ellipsis, style: style);
+            final constraints = boxConstraints;
+            return constraints != null
+                ? ConstrainedBox(constraints: constraints, child: child)
+                : child;
+          }
+          return const EmptyWidget();
+        });
+  }
+}
+
+class PlayerTitle extends StatelessWidget {
+  final BoxConstraints? boxConstraints;
+  final TextStyle? style;
+
+  const PlayerTitle({super.key, this.boxConstraints, this.style});
+
+  @override
+  Widget build(BuildContext context) {
+    String? title;
+    return BlocBuilder<Player, PlayerState>(
+        buildWhen: (_, state) => state.currentTrack?.title != title,
+        builder: (context, state) {
+          if (state.currentTrack?.title != title) {
+            final currentTrack = state.currentTrack;
+            if (currentTrack == null) {
+              return const EmptyWidget();
+            }
+            title = currentTrack.title;
+            final child = Text(currentTrack.title,
+                overflow: TextOverflow.ellipsis, style: style);
+            final constraints = boxConstraints;
+            return constraints != null
+                ? ConstrainedBox(constraints: constraints, child: child)
+                : child;
+          }
+          return const EmptyWidget();
+        });
   }
 }

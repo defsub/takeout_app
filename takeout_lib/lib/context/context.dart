@@ -57,6 +57,11 @@ extension TakeoutContext on BuildContext {
     downloads.addAll(events);
   }
 
+  void remove(Spiff spiff) {
+    trackCache.removeIds(spiff.playlist.tracks);
+    spiffCache.remove(spiff);
+  }
+
   void downloadRelease(Release release) {
     clientRepository
         .releasePlaylist(release.id)

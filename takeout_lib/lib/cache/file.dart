@@ -45,6 +45,16 @@ class FileCacheState {
     }
     return keys.containsAll(set);
   }
+
+  int count(Iterable<FileIdentifier> ids) {
+    var count = 0;
+    for (var e in ids) {
+      if (contains(e)) {
+        count++;
+      }
+    }
+    return count;
+  }
 }
 
 class FileCacheCubit extends Cubit<FileCacheState> {

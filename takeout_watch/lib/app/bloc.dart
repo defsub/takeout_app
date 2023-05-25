@@ -61,8 +61,7 @@ class AppBloc extends TakeoutBloc {
   @override
   void onNowPlayingChange(BuildContext context, Spiff spiff, bool autoplay) {
     super.onNowPlayingChange(context, spiff, autoplay);
-    // include in history and show the player
-    // context.history.add(spiff: Spiff.cleanup(spiff));
+    context.history.add(spiff: Spiff.cleanup(spiff));
     context.app.nowPlaying(spiff);
   }
 }

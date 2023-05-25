@@ -23,6 +23,8 @@ import 'package:takeout_watch/list.dart';
 import 'package:takeout_watch/media.dart';
 import 'package:takeout_watch/player.dart';
 
+import 'dialog.dart';
+
 class MusicPage extends StatelessWidget {
   final HomeView state;
 
@@ -33,7 +35,8 @@ class MusicPage extends StatelessWidget {
     final releases = state.added; // TODO assuming added
     return PageView(children: [
       MediaPage(releases,
-          onMediaEntry: (context, entry) =>
+          onLongPress: (context, entry) => _onDownload(context, entry as Release),
+          onTap: (context, entry) =>
               _onRelease(context, entry as Release)),
       ArtistsPage(),
     ]);
@@ -110,7 +113,7 @@ class ArtistPage extends ClientPage<ArtistView> {
                     delegate: SliverChildBuilderDelegate((context, index) {
                       return MediaGridTile(
                         releases[index],
-                        onMediaEntry: (context, entry) =>
+                        onTap: (context, entry) =>
                             _onRelease(context, entry as Release),
                       );
                     }, childCount: releases.length))
@@ -169,4 +172,12 @@ class ReleasePage extends ClientPage<ReleaseView> {
 void _onRelease(BuildContext context, Release release) {
   Navigator.push(
       context, MaterialPageRoute<void>(builder: (_) => ReleasePage(release)));
+}
+
+void _onDownload(BuildContext context, Release release) {
+  confirmDialog(context, title: 'Download?', body: release.name).then((confirmed) {
+    if (confirmed != null && confirmed) {
+      context.downloadRelease(release);
+    }
+  });
 }

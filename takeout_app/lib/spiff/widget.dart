@@ -203,8 +203,7 @@ class SpiffWidget extends ClientPage<Spiff> {
   }
 
   void _onDeleteConfirmed(BuildContext context, Spiff spiff) {
-    context.trackCache.removeIds(spiff.playlist.tracks);
-    context.spiffCache.remove(spiff);
+    context.remove(spiff);
   }
 }
 
