@@ -88,7 +88,7 @@ class TakeoutBloc {
 
     final tokenRepository = TokenRepository();
 
-    final clientRepository = ClientRepository(
+    final clientRepository = createClientRepository(
         settingsRepository: settingsRepository,
         tokenRepository: tokenRepository,
         jsonCacheRepository: jsonCacheRepository);
@@ -217,6 +217,19 @@ class TakeoutBloc {
             _onDownloadChange(context, state);
           }),
     ];
+  }
+
+  ClientRepository createClientRepository({
+    required SettingsRepository settingsRepository,
+    required TokenRepository tokenRepository,
+    required JsonCacheRepository jsonCacheRepository,
+    String? userAgent,
+  }) {
+    return ClientRepository(
+        userAgent: userAgent,
+        settingsRepository: settingsRepository,
+        tokenRepository: tokenRepository,
+        jsonCacheRepository: jsonCacheRepository);
   }
 
   Player createPlayer(BuildContext context,

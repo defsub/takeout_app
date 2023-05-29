@@ -41,7 +41,7 @@ import 'package:takeout_lib/history/history.dart';
 
 extension TakeoutContext on BuildContext {
   void play(Spiff spiff) {
-    nowPlaying.add(spiff, autoplay: true);
+    nowPlaying.add(spiff, autoplay: settings.state.settings.autoplay);
   }
 
   void stream(int station) {

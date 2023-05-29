@@ -24,6 +24,7 @@ import 'package:takeout_lib/client/download.dart';
 import 'package:takeout_lib/spiff/model.dart';
 import 'package:takeout_watch/app/context.dart';
 import 'package:takeout_watch/player.dart';
+import 'package:takeout_watch/settings.dart';
 
 import 'dialog.dart';
 import 'list.dart';
@@ -78,23 +79,25 @@ class DownloadsPage extends StatelessWidget {
                   Text(spiff.playlist.title, overflow: TextOverflow.ellipsis)),
           subtitle: Column(
               mainAxisAlignment: MainAxisAlignment.center, children: children),
-          onTap: () => onPlay(context, spiff),
+          onTap: () => onSpiff(context, spiff),
           onLongPress: () => onDelete(context, spiff));
     });
   }
 
-  void onPlay(BuildContext context, Spiff spiff) {
+  void onSpiff(BuildContext context, Spiff spiff) {
     if (context.trackCache.state.containsAll(spiff.playlist.tracks) == false) {
-      confirmDialog(context, title: 'Download?').then((confirmed) {
-        if (confirmed != null && confirmed) {
-          // resume download
-          context.download(spiff);
-        } else {
-          // just play
-          context.play(spiff);
-          showPlayer(context);
-        }
-      });
+      if (allowDownload(context)) {
+        confirmDialog(context, title: context.strings.confirmDownload).then((confirmed) {
+          if (confirmed != null && confirmed) {
+            // resume download
+            context.download(spiff);
+          } else {
+            // just play
+            context.play(spiff);
+            showPlayer(context);
+          }
+        });
+      }
     } else {
       context.play(spiff);
       showPlayer(context);
@@ -102,7 +105,7 @@ class DownloadsPage extends StatelessWidget {
   }
 
   void onDelete(BuildContext context, Spiff spiff) {
-    confirmDialog(context, title: 'Delete?', body: spiff.title)
+    confirmDialog(context, title: context.strings.confirmDelete, body: spiff.title)
         .then((confirmed) {
       if (confirmed != null && confirmed) {
         context.remove(spiff);

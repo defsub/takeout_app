@@ -132,7 +132,7 @@ class PlayerPage extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            if (!isStream)
+            if (!isStream && !isPodcast)
               CircleButton(
                 icon: const Icon(Icons.skip_previous, size: iconSize),
                 onPressed:
@@ -160,7 +160,7 @@ class PlayerPage extends StatelessWidget {
                 icon: const Icon(Icons.forward_30_outlined, size: iconSize),
                 onPressed: () => player.skipForward(),
               ),
-            if (!isStream)
+            if (!isStream && !isPodcast)
               CircleButton(
                 icon: const Icon(Icons.skip_next, size: iconSize),
                 onPressed: state.hasNext ? () => player.skipToNext() : null,

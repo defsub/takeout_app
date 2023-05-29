@@ -17,6 +17,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:takeout_lib/context/context.dart';
 import 'package:takeout_watch/player.dart';
 
@@ -25,7 +26,7 @@ import 'app.dart';
 export 'package:takeout_lib/context/context.dart';
 
 extension AppContext on BuildContext {
-  // AppLocalizations get strings => AppLocalizations.of(this)!;
+  AppLocalizations get strings => AppLocalizations.of(this)!;
 
   void logout() {
     tokens.removeAll();

@@ -33,11 +33,17 @@ class ConnectivityState {
 
   bool get ethernet => type == ConnectivityType.ethernet;
 
+  bool get bluetooth => type == ConnectivityType.bluetooth;
+
+  bool get vpn => type == ConnectivityType.vpn;
+
   bool get none => type == ConnectivityType.none;
 
   bool get any =>
       type == ConnectivityType.wifi ||
       type == ConnectivityType.mobile ||
+      type == ConnectivityType.bluetooth ||
+      type == ConnectivityType.vpn ||
       type == ConnectivityType.ethernet;
 }
 

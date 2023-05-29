@@ -20,11 +20,15 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nested/nested.dart';
+import 'package:takeout_lib/cache/json_repository.dart';
 import 'package:takeout_lib/cache/prune.dart';
+import 'package:takeout_lib/client/repository.dart';
 import 'package:takeout_lib/context/bloc.dart';
 import 'package:takeout_lib/player/player.dart';
 import 'package:takeout_lib/player/provider.dart';
+import 'package:takeout_lib/settings/repository.dart';
 import 'package:takeout_lib/spiff/model.dart';
+import 'package:takeout_lib/tokens/repository.dart';
 import 'package:takeout_lib/tokens/tokens.dart';
 
 import 'app.dart';
@@ -35,6 +39,21 @@ class AppBloc extends TakeoutBloc {
   List<SingleChildWidget> blocs() {
     return List<SingleChildWidget>.from(super.blocs())
       ..add(BlocProvider(create: (_) => AppCubit()));
+  }
+
+  @override
+  ClientRepository createClientRepository({
+    required SettingsRepository settingsRepository,
+    required TokenRepository tokenRepository,
+    required JsonCacheRepository jsonCacheRepository,
+    String? userAgent,
+  }) {
+    return super.createClientRepository(
+      userAgent: 'Takeout-Watch',
+      settingsRepository: settingsRepository,
+      tokenRepository: tokenRepository,
+      jsonCacheRepository: jsonCacheRepository,
+    );
   }
 
   @override

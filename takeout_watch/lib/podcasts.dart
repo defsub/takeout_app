@@ -20,12 +20,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:percent_indicator/linear_percent_indicator.dart';
 import 'package:takeout_lib/api/model.dart';
 import 'package:takeout_lib/cache/offset.dart';
+import 'package:takeout_lib/media_type/media_type.dart';
 import 'package:takeout_lib/page/page.dart';
 import 'package:takeout_lib/util.dart';
 import 'package:takeout_watch/app/context.dart';
 import 'package:takeout_watch/list.dart';
 import 'package:takeout_watch/media.dart';
 import 'package:takeout_watch/player.dart';
+import 'package:takeout_watch/settings.dart';
 
 import 'dialog.dart';
 
@@ -55,7 +57,14 @@ class SeriesPage extends ClientPage<SeriesView> {
 
   @override
   void load(BuildContext context, {Duration? ttl}) {
-    context.client.series(series.id);
+    context.client.series(series.id, ttl: ttl);
+  }
+
+  @override
+  void reload(BuildContext context) {
+    super.reload(context);
+    // force reload offsets
+    context.offsets.reload();
   }
 
   @override
@@ -71,14 +80,18 @@ class SeriesPage extends ClientPage<SeriesView> {
                     onLongPress: onDownload,
                     offsets: offsets))));
   }
-  
+
   void onEpisode(BuildContext context, Episode episode) {
-    context.playlist.replace(episode.reference);
+    context.playlist.replace(episode.reference,
+        mediaType: MediaType.podcast,
+        creator: episode.creator,
+        title: episode.title);
     showPlayer(context);
   }
 
   void onDownload(BuildContext context, Episode episode) {
-    confirmDialog(context, title: 'Download?', body: episode.title)
+    confirmDialog(context,
+            title: context.strings.confirmDownload, body: episode.title)
         .then((confirmed) {
       if (confirmed != null && confirmed) {
         context.downloadEpisode(episode);
@@ -113,12 +126,16 @@ class EpisodeTile extends StatelessWidget {
           backgroundColor: Colors.grey.shade800,
           barRadius: const Radius.circular(10),
           center: Text('${remaining.inHoursMinutes} remaining'),
+          // TODO intl
           percent: offsets.value(episode) ?? 0.0));
     }
-
+    final enableStreaming = allowStreaming(context);
+    final enableDownload = allowDownload(context);
     return ListTile(
-        onTap: () => onTap(context, episode),
-        onLongPress: () => onLongPress?.call(context, episode),
+        enabled: enableStreaming || enableDownload,
+        onTap: () => enableStreaming ? onTap(context, episode) : null,
+        onLongPress: () =>
+            enableDownload ? onLongPress?.call(context, episode) : null,
         title:
             Center(child: Text(episode.title, overflow: TextOverflow.ellipsis)),
         subtitle: Column(

@@ -28,6 +28,7 @@ class Settings {
   final bool allowMobileStreaming;
   final bool allowMobileDownload;
   final bool allowMobileArtistArtwork;
+  final bool autoplay;
   final HomeGridType homeGridType;
 
   Settings({
@@ -36,6 +37,7 @@ class Settings {
     required this.allowMobileStreaming,
     required this.allowMobileDownload,
     required this.allowMobileArtistArtwork,
+    this.autoplay = true,
     this.homeGridType = HomeGridType.mix,
   });
 
@@ -45,6 +47,7 @@ class Settings {
         allowMobileArtistArtwork: true,
         allowMobileDownload: true,
         allowMobileStreaming: true,
+        autoplay: true,
         homeGridType: HomeGridType.mix,
       );
 
@@ -56,6 +59,7 @@ class Settings {
     bool? allowMobileStreaming,
     bool? allowMobileDownload,
     bool? allowMobileArtistArtwork,
+    bool? autoplay,
     HomeGridType? homeGridType,
   }) =>
       Settings(
@@ -65,6 +69,7 @@ class Settings {
         allowMobileDownload: allowMobileDownload ?? this.allowMobileDownload,
         allowMobileArtistArtwork:
             allowMobileArtistArtwork ?? this.allowMobileArtistArtwork,
+        autoplay: autoplay ?? this.autoplay,
         homeGridType: homeGridType ?? this.homeGridType,
       );
 

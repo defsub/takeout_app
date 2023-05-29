@@ -21,6 +21,7 @@ import 'package:takeout_lib/media_type/media_type.dart';
 import 'package:takeout_lib/page/page.dart';
 import 'package:takeout_watch/app/context.dart';
 import 'package:takeout_watch/player.dart';
+import 'package:takeout_watch/settings.dart';
 
 import 'list.dart';
 
@@ -36,16 +37,16 @@ class RadioPage extends ClientPage<RadioView> {
 
   @override
   void load(BuildContext context, {Duration? ttl}) {
-    context.client.radio();
+    context.client.radio(ttl: ttl);
   }
 
   @override
   Widget page(BuildContext context, RadioView state) {
     final entries = [
-      RadioEntry('Genres', () => state.genre ?? []),
-      RadioEntry('Decades', () => state.period ?? []),
-      RadioEntry('Other', () => state.other ?? []),
-      RadioEntry('Streams', () => state.stream ?? []),
+      RadioEntry(context.strings.genresLabel, () => state.genre ?? []),
+      RadioEntry(context.strings.decadesLabel, () => state.period ?? []),
+      RadioEntry(context.strings.otherLabel, () => state.other ?? []),
+      RadioEntry(context.strings.streamsLabel, () => state.stream ?? []),
     ];
     return Scaffold(
         body: RefreshIndicator(
@@ -70,7 +71,9 @@ class RadioPage extends ClientPage<RadioView> {
   }
 
   Widget stationTile(BuildContext context, Station station) {
+    final enableStreaming = allowStreaming(context);
     return ListTile(
+        enabled: enableStreaming,
         title: Center(child: Text(station.name)),
         onTap: () => onStation(context, station));
   }
@@ -79,7 +82,8 @@ class RadioPage extends ClientPage<RadioView> {
     final mediaType = station.type == MediaType.stream.name
         ? MediaType.stream
         : MediaType.music;
-    context.playlist.replace(station.reference, mediaType: mediaType);
+    context.playlist
+        .replace(station.reference, mediaType: mediaType, title: station.name);
     showPlayer(context);
   }
 }

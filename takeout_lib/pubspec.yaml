@@ -1,6 +1,6 @@
 name: takeout_lib
 description: Takeout Library
-version: 0.11.0
+version: 0.11.1
 publish_to: 'none'
 
 environment:

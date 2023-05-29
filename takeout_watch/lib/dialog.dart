@@ -30,11 +30,11 @@ Future<bool?> confirmDialog(BuildContext context,
             actions: <Widget>[
               TextButton(
                 onPressed: () => Navigator.pop<bool>(context, false),
-                child: const Text('Cancel'),
+                child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
               ),
               TextButton(
                 onPressed: () => Navigator.pop<bool>(context, true),
-                child: const Text('OK'),
+                child: Text(MaterialLocalizations.of(context).okButtonLabel),
               ),
             ],
           ));

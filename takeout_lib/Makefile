@@ -17,6 +17,8 @@
 
 FLUTTER = flutter
 
+DART = dart
+
 ADB = adb
 
 GIT_VERSION ?= $(shell git log --format="%h" -n 1)
@@ -47,7 +49,7 @@ update:
 	${FLUTTER} pub get
 
 generate:
-	${FLUTTER} pub run build_runner build --delete-conflicting-outputs
+	${DART} run build_runner build --delete-conflicting-outputs
 
 release: ${RELEASE_APK}
 

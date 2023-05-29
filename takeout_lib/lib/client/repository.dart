@@ -30,16 +30,17 @@ import 'provider.dart';
 class ClientRepository {
   final ClientProvider _provider;
 
-  ClientRepository(
-      {required SettingsRepository settingsRepository,
-      required JsonCacheRepository jsonCacheRepository,
-      required TokenRepository tokenRepository,
-      ClientProvider? provider})
+  ClientRepository({required SettingsRepository settingsRepository,
+    required JsonCacheRepository jsonCacheRepository,
+    required TokenRepository tokenRepository,
+    String? userAgent,
+    ClientProvider? provider})
       : _provider = provider ??
-            TakeoutClient(
-                settingsRepository: settingsRepository,
-                jsonCacheRepository: jsonCacheRepository,
-                tokenRepository: tokenRepository);
+      TakeoutClient(
+          userAgent: userAgent,
+          settingsRepository: settingsRepository,
+          jsonCacheRepository: jsonCacheRepository,
+          tokenRepository: tokenRepository);
 
   Client get client => _provider.client;
 
@@ -127,7 +128,8 @@ class ClientRepository {
     return _provider.moviePlaylist(id, ttl: ttl);
   }
 
-  Future<GenreView> moviesGenre(String genre, {Duration? ttl = Duration.zero}) async {
+  Future<GenreView> moviesGenre(String genre,
+      {Duration? ttl = Duration.zero}) async {
     return _provider.moviesGenre(genre, ttl: ttl);
   }
 
@@ -155,7 +157,8 @@ class ClientRepository {
     return _provider.popularTracks(ttl: ttl);
   }
 
-  Future<int> download(Uri uri, File file, int size, {Sink<int>? progress}) async {
+  Future<int> download(Uri uri, File file, int size,
+      {Sink<int>? progress}) async {
     return _provider.download(uri, file, size, progress: progress);
   }
 

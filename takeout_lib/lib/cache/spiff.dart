@@ -34,6 +34,8 @@ class SpiffCacheState {
   bool contains(Spiff spiff) {
     return spiffs?.contains(spiff) ?? false;
   }
+
+  int get size => spiffs?.fold<int>(0, (sum, spiff) => sum + spiff.size) ?? 0;
 }
 
 class SpiffCacheCubit extends Cubit<SpiffCacheState> {

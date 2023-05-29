@@ -40,6 +40,8 @@ abstract class FileCacheProvider {
   Future<void> retain(Iterable<FileIdentifier> ids);
 
   Future<Iterable<String>> keys();
+
+  int cacheSize();
 }
 
 class DirectoryFileCache implements FileCacheProvider {
@@ -120,7 +122,7 @@ class DirectoryFileCache implements FileCacheProvider {
   Future<void> removeAll() async {
     await _initialized;
     // copy keys to avoid concurrent modification
-    for (var key in List<String>.from(_entries.keys)) {
+    for (final key in List<String>.from(_entries.keys)) {
       _remove(key);
     }
   }
@@ -129,7 +131,7 @@ class DirectoryFileCache implements FileCacheProvider {
   Future<void> retain(Iterable<FileIdentifier> keep) async {
     await _initialized;
     final removal = Set<String>.from(_entries.keys);
-    for (var e in keep) {
+    for (final e in keep) {
       removal.remove(e.key);
     }
     return Future.forEach<String>(removal, (key) async {
@@ -141,5 +143,14 @@ class DirectoryFileCache implements FileCacheProvider {
   Future<Iterable<String>> keys() async {
     await _initialized;
     return _entries.keys;
+  }
+
+  @override
+  int cacheSize() {
+    var size = 0;
+    for (final e in _entries.values) {
+      size += e.lengthSync();
+    }
+    return size;
   }
 }

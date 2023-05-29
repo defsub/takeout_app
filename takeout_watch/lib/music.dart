@@ -18,10 +18,12 @@
 import 'package:flutter/material.dart';
 import 'package:takeout_lib/api/model.dart';
 import 'package:takeout_lib/page/page.dart';
+import 'package:takeout_lib/settings/model.dart';
 import 'package:takeout_watch/app/context.dart';
 import 'package:takeout_watch/list.dart';
 import 'package:takeout_watch/media.dart';
 import 'package:takeout_watch/player.dart';
+import 'package:takeout_watch/settings.dart';
 
 import 'dialog.dart';
 
@@ -32,12 +34,21 @@ class MusicPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final releases = state.added; // TODO assuming added
+    List<Release> releases;
+    switch (context.settings.state.settings.homeGridType) {
+      case HomeGridType.mix:
+      case HomeGridType.added:
+        releases = state.added;
+        break;
+      default:
+        releases = state.released;
+        break;
+    }
     return PageView(children: [
       MediaPage(releases,
-          onLongPress: (context, entry) => _onDownload(context, entry as Release),
-          onTap: (context, entry) =>
-              _onRelease(context, entry as Release)),
+          onLongPress: (context, entry) =>
+              _onDownload(context, entry as Release),
+          onTap: (context, entry) => _onRelease(context, entry as Release)),
       ArtistsPage(),
     ]);
   }
@@ -48,7 +59,7 @@ class ArtistsPage extends ClientPage<ArtistsView> {
 
   @override
   void load(BuildContext context, {Duration? ttl}) {
-    context.client.artists();
+    context.client.artists(ttl: ttl);
   }
 
   @override
@@ -58,11 +69,12 @@ class ArtistsPage extends ClientPage<ArtistsView> {
         body: RefreshIndicator(
             onRefresh: () => reloadPage(context),
             child: CustomScrollView(slivers: [
-              const SliverAppBar(
+              SliverAppBar(
                   automaticallyImplyLeading: false,
                   floating: true,
                   title: Center(
-                      child: Text('Artists', overflow: TextOverflow.ellipsis))),
+                      child: Text(context.strings.artistsLabel,
+                          overflow: TextOverflow.ellipsis))),
               SliverList(
                   delegate: SliverChildBuilderDelegate((context, index) {
                 return artistTile(context, artists[index]);
@@ -89,7 +101,7 @@ class ArtistPage extends ClientPage<ArtistView> {
 
   @override
   void load(BuildContext context, {Duration? ttl}) {
-    context.client.artist(artist.id);
+    context.client.artist(artist.id, ttl: ttl);
   }
 
   @override
@@ -129,7 +141,7 @@ class ReleasePage extends ClientPage<ReleaseView> {
 
   @override
   void load(BuildContext context, {Duration? ttl}) {
-    context.client.release(release.id);
+    context.client.release(release.id, ttl: ttl);
   }
 
   @override
@@ -147,7 +159,9 @@ class ReleasePage extends ClientPage<ReleaseView> {
       subtitle =
           Center(child: Text(t.trackArtist, overflow: TextOverflow.ellipsis));
     }
+    final enableStreaming = allowStreaming(context);
     return ListTile(
+        enabled: enableStreaming,
         title: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
           Text('${t.trackNum}. ',
               style: Theme.of(context).textTheme.bodySmall,
@@ -158,13 +172,13 @@ class ReleasePage extends ClientPage<ReleaseView> {
         onTap: () => onTrack(context, t));
   }
 
-  void onPlay(BuildContext context) {
-    context.playlist.replace(release.reference);
-    showPlayer(context);
-  }
-
   void onTrack(BuildContext context, Track t) {
-    context.playlist.replace(release.reference, index: t.trackIndex);
+    context.playlist.replace(
+      release.reference,
+      index: t.trackIndex,
+      creator: release.creator,
+      title: release.name,
+    );
     showPlayer(context);
   }
 }
@@ -175,9 +189,13 @@ void _onRelease(BuildContext context, Release release) {
 }
 
 void _onDownload(BuildContext context, Release release) {
-  confirmDialog(context, title: 'Download?', body: release.name).then((confirmed) {
-    if (confirmed != null && confirmed) {
-      context.downloadRelease(release);
-    }
-  });
+  if (allowDownload(context)) {
+    confirmDialog(context,
+            title: context.strings.confirmDownload, body: release.name)
+        .then((confirmed) {
+      if (confirmed != null && confirmed) {
+        context.downloadRelease(release);
+      }
+    });
+  }
 }

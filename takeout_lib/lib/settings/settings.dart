@@ -71,6 +71,11 @@ class SettingsCubit extends HydratedCubit<SettingsState> {
         state.settings.copyWith(allowMobileArtistArtwork: value)));
   }
 
+  set autoplay(bool value) {
+    emit(SettingsState(
+        state.settings.copyWith(autoplay: value)));
+  }
+
   set homeGridType(HomeGridType value) {
     emit(SettingsState(state.settings.copyWith(homeGridType: value)));
   }

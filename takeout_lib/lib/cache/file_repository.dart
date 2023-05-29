@@ -72,6 +72,8 @@ class FileCacheRepository {
     return size;
   }
 
+  int cacheSize() => _cache.cacheSize();
+
   Future<void> retain(Iterable<FileIdentifier> ids) async {
     return _cache.retain(ids);
   }

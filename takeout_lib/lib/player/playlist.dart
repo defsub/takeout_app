@@ -58,12 +58,17 @@ class PlaylistCubit extends Cubit<PlaylistState> {
     load(ttl: Duration.zero);
   }
 
-  void replace(String ref,
-      {int index = 0,
-      double position = 0.0,
-      MediaType mediaType = MediaType.music}) {
+  void replace(
+    String ref, {
+    int index = 0,
+    double position = 0.0,
+    MediaType mediaType = MediaType.music,
+    String? creator,
+    String? title,
+  }) {
     final body =
-        patchReplace(ref, mediaType.name) + patchPosition(index, position);
+        patchReplace(ref, mediaType.name, creator: creator, title: title) +
+            patchPosition(index, position);
     clientRepository.patch(body).then((result) {
       if (result.isModified) {
         final spiff = Spiff.fromJson(result.body);

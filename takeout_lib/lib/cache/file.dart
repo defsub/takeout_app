@@ -46,6 +46,10 @@ class FileCacheState {
     return keys.containsAll(set);
   }
 
+  bool get isNotEmpty => keys.isNotEmpty;
+
+  bool get isEmpty => keys.isEmpty;
+
   int count(Iterable<FileIdentifier> ids) {
     var count = 0;
     for (var e in ids) {
