@@ -22,7 +22,7 @@ import 'package:takeout_lib/client/client.dart';
 import 'package:takeout_lib/empty.dart';
 import 'package:takeout_lib/util.dart';
 
-abstract class ClientPageBuilder<T> {
+abstract mixin class ClientPageBuilder<T> {
   WidgetBuilder builder(BuildContext context, {T? value}) {
     final builder = (context) => BlocProvider(
         create: (context) => ClientCubit(context.clientRepository),

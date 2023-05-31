@@ -915,7 +915,7 @@ class Movie extends DownloadIdentifier
 }
 
 @JsonSerializable(fieldRename: FieldRename.pascal)
-class Series with MediaAlbum {
+class Series extends MediaAlbum {
   @JsonKey(name: 'ID')
   final int id;
   @JsonKey(name: 'SID')

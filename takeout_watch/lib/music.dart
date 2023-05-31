@@ -20,12 +20,11 @@ import 'package:takeout_lib/api/model.dart';
 import 'package:takeout_lib/page/page.dart';
 import 'package:takeout_lib/settings/model.dart';
 import 'package:takeout_watch/app/context.dart';
+import 'package:takeout_watch/dialog.dart';
 import 'package:takeout_watch/list.dart';
 import 'package:takeout_watch/media.dart';
 import 'package:takeout_watch/player.dart';
 import 'package:takeout_watch/settings.dart';
-
-import 'dialog.dart';
 
 class MusicPage extends StatelessWidget {
   final HomeView state;
@@ -64,27 +63,16 @@ class ArtistsPage extends ClientPage<ArtistsView> {
 
   @override
   Widget page(BuildContext context, ArtistsView state) {
-    final artists = state.artists;
     return Scaffold(
         body: RefreshIndicator(
-            onRefresh: () => reloadPage(context),
-            child: CustomScrollView(slivers: [
-              SliverAppBar(
-                  automaticallyImplyLeading: false,
-                  floating: true,
-                  title: Center(
-                      child: Text(context.strings.artistsLabel,
-                          overflow: TextOverflow.ellipsis))),
-              SliverList(
-                  delegate: SliverChildBuilderDelegate((context, index) {
-                return artistTile(context, artists[index]);
-              }, childCount: artists.length)),
-            ])));
+      onRefresh: () => reloadPage(context),
+      child: RotaryList<Artist>(state.artists, tileBuilder: artistTile),
+    ));
   }
 
   Widget artistTile(BuildContext context, Artist artist) {
     return ListTile(
-        title: Center(child: Text(artist.name)),
+        title: Center(child: Text(artist.name, textAlign: TextAlign.center)),
         onTap: () => onArtist(context, artist));
   }
 

@@ -21,7 +21,6 @@
   "homeLabel": "Home",
   "playLabel": "Play",
   "refreshLabel": "Refresh",
-  "deviceInfo": "Device Info",
   "genresLabel": "Genres",
   "otherLabel": "Other",
   "decadesLabel": "Decades",
@@ -36,6 +35,11 @@
   "settingMobileStreaming": "Mobile Streaming",
   "settingMusicGrid": "Music Grid",
   "settingEnabled": "Enabled",
-  "settingDisabled": "Disabled"
+  "settingDisabled": "Disabled",
+  "codeInvalid": "Code invalid",
+  "codeNotLinked": "Not linked",
+  "connectivityLabel": "Connectivity",
+  "deviceLabel": "Device",
+  "displayLabel": "Display"
 }
 

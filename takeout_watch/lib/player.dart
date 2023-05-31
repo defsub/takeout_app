@@ -94,16 +94,18 @@ class PlayerPage extends StatelessWidget {
         buildWhen: (_, state) => state is PlayerPositionChange,
         builder: (context, state) {
           if (state is PlayerPositionChange) {
-            return CircularPercentIndicator(
-              radius: media.size.width / 2,
-              lineWidth: 13.0,
-              animation: true,
-              animateFromLastPercent: true,
-              percent: state.progress,
-              circularStrokeCap: CircularStrokeCap.round,
-              progressColor: Colors.blueAccent,
-              backgroundColor: Colors.grey.shade800,
-            );
+            return (state.spiff.isStream()) // no radio stream progress
+                ? const EmptyWidget()
+                : CircularPercentIndicator(
+                    radius: media.size.width / 2,
+                    lineWidth: 13.0,
+                    animation: true,
+                    animateFromLastPercent: true,
+                    percent: state.progress,
+                    circularStrokeCap: CircularStrokeCap.round,
+                    progressColor: Colors.blueAccent,
+                    backgroundColor: Colors.grey.shade800,
+                  );
           }
           return const EmptyWidget();
         });
@@ -130,7 +132,7 @@ class PlayerPage extends StatelessWidget {
     return Container(
         padding: const EdgeInsets.fromLTRB(0, 0, 0, 0),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             if (!isStream && !isPodcast)
               CircleButton(

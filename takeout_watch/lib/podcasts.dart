@@ -132,7 +132,7 @@ class EpisodeTile extends StatelessWidget {
     final enableStreaming = allowStreaming(context);
     final enableDownload = allowDownload(context);
     return ListTile(
-        enabled: enableStreaming || enableDownload,
+        enabled: enableStreaming,
         onTap: () => enableStreaming ? onTap(context, episode) : null,
         onLongPress: () =>
             enableDownload ? onLongPress?.call(context, episode) : null,

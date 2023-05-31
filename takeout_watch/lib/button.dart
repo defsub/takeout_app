@@ -4,13 +4,18 @@ class CircleButton extends StatelessWidget {
   final Icon icon;
   final VoidCallback? onPressed;
   final EdgeInsetsGeometry? edgeInsetsGeometry;
+  final EdgeInsetsGeometry? padding;
 
   const CircleButton(
-      {required this.icon, this.onPressed, this.edgeInsetsGeometry, super.key});
+      {required this.icon,
+      this.onPressed,
+      this.edgeInsetsGeometry,
+      this.padding,
+      super.key});
 
   @override
   Widget build(BuildContext context) {
-    return ElevatedButton(
+    final button = ElevatedButton(
       style: ElevatedButton.styleFrom(
         shape: const CircleBorder(),
         backgroundColor: Colors.black54,
@@ -19,5 +24,8 @@ class CircleButton extends StatelessWidget {
       onPressed: onPressed,
       child: icon,
     );
+    return padding != null
+        ? Container(padding: padding, child: button)
+        : button;
   }
 }

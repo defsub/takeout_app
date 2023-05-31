@@ -20,6 +20,7 @@ import 'package:takeout_lib/api/client.dart';
 import 'package:takeout_lib/api/model.dart';
 import 'package:takeout_lib/page/page.dart';
 import 'package:takeout_watch/app/context.dart';
+import 'package:takeout_watch/snackbar.dart';
 
 class ConnectPage extends StatelessWidget {
   const ConnectPage({super.key});
@@ -57,11 +58,11 @@ class CodePage extends ClientPage<AccessCode> {
       if (success) {
         Navigator.pop(context);
       } else {
-        print('not linked yet');
+        snackBar(context, context.strings.codeNotLinked);
       }
     }).onError((error, stackTrace) {
       if (error is InvalidCodeError) {
-        print('bummer, try again');
+        snackBar(context, context.strings.codeInvalid);
         reload(context);
       }
     });

@@ -89,7 +89,6 @@ class HomePage extends ClientPage<HomeView> {
         if (trackCache.isNotEmpty)
           HomeEntry(Text(context.strings.downloadsLabel),
               // icon: const Icon(Icons.cloud_download_outlined),
-              subtitle: downloadsSize(context),
               onSelected: (context, state) => onDownloads(context, state)),
         HomeEntry(Text(context.strings.aboutLabel),
             // icon: const Icon(Icons.info_outline),
@@ -192,11 +191,5 @@ class HomePage extends ClientPage<HomeView> {
   void onPlayer(BuildContext context, HomeView _) {
     Navigator.push(
         context, MaterialPageRoute<void>(builder: (_) => const PlayerPage()));
-  }
-
-  Widget? downloadsSize(BuildContext context) {
-    // caller watches state
-    final size = context.trackCache.repository.cacheSize();
-    return size > 0 ? Center(child: Text(storage(size))) : null;
   }
 }
