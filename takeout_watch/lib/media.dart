@@ -25,13 +25,23 @@ class MediaPage extends StatelessWidget {
   final List<MediaEntry> entries;
   final MediaEntryCallback onTap;
   final MediaEntryCallback? onLongPress;
+  final String? title;
+  final String? subtitle;
 
   const MediaPage(this.entries,
-      {required this.onTap, this.onLongPress, super.key});
+      {required this.onTap,
+      this.onLongPress,
+      this.title,
+      this.subtitle,
+      super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MediaGrid(entries, onTap: onTap, onLongPress: onLongPress);
+    return MediaGrid(entries,
+        onTap: onTap,
+        onLongPress: onLongPress,
+        title: title,
+        subtitle: subtitle);
   }
 }
 
@@ -39,20 +49,38 @@ class MediaGrid extends StatelessWidget {
   final List<MediaEntry> entries;
   final MediaEntryCallback onTap;
   final MediaEntryCallback? onLongPress;
+  final String? title;
+  final String? subtitle;
 
   const MediaGrid(this.entries,
-      {required this.onTap, this.onLongPress, super.key});
+      {required this.onTap,
+      this.onLongPress,
+      this.title,
+      this.subtitle,
+      super.key});
 
   @override
   Widget build(BuildContext context) {
+    // TODO sticky header didn't work with GridView
+    // final headerTitle = title;
+    // final headerSubtitle = subtitle;
+    // Widget? header;
+    // if (headerTitle != null) {
+    //   header = ListTile(
+    //       title: Center(child: Text(headerTitle)),
+    //       subtitle: headerSubtitle != null
+    //           ? Center(child: Text(headerSubtitle))
+    //           : null);
+    // }
     return GridView.builder(
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 1,
       ),
       itemCount: entries.length,
       itemBuilder: (context, index) {
-        return MediaGridTile(entries[index],
+        final item = MediaGridTile(entries[index],
             onTap: onTap, onLongPress: onLongPress);
+        return item;
       },
     );
   }
@@ -79,11 +107,14 @@ class MediaGridTile extends StatelessWidget {
                 child: GridTileBar(
                   backgroundColor: Colors.black26,
                   title: Center(
-                      child:
-                          Text(entry.album, overflow: TextOverflow.ellipsis)),
+                      child: Text(entry.album,
+                          style:
+                              Theme.of(context).listTileTheme.titleTextStyle)),
                   subtitle: Center(
-                      child:
-                          Text(entry.creator, overflow: TextOverflow.ellipsis)),
+                      child: Text(entry.creator,
+                          style: Theme.of(context)
+                              .listTileTheme
+                              .subtitleTextStyle)),
                 )),
             child:
                 circleCover(context, entry.image, radius: media.size.width) ??

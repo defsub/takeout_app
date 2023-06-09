@@ -35,18 +35,14 @@ class HistoryPage extends StatelessWidget {
       spiffs.sort((a, b) => b.dateTime.compareTo(a.dateTime));
       return Scaffold(
           body: RotaryList<SpiffHistory>(spiffs,
-              tileBuilder: spiffTile));
+              tileBuilder: spiffTile, title: context.strings.recentLabel));
     });
   }
 
   Widget spiffTile(BuildContext context, SpiffHistory entry) {
     return ListTile(
-        title: Center(
-            child: Text(entry.spiff.playlist.title,
-                overflow: TextOverflow.ellipsis)),
-        subtitle: Center(
-            child: Text(entry.spiff.playlist.creator ?? '',
-                overflow: TextOverflow.ellipsis)),
+        title: Text(entry.spiff.playlist.title),
+        subtitle: Text(entry.spiff.playlist.creator ?? ''),
         onTap: () => onPlay(context, entry.spiff));
   }
 

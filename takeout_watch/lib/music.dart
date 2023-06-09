@@ -15,6 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:takeout_lib/api/model.dart';
 import 'package:takeout_lib/page/page.dart';
@@ -43,13 +44,10 @@ class MusicPage extends StatelessWidget {
         releases = state.released;
         break;
     }
-    return PageView(children: [
-      MediaPage(releases,
-          onLongPress: (context, entry) =>
-              _onDownload(context, entry as Release),
-          onTap: (context, entry) => _onRelease(context, entry as Release)),
-      ArtistsPage(),
-    ]);
+    return MediaPage(releases,
+        title: context.strings.musicLabel,
+        onLongPress: (context, entry) => _onDownload(context, entry as Release),
+        onTap: (context, entry) => _onRelease(context, entry as Release));
   }
 }
 
@@ -66,19 +64,19 @@ class ArtistsPage extends ClientPage<ArtistsView> {
     return Scaffold(
         body: RefreshIndicator(
       onRefresh: () => reloadPage(context),
-      child: RotaryList<Artist>(state.artists, tileBuilder: artistTile),
+      child: RotaryList<Artist>(state.artists,
+          tileBuilder: artistTile, title: context.strings.artistsLabel),
     ));
   }
 
   Widget artistTile(BuildContext context, Artist artist) {
     return ListTile(
-        title: Center(child: Text(artist.name, textAlign: TextAlign.center)),
-        onTap: () => onArtist(context, artist));
+        title: Text(artist.name), onTap: () => onArtist(context, artist));
   }
 
   void onArtist(BuildContext context, Artist artist) {
     Navigator.push(
-        context, MaterialPageRoute<void>(builder: (_) => ArtistPage(artist)));
+        context, CupertinoPageRoute<void>(builder: (_) => ArtistPage(artist)));
   }
 }
 
@@ -95,30 +93,10 @@ class ArtistPage extends ClientPage<ArtistView> {
   @override
   Widget page(BuildContext context, ArtistView state) {
     final releases = state.releases;
-    return Scaffold(
-        body: RefreshIndicator(
-            onRefresh: () => reloadPage(context),
-            child: CustomScrollView(
-              slivers: [
-                SliverAppBar(
-                    automaticallyImplyLeading: false,
-                    floating: true,
-                    title: Center(
-                        child: Text(artist.name,
-                            overflow: TextOverflow.ellipsis))),
-                SliverGrid(
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 1),
-                    delegate: SliverChildBuilderDelegate((context, index) {
-                      return MediaGridTile(
-                        releases[index],
-                        onTap: (context, entry) =>
-                            _onRelease(context, entry as Release),
-                      );
-                    }, childCount: releases.length))
-              ],
-            )));
+    return MediaPage(releases,
+        title: state.artist.name,
+        onLongPress: (context, entry) => _onDownload(context, entry as Release),
+        onTap: (context, entry) => _onRelease(context, entry as Release));
   }
 }
 
@@ -138,24 +116,23 @@ class ReleasePage extends ClientPage<ReleaseView> {
     return Scaffold(
         body: RefreshIndicator(
             onRefresh: () => reloadPage(context),
-            child: RotaryList<Track>(tracks, tileBuilder: trackTile)));
+            child: RotaryList<Track>(tracks,
+                title: state.release.name,
+                subtitle: state.release.artist,
+                tileBuilder: trackTile)));
   }
 
   Widget trackTile(BuildContext context, Track t) {
-    Widget? subtitle;
+    Text? subtitle;
     if (t.trackArtist != release.artist) {
-      subtitle =
-          Center(child: Text(t.trackArtist, overflow: TextOverflow.ellipsis));
+      subtitle = Text(t.trackArtist);
     }
     final enableStreaming = allowStreaming(context);
     return ListTile(
         enabled: enableStreaming,
-        title: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Text('${t.trackNum}. ',
-              style: Theme.of(context).textTheme.bodySmall,
-              overflow: TextOverflow.ellipsis),
-          Text(t.title, overflow: TextOverflow.ellipsis),
-        ]),
+        // leading: Text('${t.trackNum}.',
+        //     style: Theme.of(context).textTheme.bodySmall),
+        title: Text(t.title),
         subtitle: subtitle,
         onTap: () => onTrack(context, t));
   }
@@ -173,7 +150,7 @@ class ReleasePage extends ClientPage<ReleaseView> {
 
 void _onRelease(BuildContext context, Release release) {
   Navigator.push(
-      context, MaterialPageRoute<void>(builder: (_) => ReleasePage(release)));
+      context, CupertinoPageRoute<void>(builder: (_) => ReleasePage(release)));
 }
 
 void _onDownload(BuildContext context, Release release) {

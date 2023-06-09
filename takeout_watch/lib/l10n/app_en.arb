@@ -4,6 +4,7 @@
   "podcastsLabel": "Podcasts",
   "radioLabel": "Radio",
   "historyLabel": "History",
+  "recentLabel": "Recent",
   "downloadsLabel": "Downloads",
   "settingsLabel": "Settings",
   "aboutLabel": "About",
@@ -40,6 +41,8 @@
   "codeNotLinked": "Not linked",
   "connectivityLabel": "Connectivity",
   "deviceLabel": "Device",
-  "displayLabel": "Display"
+  "displayLabel": "Display",
+  "soundLabel": "Sound",
+  "bluetoothLabel": "Bluetooth"
 }
 

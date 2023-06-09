@@ -38,7 +38,8 @@ class DownloadsPage extends StatelessWidget {
         builder: (context, state) {
       final spiffs = state.spiffs ?? [];
       return Scaffold(
-          body: RotaryList<Spiff>(List.from(spiffs), tileBuilder: spiffTile));
+          body: RotaryList<Spiff>(List.from(spiffs),
+              tileBuilder: spiffTile, title: context.strings.downloadsLabel));
     });
   }
 
@@ -51,7 +52,8 @@ class DownloadsPage extends StatelessWidget {
 
       final creator = spiff.playlist.creator;
       if (creator != null) {
-        children.add(Text(creator, overflow: TextOverflow.ellipsis));
+        children.add(Text(creator,
+            style: Theme.of(context).listTileTheme.subtitleTextStyle));
       }
 
       final count = trackCache.state.count(spiff.playlist.tracks);
@@ -66,19 +68,19 @@ class DownloadsPage extends StatelessWidget {
                 progressColor: Colors.blueAccent,
                 backgroundColor: Colors.grey.shade800,
                 barRadius: const Radius.circular(10),
-                center: Text('$count / ${spiff.playlist.tracks.length}'),
+                center: spiff.playlist.tracks.length > 1
+                    ? Text('$count / ${spiff.playlist.tracks.length}')
+                    : null,
                 percent: progress.value));
           }
         }
       }
 
       return ListTile(
-          isThreeLine: true,
-          title: Center(
-              child:
-                  Text(spiff.playlist.title, overflow: TextOverflow.ellipsis)),
+          isThreeLine: children.length > 1,
+          title: Text(spiff.playlist.title),
           subtitle: Column(
-              mainAxisAlignment: MainAxisAlignment.center, children: children),
+              crossAxisAlignment: CrossAxisAlignment.start, children: children),
           onTap: () => onSpiff(context, spiff),
           onLongPress: () => onDelete(context, spiff));
     });
@@ -87,7 +89,8 @@ class DownloadsPage extends StatelessWidget {
   void onSpiff(BuildContext context, Spiff spiff) {
     if (context.trackCache.state.containsAll(spiff.playlist.tracks) == false) {
       if (allowDownload(context)) {
-        confirmDialog(context, title: context.strings.confirmDownload).then((confirmed) {
+        confirmDialog(context, title: context.strings.confirmDownload)
+            .then((confirmed) {
           if (confirmed != null && confirmed) {
             // resume download
             context.download(spiff);
@@ -105,7 +108,8 @@ class DownloadsPage extends StatelessWidget {
   }
 
   void onDelete(BuildContext context, Spiff spiff) {
-    confirmDialog(context, title: context.strings.confirmDelete, body: spiff.title)
+    confirmDialog(context,
+            title: context.strings.confirmDelete, body: spiff.title)
         .then((confirmed) {
       if (confirmed != null && confirmed) {
         context.remove(spiff);

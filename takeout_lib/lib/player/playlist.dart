@@ -63,8 +63,8 @@ class PlaylistCubit extends Cubit<PlaylistState> {
     int index = 0,
     double position = 0.0,
     MediaType mediaType = MediaType.music,
-    String? creator,
-    String? title,
+    String? creator = '',
+    String? title = '',
   }) {
     final body =
         patchReplace(ref, mediaType.name, creator: creator, title: title) +

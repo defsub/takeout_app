@@ -15,6 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:takeout_lib/api/client.dart';
 import 'package:takeout_lib/api/model.dart';
@@ -36,7 +37,7 @@ class ConnectPage extends StatelessWidget {
                 child: Text(context.strings.connectLabel),
                 onPressed: () {
                   Navigator.push(context,
-                      MaterialPageRoute<void>(builder: (_) => CodePage()));
+                      CupertinoPageRoute<void>(builder: (_) => CodePage()));
                 }),
           ],
         ),

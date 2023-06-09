@@ -15,6 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:takeout_lib/api/model.dart';
 import 'package:takeout_lib/media_type/media_type.dart';
@@ -28,8 +29,9 @@ import 'list.dart';
 class RadioEntry {
   final String title;
   final List<Station> Function() stations;
+  final Widget? icon;
 
-  RadioEntry(this.title, this.stations);
+  RadioEntry(this.title, this.stations, {this.icon = const Icon(Icons.radio)});
 }
 
 class RadioPage extends ClientPage<RadioView> {
@@ -51,30 +53,37 @@ class RadioPage extends ClientPage<RadioView> {
     return Scaffold(
         body: RefreshIndicator(
             onRefresh: () => reloadPage(context),
-            child: RotaryList<RadioEntry>(entries, tileBuilder: radioTile)));
+            child: RotaryList<RadioEntry>(entries,
+                tileBuilder: radioTile, title: context.strings.radioLabel)));
   }
 
   Widget radioTile(BuildContext context, RadioEntry entry) {
     return ListTile(
-        title: Center(child: Text(entry.title)),
+        leading: entry.icon,
+        title: Text(entry.title),
         onTap: () {
           Navigator.push(
               context,
-              MaterialPageRoute<void>(
+              CupertinoPageRoute<void>(
                   builder: (_) => stationsPage(entry.title, entry.stations())));
         });
   }
 
   Widget stationsPage(String title, List<Station> stations) {
     return Scaffold(
-        body: RotaryList<Station>(stations, tileBuilder: stationTile));
+      body: RotaryList<Station>(
+        stations,
+        tileBuilder: stationTile,
+        title: title,
+      ),
+    );
   }
 
   Widget stationTile(BuildContext context, Station station) {
     final enableStreaming = allowStreaming(context);
     return ListTile(
         enabled: enableStreaming,
-        title: Center(child: Text(station.name)),
+        title: Text(station.name),
         onTap: () => onStation(context, station));
   }
 
@@ -82,8 +91,8 @@ class RadioPage extends ClientPage<RadioView> {
     final mediaType = station.type == MediaType.stream.name
         ? MediaType.stream
         : MediaType.music;
-    context.playlist
-        .replace(station.reference, mediaType: mediaType, title: station.name);
+    context.playlist.replace(station.reference,
+        mediaType: mediaType, title: station.name, creator: 'Radio');
     showPlayer(context);
   }
 }

@@ -15,6 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:percent_indicator/linear_percent_indicator.dart';
@@ -28,6 +29,7 @@ import 'package:takeout_watch/list.dart';
 import 'package:takeout_watch/media.dart';
 import 'package:takeout_watch/player.dart';
 import 'package:takeout_watch/settings.dart';
+import 'package:timeago/timeago.dart' as timeago;
 
 import 'dialog.dart';
 
@@ -41,13 +43,14 @@ class PodcastsPage extends StatelessWidget {
     final series = state.newSeries ?? [];
 
     return MediaGrid(series,
+        title: context.strings.podcastsLabel,
         onTap: (context, entry) => _onSeries(context, entry as Series));
   }
 }
 
 void _onSeries(BuildContext context, Series series) {
   Navigator.push(
-      context, MaterialPageRoute<void>(builder: (_) => SeriesPage(series)));
+      context, CupertinoPageRoute<void>(builder: (_) => SeriesPage(series)));
 }
 
 class SeriesPage extends ClientPage<SeriesView> {
@@ -75,6 +78,8 @@ class SeriesPage extends ClientPage<SeriesView> {
         body: RefreshIndicator(
             onRefresh: () => reloadPage(context),
             child: RotaryList<Episode>(episodes,
+                title: state.series.title,
+                subtitle: state.series.creator,
                 tileBuilder: (context, episode) => EpisodeTile(episode,
                     onTap: onEpisode,
                     onLongPress: onDownload,
@@ -117,7 +122,9 @@ class EpisodeTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final children = <Widget>[];
-    children.add(Text(ymd(episode.date)));
+    final date = DateTime.parse(episode.date);
+    children.add(Text(timeago.format(date),
+        style: Theme.of(context).listTileTheme.subtitleTextStyle));
     final remaining = offsets.remaining(episode);
     if (remaining != null) {
       children.add(LinearPercentIndicator(
@@ -125,7 +132,8 @@ class EpisodeTile extends StatelessWidget {
           progressColor: Colors.blueAccent,
           backgroundColor: Colors.grey.shade800,
           barRadius: const Radius.circular(10),
-          center: Text('${remaining.inHoursMinutes} remaining'),
+          center: Text('${remaining.inHoursMinutes} remaining',
+              style: Theme.of(context).listTileTheme.subtitleTextStyle),
           // TODO intl
           percent: offsets.value(episode) ?? 0.0));
     }
@@ -136,8 +144,7 @@ class EpisodeTile extends StatelessWidget {
         onTap: () => enableStreaming ? onTap(context, episode) : null,
         onLongPress: () =>
             enableDownload ? onLongPress?.call(context, episode) : null,
-        title:
-            Center(child: Text(episode.title, overflow: TextOverflow.ellipsis)),
+        title: Text(episode.title),
         subtitle: Column(
             mainAxisAlignment: MainAxisAlignment.center, children: children));
   }

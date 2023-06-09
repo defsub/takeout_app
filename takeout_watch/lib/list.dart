@@ -20,9 +20,12 @@ import 'package:rotary_scrollbar/rotary_scrollbar.dart';
 
 class RotaryList<T> extends StatefulWidget {
   final List<T> entries;
+  final String? title;
+  final String? subtitle;
   final Widget Function(BuildContext, T) tileBuilder;
 
-  const RotaryList(this.entries, {required this.tileBuilder, super.key});
+  const RotaryList(this.entries,
+      {required this.tileBuilder, this.title, this.subtitle, super.key});
 
   @override
   State<RotaryList<T>> createState() => _RotaryListState<T>();
@@ -39,6 +42,22 @@ class _RotaryListState<T> extends State<RotaryList<T>> {
 
   @override
   Widget build(BuildContext context) {
+    final title = widget.title;
+    final subtitle = widget.subtitle;
+    Widget? header;
+    if (title != null) {
+      if (subtitle != null) {
+        header = ListTile(
+            title: Center(child: Text(title)),
+            subtitle: Center(child: Text(subtitle)));
+      } else {
+        header = Container(
+            padding: const EdgeInsets.only(top: 8, bottom: 4),
+            child: Center(
+                child: Text(title,
+                    style: Theme.of(context).listTileTheme.titleTextStyle)));
+      }
+    }
     return RotaryScrollWrapper(
       rotaryScrollbar: RotaryScrollbar(
         controller: scrollController,
@@ -47,15 +66,28 @@ class _RotaryListState<T> extends State<RotaryList<T>> {
           controller: scrollController,
           itemBuilder: (context, index) {
             final entry = widget.entries[index];
-            return Padding(
+            final item = Padding(
                 padding: const EdgeInsets.only(
-                  bottom: 10,
+                  left: 10,
+                  right: 10,
                 ),
                 child: Card(
                   elevation: 0,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30)),
                   color: Colors.white10,
                   child: widget.tileBuilder.call(context, entry),
                 ));
+            if (index == 0 && header != null) {
+              return Column(
+                children: [
+                  header,
+                  item,
+                ],
+              );
+            } else {
+              return item;
+            }
           },
           itemCount: widget.entries.length),
     );

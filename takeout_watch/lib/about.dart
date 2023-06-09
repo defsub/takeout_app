@@ -50,7 +50,6 @@ class AboutPage extends StatelessWidget {
               final data = snapshot.data ?? {};
               //data.forEach((key, value) { print('$key => $value'); });
               final entries = [
-                AboutEntry(context.strings.takeoutTitle, subtitle: appVersion),
                 AboutEntry('Copyleft \u00a9 2023',
                     subtitle: 'The Takeout Authors'),
                 AboutEntry(context.strings.connectivityLabel,
@@ -66,28 +65,25 @@ class AboutPage extends StatelessWidget {
                       subtitle: '${data["model"]} (${data["brand"]})'),
                 if (data.isNotEmpty)
                   AboutEntry('Android ${data["version"]["release"]}',
-                      subtitle: 'API ${data["version"]["sdkInt"]}'),
+                      subtitle:
+                          'API ${data["version"]["sdkInt"]}, ${data["version"]["securityPatch"]}'),
                 if (data.isNotEmpty)
                   AboutEntry(context.strings.displayLabel,
                       subtitle:
                           '${data["displayMetrics"]["widthPx"]} x ${data["displayMetrics"]["heightPx"]}'),
-                if (data.isNotEmpty)
-                  AboutEntry('Security Patch',
-                      subtitle: '${data["version"]["securityPatch"]}'),
               ];
-              return RotaryList<AboutEntry>(entries, tileBuilder: aboutTile);
+              return RotaryList<AboutEntry>(entries,
+                  tileBuilder: aboutTile,
+                  title: context.strings.takeoutTitle,
+                  subtitle: appVersion);
             }));
   }
 
   Widget aboutTile(BuildContext context, AboutEntry entry) {
-    final subtitle = entry.subtitle;
-    return ListTile(
-      onTap: entry.onTap,
-      title: Center(child: Text(entry.title)),
-      subtitle: subtitle != null
-          ? Center(child: Text(subtitle, textAlign: TextAlign.center))
-          : null,
-    );
+    final title = Text(entry.title);
+    final subtext = entry.subtitle;
+    final subtitle = subtext != null ? Text(subtext) : null;
+    return ListTile(onTap: entry.onTap, title: title, subtitle: subtitle);
   }
 
   String? downloadsSize(BuildContext context) {

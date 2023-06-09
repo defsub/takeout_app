@@ -15,23 +15,23 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:takeout_lib/api/model.dart';
+import 'package:takeout_lib/art/cover.dart';
 import 'package:takeout_lib/cache/track.dart';
 import 'package:takeout_lib/empty.dart';
+import 'package:takeout_lib/history/history.dart';
 import 'package:takeout_lib/index/index.dart';
 import 'package:takeout_lib/page/page.dart';
 import 'package:takeout_lib/player/player.dart';
-import 'package:takeout_lib/util.dart';
 import 'package:takeout_watch/app/context.dart';
 import 'package:takeout_watch/music.dart';
-import 'package:takeout_watch/platform.dart';
 import 'package:takeout_watch/podcasts.dart';
 import 'package:takeout_watch/radio.dart';
 import 'package:takeout_watch/settings.dart';
 
-import 'about.dart';
 import 'downloads.dart';
 import 'history.dart';
 import 'list.dart';
@@ -65,40 +65,49 @@ class HomePage extends ClientPage<HomeView> {
     return Builder(builder: (context) {
       final index = context.watch<IndexCubit>().state;
       final trackCache = context.watch<TrackCacheCubit>().state;
+      final history = context.watch<HistoryCubit>().state.history;
       final entries = [
-        // TODO hide if not playing
-        HomeEntry(const PlayerTitle(),
-            // icon: playerButton(),
-            subtitle: const PlayerArtist(),
+        // TODO hide if not playing?
+        HomeEntry(
+            PlayerTitle(style: Theme.of(context).listTileTheme.titleTextStyle),
+            icon: const SizedBox.square(dimension: 36, child: PlayerImage()),
+            subtitle: PlayerArtist(
+                style: Theme.of(context).listTileTheme.subtitleTextStyle),
             onSelected: (context, state) => onPlayer(context, state)),
+        if (history.spiffs.isNotEmpty)
+          HomeEntry(Text(context.strings.recentLabel),
+              icon: const Icon(Icons.history),
+              onSelected: (context, state) => onHistory(context, state)),
         if (index.music)
           HomeEntry(Text(context.strings.musicLabel),
-              // icon: const Icon(Icons.music_note),
+              icon: const Icon(Icons.music_note),
               onSelected: (context, state) => onMusic(context, state)),
         if (index.podcasts)
           HomeEntry(Text(context.strings.podcastsLabel),
-              // icon: const Icon(Icons.podcasts),
+              icon: const Icon(Icons.podcasts),
               onSelected: (context, state) => onPodcasts(context, state)),
-        HomeEntry(Text(context.strings.historyLabel),
-            // icon: const Icon(Icons.history),
-            onSelected: (context, state) => onHistory(context, state)),
+
         if (index.music)
           HomeEntry(Text(context.strings.radioLabel),
-              // icon: const Icon(Icons.radio),
+              icon: const Icon(Icons.radio),
               onSelected: (context, state) => onRadio(context, state)),
+        if (index.music)
+          HomeEntry(Text(context.strings.artistsLabel),
+              icon: const Icon(Icons.people),
+              onSelected: (context, state) => onArtists(context, state)),
         if (trackCache.isNotEmpty)
           HomeEntry(Text(context.strings.downloadsLabel),
-              // icon: const Icon(Icons.cloud_download_outlined),
+              icon: const Icon(Icons.cloud_download_outlined),
               onSelected: (context, state) => onDownloads(context, state)),
-        HomeEntry(Text(context.strings.aboutLabel),
-            // icon: const Icon(Icons.info_outline),
-            onSelected: (context, state) => onAbout(context, state)),
-        HomeEntry(homeControls(context, state)),
+        HomeEntry(Text(context.strings.settingsLabel),
+            icon: const Icon(Icons.settings),
+            onSelected: (context, state) => onSettings(context, state)),
       ];
       return Scaffold(
           body: RefreshIndicator(
               onRefresh: () => reloadPage(context),
               child: RotaryList<HomeEntry>(entries,
+                  title: context.strings.takeoutTitle,
                   tileBuilder: (context, entry) =>
                       homeTile(context, entry, state))));
     });
@@ -107,26 +116,9 @@ class HomePage extends ClientPage<HomeView> {
   Widget homeTile(BuildContext context, HomeEntry entry, HomeView state) {
     return ListTile(
         leading: entry.icon,
-        title: Center(child: entry.title),
-        subtitle: entry.subtitle != null ? Center(child: entry.subtitle) : null,
+        title: entry.title,
+        subtitle: entry.subtitle,
         onTap: () => entry.onSelected?.call(context, state));
-  }
-
-  Widget homeControls(BuildContext context, HomeView state) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        IconButton(
-            icon: const Icon(Icons.volume_up),
-            onPressed: () => platformSoundSettings()),
-        IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () => onSettings(context, state)),
-        IconButton(
-            icon: const Icon(Icons.bluetooth),
-            onPressed: () => platformBluetoothSettings()),
-      ],
-    );
   }
 
   Widget playerButton() {
@@ -155,41 +147,41 @@ class HomePage extends ClientPage<HomeView> {
 
   void onMusic(BuildContext context, HomeView state) {
     Navigator.push(
-        context, MaterialPageRoute<void>(builder: (_) => MusicPage(state)));
+        context, CupertinoPageRoute<void>(builder: (_) => MusicPage(state)));
   }
 
   void onPodcasts(BuildContext context, HomeView state) {
     Navigator.push(
-        context, MaterialPageRoute<void>(builder: (_) => PodcastsPage(state)));
+        context, CupertinoPageRoute<void>(builder: (_) => PodcastsPage(state)));
+  }
+
+  void onArtists(BuildContext context, HomeView _) {
+    Navigator.push(
+        context, CupertinoPageRoute<void>(builder: (_) => ArtistsPage()));
   }
 
   void onRadio(BuildContext context, HomeView _) {
     Navigator.push(
-        context, MaterialPageRoute<void>(builder: (_) => RadioPage()));
+        context, CupertinoPageRoute<void>(builder: (_) => RadioPage()));
   }
 
   void onHistory(BuildContext context, HomeView _) {
     Navigator.push(
-        context, MaterialPageRoute<void>(builder: (_) => const HistoryPage()));
+        context, CupertinoPageRoute<void>(builder: (_) => const HistoryPage()));
   }
 
   void onDownloads(BuildContext context, HomeView _) {
     Navigator.push(context,
-        MaterialPageRoute<void>(builder: (_) => const DownloadsPage()));
+        CupertinoPageRoute<void>(builder: (_) => const DownloadsPage()));
   }
 
   void onSettings(BuildContext context, HomeView _) {
-    Navigator.push(
-        context, MaterialPageRoute<void>(builder: (_) => const SettingsPage()));
-  }
-
-  void onAbout(BuildContext context, HomeView _) {
-    Navigator.push(
-        context, MaterialPageRoute<void>(builder: (_) => const AboutPage()));
+    Navigator.push(context,
+        CupertinoPageRoute<void>(builder: (_) => const SettingsPage()));
   }
 
   void onPlayer(BuildContext context, HomeView _) {
     Navigator.push(
-        context, MaterialPageRoute<void>(builder: (_) => const PlayerPage()));
+        context, CupertinoPageRoute<void>(builder: (_) => const PlayerPage()));
   }
 }

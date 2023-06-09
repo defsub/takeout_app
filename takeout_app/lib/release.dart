@@ -50,7 +50,8 @@ class ReleaseWidget extends ClientPage<ReleaseView> {
   }
 
   void _onPlay(BuildContext context) {
-    context.playlist.replace(_release.reference);
+    context.playlist.replace(_release.reference,
+        creator: _release.creator, title: _release.name);
   }
 
   void _onDownload(BuildContext context, ReleaseView view) {
@@ -178,7 +179,10 @@ class _ReleaseTracksWidget extends StatelessWidget {
   const _ReleaseTracksWidget(this._view);
 
   void _onPlay(BuildContext context, int index) {
-    context.playlist.replace(_view.release.reference, index: index);
+    context.playlist.replace(_view.release.reference,
+        index: index,
+        creator: _view.release.creator,
+        title: _view.release.name);
   }
 
   @override
@@ -329,6 +333,7 @@ class ReleaseListWidget extends StatelessWidget {
   }
 
   void _onPlay(BuildContext context, Release release) {
-    context.playlist.replace(release.reference);
+    context.playlist.replace(release.reference,
+        creator: release.creator, title: release.name);
   }
 }

@@ -123,7 +123,10 @@ class SeriesWidget extends ClientPage<SeriesView> {
   }
 
   void _onPlay(BuildContext context) {
-    context.playlist.replace(_series.reference, mediaType: MediaType.podcast);
+    context.playlist.replace(_series.reference,
+        mediaType: MediaType.podcast,
+        creator: _series.creator,
+        title: _series.title);
   }
 
   void _onDownload(BuildContext context, SeriesView view) {
@@ -150,8 +153,8 @@ class _SeriesEpisodeListWidget extends StatelessWidget {
             isThreeLine: true,
             trailing: _trailing(
                 context, downloads.state, trackCache.state, episodes[index]),
-            onTap: () => _onPlay(context, episodes[index]),
-            onLongPress: () => _onEpisode(context, episodes[index], index),
+            onTap: () => _onEpisode(context, episodes[index], index),
+            onLongPress: () => _onPlay(context, episodes[index]),
             title: Text(episodes[index].title),
             subtitle: _subtitle(context, offsets.state, episodes[index])))
       ]);
@@ -202,7 +205,10 @@ class _SeriesEpisodeListWidget extends StatelessWidget {
   }
 
   void _onPlay(BuildContext context, Episode episode) {
-    context.playlist.replace(episode.reference, mediaType: MediaType.podcast);
+    context.playlist.replace(episode.reference,
+        mediaType: MediaType.podcast,
+        creator: episode.creator,
+        title: episode.title);
   }
 }
 
@@ -339,8 +345,10 @@ class _EpisodeWidgetState extends State<_EpisodeWidget> {
   }
 
   void _onPlay(BuildContext context) {
-    context.playlist
-        .replace(widget.episode.reference, mediaType: MediaType.podcast);
+    context.playlist.replace(widget.episode.reference,
+        mediaType: MediaType.podcast,
+        creator: widget.episode.creator,
+        title: widget.episode.title);
   }
 }
 

@@ -36,19 +36,19 @@ class PlayerQueueState extends State<PlayerQueue> {
     return showQueue
         ? playerQueue(context)
         : IconButton(
-        icon: const Icon(Icons.queue_music),
-        onPressed: () {
-          setState(() {
-            showQueue = true;
-          });
-        });
+            icon: const Icon(Icons.queue_music),
+            onPressed: () {
+              setState(() {
+                showQueue = true;
+              });
+            });
   }
 
   Widget playerQueue(BuildContext context) {
     String? location;
     return BlocBuilder<Player, PlayerState>(
         buildWhen: (_, state) =>
-        state is PlayerIndexChange ||
+            state is PlayerIndexChange ||
             state.spiff.playlist.location != location,
         builder: (context, state) {
           if (state is PlayerIndexChange ||
@@ -79,11 +79,9 @@ class PlayerQueueState extends State<PlayerQueue> {
                                   selected: state.currentIndex == index,
                                   onTap: () =>
                                       context.player.skipToIndex(index),
-                                  title: Center(
-                                      child: Text(
-                                        state.spiff[index].title,
-                                        overflow: TextOverflow.ellipsis,
-                                      )),
+                                  title: Text(
+                                    state.spiff[index].title,
+                                  ),
                                 );
                               }));
                     }));

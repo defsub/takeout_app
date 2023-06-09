@@ -18,9 +18,9 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:takeout_lib/spiff/model.dart';
 
-const appVersion = '0.2.1';
+const appVersion = '0.3.1';
 const appSource = 'https://github.com/defsub/takeout_app';
-const appHome = 'https://takeout.group/';
+const appHome = 'https://takeout.fm/';
 
 class AppState {
   final bool authenticated;

@@ -15,6 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Takeout.  If not, see <https://www.gnu.org/licenses/>.
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
@@ -27,9 +28,11 @@ import 'package:takeout_watch/queue.dart';
 import 'button.dart';
 
 void showPlayer(BuildContext context) {
-  Scaffold.of(context).showBottomSheet<void>((context) {
-    return const PlayerPage();
-  });
+  // Scaffold.of(context).showBottomSheet<void>((context) {
+  //   return const PlayerPage();
+  // });
+  Navigator.push(
+      context, CupertinoPageRoute<void>(builder: (_) => const PlayerPage()));
 }
 
 class PlayerPage extends StatelessWidget {
@@ -41,46 +44,54 @@ class PlayerPage extends StatelessWidget {
     final constraints = BoxConstraints(maxWidth: media.size.width - 72);
     return Scaffold(
         body: Stack(fit: StackFit.expand, children: [
-      Center(child: playerImage(context)),
-      Positioned.fill(child: playerProgress(context)),
-      Positioned.fill(
-          child: Center(
-              child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-            PlayerTitle(
-                boxConstraints: constraints,
-                style: Theme.of(context).textTheme.bodyMedium),
-            PlayerArtist(
-                boxConstraints: constraints,
-                style: Theme.of(context).textTheme.bodySmall),
-            const SizedBox(height: 24),
-            playerControls(context),
-          ]))),
-      const Align(alignment: Alignment.bottomCenter, child: PlayerQueue())
-    ]));
+          Center(child: playerImage(context)),
+          Positioned.fill(child: playerProgress(context)),
+          Positioned.fill(
+              child: Center(
+                  child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        PlayerTitle(
+                            boxConstraints: constraints,
+                            style: Theme
+                                .of(context)
+                                .listTileTheme
+                                .titleTextStyle),
+                        PlayerArtist(
+                            boxConstraints: constraints,
+                            style: Theme
+                                .of(context)
+                                .listTileTheme
+                                .subtitleTextStyle),
+                        const SizedBox(height: 24),
+                        playerControls(context),
+                      ]))),
+          const Align(alignment: Alignment.bottomCenter, child: PlayerQueue())
+        ]));
   }
 
   Widget playerImage(BuildContext context) {
     String? image;
     final media = MediaQuery.of(context);
-    final width = media.size.width - 26; // progress lineWidth: 13
     return BlocBuilder<Player, PlayerState>(
         buildWhen: (_, state) => state.currentTrack?.image != image,
         builder: (context, state) {
+          final width = state.spiff.isStream()
+              ? media.size.width // no progress
+              : media.size.width - 26; // room for progress lineWidth: 13
           if (state.currentTrack?.image != image) {
             image = state.currentTrack?.image;
             final cover = image;
             if (cover != null) {
               return GridTile(
                   child: circleCover(
-                        context,
-                        cover,
-                        radius: width / 2,
-                        height: width,
-                        color: Colors.black45,
-                        blendMode: BlendMode.darken,
-                      ) ??
+                    context,
+                    cover,
+                    radius: width / 2,
+                    height: width,
+                    color: Colors.black45,
+                    blendMode: BlendMode.darken,
+                  ) ??
                       const EmptyWidget());
             }
           }
@@ -94,18 +105,18 @@ class PlayerPage extends StatelessWidget {
         buildWhen: (_, state) => state is PlayerPositionChange,
         builder: (context, state) {
           if (state is PlayerPositionChange) {
-            return (state.spiff.isStream()) // no radio stream progress
+            return state.spiff.isStream() // no radio stream progress
                 ? const EmptyWidget()
                 : CircularPercentIndicator(
-                    radius: media.size.width / 2,
-                    lineWidth: 13.0,
-                    animation: true,
-                    animateFromLastPercent: true,
-                    percent: state.progress,
-                    circularStrokeCap: CircularStrokeCap.round,
-                    progressColor: Colors.blueAccent,
-                    backgroundColor: Colors.grey.shade800,
-                  );
+              radius: media.size.width / 2,
+              lineWidth: 13.0,
+              animation: true,
+              animateFromLastPercent: true,
+              percent: state.progress,
+              circularStrokeCap: CircularStrokeCap.round,
+              progressColor: Colors.blueAccent,
+              backgroundColor: Colors.grey.shade800,
+            );
           }
           return const EmptyWidget();
         });
@@ -138,7 +149,7 @@ class PlayerPage extends StatelessWidget {
               CircleButton(
                 icon: const Icon(Icons.skip_previous, size: iconSize),
                 onPressed:
-                    state.hasPrevious ? () => player.skipToPrevious() : null,
+                state.hasPrevious ? () => player.skipToPrevious() : null,
               ),
             if (isPodcast)
               CircleButton(
@@ -147,16 +158,17 @@ class PlayerPage extends StatelessWidget {
               ),
             if (buffering)
               const CircularProgressIndicator()
-            else if (playing)
-              CircleButton(
-                icon: const Icon(Icons.pause, size: 24),
-                onPressed: () => player.pause(),
-              )
             else
-              CircleButton(
-                icon: const Icon(Icons.play_arrow, size: 24),
-                onPressed: () => player.play(),
-              ),
+              if (playing)
+                CircleButton(
+                  icon: const Icon(Icons.pause, size: 24),
+                  onPressed: () => player.pause(),
+                )
+              else
+                CircleButton(
+                  icon: const Icon(Icons.play_arrow, size: 24),
+                  onPressed: () => player.play(),
+                ),
             if (isPodcast)
               CircleButton(
                 icon: const Icon(Icons.forward_30_outlined, size: iconSize),
@@ -177,10 +189,12 @@ class AmbientPlayer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    Navigator.push(
+        context, CupertinoPageRoute<void>(builder: (_) => const PlayerPage()));
     String? title, artist;
     buildWhen(PlayerState state) =>
         state.currentTrack?.title != title ||
-        state.currentTrack?.creator != artist;
+            state.currentTrack?.creator != artist;
     return Scaffold(
         body: BlocBuilder<Player, PlayerState>(
             buildWhen: (_, state) => buildWhen(state),
@@ -188,17 +202,13 @@ class AmbientPlayer extends StatelessWidget {
               if (buildWhen(state)) {
                 return Center(
                     child: ListView(
-                  shrinkWrap: true,
-                  children: [
-                    ListTile(
-                        title: Center(
-                            child: Text(title ?? '',
-                                overflow: TextOverflow.ellipsis)),
-                        subtitle: Center(
-                            child: Text(artist ?? '',
-                                overflow: TextOverflow.ellipsis))),
-                  ],
-                ));
+                      shrinkWrap: true,
+                      children: [
+                        ListTile(
+                            title: Center(child: Text(title ?? '')),
+                            subtitle: Center(child: Text(artist ?? ''))),
+                      ],
+                    ));
               }
               return const EmptyWidget();
             }));
@@ -217,20 +227,19 @@ class PlayerArtist extends StatelessWidget {
     return BlocBuilder<Player, PlayerState>(
         buildWhen: (_, state) => state.currentTrack?.creator != artist,
         builder: (context, state) {
-          if (state.currentTrack?.creator != artist) {
-            final currentTrack = state.currentTrack;
-            if (currentTrack == null) {
-              return const EmptyWidget();
-            }
-            artist = currentTrack.creator;
-            final child = Text(currentTrack.creator,
-                overflow: TextOverflow.ellipsis, style: style);
-            final constraints = boxConstraints;
-            return constraints != null
-                ? ConstrainedBox(constraints: constraints, child: child)
-                : child;
+          // if (state.currentTrack?.creator != artist) {
+          final currentTrack = state.currentTrack;
+          if (currentTrack == null) {
+            return const EmptyWidget();
           }
-          return const EmptyWidget();
+          artist = currentTrack.creator;
+          final child = Text(currentTrack.creator, style: style);
+          final constraints = boxConstraints;
+          return constraints != null
+              ? ConstrainedBox(constraints: constraints, child: child)
+              : child;
+          // }
+          // return const EmptyWidget();
         });
   }
 }
@@ -247,20 +256,38 @@ class PlayerTitle extends StatelessWidget {
     return BlocBuilder<Player, PlayerState>(
         buildWhen: (_, state) => state.currentTrack?.title != title,
         builder: (context, state) {
-          if (state.currentTrack?.title != title) {
-            final currentTrack = state.currentTrack;
-            if (currentTrack == null) {
-              return const EmptyWidget();
-            }
-            title = currentTrack.title;
-            final child = Text(currentTrack.title,
-                overflow: TextOverflow.ellipsis, style: style);
-            final constraints = boxConstraints;
-            return constraints != null
-                ? ConstrainedBox(constraints: constraints, child: child)
-                : child;
+          // if (state.currentTrack?.title != title) {
+          final currentTrack = state.currentTrack;
+          if (currentTrack == null) {
+            return const EmptyWidget();
           }
-          return const EmptyWidget();
+          title = currentTrack.title;
+          final child = Text(currentTrack.title, style: style);
+          final constraints = boxConstraints;
+          return constraints != null
+              ? ConstrainedBox(constraints: constraints, child: child)
+              : child;
+          // }
+          // return const EmptyWidget();
+        });
+  }
+}
+
+class PlayerImage extends StatelessWidget {
+  const PlayerImage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    String? image;
+    return BlocBuilder<Player, PlayerState>(
+        buildWhen: (_, state) => state.currentTrack?.image != image,
+        builder: (context, state) {
+          final currentTrack = state.currentTrack;
+          if (currentTrack == null) {
+            return const EmptyWidget();
+          }
+          image = currentTrack.image;
+          return playerCover(context, currentTrack.image);
         });
   }
 }

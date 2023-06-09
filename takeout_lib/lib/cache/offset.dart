@@ -102,17 +102,16 @@ class OffsetCacheCubit extends Cubit<OffsetCacheState> {
   void reload() {
     // get server offsets
     // merge with local offsets
-    // update server with newer offsets
+    // update server with newer offsets (async)
+    // emit current state
     clientRepository
         .progress(ttl: Duration.zero)
         .then((view) => repository.merge(view.offsets))
-        .then((result) {
-      final offsets = List<Offset>.from(result);
+        .then((newer) {
+      final offsets = List<Offset>.from(newer);
       if (offsets.isNotEmpty) {
-        clientRepository
-            .updateProgress(Offsets(offsets: offsets))
-            .then((_) => _emitState());
+        clientRepository.updateProgress(Offsets(offsets: offsets));
       }
-    });
+    }).whenComplete(() => _emitState());
   }
 }

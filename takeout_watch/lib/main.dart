@@ -43,17 +43,33 @@ class WatchApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    var appTheme = ThemeData.localize(ThemeData.dark(useMaterial3: true),
+        Theme.of(context).textTheme.apply(fontSizeFactor: 1.0));
+
+    appTheme = appTheme.copyWith(
+        listTileTheme: appTheme.listTileTheme.copyWith(
+            titleTextStyle: appTheme.textTheme.bodyMedium
+                ?.copyWith(overflow: TextOverflow.ellipsis),
+            subtitleTextStyle: appTheme.textTheme.bodySmall
+                ?.copyWith(overflow: TextOverflow.ellipsis)),
+        visualDensity: VisualDensity.compact,
+        pageTransitionsTheme: const PageTransitionsTheme(
+          builders: {
+            TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+          },
+        ));
+    // textTheme: appTheme.textTheme.apply(fontSizeFactor: 0.50));
+
     return AppBloc().init(context,
         child: WatchShape(builder: (context, shape, child) {
       print('ambient shape is $shape');
+
       return AmbientMode(
         builder: (context, mode, child) {
           print('ambient mode is $mode');
           return mode == WearMode.active
               ? MaterialApp(
-                  theme: ThemeData.dark(useMaterial3: true).copyWith(
-                    visualDensity: VisualDensity.compact,
-                  ),
+                  theme: appTheme,
                   localizationsDelegates: const [
                     AppLocalizations.delegate,
                     GlobalMaterialLocalizations.delegate,
