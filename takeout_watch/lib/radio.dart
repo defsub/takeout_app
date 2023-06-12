@@ -92,7 +92,9 @@ class RadioPage extends ClientPage<RadioView> {
         ? MediaType.stream
         : MediaType.music;
     context.playlist.replace(station.reference,
-        mediaType: mediaType, title: station.name, creator: 'Radio');
+        mediaType: mediaType,
+        title: station.name,
+        creator: context.strings.radioLabel);
     showPlayer(context);
   }
 }

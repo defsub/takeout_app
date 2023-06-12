@@ -19,7 +19,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:takeout_lib/api/model.dart';
-import 'package:takeout_lib/art/cover.dart';
 import 'package:takeout_lib/cache/track.dart';
 import 'package:takeout_lib/empty.dart';
 import 'package:takeout_lib/history/history.dart';
@@ -31,6 +30,7 @@ import 'package:takeout_watch/music.dart';
 import 'package:takeout_watch/podcasts.dart';
 import 'package:takeout_watch/radio.dart';
 import 'package:takeout_watch/settings.dart';
+import 'package:takeout_watch/video.dart';
 
 import 'downloads.dart';
 import 'history.dart';
@@ -86,7 +86,6 @@ class HomePage extends ClientPage<HomeView> {
           HomeEntry(Text(context.strings.podcastsLabel),
               icon: const Icon(Icons.podcasts),
               onSelected: (context, state) => onPodcasts(context, state)),
-
         if (index.music)
           HomeEntry(Text(context.strings.radioLabel),
               icon: const Icon(Icons.radio),
@@ -95,6 +94,10 @@ class HomePage extends ClientPage<HomeView> {
           HomeEntry(Text(context.strings.artistsLabel),
               icon: const Icon(Icons.people),
               onSelected: (context, state) => onArtists(context, state)),
+        if (index.movies)
+          HomeEntry(Text(context.strings.moviesLabel),
+              icon: const Icon(Icons.movie),
+              onSelected: (context, state) => onMovies(context, state)),
         if (trackCache.isNotEmpty)
           HomeEntry(Text(context.strings.downloadsLabel),
               icon: const Icon(Icons.cloud_download_outlined),
@@ -168,6 +171,11 @@ class HomePage extends ClientPage<HomeView> {
   void onHistory(BuildContext context, HomeView _) {
     Navigator.push(
         context, CupertinoPageRoute<void>(builder: (_) => const HistoryPage()));
+  }
+
+  void onMovies(BuildContext context, HomeView state) {
+    Navigator.push(context,
+        CupertinoPageRoute<void>(builder: (_) => VideoPage(state)));
   }
 
   void onDownloads(BuildContext context, HomeView _) {

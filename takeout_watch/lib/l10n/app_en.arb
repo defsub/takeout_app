@@ -34,7 +34,7 @@
   "settingHomeGridReleased": "Recently Released",
   "settingMobileDownloads": "Mobile Downloads",
   "settingMobileStreaming": "Mobile Streaming",
-  "settingMusicGrid": "Music Grid",
+  "settingsMediaSort": "Media Sort",
   "settingEnabled": "Enabled",
   "settingDisabled": "Disabled",
   "codeInvalid": "Code invalid",
@@ -43,6 +43,8 @@
   "deviceLabel": "Device",
   "displayLabel": "Display",
   "soundLabel": "Sound",
-  "bluetoothLabel": "Bluetooth"
+  "bluetoothLabel": "Bluetooth",
+  "resumeLabel": "Resume",
+  "moviesLabel": "Movies"
 }
 

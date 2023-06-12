@@ -58,6 +58,8 @@ class _RotaryListState<T> extends State<RotaryList<T>> {
                     style: Theme.of(context).listTileTheme.titleTextStyle)));
       }
     }
+    // add some padding at the bottom
+    const footer = SizedBox.square(dimension: 8);
     return RotaryScrollWrapper(
       rotaryScrollbar: RotaryScrollbar(
         controller: scrollController,
@@ -83,6 +85,13 @@ class _RotaryListState<T> extends State<RotaryList<T>> {
                 children: [
                   header,
                   item,
+                ],
+              );
+            } else if (index == widget.entries.length - 1) {
+              return Column(
+                children: [
+                  item,
+                  footer,
                 ],
               );
             } else {

@@ -48,8 +48,8 @@ class SettingsPage extends StatelessWidget {
           icon: const Icon(Icons.play_arrow),
           currentValue: (state) => state.settings.autoplay),
       SettingEntry<HomeGridType>(
-          context.strings.settingMusicGrid, nextHomeGridType,
-          icon: const Icon(Icons.album),
+          context.strings.settingsMediaSort, nextHomeGridType,
+          icon: const Icon(Icons.sort),
           currentValue: (state) => state.settings.homeGridType),
       SettingEntry<String>(
           context.strings.settingMobileDownloads, toggleMobileDownload,

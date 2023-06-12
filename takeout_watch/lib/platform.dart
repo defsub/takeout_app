@@ -20,6 +20,7 @@ import 'dart:io' show Platform;
 import 'package:android_intent_plus/android_intent.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 
+// These values are from Android.
 const flagActivityNewTask = 268435456;
 const flagActivityClearTask = 67108864;
 
